@@ -1,13 +1,16 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { useFormedible } from "@/hooks/useFormedible";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Github, Book, Star, Download, Code, Zap, Shield, Users, Sparkles } from "lucide-react";
+import { Github, Download, Code, Terminal, Package, Blocks, Zap, Shield, Users, Sparkles, Copy, Check, CommandIcon } from "lucide-react";
 import { z } from "zod";
+import { toast } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
+import { motion, AnimatePresence } from "motion/react";
 
 // Components
 import { DemoCard } from "./components/DemoCard";
@@ -54,8 +57,92 @@ const registrationSchema = z.object({
   bio: z.string().min(10, "Bio must be at least 10 characters"),
   notifications: z.boolean(),
   newsletter: z.boolean(),
-  interests: z.array(z.string()).min(1, "Select at least one interest"),
 });
+
+// Enhanced Animated Field Wrapper with random intro animations that ALL end in the same normal state
+const EnhancedAnimatedWrapper: React.FC<{ children: React.ReactNode; field: any }> = ({ 
+  children 
+}) => {
+  const animations = [
+    { opacity: 0, y: 15 },
+    { opacity: 0, x: -15 },
+    { opacity: 0, scale: 0.95 },
+    { opacity: 0, y: -10 },
+  ];
+  
+  const randomInitial = animations[Math.floor(Math.random() * animations.length)];
+  
+  return (
+    <motion.div
+      initial={randomInitial}
+      animate={{ opacity: 1, y: 0, x: 0, scale: 1 }} // ALL animations end here - normal state!
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      whileHover={{ scale: 1.01 }}
+      className="space-y-2"
+    >
+      {children}
+    </motion.div>
+  );
+};
+
+// Copy Button Component
+const CopyButton: React.FC<{ text: string; className?: string }> = ({ text, className = "" }) => {
+  const [copied, setCopied] = useState(false);
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      toast.success("Copied to clipboard!");
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      toast.error("Failed to copy");
+    }
+  };
+
+  return (
+    <motion.button
+      onClick={copyToClipboard}
+      className={`relative inline-flex items-center justify-center p-2 rounded-md bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 hover:text-white backdrop-blur-sm transition-colors ${className}`}
+      whileHover={{ scale: 1.05 }}
+      whileTap={{ scale: 0.95 }}
+    >
+      <AnimatePresence mode="wait">
+        {copied ? (
+          <motion.div
+            key="check"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            exit={{ scale: 0 }}
+          >
+            <Check className="w-4 h-4 text-green-400" />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="copy"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            exit={{ scale: 0 }}
+          >
+            <Copy className="w-4 h-4" />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.button>
+  );
+};
+
+// Enhanced Code Block with Copy Button
+const CodeBlockWithCopy: React.FC<{ code: string; language?: string }> = ({ code, language = "bash" }) => (
+  <div className="relative group">
+    <pre className="bg-slate-900 text-slate-100 p-4 rounded-lg font-mono text-sm overflow-x-auto">
+      <code className={`language-${language}`}>{code}</code>
+    </pre>
+    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+      <CopyButton text={code} />
+    </div>
+  </div>
+);
 
 export function App() {
   const contactForm = useFormedible({
@@ -67,6 +154,7 @@ export function App() {
       { name: "newsletter", type: "checkbox", label: "Subscribe to newsletter" },
     ],
     submitLabel: "Send Message",
+    globalWrapper: EnhancedAnimatedWrapper,
     formOptions: {
       defaultValues: { 
         name: "",
@@ -76,7 +164,9 @@ export function App() {
       },
       onSubmit: async ({ value }) => {
         console.log("Contact form submitted:", value);
-        alert("Thank you for your message!");
+        toast.success("Thank you for your message! We'll get back to you soon.", {
+          description: "Your message has been sent successfully.",
+        });
       },
     },
   });
@@ -100,7 +190,7 @@ export function App() {
       { name: "birthday", type: "date", label: "Birthday" },
     ],
     submitLabel: "Update Profile",
-    globalWrapper: AnimatedFieldWrapper,
+    globalWrapper: EnhancedAnimatedWrapper,
     formOptions: {
       defaultValues: {
         firstName: "",
@@ -114,7 +204,9 @@ export function App() {
       },
       onSubmit: async ({ value }) => {
         console.log("Profile updated:", value);
-        alert("Profile updated successfully!");
+        toast.success("Profile updated successfully!", {
+          description: "Your changes have been saved.",
+        });
       },
     },
   });
@@ -133,6 +225,7 @@ export function App() {
       },
     ],
     submitLabel: "Submit Survey",
+    globalWrapper: EnhancedAnimatedWrapper,
     formOptions: {
       defaultValues: { 
         satisfaction: 5,
@@ -142,7 +235,9 @@ export function App() {
       },
       onSubmit: async ({ value }) => {
         console.log("Survey submitted:", value);
-        alert("Thank you for your feedback!");
+        toast.success("Thank you for your feedback!", {
+          description: "Your response helps us improve our service.",
+        });
       },
     },
   });
@@ -171,7 +266,7 @@ export function App() {
     submitLabel: "Complete Registration",
     nextLabel: "Continue →",
     previousLabel: "← Back",
-    globalWrapper: AnimatedFieldWrapper,
+    globalWrapper: EnhancedAnimatedWrapper,
     formOptions: {
       defaultValues: {
         firstName: "",
@@ -182,11 +277,12 @@ export function App() {
         bio: "",
         notifications: true,
         newsletter: false,
-        interests: [],
       },
       onSubmit: async ({ value }) => {
         console.log("Registration completed:", value);
-        alert("Registration completed successfully!");
+        toast.success("Welcome aboard! 🎉", {
+          description: "Your registration has been completed successfully.",
+        });
       },
     },
     onPageChange: (page, direction) => {
@@ -194,256 +290,528 @@ export function App() {
     },
   });
 
+  const installCommand = `npx shadcn@latest add ${window.location.origin}/r/use-formedible`;
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-      {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm dark:bg-slate-950/80 sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <Zap className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  Formedible
-                </h1>
-                <p className="text-sm text-muted-foreground">Schema-driven forms made simple</p>
+    <>
+      <Toaster position="top-right" richColors />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+        {/* Header */}
+        <motion.header
+          initial={{ y: -100 }}
+          animate={{ y: 0 }}
+          className="border-b bg-white/80 backdrop-blur-sm dark:bg-slate-950/80 sticky top-0 z-50"
+        >
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex items-center justify-between">
+              <motion.div 
+                className="flex items-center gap-3"
+                whileHover={{ scale: 1.02 }}
+              >
+                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                  <Blocks className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    Formedible
+                  </h1>
+                  <p className="text-sm text-muted-foreground">shadcn/ui Registry Component</p>
+                </div>
+              </motion.div>
+              <div className="flex items-center gap-2">
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button variant="outline" size="sm" asChild>
+                    <a href="https://github.com/DimitriGilbert/Formedible" target="_blank" rel="noopener noreferrer">
+                      <Github className="w-4 h-4 mr-2" />
+                      GitHub
+                    </a>
+                  </Button>
+                </motion.div>
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button 
+                    size="sm" 
+                    onClick={() => {
+                      navigator.clipboard.writeText(installCommand);
+                      toast.success("Install command copied!", {
+                        description: "Run this in your project terminal",
+                      });
+                    }}
+                  >
+                    <CommandIcon className="w-4 h-4 mr-2" />
+                    Install
+                  </Button>
+                </motion.div>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" asChild>
-                <a href="https://github.com/DimitriGilbert/Formedible" target="_blank" rel="noopener noreferrer">
-                  <Github className="w-4 h-4 mr-2" />
-                  GitHub
-                </a>
-              </Button>
-              <Button variant="outline" size="sm" asChild>
-                <a href="r/use-formedible.json" target="_blank">
-                  <Download className="w-4 h-4 mr-2" />
-                  Registry
-                </a>
-              </Button>
-            </div>
           </div>
-        </div>
-      </header>
+        </motion.header>
 
-      {/* Hero Section */}
-      <section className="container mx-auto px-4 py-16 text-center">
-        <div className="max-w-4xl mx-auto">
-          <Badge variant="secondary" className="mb-4">
-            <Star className="w-3 h-3 mr-1" />
-            Enhanced with v4 Features
-          </Badge>
-          <h2 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 bg-clip-text text-transparent">
-            Build Forms with
-            <br />
-            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Ultimate Power
-            </span>
-          </h2>
-          <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Now with schema validation, component overrides, custom wrappers, multi-page support, 
-            and customizable progress indicators. The most powerful form library for React.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="text-lg px-8" asChild>
-              <a href="#quick-start">
-                <Code className="w-5 h-5 mr-2" />
-                Get Started
-              </a>
-            </Button>
-            <Button variant="outline" size="lg" className="text-lg px-8" asChild>
-              <a href="#demo">
-                <Sparkles className="w-5 h-5 mr-2" />
-                Try Enhanced Demo
-              </a>
-            </Button>
-          </div>
-        </div>
-      </section>
-
-      {/* Enhanced Features */}
-      <section className="container mx-auto px-4 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-          <Card>
-            <CardHeader>
-              <Shield className="w-8 h-8 text-blue-500 mb-2" />
-              <CardTitle>Schema Validation</CardTitle>
-              <CardDescription>
-                Built-in Zod schema validation with real-time error handling
-              </CardDescription>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader>
-              <Zap className="w-8 h-8 text-purple-500 mb-2" />
-              <CardTitle>Component Override</CardTitle>
-              <CardDescription>
-                Replace any field component with your custom implementations
-              </CardDescription>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader>
-              <Sparkles className="w-8 h-8 text-green-500 mb-2" />
-              <CardTitle>Custom Wrappers</CardTitle>
-              <CardDescription>
-                Add animations, special styling, or extra functionality to fields
-              </CardDescription>
-            </CardHeader>
-          </Card>
-          <Card>
-            <CardHeader>
-              <Users className="w-8 h-8 text-orange-500 mb-2" />
-              <CardTitle>Multi-Page Forms</CardTitle>
-              <CardDescription>
-                Built-in pagination with customizable progress indicators
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
-      </section>
-
-      {/* Enhanced Demo Forms */}
-      <section id="demo" className="container mx-auto px-4 py-16">
-        <div className="text-center mb-12">
-          <h3 className="text-3xl font-bold mb-4">Enhanced Interactive Demo</h3>
-          <p className="text-muted-foreground text-lg">
-            Experience the full power of Formedible with these feature-rich examples
-          </p>
-        </div>
-
-        <Tabs defaultValue="contact" className="max-w-6xl mx-auto">
-          <TabsList className="grid w-full grid-cols-4 mb-8">
-            <TabsTrigger value="contact">Contact Form</TabsTrigger>
-            <TabsTrigger value="profile">User Profile</TabsTrigger>
-            <TabsTrigger value="survey">Survey Form</TabsTrigger>
-            <TabsTrigger value="registration">Multi-Page</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="contact">
-            <DemoCard
-              title="Contact Us"
-              description="Simple form with Zod schema validation"
-              preview={<contactForm.Form className="space-y-4" />}
-              code={contactFormCode}
-              codeTitle="Contact Form Implementation"
-              codeDescription="Basic form setup with schema validation and form handling"
-            />
-          </TabsContent>
-
-          <TabsContent value="profile">
-            <DemoCard
-              title="User Profile"
-              description="Enhanced profile form with animated field wrappers"
-              preview={<profileForm.Form className="space-y-4" />}
-              code={profileFormCode}
-              codeTitle="Profile Form with Animations"
-              codeDescription="Form with custom animated wrappers and enhanced field types"
-            />
-          </TabsContent>
-
-          <TabsContent value="survey">
-            <DemoCard
-              title="Feedback Survey"
-              description="Advanced form with slider and enhanced field types"
-              preview={<surveyForm.Form className="space-y-4" />}
-              code={surveyFormCode}
-              codeTitle="Survey Form Implementation"
-              codeDescription="Advanced form with slider, switch, and validation components"
-            />
-          </TabsContent>
-
-          <TabsContent value="registration">
-            <DemoCard
-              title="Multi-Page Registration"
-              description="Complete registration flow with custom progress indicator and page transitions"
-              preview={<registrationForm.Form className="space-y-4" />}
-              code={registrationFormCode}
-              codeTitle="Multi-Page Registration Flow"
-              codeDescription="Complete implementation with custom progress indicator and page transitions"
-            />
-          </TabsContent>
-        </Tabs>
-      </section>
-
-      {/* Installation */}
-      <section id="quick-start" className="container mx-auto px-4 py-16">
-        <Card className="max-w-4xl mx-auto">
-          <CardHeader>
-            <CardTitle className="text-2xl">🚀 Quick Start</CardTitle>
-            <CardDescription>
-              Get started with the enhanced Formedible featuring schema validation, component overrides, and multi-page support
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div>
-              <h4 className="font-semibold mb-2">1. Install from the registry</h4>
-              <div className="bg-slate-900 text-slate-100 p-4 rounded-lg font-mono text-sm overflow-x-auto">
+        {/* Hero Section */}
+        <section className="container mx-auto px-4 py-16 text-center">
+          <motion.div 
+            className="max-w-4xl mx-auto"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.2 }}
+            >
+              <Badge variant="secondary" className="mb-4">
+                <Package className="w-3 h-3 mr-1" />
+                shadcn/ui Registry Component
+              </Badge>
+            </motion.div>
+            
+            <motion.h2 
+              className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 bg-clip-text text-transparent"
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.3 }}
+            >
+              Schema-Driven Forms
+              <br />
+              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Made Simple
+              </span>
+            </motion.h2>
+            
+            <motion.p 
+              className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto"
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.4 }}
+            >
+              A powerful React hook that wraps TanStack Form with shadcn/ui components. 
+              Features schema validation, multi-page support, component overrides, and custom wrappers.
+            </motion.p>
+            
+            <motion.div 
+              className="flex flex-col sm:flex-row gap-4 justify-center mb-8"
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.5 }}
+            >
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button size="lg" className="text-lg px-8" asChild>
+                  <a href="#installation">
+                    <Terminal className="w-5 h-5 mr-2" />
+                    Install Now
+                  </a>
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button variant="outline" size="lg" className="text-lg px-8" asChild>
+                  <a href="#demo">
+                    <Sparkles className="w-5 h-5 mr-2" />
+                    View Examples
+                  </a>
+                </Button>
+              </motion.div>
+            </motion.div>
+            
+            {/* Installation Command */}
+            <motion.div 
+              className="bg-slate-900 dark:bg-slate-800 rounded-lg p-4 max-w-2xl mx-auto relative group"
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.6 }}
+              whileHover={{ scale: 1.02 }}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-slate-400 text-sm">Install via shadcn CLI</span>
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                  <CopyButton text={installCommand} />
+                </div>
+              </div>
+              <code className="text-green-400 font-mono text-sm block">
                 npx shadcn@latest add {window.location.origin}/r/use-formedible
+              </code>
+            </motion.div>
+          </motion.div>
+        </section>
+
+        {/* Component Features */}
+        <motion.section 
+          className="container mx-auto px-4 py-16"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.7 }}
+        >
+          <div className="text-center mb-12">
+            <motion.h3 
+              className="text-3xl font-bold mb-4"
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+            >
+              Component Features
+            </motion.h3>
+            <motion.p 
+              className="text-muted-foreground text-lg"
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.1 }}
+            >
+              Everything you need for building powerful forms with shadcn/ui
+            </motion.p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+            {[
+              { icon: Shield, title: "Schema Validation", description: "Built-in Zod schema validation with real-time error handling and type safety", color: "text-blue-500" },
+              { icon: Zap, title: "Component Override", description: "Replace any field component with your custom implementations seamlessly", color: "text-purple-500" },
+              { icon: Sparkles, title: "Custom Wrappers", description: "Add animations, special styling, or extra functionality to any field", color: "text-green-500" },
+              { icon: Users, title: "Multi-Page Forms", description: "Built-in pagination with customizable progress indicators and navigation", color: "text-orange-500" },
+            ].map((feature, index) => (
+              <motion.div
+                key={feature.title}
+                initial={{ y: 30, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.2 + index * 0.1 }}
+                whileHover={{ y: -5 }}
+              >
+                <Card className="h-full hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <feature.icon className={`w-8 h-8 ${feature.color} mb-2`} />
+                    <CardTitle>{feature.title}</CardTitle>
+                    <CardDescription>
+                      {feature.description}
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </motion.section>
+
+        {/* Installation Section */}
+        <motion.section 
+          id="installation" 
+          className="container mx-auto px-4 py-16"
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+        >
+          <Card className="max-w-4xl mx-auto">
+            <CardHeader>
+              <CardTitle className="text-2xl flex items-center gap-2">
+                <Terminal className="w-6 h-6" />
+                Installation & Setup
+              </CardTitle>
+              <CardDescription>
+                Get the use-formedible hook installed in your shadcn/ui project
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div>
+                <h4 className="font-semibold mb-2">Install the component via shadcn CLI</h4>
+                <CodeBlockWithCopy code={installCommand} />
+                <p className="text-sm text-muted-foreground mt-2">
+                  This installs the hook, all field components, and their dependencies automatically.
+                </p>
               </div>
-            </div>
-            <div>
-              <h4 className="font-semibold mb-2">2. Use</h4>
-              <CodeBlock code={`import { useFormedible } from "@/hooks/use-formedible";
+              
+              <div>
+                <h4 className="font-semibold mb-2">Basic usage example</h4>
+                <div className="relative group">
+                  <CodeBlock code={`import { useFormedible } from "@/hooks/use-formedible";
 import { z } from "zod";
 
 const schema = z.object({
   email: z.string().email("Invalid email"),
-  password: z.string().min(8, "At least 8 characters"),
+  message: z.string().min(10, "Message too short"),
 });
 
-const { Form } = useFormedible({
-  schema,
-  fields: [
-    { name: "email", type: "email", label: "Email", page: 1 },
-    { name: "password", type: "password", label: "Password", page: 2 },
-  ],
-  pages: [
-    { page: 1, title: "Login Details" },
-    { page: 2, title: "Security" },
-  ],
-  progress: { showSteps: true },
-  globalWrapper: AnimatedWrapper,
-  onSubmit: async ({ value }) => {
-    console.log(value);
-  },
+export function MyForm() {
+  const { Form } = useFormedible({
+    schema,
+    fields: [
+      { name: "email", type: "email", label: "Email" },
+      { name: "message", type: "textarea", label: "Message" },
+    ],
+    formOptions: {
+      defaultValues: { email: "", message: "" },
+      onSubmit: async ({ value }) => console.log(value),
+    },
+  });
+
+  return <Form />;
+}`}/>
+                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <CopyButton text={`import { useFormedible } from "@/hooks/use-formedible";
+import { z } from "zod";
+
+const schema = z.object({
+  email: z.string().email("Invalid email"),
+  message: z.string().min(10, "Message too short"),
 });
 
-return <Form />;`}/>
-            </div>
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-              <h4 className="font-semibold mb-2 text-blue-800 dark:text-blue-200">✨ New Features</h4>
-              <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
-                <li>• <strong>Schema Validation:</strong> Built-in Zod support for type-safe validation</li>
-                <li>• <strong>Component Override:</strong> Replace any field with custom components</li>
-                <li>• <strong>Custom Wrappers:</strong> Add animations and special styling</li>
-                <li>• <strong>Multi-Page Support:</strong> Built-in pagination with progress tracking</li>
-                <li>• <strong>Conditional Fields:</strong> Show/hide fields based on form state</li>
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
-      </section>
+export function MyForm() {
+  const { Form } = useFormedible({
+    schema,
+    fields: [
+      { name: "email", type: "email", label: "Email" },
+      { name: "message", type: "textarea", label: "Message" },
+    ],
+    formOptions: {
+      defaultValues: { email: "", message: "" },
+      onSubmit: async ({ value }) => console.log(value),
+    },
+  });
 
-      {/* Footer */}
-      <footer className="border-t bg-white/50 dark:bg-slate-950/50 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-md flex items-center justify-center">
-                <Zap className="w-4 h-4 text-white" />
+  return <Form />;
+}`} />
+                  </div>
+                </div>
               </div>
-              <span className="font-semibold">Formedible</span>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Vibed with ❤️ using shadcn/ui, TanStack Form, Zod, and Motion
-            </p>
+              
+              <motion.div 
+                className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800"
+                whileHover={{ scale: 1.01 }}
+              >
+                <h4 className="font-semibold mb-2 text-blue-800 dark:text-blue-200">📦 What gets installed</h4>
+                <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                  <li>• <code>hooks/use-formedible.tsx</code> - Main form hook</li>
+                  <li>• <code>components/fields/*</code> - All field components (text, select, date, etc.)</li>
+                  <li>• All required shadcn/ui components and dependencies</li>
+                  <li>• TypeScript definitions and component interfaces</li>
+                </ul>
+              </motion.div>
+            </CardContent>
+          </Card>
+        </motion.section>
+
+        {/* Component Examples */}
+        <motion.section 
+          id="demo" 
+          className="container mx-auto px-4 py-16"
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+        >
+          <div className="text-center mb-12">
+            <motion.h3 
+              className="text-3xl font-bold mb-4"
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+            >
+              Interactive Component Examples
+            </motion.h3>
+            <motion.p 
+              className="text-muted-foreground text-lg"
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.1 }}
+            >
+              See the useFormedible hook in action with different form configurations
+            </motion.p>
           </div>
-        </div>
-      </footer>
-    </div>
+
+          <Tabs defaultValue="contact" className="max-w-6xl mx-auto">
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.2 }}
+            >
+              <TabsList className="grid w-full grid-cols-4 mb-8">
+                <TabsTrigger value="contact">Simple Form</TabsTrigger>
+                <TabsTrigger value="profile">Enhanced Fields</TabsTrigger>
+                <TabsTrigger value="survey">Custom Components</TabsTrigger>
+                <TabsTrigger value="registration">Multi-Page</TabsTrigger>
+              </TabsList>
+            </motion.div>
+
+            <AnimatePresence mode="wait">
+              <TabsContent value="contact">
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <DemoCard
+                    title="Simple Contact Form"
+                    description="Basic form with schema validation and standard field types"
+                    preview={<contactForm.Form className="space-y-4" />}
+                    code={contactFormCode}
+                    codeTitle="Contact Form Implementation"
+                    codeDescription="Simple form setup with Zod schema validation and basic field configuration"
+                  />
+                </motion.div>
+              </TabsContent>
+
+              <TabsContent value="profile">
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <DemoCard
+                    title="Enhanced Profile Form"
+                    description="Profile form with animated wrappers and advanced field types"
+                    preview={<profileForm.Form className="space-y-4" />}
+                    code={profileFormCode}
+                    codeTitle="Profile Form with Enhanced Features"
+                    codeDescription="Form with custom animated wrappers, date picker, and various field types"
+                  />
+                </motion.div>
+              </TabsContent>
+
+              <TabsContent value="survey">
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <DemoCard
+                    title="Survey with Custom Components"
+                    description="Advanced form featuring slider, switch components, and custom validation"
+                    preview={<surveyForm.Form className="space-y-4" />}
+                    code={surveyFormCode}
+                    codeTitle="Survey Form with Custom Components"
+                    codeDescription="Advanced form showcasing slider input, switch toggle, and enhanced validation"
+                  />
+                </motion.div>
+              </TabsContent>
+
+              <TabsContent value="registration">
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <DemoCard
+                    title="Multi-Page Registration"
+                    description="Complete registration flow with custom progress indicator and page navigation"
+                    preview={<registrationForm.Form className="space-y-4" />}
+                    code={registrationFormCode}
+                    codeTitle="Multi-Page Registration Implementation"
+                    codeDescription="Complete multi-step form with custom progress tracking and page transitions"
+                  />
+                </motion.div>
+              </TabsContent>
+            </AnimatePresence>
+          </Tabs>
+        </motion.section>
+
+        {/* Component API */}
+        <motion.section 
+          className="container mx-auto px-4 py-16"
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+        >
+          <Card className="max-w-4xl mx-auto">
+            <CardHeader>
+              <CardTitle className="text-2xl flex items-center gap-2">
+                <Code className="w-6 h-6" />
+                Component API Reference
+              </CardTitle>
+              <CardDescription>
+                Complete TypeScript interface for the useFormedible hook
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div>
+                <h4 className="font-semibold mb-2">Hook Return Value</h4>
+                <div className="relative group">
+                  <CodeBlock code={`const {
+  form,           // TanStack Form instance
+  Form,           // React component
+  currentPage,    // Current page number
+  totalPages,     // Total pages count
+  goToNextPage,   // Navigate forward
+  goToPreviousPage, // Navigate back
+  setCurrentPage, // Jump to page
+  isFirstPage,    // Boolean
+  isLastPage,     // Boolean
+  progressValue   // Progress 0-100
+} = useFormedible(options);`}/>
+                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <CopyButton text={`const {
+  form,           // TanStack Form instance
+  Form,           // React component
+  currentPage,    // Current page number
+  totalPages,     // Total pages count
+  goToNextPage,   // Navigate forward
+  goToPreviousPage, // Navigate back
+  setCurrentPage, // Jump to page
+  isFirstPage,    // Boolean
+  isLastPage,     // Boolean
+  progressValue   // Progress 0-100
+} = useFormedible(options);`} />
+                  </div>
+                </div>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2">Supported Field Types</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                  {['text', 'email', 'password', 'textarea', 'select', 'checkbox', 'switch', 'number', 'date', 'slider', 'file', 'url'].map(type => (
+                    <motion.code
+                      key={type}
+                      className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-xs cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                      whileHover={{ scale: 1.05 }}
+                      onClick={() => {
+                        navigator.clipboard.writeText(type);
+                        toast.success(`"${type}" copied!`);
+                      }}
+                    >
+                      {type}
+                    </motion.code>
+                  ))}
+                </div>
+              </div>
+              <motion.div 
+                className="bg-slate-50 dark:bg-slate-900 p-4 rounded-lg"
+                whileHover={{ scale: 1.01 }}
+              >
+                <h4 className="font-semibold mb-2">Key Features</h4>
+                <ul className="text-sm space-y-1">
+                  <li>✅ Full TypeScript support with TanStack Form integration</li>
+                  <li>✅ Zod schema validation with real-time error handling</li>
+                  <li>✅ Component override system for custom field implementations</li>
+                  <li>✅ Global and per-field wrapper components for animations</li>
+                  <li>✅ Multi-page forms with progress tracking and navigation</li>
+                  <li>✅ Conditional field rendering based on form state</li>
+                  <li>✅ All shadcn/ui components included and configured</li>
+                </ul>
+              </motion.div>
+            </CardContent>
+          </Card>
+        </motion.section>
+
+        {/* Footer */}
+        <motion.footer 
+          className="border-t bg-white/50 dark:bg-slate-950/50 backdrop-blur-sm"
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+        >
+          <div className="container mx-auto px-4 py-8">
+            <div className="flex items-center justify-between">
+              <motion.div 
+                className="flex items-center gap-3"
+                whileHover={{ scale: 1.02 }}
+              >
+                <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-md flex items-center justify-center">
+                  <Blocks className="w-4 h-4 text-white" />
+                </div>
+                <span className="font-semibold">Formedible</span>
+                <Badge variant="secondary" className="text-xs">
+                  shadcn/ui Registry
+                </Badge>
+              </motion.div>
+              <p className="text-sm text-muted-foreground">
+                Built with shadcn/ui, TanStack Form, Zod, and Radix UI
+              </p>
+            </div>
+          </div>
+        </motion.footer>
+      </div>
+    </>
   );
 } 

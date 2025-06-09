@@ -27,7 +27,8 @@
         "@radix-ui/react-switch",
         "date-fns",
         "react-day-picker",
-        "lucide-react"
+        "lucide-react",
+        "zod"
       ],
       "files": [
         {
