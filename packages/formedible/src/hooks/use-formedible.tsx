@@ -259,11 +259,6 @@ export function useFormedible<TFormValues extends Record<string, any>>(
         validation
       } = fieldConfig;
 
-      // Check conditional rendering
-      if (conditional && formValues && !conditional(formValues)) {
-        return null;
-      }
-
       return (
         <form.Field 
           key={name} 
@@ -271,6 +266,14 @@ export function useFormedible<TFormValues extends Record<string, any>>(
           validators={validation ? { onChange: validation } : undefined}
         >
           {(field) => {
+            // Get current form values directly from the field
+            const currentValues = field.form.state.values;
+            
+            // Check conditional rendering with current form values
+            if (conditional && !conditional(currentValues)) {
+              return null;
+            }
+
             const baseProps = {
               fieldApi: field,
               label,

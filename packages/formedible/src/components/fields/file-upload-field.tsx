@@ -1,10 +1,8 @@
-// src/components/contact/client-form/fields/FileUploadField.tsx
 import React from "react";
 import type { AnyFieldApi } from "@tanstack/react-form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { motion } from "motion/react";
 import { PaperclipIcon, XIcon, UploadCloudIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -49,11 +47,8 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
   };
 
   return (
-    <motion.div
+    <div
       className={cn("space-y-1.5", wrapperClassName)}
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
     >
       {label && (
         <Label className="text-sm font-medium cursor-pointer" onClick={triggerFileInput}>
@@ -70,9 +65,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
         className="hidden"
       />
       {file ? (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
+        <div
           className="flex items-center justify-between p-2.5 border rounded-lg bg-muted/40 shadow-sm hover:shadow-md transition-shadow"
         >
           <div className="flex items-center gap-2 text-sm overflow-hidden">
@@ -92,13 +85,11 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
           >
             <XIcon className="h-4 w-4" />
           </Button>
-        </motion.div>
+        </div>
       ) : (
-        <motion.button
+        <button
           type="button"
           onClick={triggerFileInput}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
           className={cn(
             "w-full flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-lg hover:border-primary transition-colors cursor-pointer bg-background hover:bg-muted/50",
             className,
@@ -110,7 +101,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
             Click or drag and drop a file
           </span>
           {accept && <span className="text-xs text-muted-foreground/80 mt-1">Accepted types: {accept}</span>}
-        </motion.button>
+        </button>
       )}
       {state.meta.isTouched && state.meta.errors.length > 0 && (
         <div className="text-xs text-destructive pt-1">
@@ -119,6 +110,6 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
           ))}
         </div>
       )}
-    </motion.div>
+    </div>
   );
 };
