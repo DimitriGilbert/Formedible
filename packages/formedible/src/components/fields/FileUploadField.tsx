@@ -3,47 +3,48 @@ import React from "react";
 import type { AnyFieldApi } from "@tanstack/react-form";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-// Corrected path assuming FieldMetaMessages is in the provided common folder
-import { FieldMetaMessages } from "@/components/creative-desk/contact/client-form/common-fields/FieldMetaMessages";
 import { cn } from "@/lib/utils";
 import { motion } from "motion/react";
 import { PaperclipIcon, XIcon, UploadCloudIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface FileUploadFieldProps {
-  field: AnyFieldApi;
-  label: string;
+  fieldApi: AnyFieldApi;
+  label?: string;
   accept?: string;
   className?: string;
   wrapperClassName?: string;
+  description?: string;
 }
 
 export const FileUploadField: React.FC<FileUploadFieldProps> = ({
-  field,
+  fieldApi,
   label,
   accept,
   className,
   wrapperClassName,
+  description,
 }) => {
-  const file = field.state.value as File | null;
+  const { name, state, handleChange, handleBlur } = fieldApi;
+  const file = state.value as File | null;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0] ?? null;
-    field.handleChange(selectedFile);
-    field.handleBlur();
+    handleChange(selectedFile);
+    handleBlur();
   };
 
   const handleRemoveFile = () => {
-    field.handleChange(null);
-    const inputElement = document.getElementById(field.name) as HTMLInputElement;
+    handleChange(null);
+    const inputElement = document.getElementById(name) as HTMLInputElement;
     if (inputElement) {
       inputElement.value = "";
     }
-    field.handleBlur();
+    handleBlur();
   };
 
   const triggerFileInput = () => {
-    const inputElement = document.getElementById(field.name) as HTMLInputElement;
+    const inputElement = document.getElementById(name) as HTMLInputElement;
     inputElement?.click();
   };
 
@@ -54,12 +55,15 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
     >
-      <Label className="text-sm font-medium cursor-pointer" onClick={triggerFileInput}>
-        {label}
-      </Label>
+      {label && (
+        <Label className="text-sm font-medium cursor-pointer" onClick={triggerFileInput}>
+          {label}
+        </Label>
+      )}
+      {description && <p className="text-xs text-muted-foreground">{description}</p>}
       <Input
-        id={field.name}
-        name={field.name}
+        id={name}
+        name={name}
         type="file"
         accept={accept}
         onChange={handleFileChange}
@@ -84,7 +88,7 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
             size="icon"
             onClick={handleRemoveFile}
             className="h-7 w-7 text-destructive hover:bg-destructive/10 shrink-0"
-            aria-label="Supprimer le fichier"
+            aria-label="Remove file"
           >
             <XIcon className="h-4 w-4" />
           </Button>
@@ -98,17 +102,23 @@ export const FileUploadField: React.FC<FileUploadFieldProps> = ({
           className={cn(
             "w-full flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-lg hover:border-primary transition-colors cursor-pointer bg-background hover:bg-muted/50",
             className,
-            field.state.meta.errors.length ? "border-destructive hover:border-destructive" : "border-muted-foreground/50",
+            state.meta.errors.length ? "border-destructive hover:border-destructive" : "border-muted-foreground/50",
           )}
         >
           <UploadCloudIcon className="h-8 w-8 text-muted-foreground mb-2" />
           <span className="text-sm font-medium text-muted-foreground">
-            Cliquez ou glissez-déposez un fichier
+            Click or drag and drop a file
           </span>
-          {accept && <span className="text-xs text-muted-foreground/80 mt-1">Types acceptés: {accept}</span>}
+          {accept && <span className="text-xs text-muted-foreground/80 mt-1">Accepted types: {accept}</span>}
         </motion.button>
       )}
-      <FieldMetaMessages field={field} />
+      {state.meta.isTouched && state.meta.errors.length > 0 && (
+        <div className="text-xs text-destructive pt-1">
+          {state.meta.errors.map((err: any, index: number) => (
+            <p key={index}>{typeof err === 'string' ? err : (err as Error)?.message || 'Invalid'}</p>
+          ))}
+        </div>
+      )}
     </motion.div>
   );
 };

@@ -16,4 +16,17 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  server: {
+    port: process.env.PORT ? parseInt(process.env.PORT) : process.env.VITE_PORT ? parseInt(process.env.VITE_PORT) : 5173,
+    open: true,
+  },
+  publicDir: 'public',
+  build: {
+    outDir: 'public',
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+      },
+    },
+  },
 });

@@ -7,10 +7,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { PlusCircleIcon, Trash2Icon, LinkIcon } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import type { SiteInfoItem } from "../clientFormOpts";
-// Corrected path
-import { FieldMetaMessages } from "@/components/creative-desk/contact/client-form/common-fields/FieldMetaMessages";
 import { cn } from "@/lib/utils";
+
+// Define the SiteInfoItem type
+interface SiteInfoItem {
+  id: string;
+  url: string;
+  description: string;
+}
 
 interface SiteListFieldProps {
   fieldApi: AnyFieldApi;
@@ -129,10 +133,16 @@ export const SiteListField: React.FC<SiteListFieldProps> = ({
       </AnimatePresence>
       {sites.length === 0 && (
         <p className="text-xs text-muted-foreground text-center py-2">
-          Aucun site ajouté.
+          No sites added.
         </p>
       )}
-      <FieldMetaMessages field={fieldApi} />
+      {fieldApi.state.meta.isTouched && fieldApi.state.meta.errors.length > 0 && (
+        <div className="text-xs text-destructive pt-1">
+          {fieldApi.state.meta.errors.map((err: any, index: number) => (
+            <p key={index}>{typeof err === 'string' ? err : (err as Error)?.message || 'Invalid'}</p>
+          ))}
+        </div>
+      )}
     </motion.div>
   );
 };
