@@ -219,7 +219,7 @@ export function App() {
                 </a>
               </Button>
               <Button variant="outline" size="sm" asChild>
-                <a href="/r/use-formedible.json" target="_blank">
+                <a href="r/use-formedible.json" target="_blank">
                   <Download className="w-4 h-4 mr-2" />
                   Registry
                 </a>

@@ -10,7 +10,7 @@
     "build:homepage": "vite build",
     "build:registry": "shadcn build",
     "build": "npm run build:pkg && npm run build:homepage && npm run build:registry",
-    "deploy": "npm run build && gh-pages -d public --no-history --dotfiles",
+    "deploy": "gh-pages -d public --no-history --dotfiles",
     "preview": "vite preview",
     "lint": "eslint .",
     "test": "vitest"
