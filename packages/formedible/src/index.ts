@@ -1,12 +1,12 @@
 // Field components
-export * from '@/components/fields/TextField';
-export * from '@/components/fields/TextareaField';
-export * from '@/components/fields/NumberField';
-export * from '@/components/fields/SelectField';
-export * from '@/components/fields/CheckboxField';
-export * from '@/components/fields/SwitchField';
-export * from '@/components/fields/DateField';
+export * from '@/components/fields/text-field';
+export * from '@/components/fields/textarea-field';
+export * from '@/components/fields/number-field';
+export * from '@/components/fields/select-field';
+export * from '@/components/fields/checkbox-field';
+export * from '@/components/fields/switch-field';
+export * from '@/components/fields/date-field';
 
 // Core types and hook
 export type { BaseFieldProps } from '@/lib/formedible/types';
-export { useFormedible } from '@/hooks/useFormedible';
+export { useFormedible } from '@/hooks/use-formedible';

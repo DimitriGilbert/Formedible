@@ -32,44 +32,59 @@
       ],
       "files": [
         {
-          "path": "src/hooks/useFormedible.tsx",
+          "path": "src/hooks/use-formedible.tsx",
           "type": "registry:hook",
           "target": "hooks/use-formedible.tsx"
         },
         {
-          "path": "src/components/fields/TextField.tsx",
+          "path": "src/lib/formedible/types.ts",
+          "type": "registry:hook",
+          "target": "lib/formedible/types.ts"
+        },
+        {
+          "path": "src/components/fields/text-field.tsx",
           "type": "registry:component",
           "target": "components/fields/text-field.tsx"
         },
         {
-          "path": "src/components/fields/TextareaField.tsx",
+          "path": "src/components/fields/textarea-field.tsx",
           "type": "registry:component",
           "target": "components/fields/textarea-field.tsx"
         },
         {
-          "path": "src/components/fields/SelectField.tsx",
+          "path": "src/components/fields/select-field.tsx",
           "type": "registry:component",
           "target": "components/fields/select-field.tsx"
         },
         {
-          "path": "src/components/fields/CheckboxField.tsx",
+          "path": "src/components/fields/checkbox-field.tsx",
           "type": "registry:component",
           "target": "components/fields/checkbox-field.tsx"
         },
         {
-          "path": "src/components/fields/SwitchField.tsx",
+          "path": "src/components/fields/switch-field.tsx",
           "type": "registry:component",
           "target": "components/fields/switch-field.tsx"
         },
         {
-          "path": "src/components/fields/NumberField.tsx",
+          "path": "src/components/fields/number-field.tsx",
           "type": "registry:component",
           "target": "components/fields/number-field.tsx"
         },
         {
-          "path": "src/components/fields/DateField.tsx",
+          "path": "src/components/fields/date-field.tsx",
           "type": "registry:component",
           "target": "components/fields/date-field.tsx"
+        },
+        {
+          "path": "src/components/fields/slider-field.tsx",
+          "type": "registry:component",
+          "target": "components/fields/slider-field.tsx"
+        },
+        {
+          "path": "src/components/fields/file-upload-field.tsx",
+          "type": "registry:component",
+          "target": "components/fields/file-upload-field.tsx"
         }
       ],
       "categories": ["form", "hook"],

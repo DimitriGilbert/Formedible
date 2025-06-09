@@ -5,15 +5,15 @@ import { z } from "zod";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { TextField } from "@/components/fields/TextField";
-import { TextareaField } from "@/components/fields/TextareaField";
-import { SelectField } from "@/components/fields/SelectField";
-import { CheckboxField } from "@/components/fields/CheckboxField";
-import { SwitchField } from "@/components/fields/SwitchField";
-import { NumberField } from "@/components/fields/NumberField";
-import { DateField } from "@/components/fields/DateField";
-import { SliderField } from "@/components/fields/SliderField";
-import { FileUploadField } from "@/components/fields/FileUploadField";
+import { TextField } from "@/components/fields/text-field";
+import { TextareaField } from "@/components/fields/textarea-field";
+import { SelectField } from "@/components/fields/select-field";
+import { CheckboxField } from "@/components/fields/checkbox-field";
+import { SwitchField } from "@/components/fields/switch-field";
+import { NumberField } from "@/components/fields/number-field";
+import { DateField } from "@/components/fields/date-field";
+import { SliderField } from "@/components/fields/slider-field";
+import { FileUploadField } from "@/components/fields/file-upload-field";
 
 interface FormProps {
   className?: string;
