@@ -665,11 +665,13 @@ MIT License. See [LICENSE](LICENSE) for details.
 
 ## 🙏 Credits
 
-Built with love using:
+Vibed with love using:
 - [TanStack Form](https://tanstack.com/form) - Powerful form state management
+- [React](https://react.dev) - The best UI library in the world
+- [Tailwind CSS](https://tailwindcss.com) - The best CSS framework in the world
 - [shadcn/ui](https://ui.shadcn.com) - Beautiful, accessible components
 - [Zod](https://zod.dev) - TypeScript-first schema validation
-- [Radix UI](https://radix-ui.com) - Low-level accessible components
+- [Vite](https://vitejs.dev) - The best build tool in the world
 
 ---
 
