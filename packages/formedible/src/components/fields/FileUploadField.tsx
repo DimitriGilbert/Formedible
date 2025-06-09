@@ -1,0 +1,114 @@
+// src/components/contact/client-form/fields/FileUploadField.tsx
+import React from "react";
+import type { AnyFieldApi } from "@tanstack/react-form";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+// Corrected path assuming FieldMetaMessages is in the provided common folder
+import { FieldMetaMessages } from "@/components/creative-desk/contact/client-form/common-fields/FieldMetaMessages";
+import { cn } from "@/lib/utils";
+import { motion } from "motion/react";
+import { PaperclipIcon, XIcon, UploadCloudIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+interface FileUploadFieldProps {
+  field: AnyFieldApi;
+  label: string;
+  accept?: string;
+  className?: string;
+  wrapperClassName?: string;
+}
+
+export const FileUploadField: React.FC<FileUploadFieldProps> = ({
+  field,
+  label,
+  accept,
+  className,
+  wrapperClassName,
+}) => {
+  const file = field.state.value as File | null;
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0] ?? null;
+    field.handleChange(selectedFile);
+    field.handleBlur();
+  };
+
+  const handleRemoveFile = () => {
+    field.handleChange(null);
+    const inputElement = document.getElementById(field.name) as HTMLInputElement;
+    if (inputElement) {
+      inputElement.value = "";
+    }
+    field.handleBlur();
+  };
+
+  const triggerFileInput = () => {
+    const inputElement = document.getElementById(field.name) as HTMLInputElement;
+    inputElement?.click();
+  };
+
+  return (
+    <motion.div
+      className={cn("space-y-1.5", wrapperClassName)}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
+      <Label className="text-sm font-medium cursor-pointer" onClick={triggerFileInput}>
+        {label}
+      </Label>
+      <Input
+        id={field.name}
+        name={field.name}
+        type="file"
+        accept={accept}
+        onChange={handleFileChange}
+        className="hidden"
+      />
+      {file ? (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex items-center justify-between p-2.5 border rounded-lg bg-muted/40 shadow-sm hover:shadow-md transition-shadow"
+        >
+          <div className="flex items-center gap-2 text-sm overflow-hidden">
+            <PaperclipIcon className="h-5 w-5 text-primary shrink-0" />
+            <span className="truncate" title={file.name}>{file.name}</span>
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
+              ({(file.size / 1024).toFixed(1)} KB)
+            </span>
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={handleRemoveFile}
+            className="h-7 w-7 text-destructive hover:bg-destructive/10 shrink-0"
+            aria-label="Supprimer le fichier"
+          >
+            <XIcon className="h-4 w-4" />
+          </Button>
+        </motion.div>
+      ) : (
+        <motion.button
+          type="button"
+          onClick={triggerFileInput}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className={cn(
+            "w-full flex flex-col items-center justify-center p-4 border-2 border-dashed rounded-lg hover:border-primary transition-colors cursor-pointer bg-background hover:bg-muted/50",
+            className,
+            field.state.meta.errors.length ? "border-destructive hover:border-destructive" : "border-muted-foreground/50",
+          )}
+        >
+          <UploadCloudIcon className="h-8 w-8 text-muted-foreground mb-2" />
+          <span className="text-sm font-medium text-muted-foreground">
+            Cliquez ou glissez-déposez un fichier
+          </span>
+          {accept && <span className="text-xs text-muted-foreground/80 mt-1">Types acceptés: {accept}</span>}
+        </motion.button>
+      )}
+      <FieldMetaMessages field={field} />
+    </motion.div>
+  );
+};
