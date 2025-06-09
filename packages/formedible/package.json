@@ -4,7 +4,10 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsup src/index.ts --format esm,cjs --dts --watch",
-    "build": "tsup src/index.ts --format esm,cjs --dts",
+    "dev:registry": "npx http-server public -p 42357 --cors",
+    "build:pkg": "tsup src/index.ts --format esm,cjs --dts",
+    "build:registry": "shadcn build",
+    "build": "npm run build:pkg && npm run build:registry",
     "lint": "eslint .",
     "test": "vitest"
   },
@@ -37,6 +40,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "jsdom": "^26.1.0",
     "postcss": "^8.5.3",
+    "shadcn": "^2.6.0",
     "tailwindcss": "^4.1.7",
     "tsup": "^8.5.0",
     "typescript": "^5.8.3",

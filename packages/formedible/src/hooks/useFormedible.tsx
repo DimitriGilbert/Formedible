@@ -30,7 +30,13 @@ interface UseFormedibleOptions<TFormValues> {
   submitLabel?: string;
   formClassName?: string;
   fieldClassName?: string;
-  formOptions: any; // Use any to avoid complex TanStack Form typing
+  formOptions?: Partial<{
+    defaultValues: TFormValues;
+    onSubmit: (props: { value: TFormValues; formApi: any }) => any | Promise<any>;
+    onSubmitInvalid: (props: { value: TFormValues; formApi: any }) => void;
+    asyncDebounceMs: number;
+    canSubmitWhenInvalid: boolean;
+  }>;
 }
 
 export function useFormedible<TFormValues extends Record<string, any>>(
@@ -41,10 +47,11 @@ export function useFormedible<TFormValues extends Record<string, any>>(
     submitLabel = "Submit",
     formClassName,
     fieldClassName,
-    formOptions: tsFormOptions,
+    formOptions,
   } = options;
 
-  const form = useForm(tsFormOptions);
+  // Type assertion to work with TanStack Form's complex generics
+  const form = useForm(formOptions as any);
 
   const Form: React.FC<FormProps> = ({ className, children, onSubmit }) => {
     const handleSubmit = (e: React.FormEvent) => {
@@ -64,7 +71,7 @@ export function useFormedible<TFormValues extends Record<string, any>>(
         fieldConfig;
 
       return (
-        <form.Field key={name} name={name as string}>
+        <form.Field key={name} name={name as keyof TFormValues & string}>
           {(fieldApi) => {
             const props = {
               fieldApi,
@@ -106,12 +113,12 @@ export function useFormedible<TFormValues extends Record<string, any>>(
           <>
             {fields.map(renderField)}
             <form.Subscribe
-              selector={(state: any) => ({
+              selector={(state) => ({
                 canSubmit: state.canSubmit,
                 isSubmitting: state.isSubmitting,
               })}
             >
-              {({ canSubmit, isSubmitting }: any) => (
+              {({ canSubmit, isSubmitting }) => (
                 <button
                   type="submit"
                   disabled={!canSubmit || isSubmitting}
