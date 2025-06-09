@@ -1,0 +1,78 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "formedible",
+  "homepage": "https://github.com/DimitriGilbert/Formedible",
+  "items": [
+    {
+      "name": "use-formedible",
+      "type": "registry:hook",
+      "title": "Use Formedible",
+      "description": "A powerful React hook for creating schema-driven forms with TanStack Form and shadcn/ui components",
+      "registryDependencies": [
+        "button",
+        "input",
+        "textarea",
+        "select",
+        "checkbox",
+        "switch",
+        "label",
+        "calendar",
+        "popover"
+      ],
+      "dependencies": [
+        "@tanstack/react-form",
+        "@radix-ui/react-checkbox",
+        "@radix-ui/react-label",
+        "@radix-ui/react-select",
+        "@radix-ui/react-switch",
+        "date-fns",
+        "react-day-picker",
+        "lucide-react"
+      ],
+      "files": [
+        {
+          "path": "src/hooks/useFormedible.tsx",
+          "type": "registry:hook",
+          "target": "hooks/use-formedible.tsx"
+        },
+        {
+          "path": "src/components/fields/TextField.tsx",
+          "type": "registry:component",
+          "target": "components/fields/text-field.tsx"
+        },
+        {
+          "path": "src/components/fields/TextareaField.tsx",
+          "type": "registry:component",
+          "target": "components/fields/textarea-field.tsx"
+        },
+        {
+          "path": "src/components/fields/SelectField.tsx",
+          "type": "registry:component",
+          "target": "components/fields/select-field.tsx"
+        },
+        {
+          "path": "src/components/fields/CheckboxField.tsx",
+          "type": "registry:component",
+          "target": "components/fields/checkbox-field.tsx"
+        },
+        {
+          "path": "src/components/fields/SwitchField.tsx",
+          "type": "registry:component",
+          "target": "components/fields/switch-field.tsx"
+        },
+        {
+          "path": "src/components/fields/NumberField.tsx",
+          "type": "registry:component",
+          "target": "components/fields/number-field.tsx"
+        },
+        {
+          "path": "src/components/fields/DateField.tsx",
+          "type": "registry:component",
+          "target": "components/fields/date-field.tsx"
+        }
+      ],
+      "categories": ["form", "hook"],
+      "docs": "Make sure to install @tanstack/react-form and configure your shadcn/ui components before using this hook."
+    }
+  ]
+} 
