@@ -10,37 +10,16 @@ Formedible is a thin wrapper around TanStack Form that provides a declarative AP
 
 ## 🚀 Quick Start
 
-### Installation via shadcn CLI (Recommended)
+### 📋 Prerequisites
+
+Ensure you have the required shadcn/ui installed.
+
+### 📦 Installation
+
+via shadcn CLI
 
 ```bash
-npx shadcn@latest add https://your-domain.com/r/use-formedible
-```
-
-For local development:
-```bash
-npx shadcn@latest add http://localhost:3000/r/use-formedible
-```
-
-### Manual Installation
-
-```bash
-npm install @tanstack/react-form zod
-```
-
-Then copy the hook and field components from this repository.
-
-## 📋 Prerequisites
-
-Ensure you have the required shadcn/ui components:
-
-```bash
-npx shadcn@latest add button input textarea select checkbox switch label calendar popover progress
-```
-
-And install peer dependencies:
-
-```bash
-npm install @tanstack/react-form @radix-ui/react-checkbox @radix-ui/react-label @radix-ui/react-select @radix-ui/react-switch date-fns react-day-picker lucide-react
+npx shadcn@latest add https://dimitrigilbert.github.io/Formedible/r/use-formedible.json
 ```
 
 ## 🎯 Core Features
@@ -587,7 +566,7 @@ export function ContactForm() {
 
 This component is distributed as a shadcn/ui registry item:
 
-- **Registry URL**: `https://your-domain.com/r/use-formedible`
+- **Registry URL**: `https://dimitrigilbert.github.io/Formedible/r/use-formedible.json`
 - **Type**: `registry:hook`
 - **Categories**: `form`, `hook`
 - **Dependencies**: TanStack Form, Zod, Radix UI components
