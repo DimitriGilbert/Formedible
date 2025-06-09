@@ -10,6 +10,7 @@
     "build:homepage": "vite build",
     "build:registry": "shadcn build",
     "build": "npm run build:pkg && npm run build:homepage && npm run build:registry",
+    "deploy": "npm run build && gh-pages -d public --no-history --dotfiles",
     "preview": "vite preview",
     "lint": "eslint .",
     "test": "vitest"
@@ -41,6 +42,7 @@
     "eslint": "^9.27.0",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
+    "gh-pages": "^6.3.0",
     "jsdom": "^26.1.0",
     "postcss": "^8.5.3",
     "shadcn": "^2.6.0",

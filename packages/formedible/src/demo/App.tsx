@@ -373,7 +373,7 @@ export function App() {
       <section id="quick-start" className="container mx-auto px-4 py-16">
         <Card className="max-w-4xl mx-auto">
           <CardHeader>
-            <CardTitle className="text-2xl">🚀 Quick Start - Enhanced Features</CardTitle>
+            <CardTitle className="text-2xl">🚀 Quick Start</CardTitle>
             <CardDescription>
               Get started with the enhanced Formedible featuring schema validation, component overrides, and multi-page support
             </CardDescription>
@@ -386,7 +386,7 @@ export function App() {
               </div>
             </div>
             <div>
-              <h4 className="font-semibold mb-2">2. Use with schema validation and enhanced features</h4>
+              <h4 className="font-semibold mb-2">2. Use</h4>
               <CodeBlock code={`import { useFormedible } from "@/hooks/use-formedible";
 import { z } from "zod";
 
@@ -439,7 +439,7 @@ return <Form />;`}/>
               <span className="font-semibold">Formedible</span>
             </div>
             <p className="text-sm text-muted-foreground">
-              Enhanced with ❤️ using shadcn/ui, TanStack Form, Zod, and Motion
+              Vibed with ❤️ using shadcn/ui, TanStack Form, Zod, and Motion
             </p>
           </div>
         </div>
