@@ -290,7 +290,7 @@ export function App() {
     },
   });
 
-  const installCommand = `npx shadcn@latest add ${window.location.origin}/Formedible/r/use-formedible`;
+  const installCommand = `npx shadcn@latest add ${window.location.origin}/Formedible/r/use-formedible.json`;
 
   return (
     <>
@@ -427,7 +427,7 @@ export function App() {
                 </div>
               </div>
               <code className="text-green-400 font-mono text-sm block">
-                npx shadcn@latest add {window.location.origin}/Formedible/r/use-formedible
+                npx shadcn@latest add {window.location.origin}/Formedible/r/use-formedible.json
               </code>
             </motion.div>
           </motion.div>
