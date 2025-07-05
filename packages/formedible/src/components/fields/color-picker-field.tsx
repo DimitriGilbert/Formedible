@@ -167,7 +167,7 @@ export const ColorPickerField: React.FC<ColorPickerFieldSpecificProps> = ({
   };
 
   return (
-    <div className={cn("space-y-2", wrapperClassName)} ref={containerRef}>
+    <div className={cn("relative space-y-2", wrapperClassName)} ref={containerRef}>
       {label && (
         <Label className={cn("text-sm font-medium", labelClassName)}>
           {label}

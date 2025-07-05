@@ -178,6 +178,9 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
     }
   }, [config]);
 
+  // Create the form using formedible - call hook at top level
+  const formResult = useFormedible(formedibleConfig);
+
   // Handle empty state early
   if (config.fields.length === 0) {
     return (
@@ -192,9 +195,6 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
       </Card>
     );
   }
-
-  // Create the form using formedible - call hook at top level
-  const formResult = useFormedible(formedibleConfig);
 
   // Handle configuration errors
   if (!formResult) {

@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
@@ -59,7 +59,7 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
   arrayConfig,
 }) => {
   const { name, state, handleChange, handleBlur } = fieldApi;
-  const value = (state.value as any[]) || [];
+  const value = useMemo(() => (state.value as any[]) || [], [state.value]);
   
   const {
     itemType,
@@ -211,7 +211,7 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
         {value.length === 0 && (
           <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
             <p className="text-sm">No items added yet</p>
-            <p className="text-xs mt-1">Click "{addButtonLabel}" to add your first item</p>
+            <p className="text-xs mt-1">Click &quot;{addButtonLabel}&quot; to add your first item</p>
           </div>
         )}
       </div>

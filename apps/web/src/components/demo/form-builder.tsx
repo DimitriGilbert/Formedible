@@ -170,17 +170,47 @@ export const FormBuilder: React.FC = () => {
     const schemaFields: Record<string, any> = {};
     
     formConfig.fields.forEach(field => {
-      let fieldSchema = z.string();
+      let fieldSchema: any;
       
+      // Create appropriate schema based on field type
+      switch (field.type) {
+        case 'number':
+        case 'slider':
+        case 'rating':
+          fieldSchema = z.number();
+          break;
+        case 'checkbox':
+        case 'switch':
+          fieldSchema = z.boolean();
+          break;
+        case 'date':
+          fieldSchema = z.string(); // or z.date() if you parse the string
+          break;
+        case 'multiSelect':
+        case 'array':
+          fieldSchema = z.array(z.string());
+          break;
+        default:
+          fieldSchema = z.string();
+      }
+
       if (field.required) {
-        fieldSchema = fieldSchema.min(1, `${field.label} is required`);
+        if (field.type === 'number' || field.type === 'slider' || field.type === 'rating') {
+          // For numbers, required means not null/undefined
+          fieldSchema = fieldSchema;
+        } else if (field.type === 'checkbox' || field.type === 'switch') {
+          fieldSchema = fieldSchema.refine((val: boolean) => val === true, {
+            message: `${field.label} is required`
+          });
+        } else if (typeof fieldSchema.min === 'function') {
+          fieldSchema = fieldSchema.min(1, `${field.label} is required`);
+        }
       } else {
         fieldSchema = fieldSchema.optional();
       }
       
       schemaFields[field.name] = fieldSchema;
     });
-
     return {
       schema: z.object(schemaFields),
       fields: formConfig.fields.map(field => ({
@@ -223,7 +253,7 @@ export const FormBuilder: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${formConfig.title.toLowerCase().replace(/\\s+/g, '-')}-form.json`;
+    a.download = `${formConfig.title.toLowerCase().replace(/\s+/g, '-')}-form.json`;
     a.click();
     URL.revokeObjectURL(url);
   }, [formConfig, generateFormedibleConfig]);

@@ -2,11 +2,11 @@
 
 ## Build/Test Commands
 - `npm run build` - Build all packages (uses turbo)
-- `cd packages/formedible && npx vitest` - Run tests with vitest
-- `cd packages/formedible && npx vitest run` - Run tests once
-- `cd packages/formedible && npx vitest --run --reporter=verbose <test-file>` - Run single test file
-- `cd packages/formedible && npm run lint` - Run ESLint
-- `cd packages/formedible && npm run build:pkg` - Build package only
+- `npm run build:web` - Build web app
+- `npm run build:pkg` - Build package only
+- `npm run lint` - Run ESLint
+- `npm run lint:web` - Lint web app
+- `npm run lint:pkg` - Lint package only
 
 ## Code Style
 - Use TypeScript with strict mode enabled
@@ -22,3 +22,4 @@
 - React: No need to import React in JSX files (modern JSX transform)
 - Dependencies: Check existing package.json before adding new dependencies
 - Unused vars: Prefix with underscore to ignore ESLint warnings
+

@@ -608,7 +608,13 @@ export default function Home() {
     },
   });
 
-  const installCommand = `npx shadcn@latest add ${window.location.origin}/Formedible/r/use-formedible.json`;
+  const [origin, setOrigin] = React.useState('');
+
+  React.useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
+
+  const installCommand = `npx shadcn@latest add ${origin}/Formedible/r/use-formedible.json`;
 
   return (
     <>

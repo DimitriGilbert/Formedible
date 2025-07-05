@@ -280,6 +280,73 @@ const DefaultPageComponent: React.FC<{
   </div>
 );
 
+interface SectionRendererProps {
+  sectionKey: string;
+  sectionData: {
+    section?: any;
+    groups: Record<string, FieldConfig[]>;
+  };
+  renderField: (field: FieldConfig) => React.ReactNode;
+}
+
+const SectionRenderer: React.FC<SectionRendererProps> = ({ sectionKey, sectionData, renderField }) => {
+  const { section, groups } = sectionData;
+  const [isExpanded, setIsExpanded] = React.useState(
+    section?.defaultExpanded !== false
+  );
+
+  const sectionContent = (
+    <div className="space-y-4">
+      {Object.entries(groups).map(([groupKey, groupFields]) => (
+        <div key={groupKey} className={cn(
+          groupKey !== 'default' ? "p-4 border rounded-lg bg-muted/20" : ""
+        )}>
+          {groupKey !== 'default' && (
+            <h4 className="font-medium text-sm text-muted-foreground mb-3 uppercase tracking-wide">
+              {groupKey}
+            </h4>
+          )}
+          <div className={cn(
+            groupKey !== 'default' ? "space-y-3" : "space-y-4"
+          )}>
+            {(groupFields as FieldConfig[]).map(field => renderField(field))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  if (section && sectionKey !== 'default') {
+    return (
+      <div key={sectionKey} className="space-y-4">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold">{section.title}</h3>
+            {section.collapsible && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="text-muted-foreground hover:text-foreground"
+              >
+                {isExpanded ? 'Collapse' : 'Expand'}
+              </Button>
+            )}
+          </div>
+          {section.description && (
+            <p className="text-muted-foreground text-sm">{section.description}</p>
+          )}
+        </div>
+        
+        {(!section.collapsible || isExpanded) && sectionContent}
+      </div>
+    );
+  }
+
+  return sectionContent;
+};
+
 export function useFormedible<TFormValues extends Record<string, any>>(
   options: UseFormedibleOptions<TFormValues>
 ) {
@@ -766,63 +833,14 @@ export function useFormedible<TFormValues extends Record<string, any>>(
         return acc;
       }, {} as Record<string, { section?: any; groups: Record<string, FieldConfig[]> }>);
 
-      const renderSection = (sectionKey: string, sectionData: any) => {
-        const { section, groups } = sectionData;
-        const [isExpanded, setIsExpanded] = React.useState(
-          section?.defaultExpanded !== false
-        );
-
-        const sectionContent = (
-          <div className="space-y-4">
-            {Object.entries(groups).map(([groupKey, groupFields]) => (
-              <div key={groupKey} className={cn(
-                groupKey !== 'default' ? "p-4 border rounded-lg bg-muted/20" : ""
-              )}>
-                {groupKey !== 'default' && (
-                  <h4 className="font-medium text-sm text-muted-foreground mb-3 uppercase tracking-wide">
-                    {groupKey}
-                  </h4>
-                )}
-                <div className={cn(
-                  groupKey !== 'default' ? "space-y-3" : "space-y-4"
-                )}>
-                                     {(groupFields as FieldConfig[]).map(field => renderField(field))}
-                </div>
-              </div>
-            ))}
-          </div>
-        );
-
-        if (section && sectionKey !== 'default') {
-          return (
-            <div key={sectionKey} className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold">{section.title}</h3>
-                  {section.collapsible && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setIsExpanded(!isExpanded)}
-                      className="text-muted-foreground hover:text-foreground"
-                    >
-                      {isExpanded ? 'Collapse' : 'Expand'}
-                    </Button>
-                  )}
-                </div>
-                {section.description && (
-                  <p className="text-muted-foreground text-sm">{section.description}</p>
-                )}
-              </div>
-              
-              {(!section.collapsible || isExpanded) && sectionContent}
-            </div>
-          );
-        }
-
-        return sectionContent;
-      };
+      const renderSection = (sectionKey: string, sectionData: any) => (
+        <SectionRenderer
+          key={sectionKey}
+          sectionKey={sectionKey}
+          sectionData={sectionData}
+          renderField={renderField}
+        />
+      );
 
       const sectionsToRender = Object.entries(groupedFields);
       

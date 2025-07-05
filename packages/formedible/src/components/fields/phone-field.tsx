@@ -113,7 +113,7 @@ export const PhoneField: React.FC<PhoneFieldSpecificProps> = ({
         setPhoneNumber(value);
       }
     }
-  }, []);
+  }, [value]);
 
   const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;

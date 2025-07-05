@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { Check, X, Loader2 } from 'lucide-react';
 
@@ -43,30 +43,33 @@ export const InlineValidationWrapper: React.FC<InlineValidationWrapperProps> = (
   const hasErrors = state.meta.errors.length > 0;
   const isTouched = state.meta.isTouched;
 
+  // Validation function
+  const validateValue = useCallback(async (currentValue: any) => {
+    if (!enabled || !asyncValidator) return;
+
+    setValidationState(prev => ({ ...prev, isValidating: true }));
+
+    try {
+      const result = await asyncValidator(currentValue);
+      
+      setValidationState({
+        isValidating: false,
+        isValid: result === null,
+        message: result,
+      });
+    } catch (error) {
+      setValidationState({
+        isValidating: false,
+        isValid: false,
+        message: error instanceof Error ? error.message : 'Validation failed',
+      });
+    }
+  }, [enabled, asyncValidator]);
+
   // Debounced validation function
-  const debouncedValidate = useCallback(
-    debounce(async (currentValue: any) => {
-      if (!enabled || !asyncValidator) return;
-
-      setValidationState(prev => ({ ...prev, isValidating: true }));
-
-      try {
-        const result = await asyncValidator(currentValue);
-        
-        setValidationState({
-          isValidating: false,
-          isValid: result === null,
-          message: result,
-        });
-      } catch (error) {
-        setValidationState({
-          isValidating: false,
-          isValid: false,
-          message: error instanceof Error ? error.message : 'Validation failed',
-        });
-      }
-    }, debounceMs),
-    [enabled, asyncValidator, debounceMs]
+  const debouncedValidate = useMemo(
+    () => debounce(validateValue, debounceMs),
+    [validateValue, debounceMs]
   );
 
   // Trigger validation when value changes

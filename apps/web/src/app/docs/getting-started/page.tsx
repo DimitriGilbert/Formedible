@@ -50,7 +50,7 @@ export default function GettingStartedPage() {
 
           <h2>Your First Form</h2>
           
-          <p>Let's create a simple contact form to get you started:</p>
+          <p>Let&apos;s create a simple contact form to get you started:</p>
 
           <pre className="bg-slate-900 text-slate-100 p-4 rounded-lg font-mono text-sm overflow-x-auto">
             <code>{`import { useFormedible } from "@/hooks/use-formedible";
