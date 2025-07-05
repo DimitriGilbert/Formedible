@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Github, Download, Code, Terminal, Package, Blocks, Zap, Shield, Users, Sparkles, Copy, Check, CommandIcon } from "lucide-react";
+import { Code, Terminal, Package, Blocks, Zap, Shield, Users, Sparkles, Copy, Check, CommandIcon } from "lucide-react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
@@ -14,11 +14,12 @@ import { motion, AnimatePresence } from "motion/react";
 
 // Components
 import { DemoCard } from "./components/DemoCard";
-import { AnimatedFieldWrapper } from "./components/AnimatedFieldWrapper";
+
 import { CustomProgress } from "./components/CustomProgress";
+import { FormBuilderDemo } from "./components/FormBuilderDemo";
 
 // Code examples
-import { contactFormCode, profileFormCode, surveyFormCode, registrationFormCode } from "./data/codeExamples";
+import { contactFormCode, profileFormCode, surveyFormCode } from "./data/codeExamples";
 import { CodeBlock } from "./components/CodeBlock";
 
 // Enhanced schemas with proper validation
@@ -48,13 +49,33 @@ const surveySchema = z.object({
   category: z.string().min(1, "Please select a category"),
 });
 
-const registrationSchema = z.object({
-  firstName: z.string().min(2, "First name must be at least 2 characters"),
-  lastName: z.string().min(2, "Last name must be at least 2 characters"),
+
+
+const advancedFieldsSchema = z.object({
+  favoriteColor: z.string().min(1, "Please select a color"),
+  skills: z.array(z.string()).min(1, "Please select at least one skill"),
+  phone: z.string().min(1, "Phone number is required"),
+  experience: z.enum(["beginner", "intermediate", "advanced"], {
+    required_error: "Please select your experience level",
+  }),
+  rating: z.number().min(1, "Please provide a rating").max(5),
+});
+
+const comprehensiveSchema = z.object({
+  // Basic fields
+  name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email"),
-  age: z.number().min(18, "Must be at least 18 years old").max(120, "Invalid age"),
-  country: z.string().min(1, "Please select a country"),
-  bio: z.string().min(10, "Bio must be at least 10 characters"),
+  phone: z.string().min(1, "Phone number is required"),
+  
+  // Advanced fields
+  favoriteColor: z.string().min(1, "Please select a color"),
+  skills: z.array(z.string()).min(1, "Please select at least one skill"),
+  experience: z.enum(["beginner", "intermediate", "advanced"], {
+    required_error: "Please select your experience level",
+  }),
+  satisfaction: z.number().min(1, "Please provide a rating").max(5),
+  
+  // Preferences
   notifications: z.boolean(),
   newsletter: z.boolean(),
 });
@@ -211,6 +232,205 @@ export function App() {
     },
   });
 
+  const advancedFieldsForm = useFormedible({
+    schema: advancedFieldsSchema,
+    fields: [
+      { 
+        name: "favoriteColor", 
+        type: "colorPicker", 
+        label: "Favorite Color",
+        colorConfig: {
+          format: "hex",
+          showPreview: true,
+          presetColors: ["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7", "#DDA0DD", "#98D8C8"]
+        }
+      },
+      { 
+        name: "skills", 
+        type: "multiSelect", 
+        label: "Skills & Technologies",
+        options: [
+          { value: "javascript", label: "JavaScript" },
+          { value: "typescript", label: "TypeScript" },
+          { value: "react", label: "React" },
+          { value: "vue", label: "Vue.js" },
+          { value: "angular", label: "Angular" },
+          { value: "node", label: "Node.js" },
+          { value: "python", label: "Python" },
+          { value: "java", label: "Java" },
+          { value: "csharp", label: "C#" },
+          { value: "go", label: "Go" },
+        ],
+        multiSelectConfig: {
+          searchable: true,
+          creatable: true,
+          maxSelections: 5,
+          placeholder: "Select your skills..."
+        }
+      },
+      { 
+        name: "phone", 
+        type: "phone", 
+        label: "Phone Number",
+        phoneConfig: {
+          defaultCountry: "US",
+          format: "national",
+          allowedCountries: ["US", "CA", "GB", "FR", "DE", "AU"]
+        }
+      },
+      { 
+        name: "experience", 
+        type: "radio", 
+        label: "Experience Level",
+        options: [
+          { value: "beginner", label: "Beginner (0-2 years)" },
+          { value: "intermediate", label: "Intermediate (2-5 years)" },
+          { value: "advanced", label: "Advanced (5+ years)" }
+        ]
+      },
+      { 
+        name: "rating", 
+        type: "rating", 
+        label: "Rate Your Overall Experience",
+        ratingConfig: {
+          max: 5,
+          icon: "star",
+          size: "md",
+          showValue: true,
+          allowHalf: true
+        }
+      },
+    ],
+    submitLabel: "Save Preferences",
+    globalWrapper: EnhancedAnimatedWrapper,
+    formOptions: {
+      defaultValues: {
+        favoriteColor: "#4ECDC4",
+        skills: [],
+        phone: "",
+        experience: "beginner" as const,
+        rating: 0,
+      },
+      onSubmit: async ({ value }) => {
+        console.log("Advanced fields submitted:", value);
+        toast.success("Preferences saved!", {
+          description: "Your advanced preferences have been updated.",
+        });
+      },
+    },
+  });
+
+  const comprehensiveForm = useFormedible({
+    schema: comprehensiveSchema,
+    fields: [
+      // Page 1 - Basic Information
+      { name: "name", type: "text", label: "Full Name", placeholder: "Enter your full name", page: 1 },
+      { name: "email", type: "email", label: "Email Address", placeholder: "your@email.com", page: 1 },
+      { 
+        name: "phone", 
+        type: "phone", 
+        label: "Phone Number", 
+        page: 1,
+        phoneConfig: {
+          defaultCountry: "US",
+          format: "international"
+        }
+      },
+      
+      // Page 2 - Preferences & Style
+      { 
+        name: "favoriteColor", 
+        type: "colorPicker", 
+        label: "Theme Color", 
+        page: 2,
+        colorConfig: {
+          format: "hex",
+          showPreview: true,
+          presetColors: ["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7"]
+        }
+      },
+      { 
+        name: "skills", 
+        type: "multiSelect", 
+        label: "Areas of Interest", 
+        page: 2,
+        options: [
+          { value: "technology", label: "Technology" },
+          { value: "design", label: "Design" },
+          { value: "business", label: "Business" },
+          { value: "marketing", label: "Marketing" },
+          { value: "education", label: "Education" },
+          { value: "healthcare", label: "Healthcare" },
+        ],
+        multiSelectConfig: {
+          searchable: true,
+          maxSelections: 3
+        }
+      },
+      { 
+        name: "experience", 
+        type: "radio", 
+        label: "Experience Level", 
+        page: 2,
+        options: [
+          { value: "beginner", label: "Just getting started" },
+          { value: "intermediate", label: "Some experience" },
+          { value: "advanced", label: "Very experienced" }
+        ]
+      },
+      
+      // Page 3 - Feedback & Settings
+      { 
+        name: "satisfaction", 
+        type: "rating", 
+        label: "How satisfied are you with our service?", 
+        page: 3,
+        ratingConfig: {
+          max: 5,
+          icon: "star",
+          showValue: true
+        }
+      },
+      { name: "notifications", type: "switch", label: "Enable email notifications", page: 3 },
+      { name: "newsletter", type: "checkbox", label: "Subscribe to our newsletter", page: 3 },
+    ],
+    pages: [
+      { page: 1, title: "Contact Information", description: "Let's start with your basic details" },
+      { page: 2, title: "Preferences", description: "Tell us about your preferences and interests" },
+      { page: 3, title: "Final Settings", description: "Complete your profile setup" },
+    ],
+    progress: {
+      component: CustomProgress,
+      className: "mb-6",
+    },
+    submitLabel: "Complete Setup",
+    nextLabel: "Continue →",
+    previousLabel: "← Back",
+    globalWrapper: EnhancedAnimatedWrapper,
+    formOptions: {
+      defaultValues: {
+        name: "",
+        email: "",
+        phone: "",
+        favoriteColor: "#4ECDC4",
+        skills: [],
+        experience: "beginner" as const,
+        satisfaction: 0,
+        notifications: true,
+        newsletter: false,
+      },
+      onSubmit: async ({ value }) => {
+        console.log("Comprehensive form completed:", value);
+        toast.success("Setup completed! 🎉", {
+          description: "Your profile has been set up successfully.",
+        });
+      },
+    },
+    onPageChange: (page, direction) => {
+      console.log(`Navigated to page ${page} via ${direction}`);
+    },
+  });
+
   const surveyForm = useFormedible({
     schema: surveySchema,
     fields: [
@@ -242,53 +462,7 @@ export function App() {
     },
   });
 
-  const registrationForm = useFormedible({
-    schema: registrationSchema,
-    fields: [
-      { name: "firstName", type: "text", label: "First Name", placeholder: "John", page: 1 },
-      { name: "lastName", type: "text", label: "Last Name", placeholder: "Doe", page: 1 },
-      { name: "email", type: "email", label: "Email Address", placeholder: "john@example.com", page: 1 },
-      { name: "age", type: "number", label: "Age", placeholder: "25", min: 18, max: 120, page: 2 },
-      { name: "country", type: "select", label: "Country", options: ["United States", "Canada", "United Kingdom", "Germany", "France", "Other"], page: 2 },
-      { name: "bio", type: "textarea", label: "Tell us about yourself", placeholder: "Write a short bio...", page: 2 },
-      { name: "notifications", type: "switch", label: "Enable email notifications", page: 3 },
-      { name: "newsletter", type: "checkbox", label: "Subscribe to newsletter", page: 3 },
-    ],
-    pages: [
-      { page: 1, title: "Basic Information", description: "Let's start with your basic details" },
-      { page: 2, title: "Personal Details", description: "Tell us more about yourself" },
-      { page: 3, title: "Preferences", description: "Customize your experience" },
-    ],
-    progress: {
-      component: CustomProgress,
-      className: "mb-6",
-    },
-    submitLabel: "Complete Registration",
-    nextLabel: "Continue →",
-    previousLabel: "← Back",
-    globalWrapper: EnhancedAnimatedWrapper,
-    formOptions: {
-      defaultValues: {
-        firstName: "",
-        lastName: "",
-        email: "",
-        age: 18,
-        country: "",
-        bio: "",
-        notifications: true,
-        newsletter: false,
-      },
-      onSubmit: async ({ value }) => {
-        console.log("Registration completed:", value);
-        toast.success("Welcome aboard! 🎉", {
-          description: "Your registration has been completed successfully.",
-        });
-      },
-    },
-    onPageChange: (page, direction) => {
-      console.log(`Navigated to page ${page} via ${direction}`);
-    },
-  });
+
 
   const installCommand = `npx shadcn@latest add ${window.location.origin}/Formedible/r/use-formedible.json`;
 
@@ -322,7 +496,7 @@ export function App() {
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                   <Button variant="outline" size="sm" asChild>
                     <a href="https://github.com/DimitriGilbert/Formedible" target="_blank" rel="noopener noreferrer">
-                      <Github className="w-4 h-4 mr-2" />
+                      <Code className="w-4 h-4 mr-2" />
                       GitHub
                     </a>
                   </Button>
@@ -614,17 +788,19 @@ export function MyForm() {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.2 }}
             >
-              <TabsList className="grid w-full grid-cols-4 mb-8">
+              <TabsList className="grid w-full grid-cols-5 mb-8">
                 <TabsTrigger value="contact">Simple Form</TabsTrigger>
                 <TabsTrigger value="profile">Enhanced Fields</TabsTrigger>
+                <TabsTrigger value="advanced">New Field Types</TabsTrigger>
                 <TabsTrigger value="survey">Custom Components</TabsTrigger>
-                <TabsTrigger value="registration">Multi-Page</TabsTrigger>
+                <TabsTrigger value="comprehensive">Complete Example</TabsTrigger>
               </TabsList>
             </motion.div>
 
             <AnimatePresence mode="wait">
-              <TabsContent value="contact">
+              <TabsContent key="contact" value="contact">
                 <motion.div
+                  key="contact"
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
@@ -641,8 +817,9 @@ export function MyForm() {
                 </motion.div>
               </TabsContent>
 
-              <TabsContent value="profile">
+              <TabsContent key="profile" value="profile">
                 <motion.div
+                  key="profile"
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
@@ -659,8 +836,93 @@ export function MyForm() {
                 </motion.div>
               </TabsContent>
 
-              <TabsContent value="survey">
+              <TabsContent key="advanced" value="advanced">
                 <motion.div
+                  key="advanced"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <DemoCard
+                    title="Advanced Field Types"
+                    description="Showcase of color picker, multi-select, phone, radio, and rating fields"
+                    preview={<advancedFieldsForm.Form className="space-y-4" />}
+                    code={`const advancedFieldsForm = useFormedible({
+  schema: z.object({
+    favoriteColor: z.string().min(1, "Please select a color"),
+    skills: z.array(z.string()).min(1, "Please select at least one skill"),
+    phone: z.string().min(1, "Phone number is required"),
+    experience: z.enum(["beginner", "intermediate", "advanced"]),
+    rating: z.number().min(1).max(5),
+  }),
+  fields: [
+    { 
+      name: "favoriteColor", 
+      type: "colorPicker", 
+      label: "Favorite Color",
+      colorConfig: {
+        format: "hex",
+        showPreview: true,
+        presetColors: ["#FF6B6B", "#4ECDC4", "#45B7D1"]
+      }
+    },
+    { 
+      name: "skills", 
+      type: "multiSelect", 
+      label: "Skills & Technologies",
+      options: [
+        { value: "javascript", label: "JavaScript" },
+        { value: "react", label: "React" },
+        { value: "typescript", label: "TypeScript" }
+      ],
+      multiSelectConfig: {
+        searchable: true,
+        creatable: true,
+        maxSelections: 5
+      }
+    },
+    { 
+      name: "phone", 
+      type: "phone", 
+      label: "Phone Number",
+      phoneConfig: {
+        defaultCountry: "US",
+        format: "national"
+      }
+    },
+    { 
+      name: "experience", 
+      type: "radio", 
+      label: "Experience Level",
+      options: [
+        { value: "beginner", label: "Beginner (0-2 years)" },
+        { value: "intermediate", label: "Intermediate (2-5 years)" },
+        { value: "advanced", label: "Advanced (5+ years)" }
+      ]
+    },
+    { 
+      name: "rating", 
+      type: "rating", 
+      label: "Rate Your Experience",
+      ratingConfig: {
+        max: 5,
+        icon: "star",
+        showValue: true,
+        allowHalf: true
+      }
+    }
+  ]
+});`}
+                    codeTitle="Advanced Field Types Implementation"
+                    codeDescription="Demonstration of color picker, multi-select, phone, radio, and rating field components"
+                  />
+                </motion.div>
+              </TabsContent>
+
+              <TabsContent key="survey" value="survey">
+                <motion.div
+                  key="survey"
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
@@ -677,25 +939,99 @@ export function MyForm() {
                 </motion.div>
               </TabsContent>
 
-              <TabsContent value="registration">
+              <TabsContent key="comprehensive" value="comprehensive">
                 <motion.div
+                  key="comprehensive"
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
                   transition={{ duration: 0.3 }}
                 >
                   <DemoCard
-                    title="Multi-Page Registration"
-                    description="Complete registration flow with custom progress indicator and page navigation"
-                    preview={<registrationForm.Form className="space-y-4" />}
-                    code={registrationFormCode}
-                    codeTitle="Multi-Page Registration Implementation"
-                    codeDescription="Complete multi-step form with custom progress tracking and page transitions"
+                    title="Comprehensive Multi-Page Form"
+                    description="Complete example with all field types, multi-page navigation, and progress tracking"
+                    preview={<comprehensiveForm.Form className="space-y-4" />}
+                    code={`const comprehensiveForm = useFormedible({
+  schema: z.object({
+    name: z.string().min(2),
+    email: z.string().email(),
+    phone: z.string().min(1),
+    favoriteColor: z.string().min(1),
+    skills: z.array(z.string()).min(1),
+    experience: z.enum(["beginner", "intermediate", "advanced"]),
+    satisfaction: z.number().min(1).max(5),
+    notifications: z.boolean(),
+    newsletter: z.boolean(),
+  }),
+  fields: [
+    // Page 1 - Contact
+    { name: "name", type: "text", label: "Full Name", page: 1 },
+    { name: "email", type: "email", label: "Email", page: 1 },
+    { name: "phone", type: "phone", label: "Phone", page: 1 },
+    
+    // Page 2 - Preferences  
+    { name: "favoriteColor", type: "colorPicker", label: "Theme Color", page: 2 },
+    { name: "skills", type: "multiSelect", label: "Interests", page: 2 },
+    { name: "experience", type: "radio", label: "Experience", page: 2 },
+    
+    // Page 3 - Settings
+    { name: "satisfaction", type: "rating", label: "Satisfaction", page: 3 },
+    { name: "notifications", type: "switch", label: "Notifications", page: 3 },
+    { name: "newsletter", type: "checkbox", label: "Newsletter", page: 3 },
+  ],
+  pages: [
+    { page: 1, title: "Contact Information" },
+    { page: 2, title: "Preferences" },
+    { page: 3, title: "Final Settings" },
+  ]
+});`}
+                    codeTitle="Comprehensive Multi-Page Form"
+                    codeDescription="Complete example showcasing all field types with multi-page navigation and progress tracking"
                   />
                 </motion.div>
               </TabsContent>
             </AnimatePresence>
           </Tabs>
+        </motion.section>
+
+        {/* Form Builder Section */}
+        <motion.section 
+          className="w-full bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-blue-950"
+          initial={{ opacity: 0, y: 50 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+        >
+          <div className="container mx-auto px-4 py-8">
+            <div className="text-center mb-8">
+              <motion.h3 
+                className="text-3xl font-bold mb-4"
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+              >
+                Interactive Form Builder
+              </motion.h3>
+              <motion.p 
+                className="text-muted-foreground text-lg max-w-2xl mx-auto"
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.1 }}
+              >
+                Build forms visually with our interactive form builder. Create, customize, and export your forms with ease.
+              </motion.p>
+            </div>
+          </div>
+
+          {/* Full-width builder container */}
+          <motion.div 
+            className="w-full"
+            initial={{ y: 30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            <div className="bg-white dark:bg-slate-900 border-t border-b min-h-[800px]">
+              <FormBuilderDemo />
+            </div>
+          </motion.div>
         </motion.section>
 
         {/* Component API */}
@@ -750,7 +1086,7 @@ export function MyForm() {
               <div>
                 <h4 className="font-semibold mb-2">Supported Field Types</h4>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-                  {['text', 'email', 'password', 'textarea', 'select', 'checkbox', 'switch', 'number', 'date', 'slider', 'file', 'url'].map(type => (
+                  {['text', 'email', 'password', 'textarea', 'select', 'multiSelect', 'checkbox', 'switch', 'radio', 'number', 'date', 'slider', 'rating', 'colorPicker', 'phone', 'file', 'url'].map(type => (
                     <motion.code
                       key={type}
                       className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-xs cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"

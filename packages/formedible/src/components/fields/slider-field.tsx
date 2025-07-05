@@ -1,5 +1,4 @@
 import React from 'react';
-import type { AnyFieldApi } from '@tanstack/react-form';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';

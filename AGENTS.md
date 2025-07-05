@@ -1,0 +1,22 @@
+# Agent Guidelines for Formedible
+
+## Build/Test Commands
+- `npm run build` - Build all packages (uses turbo)
+- `cd packages/formedible && npm run test` - Run tests with vitest
+- `cd packages/formedible && npm run lint` - Run ESLint
+- `cd packages/formedible && npm run build:pkg` - Build package only
+
+## Code Style
+- Use TypeScript with strict mode enabled
+- React functional components with hooks (no class components)
+- Import paths: Use `@/` alias for src directory imports
+- Naming: camelCase for variables/functions, PascalCase for components/types
+- Props: Define interfaces for component props, extend BaseFieldProps when applicable
+- Error handling: Use try/catch blocks, log errors to console with descriptive messages
+- Types: Prefer explicit typing, use `any` sparingly with ESLint warnings
+- Exports: Use named exports for components, default export for main hooks
+- File structure: Components in `/components`, hooks in `/hooks`, types in `/lib/formedible/types.ts`
+- Formatting: Single quotes for strings, semicolons required, 2-space indentation
+- React: No need to import React in JSX files (modern JSX transform)
+- Dependencies: Check existing package.json before adding new dependencies
+- Unused vars: Prefix with underscore to ignore ESLint warnings

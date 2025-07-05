@@ -31,8 +31,10 @@ export const DemoCard: React.FC<DemoCardProps> = ({
           <CardTitle>{title}</CardTitle>
           <CardDescription>{description}</CardDescription>
         </CardHeader>
-        <CardContent>
-          {preview}
+        <CardContent className="max-h-[600px] overflow-y-auto">
+          <div className="relative">
+            {preview}
+          </div>
         </CardContent>
       </Card>
     </TabsContent>

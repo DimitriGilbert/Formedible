@@ -2,6 +2,7 @@
   "name": "formedible-monorepo",
   "version": "1.0.0",
   "main": "index.js",
+  "packageManager": "npm@10.0.0",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "turbo build",

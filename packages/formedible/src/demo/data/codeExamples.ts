@@ -231,4 +231,486 @@ const registrationForm = useFormedible({
   },
 });
 
-return <registrationForm.Form className="space-y-6" />;`; 
+return <registrationForm.Form className="space-y-6" />;`;
+
+// Array Field Example
+export const arrayFieldExample = `const { Form } = useFormedible({
+  fields: [
+    {
+      name: 'emails',
+      type: 'array',
+      label: 'Email Addresses',
+      description: 'Add multiple email addresses',
+      arrayConfig: {
+        itemType: 'email',
+        itemLabel: 'Email',
+        itemPlaceholder: 'Enter email address',
+        minItems: 1,
+        maxItems: 5,
+        addButtonLabel: 'Add Email',
+        removeButtonLabel: 'Remove Email',
+        defaultValue: '',
+      },
+    },
+    {
+      name: 'skills',
+      type: 'array',
+      label: 'Skills',
+      description: 'Rate your skills from 1-10',
+      arrayConfig: {
+        itemType: 'slider',
+        itemLabel: 'Skill',
+        minItems: 0,
+        maxItems: 10,
+        addButtonLabel: 'Add Skill',
+        defaultValue: 5,
+        itemProps: {
+          min: 1,
+          max: 10,
+          step: 1,
+        },
+      },
+    },
+    {
+      name: 'ingredients',
+      type: 'array',
+      label: 'Recipe Ingredients',
+      arrayConfig: {
+        itemType: 'text',
+        itemLabel: 'Ingredient',
+        itemPlaceholder: 'e.g., 2 cups flour',
+        sortable: true,
+        defaultValue: '',
+        itemProps: {
+          datalist: {
+            options: ['flour', 'sugar', 'eggs', 'butter', 'milk'],
+            asyncOptions: async (query) => {
+              // Simulate API call for ingredient suggestions
+              const ingredients = [
+                'all-purpose flour', 'whole wheat flour', 'bread flour',
+                'granulated sugar', 'brown sugar', 'powdered sugar',
+                'large eggs', 'egg whites', 'egg yolks',
+                'unsalted butter', 'salted butter', 'coconut oil',
+                'whole milk', 'skim milk', 'almond milk'
+              ];
+              return ingredients.filter(ingredient => 
+                ingredient.toLowerCase().includes(query.toLowerCase())
+              );
+            },
+            debounceMs: 300,
+            minChars: 2,
+            maxResults: 8,
+          },
+        },
+      },
+    },
+  ],
+});`;
+
+// Datalist Example
+export const datalistExample = `const { Form } = useFormedible({
+  fields: [
+    {
+      name: 'city',
+      type: 'text',
+      label: 'City',
+      placeholder: 'Start typing a city name...',
+      datalist: {
+        options: ['New York', 'Los Angeles', 'Chicago', 'Houston'],
+        asyncOptions: async (query) => {
+          // Simulate API call to city database
+          const response = await fetch(\`/api/cities?q=\${query}\`);
+          const cities = await response.json();
+          return cities.map(city => city.name);
+        },
+        debounceMs: 500,
+        minChars: 3,
+        maxResults: 10,
+      },
+    },
+    {
+      name: 'country',
+      type: 'text',
+      label: 'Country',
+      placeholder: 'Select a country...',
+      datalist: {
+        options: [
+          'United States', 'Canada', 'United Kingdom', 'France',
+          'Germany', 'Italy', 'Spain', 'Australia', 'Japan', 'China'
+        ],
+      },
+    },
+    {
+      name: 'email',
+      type: 'email',
+      label: 'Email Domain',
+      placeholder: 'user@example.com',
+      datalist: {
+        options: [
+          'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com',
+          'icloud.com', 'protonmail.com'
+        ],
+        asyncOptions: async (query) => {
+          // Extract domain from email input
+          const atIndex = query.indexOf('@');
+          if (atIndex === -1) return [];
+          
+          const domain = query.substring(atIndex + 1);
+          if (domain.length < 2) return [];
+          
+          // Simulate domain suggestion API
+          const domains = [
+            'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com',
+            'company.com', 'university.edu', 'organization.org'
+          ];
+          
+          return domains
+            .filter(d => d.includes(domain))
+            .map(d => query.substring(0, atIndex + 1) + d);
+        },
+        debounceMs: 300,
+        minChars: 1,
+      },
+    },
+  ],
+});`;
+
+// Complex Array Example with Nested Objects
+export const complexArrayExample = `const { Form } = useFormedible({
+  fields: [
+    {
+      name: 'contacts',
+      type: 'array',
+      label: 'Contact Information',
+      description: 'Add multiple contacts with their details',
+      arrayConfig: {
+        itemType: 'text', // This will be overridden by custom component
+        itemLabel: 'Contact',
+        minItems: 1,
+        maxItems: 10,
+        addButtonLabel: 'Add Contact',
+        defaultValue: { name: '', email: '', phone: '' },
+        itemComponent: ({ fieldApi, label }) => {
+          const contact = fieldApi.state.value || {};
+          
+          return (
+            <div className="space-y-3 p-4 border rounded-lg">
+              <h4 className="font-medium">{label}</h4>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <TextField
+                  fieldApi={{
+                    ...fieldApi,
+                    state: { ...fieldApi.state, value: contact.name },
+                    handleChange: (value) => fieldApi.handleChange({ ...contact, name: value }),
+                  }}
+                  label="Name"
+                  placeholder="Full name"
+                />
+                <TextField
+                  fieldApi={{
+                    ...fieldApi,
+                    state: { ...fieldApi.state, value: contact.email },
+                    handleChange: (value) => fieldApi.handleChange({ ...contact, email: value }),
+                  }}
+                  type="email"
+                  label="Email"
+                  placeholder="email@example.com"
+                />
+                <TextField
+                  fieldApi={{
+                    ...fieldApi,
+                    state: { ...fieldApi.state, value: contact.phone },
+                    handleChange: (value) => fieldApi.handleChange({ ...contact, phone: value }),
+                  }}
+                  type="tel"
+                  label="Phone"
+                  placeholder="(555) 123-4567"
+                />
+              </div>
+            </div>
+          );
+        },
+      },
+    },
+  ],
+});`;
+
+// New Field Types Examples
+export const newFieldTypesExample = `const { Form } = useFormedible({
+  fields: [
+    // Radio Button Field
+    {
+      name: 'paymentMethod',
+      type: 'radio',
+      label: 'Payment Method',
+      options: [
+        { value: 'credit', label: 'Credit Card' },
+        { value: 'paypal', label: 'PayPal' },
+        { value: 'bank', label: 'Bank Transfer' }
+      ],
+      validation: z.enum(['credit', 'paypal', 'bank']),
+      help: {
+        text: 'Choose your preferred payment method',
+        tooltip: 'This will be used for billing'
+      }
+    },
+
+    // Multi-Select Field
+    {
+      name: 'skills',
+      type: 'multiSelect',
+      label: 'Skills',
+      options: ['React', 'TypeScript', 'Node.js', 'Python', 'Go'],
+      multiSelectConfig: {
+        maxSelections: 5,
+        searchable: true,
+        creatable: true,
+        placeholder: 'Select your skills...'
+      },
+      validation: z.array(z.string()).min(1, 'Select at least one skill'),
+      inlineValidation: {
+        enabled: true,
+        showSuccess: true,
+        asyncValidator: async (skills) => {
+          // Simulate API validation
+          await new Promise(resolve => setTimeout(resolve, 500));
+          return skills.length >= 3 ? null : 'We recommend at least 3 skills';
+        }
+      }
+    },
+
+    // Color Picker Field
+    {
+      name: 'brandColor',
+      type: 'colorPicker',
+      label: 'Brand Color',
+      colorConfig: {
+        format: 'hex',
+        showPreview: true,
+        presetColors: ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF'],
+        allowCustom: true
+      },
+      validation: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid color format'),
+      help: {
+        text: 'Choose your brand primary color',
+        link: { url: 'https://coolors.co', text: 'Need color inspiration?' }
+      }
+    },
+
+    // Rating Field
+    {
+      name: 'satisfaction',
+      type: 'rating',
+      label: 'Satisfaction Rating',
+      ratingConfig: {
+        max: 5,
+        allowHalf: true,
+        icon: 'star',
+        size: 'md',
+        showValue: true
+      },
+      validation: z.number().min(1, 'Please provide a rating'),
+      inlineValidation: {
+        enabled: true,
+        showSuccess: true
+      }
+    },
+
+    // Phone Field
+    {
+      name: 'phone',
+      type: 'phone',
+      label: 'Phone Number',
+      phoneConfig: {
+        defaultCountry: 'US',
+        format: 'international',
+        allowedCountries: ['US', 'CA', 'GB', 'FR', 'DE']
+      },
+      validation: z.string().min(10, 'Phone number is required'),
+      help: {
+        tooltip: 'We\'ll use this for important updates only',
+        position: 'right'
+      }
+    }
+  ]
+});`;
+
+// Field Grouping Example
+export const fieldGroupingExample = `const { Form } = useFormedible({
+  fields: [
+    // Personal Information Section
+    {
+      name: 'firstName',
+      type: 'text',
+      label: 'First Name',
+      section: {
+        title: 'Personal Information',
+        description: 'Tell us about yourself',
+        collapsible: true,
+        defaultExpanded: true
+      },
+      group: 'name',
+      validation: z.string().min(2, 'First name is required')
+    },
+    {
+      name: 'lastName',
+      type: 'text',
+      label: 'Last Name',
+      group: 'name',
+      validation: z.string().min(2, 'Last name is required')
+    },
+    {
+      name: 'email',
+      type: 'email',
+      label: 'Email Address',
+      group: 'contact',
+      validation: z.string().email('Invalid email address'),
+      inlineValidation: {
+        enabled: true,
+                 asyncValidator: async (email) => {
+           // Check if email is already taken
+           const response = await fetch('/api/check-email?email=' + email);
+           const data = await response.json();
+           return data.available ? null : 'Email is already taken';
+         }
+      }
+    },
+    {
+      name: 'phone',
+      type: 'phone',
+      label: 'Phone Number',
+      group: 'contact',
+      phoneConfig: { defaultCountry: 'US', format: 'national' }
+    },
+
+    // Preferences Section
+    {
+      name: 'theme',
+      type: 'radio',
+      label: 'Theme Preference',
+      section: {
+        title: 'Preferences',
+        description: 'Customize your experience',
+        collapsible: true,
+        defaultExpanded: false
+      },
+      options: ['light', 'dark', 'auto'],
+      validation: z.enum(['light', 'dark', 'auto'])
+    },
+    {
+      name: 'notifications',
+      type: 'multiSelect',
+      label: 'Notification Types',
+      options: ['email', 'sms', 'push', 'in-app'],
+      multiSelectConfig: {
+        maxSelections: 3,
+        searchable: false
+      }
+    }
+  ]
+});`;
+
+// Complete Form Example
+export const completeFormExample = `const { Form } = useFormedible({
+  fields: [
+    // Page 1: Basic Information
+    {
+      name: 'profile',
+      type: 'text',
+      label: 'Profile Name',
+      page: 1,
+      validation: z.string().min(3, 'Profile name must be at least 3 characters'),
+      help: {
+        text: 'This will be displayed publicly',
+        tooltip: 'Choose something memorable!'
+      },
+      inlineValidation: {
+        enabled: true,
+        showSuccess: true,
+        asyncValidator: async (name) => {
+                     const response = await fetch('/api/check-username?name=' + name);
+           const data = await response.json();
+           return data.available ? null : 'Username is already taken';
+         }
+       }
+     },
+     {
+       name: 'email',
+       type: 'email',
+       label: 'Email Address',
+       page: 1,
+       validation: z.string().email('Please enter a valid email'),
+       datalist: {
+         asyncOptions: async (query) => {
+           // Suggest common email domains
+           const domains = ['gmail.com', 'yahoo.com', 'outlook.com', 'company.com'];
+           return domains
+             .filter(domain => query.includes('@') && domain.includes(query.split('@')[1]))
+             .map(domain => query.split('@')[0] + '@' + domain);
+         },
+         debounceMs: 300,
+         minChars: 3
+       }
+     },
+
+     // Page 2: Preferences
+     {
+       name: 'interests',
+       type: 'multiSelect',
+       label: 'Interests',
+       page: 2,
+       options: ['Technology', 'Design', 'Business', 'Science', 'Arts'],
+       multiSelectConfig: {
+         maxSelections: 3,
+         searchable: true,
+         creatable: true
+       },
+       validation: z.array(z.string()).min(1, 'Select at least one interest')
+     },
+     {
+       name: 'experience',
+       type: 'rating',
+       label: 'Experience Level',
+       page: 2,
+       ratingConfig: {
+         max: 5,
+         allowHalf: false,
+         icon: 'star',
+         showValue: true
+       },
+       validation: z.number().min(1, 'Please rate your experience')
+     },
+
+     // Page 3: Contact Details
+     {
+       name: 'contacts',
+       type: 'array',
+       label: 'Contact Methods',
+       page: 3,
+       arrayConfig: {
+         itemType: 'phone',
+         itemLabel: 'Phone Number',
+         minItems: 1,
+         maxItems: 3,
+         addButtonLabel: 'Add Phone',
+         removeButtonLabel: 'Remove'
+       },
+       validation: z.array(z.string()).min(1, 'At least one contact method is required')
+     }
+   ],
+   pages: [
+     { page: 1, title: 'Basic Information', description: 'Let us start with the basics' },
+     { page: 2, title: 'Your Preferences', description: 'Tell us what you are interested in' },
+     { page: 3, title: 'Contact Details', description: 'How can we reach you?' }
+   ],
+   progress: {
+     showSteps: true,
+     showPercentage: true
+   },
+   formOptions: {
+     onSubmit: async ({ value }) => {
+       console.log('Form submitted:', value);
+       // Handle form submission
+     }
+   }
+ });`; 
