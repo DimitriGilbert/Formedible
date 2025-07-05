@@ -22,7 +22,7 @@ export default defineConfig({
   },
   publicDir: 'public',
   build: {
-    outDir: 'public',
+    outDir: 'out',
     rollupOptions: {
       input: {
         main: path.resolve(__dirname, 'index.html'),
