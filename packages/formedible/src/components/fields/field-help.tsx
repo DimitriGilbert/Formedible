@@ -70,7 +70,7 @@ export const FieldHelp: React.FC<FieldHelpProps> = ({
               {/* Tooltip arrow */}
               <div
                 className={cn(
-                  "absolute w-0 h-0 border-2 border-transparent border-black",
+                  "absolute w-0 h-0 border-2 border-transparent",
                   {
                     'top-full left-1/2 -translate-x-1/2 border-t-black border-b-0': position === 'top',
                     'bottom-full left-1/2 -translate-x-1/2 border-b-black border-t-0': position === 'bottom',
