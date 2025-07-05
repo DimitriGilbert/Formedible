@@ -404,6 +404,9 @@ export function useFormedible<TFormValues extends Record<string, any>>(
   // Calculate progress
   const progressValue = hasPages ? ((currentPage - 1) / (totalPages - 1)) * 100 : 100;
 
+  // Create a ref to store the form instance for the onSubmit callback
+  const formRef = React.useRef<any>(null);
+
   // Setup form with schema validation if provided
   const formConfig = {
     ...formOptions,
@@ -418,7 +421,9 @@ export function useFormedible<TFormValues extends Record<string, any>>(
         try {
           const result = await formOptions.onSubmit!(props);
           // Reset form on successful submit if option is enabled
-          form.reset();
+          if (formRef.current) {
+            formRef.current.reset();
+          }
           return result;
         } catch (error) {
           throw error;
@@ -428,6 +433,11 @@ export function useFormedible<TFormValues extends Record<string, any>>(
   };
 
   const form = useForm(formConfig as any);
+
+  // Store form reference for the onSubmit callback
+  React.useEffect(() => {
+    formRef.current = form;
+  }, [form]);
 
   // Set up form event listeners if provided
   React.useEffect(() => {

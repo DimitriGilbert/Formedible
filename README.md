@@ -339,6 +339,10 @@ Returns an object with:
 - `isFirstPage`: Boolean if on first page
 - `isLastPage`: Boolean if on last page
 - `progressValue`: Progress percentage (0-100)
+- `isSubmitting`: Boolean indicating if the form is currently submitting
+- `isValid`: Boolean indicating if the form is currently valid
+- `isDirty`: Boolean indicating if the form has been modified
+- `values`: The current form values
 
 ### Options
 
@@ -347,7 +351,27 @@ interface UseFormedibleOptions<TFormValues> {
   // Core options
   fields?: FieldConfig[];                    // Field configurations for auto-rendering
   schema?: z.ZodSchema<TFormValues>;         // Zod schema for validation
-  formOptions?: TanStackFormOptions;         // TanStack Form options
+  formOptions?: {                            // TanStack Form options
+    defaultValues: TFormValues;
+    onSubmit: (props: { value: TFormValues; formApi: any }) => any | Promise<any>;
+    onSubmitInvalid?: (props: { value: TFormValues; formApi: any }) => void;
+    onChange?: (props: { value: TFormValues; formApi: any }) => void;
+    onBlur?: (props: { value: TFormValues; formApi: any }) => void;
+    onFocus?: (props: { value: TFormValues; formApi: any }) => void;
+    onReset?: (props: { value: TFormValues; formApi: any }) => void;
+    asyncDebounceMs?: number;
+    canSubmitWhenInvalid?: boolean;
+    validators?: {
+      onChange?: z.ZodSchema<any>;
+      onChangeAsync?: z.ZodSchema<any>;
+      onChangeAsyncDebounceMs?: number;
+      onBlur?: z.ZodSchema<any>;
+      onBlurAsync?: z.ZodSchema<any>;
+      onBlurAsyncDebounceMs?: number;
+      onSubmit?: z.ZodSchema<any>;
+      onSubmitAsync?: z.ZodSchema<any>;
+    };
+  };
   
   // UI Customization
   submitLabel?: string;                      // Submit button text (default: "Submit")
@@ -369,6 +393,23 @@ interface UseFormedibleOptions<TFormValues> {
     children: React.ReactNode; 
     field: FieldConfig;
   }>;
+  
+  // Form behavior
+  autoSubmitOnChange?: boolean;              // Auto-submit form on value change
+  autoSubmitDebounceMs?: number;             // Debounce time for auto-submit
+  disabled?: boolean;                        // Disable entire form
+  loading?: boolean;                         // Show loading state
+  resetOnSubmitSuccess?: boolean;            // Reset form after successful submit
+  showSubmitButton?: boolean;                // Show/hide submit button
+  
+  // Form-level event handlers
+  onFormReset?: (e: React.FormEvent, formApi: any) => void;
+  onFormInput?: (e: React.FormEvent, formApi: any) => void;
+  onFormInvalid?: (e: React.FormEvent, formApi: any) => void;
+  onFormKeyDown?: (e: React.KeyboardEvent, formApi: any) => void;
+  onFormKeyUp?: (e: React.KeyboardEvent, formApi: any) => void;
+  onFormFocus?: (e: React.FocusEvent, formApi: any) => void;
+  onFormBlur?: (e: React.FocusEvent, formApi: any) => void;
 }
 ```
 
@@ -376,17 +417,18 @@ interface UseFormedibleOptions<TFormValues> {
 
 ```typescript
 interface FieldConfig {
+  // Core properties
   name: string;                              // Field name (required)
   type: string;                              // Field type (required)
   label?: string;                            // Field label
   placeholder?: string;                      // Field placeholder
   description?: string;                      // Field description/help text
   
-  // Type-specific options
-  options?: string[] | Array<{value: string; label: string}>; // For select fields
-  min?: number;                              // For number/date fields
-  max?: number;                              // For number/date fields
-  step?: number;                             // For number fields
+  // Basic options
+  options?: string[] | Array<{value: string; label: string}>; // For select/radio fields
+  min?: number;                              // For number/date/slider fields
+  max?: number;                              // For number/date/slider fields
+  step?: number;                             // For number/slider fields
   accept?: string;                           // For file fields
   multiple?: boolean;                        // For file/select fields
   
@@ -399,7 +441,82 @@ interface FieldConfig {
   page?: number;                             // Page number (multi-page forms)
   validation?: z.ZodSchema<any>;             // Field-specific validation
   conditional?: (values: any) => boolean;    // Conditional rendering logic
-  dependencies?: string[];                   // Field dependencies (future use)
+  dependencies?: string[];                   // Field dependencies
+  
+  // Array field configuration
+  arrayConfig?: {
+    itemType: string;                        // Type of items in array
+    itemLabel?: string;                      // Label for each item
+    itemPlaceholder?: string;                // Placeholder for each item
+    itemValidation?: z.ZodSchema<any>;       // Validation for each item
+    minItems?: number;                       // Minimum number of items
+    maxItems?: number;                       // Maximum number of items
+    addButtonLabel?: string;                 // Label for add button
+    removeButtonLabel?: string;              // Label for remove button
+    itemComponent?: React.ComponentType<any>; // Custom component for each item
+    sortable?: boolean;                      // Whether items can be reordered
+    defaultValue?: any;                      // Default value for new items
+  };
+  
+  // Help and tooltip configuration
+  help?: {
+    text?: string;                           // Help text displayed below field
+    tooltip?: string;                        // Tooltip text on hover/focus
+    position?: 'top' | 'bottom' | 'left' | 'right'; // Tooltip position
+    link?: { url: string; text: string };    // Help link
+  };
+  
+  // Inline validation configuration
+  inlineValidation?: {
+    enabled?: boolean;                       // Enable inline validation
+    debounceMs?: number;                     // Debounce time for validation
+    showSuccess?: boolean;                   // Show success state
+    asyncValidator?: (value: any) => Promise<string | null>; // Async validation
+  };
+  
+  // Field grouping and sections
+  group?: string;                            // Group name for organizing fields
+  section?: {
+    title: string;                           // Section title
+    description?: string;                    // Section description
+    collapsible?: boolean;                   // Whether section can be collapsed
+    defaultExpanded?: boolean;               // Default expansion state
+  };
+  
+  // Rating field specific
+  ratingConfig?: {
+    max?: number;                            // Maximum rating (default 5)
+    allowHalf?: boolean;                     // Allow half ratings
+    icon?: 'star' | 'heart' | 'thumbs';      // Rating icon type
+    size?: 'sm' | 'md' | 'lg';               // Icon size
+    showValue?: boolean;                     // Show numeric value
+  };
+  
+  // Phone field specific
+  phoneConfig?: {
+    defaultCountry?: string;                 // Default country code
+    format?: 'national' | 'international';  // Phone format
+    allowedCountries?: string[];             // Allowed country codes
+    placeholder?: string;                    // Custom placeholder
+  };
+  
+  // Color picker specific
+  colorConfig?: {
+    format?: 'hex' | 'rgb' | 'hsl';          // Color format
+    showPreview?: boolean;                   // Show color preview
+    presetColors?: string[];                 // Preset color options
+    allowCustom?: boolean;                   // Allow custom colors
+  };
+  
+  // Multi-select specific
+  multiSelectConfig?: {
+    maxSelections?: number;                  // Maximum selections
+    searchable?: boolean;                    // Enable search
+    creatable?: boolean;                     // Allow creating new options
+    placeholder?: string;                    // Placeholder text
+    noOptionsText?: string;                  // Text when no options
+    loadingText?: string;                    // Loading text
+  };
 }
 ```
 
@@ -411,15 +528,20 @@ interface FieldConfig {
 | `email` | `TextField` | Email input with validation |
 | `password` | `TextField` | Password input |
 | `url` | `TextField` | URL input |
-| `tel` | `TextField` | Telephone input |
 | `textarea` | `TextareaField` | Multi-line text input |
 | `select` | `SelectField` | Dropdown selection |
+| `multiSelect` | `MultiSelectField` | Multiple selection dropdown with search |
 | `checkbox` | `CheckboxField` | Boolean checkbox |
 | `switch` | `SwitchField` | Toggle switch |
+| `radio` | `RadioField` | Radio button group |
 | `number` | `NumberField` | Number input with min/max/step |
 | `date` | `DateField` | Date picker with calendar |
 | `slider` | `SliderField` | Range slider input |
+| `rating` | `RatingField` | Star rating component |
+| `phone` | `PhoneField` | International phone number input |
+| `colorPicker` | `ColorPickerField` | Color picker with preview |
 | `file` | `FileUploadField` | File upload with drag & drop |
+| `array` | `ArrayField` | Dynamic array of fields with add/remove |
 
 ## 🎭 Component Architecture
 
@@ -607,13 +729,24 @@ This component is distributed as a shadcn/ui registry item:
 ### Files Included
 
 - `hooks/use-formedible.tsx` - Main hook
+- `lib/formedible/types.ts` - TypeScript type definitions
 - `components/fields/text-field.tsx` - Text input component
 - `components/fields/textarea-field.tsx` - Textarea component  
 - `components/fields/select-field.tsx` - Select dropdown component
+- `components/fields/multi-select-field.tsx` - Multi-select dropdown component
 - `components/fields/checkbox-field.tsx` - Checkbox component
 - `components/fields/switch-field.tsx` - Switch toggle component
+- `components/fields/radio-field.tsx` - Radio button group component
 - `components/fields/number-field.tsx` - Number input component
 - `components/fields/date-field.tsx` - Date picker component
+- `components/fields/slider-field.tsx` - Range slider component
+- `components/fields/rating-field.tsx` - Star rating component
+- `components/fields/phone-field.tsx` - International phone input component
+- `components/fields/color-picker-field.tsx` - Color picker component
+- `components/fields/file-upload-field.tsx` - File upload component
+- `components/fields/array-field.tsx` - Dynamic array field component
+- `components/fields/field-help.tsx` - Help text component
+- `components/fields/inline-validation-wrapper.tsx` - Validation wrapper component
 
 ## 🤝 Comparison with Raw TanStack Form
 
