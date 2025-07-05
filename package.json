@@ -4,10 +4,17 @@
   "main": "index.js",
   "packageManager": "npm@10.0.0",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "build": "turbo build",
+    "build:web": "turbo -F web build",
+    "build:pkg": "turbo -F formedible build",
     "dev": "turbo dev",
-    "dev:web": "turbo -F web dev"
+    "dev:web": "turbo -F web dev",
+    "dev:pkg": "turbo -F formedible dev",
+    "lint": "turbo lint",
+    "lint:web": "turbo -F web lint",
+    "lint:pkg": "turbo -F formedible lint",
+    "test": "turbo test",
+    "test:pkg": "turbo -F formedible test"
   },
   "keywords": [],
   "author": "",
@@ -15,16 +22,10 @@
   "description": "",
   "private": true,
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "apps/*"
   ],
   "devDependencies": {
     "turbo": "^2.5.3"
-  },
-  "dependencies": {
-    "@radix-ui/react-tabs": "^1.1.12",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
-    "lucide-react": "^0.513.0",
-    "tailwind-merge": "^3.3.0"
   }
 }

@@ -43,4 +43,4 @@ export const CustomProgress: React.FC<{
       </div>
     </div>
   </div>
-); 
+);

@@ -2,7 +2,9 @@
 
 ## Build/Test Commands
 - `npm run build` - Build all packages (uses turbo)
-- `cd packages/formedible && npm run test` - Run tests with vitest
+- `cd packages/formedible && npx vitest` - Run tests with vitest
+- `cd packages/formedible && npx vitest run` - Run tests once
+- `cd packages/formedible && npx vitest --run --reporter=verbose <test-file>` - Run single test file
 - `cd packages/formedible && npm run lint` - Run ESLint
 - `cd packages/formedible && npm run build:pkg` - Build package only
 

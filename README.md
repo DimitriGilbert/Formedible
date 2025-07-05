@@ -8,6 +8,38 @@
 
 Formedible is a thin wrapper around TanStack Form that provides a declarative API for building complex forms with shadcn/ui components. It features schema validation, multi-page support, component overrides, custom wrappers, and rich field types.
 
+## 🏗️ Project Structure
+
+This is a monorepo containing:
+- **`packages/formedible/`** - The core library package
+- **`apps/web/`** - Demo website and documentation (Next.js with static export)
+
+## 🚀 Development
+
+### Quick Start
+```bash
+# Install dependencies
+npm install
+
+# Build everything
+npm run build
+
+# Develop the library
+npm run dev:pkg
+
+# Develop the website
+npm run dev:web
+```
+
+### Available Scripts
+- `npm run build` - Build all packages
+- `npm run build:pkg` - Build library only  
+- `npm run build:web` - Build website only
+- `npm run dev:pkg` - Develop library with watch mode
+- `npm run dev:web` - Develop website
+- `npm run lint` - Lint all packages
+- `npm run test:pkg` - Run library tests
+
 ## 🚀 Quick Start
 
 ### 📋 Prerequisites
@@ -19,7 +51,7 @@ Ensure you have the required shadcn/ui installed.
 via shadcn CLI
 
 ```bash
-npx shadcn@latest add https://dimitrigilbert.github.io/Formedible/r/use-formedible.json
+npx shadcn@latest add formedible.com/r/use-formedible.json
 ```
 
 ## 🎯 Core Features
@@ -566,7 +598,7 @@ export function ContactForm() {
 
 This component is distributed as a shadcn/ui registry item:
 
-- **Registry URL**: `https://dimitrigilbert.github.io/Formedible/r/use-formedible.json`
+- **Registry URL**: `formedible.com/r/use-formedible.json`
 - **Type**: `registry:hook`
 - **Categories**: `form`, `hook`
 - **Dependencies**: TanStack Form, Zod, Radix UI components
@@ -642,21 +674,35 @@ return <Form />;
 git clone https://github.com/DimitriGilbert/Formedible
 cd Formedible
 npm install
-npm run dev
+
+# Develop the library
+npm run dev:pkg
+
+# Develop the website
+npm run dev:web
 ```
 
-The registry will be available at `http://localhost:3000/r/use-formedible.json`
-
-### Building the Registry
+### Building
 
 ```bash
-npm run registry:build
+# Build everything
+npm run build
+
+# Build library only
+npm run build:pkg
+
+# Build website only  
+npm run build:web
 ```
 
-### Testing Components
+### Testing
 
 ```bash
-npm run test
+# Test the library
+npm run test:pkg
+
+# Lint everything
+npm run lint
 ```
 
 ## 📄 License
