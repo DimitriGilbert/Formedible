@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { FormBuilderDemo } from "@/components/demo/form-builder-demo";
 
 export default function BuilderPage() {
   return (
@@ -41,19 +42,9 @@ export default function BuilderPage() {
         transition={{ delay: 0.2 }}
       >
         <div className="bg-white dark:bg-slate-900 border-t border-b min-h-[800px]">
-          <div className="flex items-center justify-center h-[800px]">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold mb-4">Form Builder Coming Soon</h2>
-              <p className="text-muted-foreground mb-6">
-                The interactive form builder is being migrated from the demo package.
-                <br />
-                Check back soon for the full builder experience!
-              </p>
-              <Button asChild>
-                <Link href="/">
-                  Return to Home
-                </Link>
-              </Button>
+          <div className="flex items-center justify-center">
+            <div className="w-full">
+              <FormBuilderDemo />
             </div>
           </div>
         </div>
