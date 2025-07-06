@@ -16,6 +16,7 @@ import { SliderField } from './slider-field';
 import { FileUploadField } from './file-upload-field';
 
 // Map of field types to components
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const fieldTypeComponents: Record<string, React.ComponentType<any>> = {
   text: TextField,
   email: TextField,
@@ -37,16 +38,17 @@ export interface ArrayFieldSpecificProps extends BaseFieldProps {
     itemType: string;
     itemLabel?: string;
     itemPlaceholder?: string;
-    itemValidation?: any;
+    itemValidation?: unknown;
     minItems?: number;
     maxItems?: number;
     addButtonLabel?: string;
     removeButtonLabel?: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     itemComponent?: React.ComponentType<any>;
     sortable?: boolean;
-    defaultValue?: any;
+    defaultValue?: unknown;
     // Additional props to pass to item components
-    itemProps?: Record<string, any>;
+    itemProps?: Record<string, unknown>;
   };
 }
 
@@ -100,13 +102,14 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
   }, [value, handleChange]);
 
   const moveItem = useCallback((fromIndex: number, toIndex: number) => {
+    if (!sortable) return;
     if (fromIndex === toIndex) return;
     
     const newValue = [...value];
     const [movedItem] = newValue.splice(fromIndex, 1);
     newValue.splice(toIndex, 0, movedItem);
     handleChange(newValue);
-  }, [value, handleChange]);
+  }, [value, handleChange, sortable]);
 
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
@@ -203,7 +206,7 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
                   accept: itemProps.accept,
                   multiple: itemProps.multiple 
                 })}
-                {...(itemType === 'date' && itemProps.dateProps)}
+                {...(itemType === 'date' && typeof itemProps.dateProps === 'object' && itemProps.dateProps ? itemProps.dateProps : {})}
                 {...(['text', 'email', 'password', 'url', 'tel'].includes(itemType) && {
                   type: itemType,
                   datalist: itemProps.datalist,

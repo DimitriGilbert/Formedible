@@ -1,5 +1,4 @@
 // Testing utilities for Formedible forms
-import type { FormedibleFormApi } from '@/lib/formedible/types';
 
 export interface FormTesterConfig<T extends Record<string, unknown>> {
   fields?: Array<{

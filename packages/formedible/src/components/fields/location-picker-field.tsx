@@ -22,6 +22,10 @@ interface LocationValue {
   address?: string;
 }
 
+interface SearchResult extends LocationValue {
+  id: string | number;
+}
+
 interface LocationPickerFieldProps extends BaseFieldProps {
   locationConfig?: {
     apiKey?: string;
@@ -53,7 +57,7 @@ export const LocationPickerField: React.FC<LocationPickerFieldProps> = ({
 
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<LocationValue | null>(
     fieldApi.state.value || (defaultLocation ? { ...defaultLocation, address: "Default Location" } : null)

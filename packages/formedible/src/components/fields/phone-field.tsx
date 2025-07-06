@@ -242,7 +242,7 @@ export const PhoneField: React.FC<PhoneFieldSpecificProps> = ({
 
       {state.meta.isTouched && state.meta.errors.length > 0 && (
         <div className="text-xs text-destructive pt-1">
-          {state.meta.errors.map((err: any, index: number) => (
+          {state.meta.errors.map((err: string | Error, index: number) => (
             <p key={index}>{typeof err === 'string' ? err : (err as Error)?.message || 'Invalid'}</p>
           ))}
         </div>

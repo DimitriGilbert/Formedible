@@ -100,13 +100,14 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
   }, [value, handleChange]);
 
   const moveItem = useCallback((fromIndex: number, toIndex: number) => {
+    if (!sortable) return;
     if (fromIndex === toIndex) return;
     
     const newValue = [...value];
     const [movedItem] = newValue.splice(fromIndex, 1);
     newValue.splice(toIndex, 0, movedItem);
     handleChange(newValue);
-  }, [value, handleChange]);
+  }, [value, handleChange, sortable]);
 
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 

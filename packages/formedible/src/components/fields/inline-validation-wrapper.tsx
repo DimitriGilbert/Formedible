@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { Check, X, Loader2 } from 'lucide-react';
 import type { AnyFieldApi } from '@tanstack/react-form';
-import type { FieldValidationError } from '@/lib/formedible/types';
+
 
 interface InlineValidationWrapperProps {
   children: React.ReactNode;
@@ -174,6 +174,7 @@ export const InlineValidationWrapper: React.FC<InlineValidationWrapperProps> = (
 };
 
 // Debounce utility function
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function debounce<T extends (...args: any[]) => any>(
   func: T,
   wait: number

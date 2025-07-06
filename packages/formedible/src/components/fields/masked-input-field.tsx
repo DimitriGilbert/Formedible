@@ -12,7 +12,7 @@ interface MaskedInputFieldProps extends BaseFieldProps {
     showMask?: boolean;
     guide?: boolean;
     keepCharPositions?: boolean;
-    pipe?: (conformedValue: string, config: any) => false | string | { value: string; indexesOfPipedChars: number[] };
+    pipe?: (conformedValue: string, config: unknown) => false | string | { value: string; indexesOfPipedChars: number[] };
   };
 }
 
