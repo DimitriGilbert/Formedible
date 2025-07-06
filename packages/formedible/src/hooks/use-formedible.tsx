@@ -523,6 +523,9 @@ export function useFormedible<TFormValues extends Record<string, any>>(
   // Refs for async validation debouncing
   const asyncValidationTimeouts = React.useRef<Record<string, NodeJS.Timeout>>({});
   
+  // Keep track of AbortControllers for async validations
+  const asyncValidationAbortControllers = React.useRef<Record<string, AbortController>>({});
+  
   // Cross-field validation function
   const validateCrossFields = React.useCallback((values: Partial<TFormValues>) => {
     const errors: Record<string, string> = {};
@@ -550,6 +553,15 @@ export function useFormedible<TFormValues extends Record<string, any>>(
     const asyncConfig = asyncValidation[fieldName];
     if (!asyncConfig) return;
     
+    // Cancel any existing validation for this field
+    if (asyncValidationAbortControllers.current[fieldName]) {
+      asyncValidationAbortControllers.current[fieldName].abort();
+    }
+    
+    // Create new abort controller
+    const abortController = new AbortController();
+    asyncValidationAbortControllers.current[fieldName] = abortController;
+    
     // Clear existing timeout
     if (asyncValidationTimeouts.current[fieldName]) {
       clearTimeout(asyncValidationTimeouts.current[fieldName]);
@@ -564,7 +576,12 @@ export function useFormedible<TFormValues extends Record<string, any>>(
     // Debounce the validation
     asyncValidationTimeouts.current[fieldName] = setTimeout(async () => {
       try {
+        if (abortController.signal.aborted) return;
+        
         const error = await asyncConfig.validator(value);
+        
+        if (abortController.signal.aborted) return;
+        
         setAsyncValidationStates(prev => ({
           ...prev,
           [fieldName]: { loading: false, error: error || undefined }
@@ -830,6 +847,11 @@ export function useFormedible<TFormValues extends Record<string, any>>(
       // Clear async validation timeouts
       Object.values(asyncValidationTimeouts.current).forEach(timeout => {
         clearTimeout(timeout);
+      });
+      
+      // Cancel all in-flight async validations
+      Object.values(asyncValidationAbortControllers.current).forEach(controller => {
+        controller.abort();
       });
     });
 
