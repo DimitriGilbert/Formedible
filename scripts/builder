@@ -248,7 +248,7 @@ handle_version_bump() {
 
 commit_changes() {
   if [[ "$NO_PUBLISH" == true ]]; then
-    log_warning "Skipping commit (--no-publish flag used)")
+    log_warning "Skipping commit (--no-publish flag used)"
     return
   fi
   
