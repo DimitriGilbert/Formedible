@@ -26,6 +26,7 @@ RELEASE_NAME=""
 NO_PUBLISH=false
 SKIP_BUILD=false
 SKIP_GITHUB=false
+SKIP_WEB_DEPLOY=false
 VERSION_BUMP_LEVEL=""
 
 while [[ $# -gt 0 ]]; do
@@ -46,6 +47,10 @@ while [[ $# -gt 0 ]]; do
       SKIP_GITHUB=true
       shift
       ;;
+    --skip-web-deploy)
+      SKIP_WEB_DEPLOY=true
+      shift
+      ;;
     --version-bump)
       VERSION_BUMP_LEVEL="$2"
       shift 2
@@ -58,6 +63,7 @@ while [[ $# -gt 0 ]]; do
       echo "  --no-publish         Create release files but don't publish to GitHub"
       echo "  --skip-build         Skip the application build step"
       echo "  --skip-github        Skip GitHub release creation"
+      echo "  --skip-web-deploy    Skip web application deployment to gh-pages"
       echo "  --version-bump <level> Automatically bump version (patch, minor, major) and use it as release name"
       echo "  -h, --help           Show this help message"
       echo ""
@@ -66,6 +72,7 @@ while [[ $# -gt 0 ]]; do
       echo "  $0 --release v0.1.1                  # Build and create GitHub release"
       echo "  $0 --version-bump patch               # Bump patch version and build"
       echo "  $0 --skip-build --release v0.1.1     # Skip build, create release from existing build"
+      echo "  $0 --skip-web-deploy                  # Build without deploying web app"
       exit 0
       ;;
     *)
@@ -177,6 +184,51 @@ build_web() {
   fi
   
   log_success "Web build completed"
+}
+
+deploy_web() {
+  if [[ "$SKIP_WEB_DEPLOY" == true ]]; then
+    log_info "Skipping web deployment (--skip-web-deploy flag)"
+    return
+  fi
+  
+  if [[ "$NO_PUBLISH" == true ]]; then
+    log_info "Skipping web deployment (--no-publish flag)"
+    return
+  fi
+  
+  if [[ ! -d "$WEB_DIST_DIR" ]]; then
+    log_error "Web build output not found. Run build first."
+    exit 1
+  fi
+  
+  log_info "Preparing web deployment..."
+  
+  # Navigate to web app directory
+  pushd apps/web > /dev/null
+  
+  # Run export script to prepare deployment files
+  log_info "Running export preparation..."
+  npm run export
+  
+  # Check if gh-pages is available
+  if ! command -v npx &> /dev/null; then
+    log_error "npx is not available. Please install Node.js with npm."
+    exit 1
+  fi
+  
+  # Deploy to gh-pages
+  log_info "Deploying to gh-pages..."
+  if npm run deploy; then
+    log_success "Web application deployed to gh-pages successfully!"
+    log_info "Your site should be available at: https://$(git config --get remote.origin.url | sed 's/.*github.com[:/]\([^/]*\)\/\([^.]*\).*/\1.github.io\/\2/')/"
+  else
+    log_error "Web deployment failed"
+    popd > /dev/null
+    exit 1
+  fi
+  
+  popd > /dev/null
 }
 
 create_release_artifacts() {
@@ -403,6 +455,9 @@ main() {
   if [[ "$SKIP_GITHUB" == true ]]; then
     log_info "GitHub release creation will be skipped"
   fi
+  if [[ "$SKIP_WEB_DEPLOY" == true ]]; then
+    log_info "Web deployment will be skipped"
+  fi
   
   echo ""
   
@@ -424,6 +479,7 @@ main() {
   update_web_components
   update_registry
   build_web
+  deploy_web
   create_release_artifacts
   commit_changes
   create_github_release
