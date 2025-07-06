@@ -75,7 +75,7 @@ export const DateField: React.FC<BaseFieldProps> = ({
       </Popover>
       {fieldApi.state.meta.isTouched && fieldApi.state.meta.errors.length > 0 && (
         <div className="text-xs text-destructive pt-1">
-          {fieldApi.state.meta.errors.map((err: any, index: number) => (
+          {fieldApi.state.meta.errors.map((err: string, index: number) => (
             <p key={index}>{String(err)}</p>
           ))}
         </div>

@@ -3,7 +3,7 @@ import React, { useState, useMemo } from "react";
 import { useForm } from "@tanstack/react-form";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
-import type { FormedibleFormApi, FieldComponentProps } from "@/lib/formedible/types";
+import type { FormedibleFormApi, FieldComponentProps, BaseFieldProps } from "@/lib/formedible/types";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { TextField } from "@/components/fields/text-field";
@@ -465,7 +465,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     disabled,
     loading,
     resetOnSubmitSuccess,
-    showSubmitButton,
+    showSubmitButton = true,
     onFormReset,
     onFormInput,
     onFormInvalid,
@@ -1154,7 +1154,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
                 minItems: arrayConfig.minItems,
                 maxItems: arrayConfig.maxItems,
                 itemValidation: arrayConfig.itemValidation,
-                itemComponent: arrayConfig.itemComponent as any,
+                itemComponent: arrayConfig.itemComponent as React.ComponentType<BaseFieldProps>,
                 addButtonText: arrayConfig.addButtonLabel,
                 removeButtonText: arrayConfig.removeButtonLabel,
                 defaultValue: arrayConfig.defaultValue

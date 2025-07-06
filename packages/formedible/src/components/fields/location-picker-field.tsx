@@ -46,11 +46,9 @@ export const LocationPickerField: React.FC<LocationPickerFieldProps> = ({
 }) => {
   const {
     defaultLocation = { lat: 40.7128, lng: -74.0060 }, // NYC default
-    zoom = 13,
     searchPlaceholder = "Search for a location...",
     enableSearch = true,
-    enableGeolocation = true,
-    mapProvider = 'openstreetmap'
+    enableGeolocation = true
   } = locationConfig;
 
   const [searchQuery, setSearchQuery] = useState("");

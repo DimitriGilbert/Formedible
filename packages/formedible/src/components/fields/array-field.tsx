@@ -1,5 +1,5 @@
 'use client';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
@@ -59,7 +59,7 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
   arrayConfig,
 }) => {
   const { name, state, handleChange, handleBlur } = fieldApi;
-  const value = useMemo(() => (state.value as any[]) || [], [state.value]);
+  const value = useMemo(() => (state.value as unknown[]) || [], [state.value]);
   
   const {
     itemType,
@@ -93,11 +93,22 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
     handleBlur();
   }, [value, minItems, handleChange, handleBlur]);
 
-  const updateItem = useCallback((index: number, newItemValue: any) => {
+  const updateItem = useCallback((index: number, newItemValue: unknown) => {
     const newValue = [...value];
     newValue[index] = newItemValue;
     handleChange(newValue);
   }, [value, handleChange]);
+
+  const moveItem = useCallback((fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return;
+    
+    const newValue = [...value];
+    const [movedItem] = newValue.splice(fromIndex, 1);
+    newValue.splice(toIndex, 0, movedItem);
+    handleChange(newValue);
+  }, [value, handleChange]);
+
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
 
 
@@ -113,7 +124,7 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
           isValidating: false,
         },
       },
-      handleChange: (newValue: any) => updateItem(index, newValue),
+      handleChange: (newValue: unknown) => updateItem(index, newValue),
       handleBlur: () => handleBlur(),
       form: fieldApi.form,
     };
@@ -146,9 +157,23 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
               <button
                 type="button"
                 className="mt-2 p-1 hover:bg-muted rounded cursor-grab active:cursor-grabbing"
-                onMouseDown={(e) => {
-                  // Simple drag implementation - you might want to use a library like react-beautiful-dnd
+                draggable
+                onDragStart={(e) => {
+                  setDraggedIndex(index);
+                  e.dataTransfer.effectAllowed = 'move';
+                }}
+                onDragEnd={() => {
+                  setDraggedIndex(null);
+                }}
+                onDragOver={(e) => {
                   e.preventDefault();
+                  e.dataTransfer.dropEffect = 'move';
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (draggedIndex !== null && draggedIndex !== index) {
+                    moveItem(draggedIndex, index);
+                  }
                 }}
               >
                 <GripVertical className="h-4 w-4 text-muted-foreground" />
@@ -230,7 +255,7 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
       
       {state.meta.isTouched && state.meta.errors.length > 0 && (
         <div className="text-xs text-destructive pt-1">
-          {state.meta.errors.map((err: any, index: number) => (
+          {state.meta.errors.map((err: string, index: number) => (
             <p key={index}>{typeof err === 'string' ? err : (err as Error)?.message || 'Invalid'}</p>
           ))}
         </div>
