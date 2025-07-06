@@ -20,6 +20,10 @@ import { MultiSelectField } from "@/components/fields/multi-select-field";
 import { ColorPickerField } from "@/components/fields/color-picker-field";
 import { RatingField } from "@/components/fields/rating-field";
 import { PhoneField } from "@/components/fields/phone-field";
+import { LocationPickerField } from "@/components/fields/location-picker-field";
+import { DurationPickerField } from "@/components/fields/duration-picker-field";
+import { AutocompleteField } from "@/components/fields/autocomplete-field";
+import { MaskedInputField } from "@/components/fields/masked-input-field";
 import { InlineValidationWrapper } from "@/components/fields/inline-validation-wrapper";
 import { FieldHelp } from "@/components/fields/field-help";
 
@@ -145,6 +149,46 @@ interface FieldConfig {
     noOptionsText?: string; // Text when no options
     loadingText?: string; // Loading text
   };
+  // Location picker specific
+  locationConfig?: {
+    apiKey?: string;
+    defaultLocation?: { lat: number; lng: number };
+    zoom?: number;
+    searchPlaceholder?: string;
+    enableSearch?: boolean;
+    enableGeolocation?: boolean;
+    mapProvider?: 'google' | 'openstreetmap';
+  };
+  // Duration picker specific
+  durationConfig?: {
+    format?: 'hms' | 'hm' | 'ms' | 'hours' | 'minutes' | 'seconds';
+    maxHours?: number;
+    maxMinutes?: number;
+    maxSeconds?: number;
+    showLabels?: boolean;
+    allowNegative?: boolean;
+  };
+  // Autocomplete specific
+  autocompleteConfig?: {
+    options?: string[] | { value: string; label: string }[];
+    asyncOptions?: (query: string) => Promise<string[] | { value: string; label: string }[]>;
+    debounceMs?: number;
+    minChars?: number;
+    maxResults?: number;
+    allowCustom?: boolean;
+    placeholder?: string;
+    noOptionsText?: string;
+    loadingText?: string;
+  };
+  // Masked input specific
+  maskedInputConfig?: {
+    mask: string | ((value: string) => string);
+    placeholder?: string;
+    showMask?: boolean;
+    guide?: boolean;
+    keepCharPositions?: boolean;
+    pipe?: (conformedValue: string, config: any) => false | string | { value: string; indexesOfPipedChars: number[] };
+  };
 }
 
 interface PageConfig {
@@ -222,6 +266,57 @@ interface UseFormedibleOptions<TFormValues> {
   onFormKeyUp?: (e: React.KeyboardEvent, formApi: any) => void;
   onFormFocus?: (e: React.FocusEvent, formApi: any) => void;
   onFormBlur?: (e: React.FocusEvent, formApi: any) => void;
+  // Advanced validation features
+  crossFieldValidation?: {
+    fields: (keyof TFormValues)[];
+    validator: (values: Partial<TFormValues>) => string | null;
+    message: string;
+  }[];
+  asyncValidation?: {
+    [fieldName: string]: {
+      validator: (value: any) => Promise<string | null>;
+      debounceMs?: number;
+      loadingMessage?: string;
+    };
+  };
+  // Form analytics and tracking
+  analytics?: {
+    onFieldFocus?: (fieldName: string, timestamp: number) => void;
+    onFieldBlur?: (fieldName: string, timeSpent: number) => void;
+    onFormAbandon?: (completionPercentage: number) => void;
+    onPageChange?: (fromPage: number, toPage: number, timeSpent: number) => void;
+    onFieldChange?: (fieldName: string, value: any, timestamp: number) => void;
+    onFormStart?: (timestamp: number) => void;
+    onFormComplete?: (timeSpent: number, formData: any) => void;
+  };
+  // Layout configuration
+  layout?: {
+    type: 'grid' | 'flex' | 'tabs' | 'accordion' | 'stepper';
+    columns?: number;
+    gap?: string;
+    responsive?: boolean;
+    className?: string;
+  };
+  // Conditional sections
+  conditionalSections?: {
+    condition: (values: TFormValues) => boolean;
+    fields: string[];
+    layout?: {
+      type: 'grid' | 'flex' | 'tabs' | 'accordion' | 'stepper';
+      columns?: number;
+      gap?: string;
+      responsive?: boolean;
+      className?: string;
+    };
+  }[];
+  // Form persistence
+  persistence?: {
+    key: string;
+    storage: 'localStorage' | 'sessionStorage';
+    debounceMs?: number;
+    exclude?: string[];
+    restoreOnMount?: boolean;
+  };
 }
 
 const defaultFieldComponents: Record<string, React.ComponentType<any>> = {
@@ -243,6 +338,10 @@ const defaultFieldComponents: Record<string, React.ComponentType<any>> = {
   colorPicker: ColorPickerField,
   rating: RatingField,
   phone: PhoneField,
+  location: LocationPickerField,
+  duration: DurationPickerField,
+  autocomplete: AutocompleteField,
+  masked: MaskedInputField,
 };
 
 const DefaultProgressComponent: React.FC<{
@@ -378,9 +477,23 @@ export function useFormedible<TFormValues extends Record<string, any>>(
     onFormKeyUp,
     onFormFocus,
     onFormBlur,
+    // Advanced features
+    crossFieldValidation = [],
+    asyncValidation = {},
+    analytics,
+    layout,
+    conditionalSections = [],
+    persistence,
   } = options;
 
   const [currentPage, setCurrentPage] = useState(1);
+  
+  // Advanced features state
+  const [crossFieldErrors, setCrossFieldErrors] = useState<Record<string, string>>({});
+  const [asyncValidationStates, setAsyncValidationStates] = useState<Record<string, { loading: boolean; error?: string }>>({});
+  const [formStartTime] = useState<number>(Date.now());
+  const [fieldFocusTimes, setFieldFocusTimes] = useState<Record<string, number>>({});
+  const [pageStartTime, setPageStartTime] = useState<number>(Date.now());
 
   // Combine default components with user overrides
   const fieldComponents = { ...defaultFieldComponents, ...defaultComponents };
@@ -406,6 +519,72 @@ export function useFormedible<TFormValues extends Record<string, any>>(
 
   // Create a ref to store the form instance for the onSubmit callback
   const formRef = React.useRef<any>(null);
+  
+  // Refs for async validation debouncing
+  const asyncValidationTimeouts = React.useRef<Record<string, NodeJS.Timeout>>({});
+  
+  // Cross-field validation function
+  const validateCrossFields = React.useCallback((values: Partial<TFormValues>) => {
+    const errors: Record<string, string> = {};
+    
+    crossFieldValidation.forEach((validation) => {
+      const relevantValues = validation.fields.reduce((acc, field) => {
+        acc[field] = values[field];
+        return acc;
+      }, {} as Partial<TFormValues>);
+      
+      const error = validation.validator(relevantValues);
+      if (error) {
+        validation.fields.forEach(field => {
+          errors[field as string] = validation.message;
+        });
+      }
+    });
+    
+    setCrossFieldErrors(errors);
+    return errors;
+  }, [crossFieldValidation]);
+  
+  // Async validation function
+  const validateFieldAsync = React.useCallback(async (fieldName: string, value: any) => {
+    const asyncConfig = asyncValidation[fieldName];
+    if (!asyncConfig) return;
+    
+    // Clear existing timeout
+    if (asyncValidationTimeouts.current[fieldName]) {
+      clearTimeout(asyncValidationTimeouts.current[fieldName]);
+    }
+    
+    // Set loading state
+    setAsyncValidationStates(prev => ({
+      ...prev,
+      [fieldName]: { loading: true }
+    }));
+    
+    // Debounce the validation
+    asyncValidationTimeouts.current[fieldName] = setTimeout(async () => {
+      try {
+        const error = await asyncConfig.validator(value);
+        setAsyncValidationStates(prev => ({
+          ...prev,
+          [fieldName]: { loading: false, error: error || undefined }
+        }));
+        
+        // Update form field error if needed
+        if (formRef.current) {
+          formRef.current.setFieldMeta(fieldName, (prev: any) => ({
+            ...prev,
+            errors: error ? [error] : []
+          }));
+        }
+      } catch (err) {
+        setAsyncValidationStates(prev => ({
+          ...prev,
+          [fieldName]: { loading: false, error: 'Validation failed' }
+        }));
+      }
+    }, asyncConfig.debounceMs || 500);
+  }, [asyncValidation]);
 
   // Setup form with schema validation if provided
   const formConfig = {
@@ -419,7 +598,23 @@ export function useFormedible<TFormValues extends Record<string, any>>(
     ...(resetOnSubmitSuccess && formOptions?.onSubmit && {
       onSubmit: async (props: any) => {
         try {
+          // Run cross-field validation before submit
+          const crossFieldErrors = validateCrossFields(props.value as Partial<TFormValues>);
+          if (Object.keys(crossFieldErrors).length > 0) {
+            throw new Error('Cross-field validation failed');
+          }
+          
+          // Call analytics if provided
+          if (analytics?.onFormComplete) {
+            const timeSpent = Date.now() - formStartTime;
+            analytics.onFormComplete(timeSpent, props.value);
+          }
+          
           const result = await formOptions.onSubmit!(props);
+          
+          // Clear storage on successful submit
+          clearStorage();
+          
           // Reset form on successful submit if option is enabled
           if (formRef.current) {
             formRef.current.reset();
@@ -439,6 +634,73 @@ export function useFormedible<TFormValues extends Record<string, any>>(
     formRef.current = form;
   }, [form]);
 
+  // Form persistence logic
+  const persistenceTimeout = React.useRef<NodeJS.Timeout | undefined>(undefined);
+  
+  const saveToStorage = React.useCallback((values: Partial<TFormValues>) => {
+    if (!persistence) return;
+    
+    try {
+      const storage = persistence.storage === 'localStorage' ? localStorage : sessionStorage;
+      const filteredValues = persistence.exclude 
+        ? Object.fromEntries(
+            Object.entries(values as Record<string, any>).filter(([key]) => !persistence.exclude!.includes(key))
+          )
+        : values;
+      
+      storage.setItem(persistence.key, JSON.stringify({
+        values: filteredValues,
+        timestamp: Date.now(),
+        currentPage
+      }));
+    } catch (error) {
+      console.warn('Failed to save form data to storage:', error);
+    }
+  }, [persistence, currentPage]);
+  
+  const clearStorage = React.useCallback(() => {
+    if (!persistence) return;
+    
+    try {
+      const storage = persistence.storage === 'localStorage' ? localStorage : sessionStorage;
+      storage.removeItem(persistence.key);
+    } catch (error) {
+      console.warn('Failed to clear form data from storage:', error);
+    }
+  }, [persistence]);
+  
+  const loadFromStorage = React.useCallback(() => {
+    if (!persistence?.restoreOnMount) return null;
+    
+    try {
+      const storage = persistence.storage === 'localStorage' ? localStorage : sessionStorage;
+      const saved = storage.getItem(persistence.key);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return parsed;
+      }
+    } catch (error) {
+      console.warn('Failed to load form data from storage:', error);
+    }
+    return null;
+  }, [persistence]);
+
+  // Restore form data on mount
+  React.useEffect(() => {
+    const savedData = loadFromStorage();
+    if (savedData && savedData.values) {
+      // Restore form values
+      Object.entries(savedData.values as Record<string, any>).forEach(([key, value]) => {
+        form.setFieldValue(key, value);
+      });
+      
+      // Restore current page if it was saved
+      if (savedData.currentPage && savedData.currentPage <= totalPages) {
+        setCurrentPage(savedData.currentPage);
+      }
+    }
+  }, [loadFromStorage, form, totalPages]);
+
   // Set up form event listeners if provided
   React.useEffect(() => {
     const unsubscribers: (() => void)[] = [];
@@ -446,10 +708,28 @@ export function useFormedible<TFormValues extends Record<string, any>>(
     let onChangeTimeout: NodeJS.Timeout;
     let onBlurTimeout: NodeJS.Timeout;
 
-    if (formOptions?.onChange || autoSubmitOnChange) {
+    // Call analytics onFormStart if provided
+    if (analytics?.onFormStart) {
+      analytics.onFormStart(formStartTime);
+    }
+
+    if (formOptions?.onChange || autoSubmitOnChange || crossFieldValidation.length > 0 || analytics || persistence) {
       const unsubscribe = form.store.subscribe(() => {
         const formApi = form;
         const values = formApi.state.values;
+        
+        // Run cross-field validation on change
+        if (crossFieldValidation.length > 0) {
+          validateCrossFields(values as Partial<TFormValues>);
+        }
+        
+        // Save to storage (debounced)
+        if (persistence) {
+          clearTimeout(persistenceTimeout.current);
+          persistenceTimeout.current = setTimeout(() => {
+            saveToStorage(values as Partial<TFormValues>);
+          }, persistence.debounceMs || 1000);
+        }
         
         // Call user's onChange handler only if form is valid (debounced)
         if (formOptions?.onChange && formApi.state.isValid) {
@@ -472,8 +752,8 @@ export function useFormedible<TFormValues extends Record<string, any>>(
       unsubscribers.push(unsubscribe);
     }
 
-    // Set up onBlur event listener
-    if (formOptions?.onBlur) {
+    // Set up onBlur event listener and analytics tracking
+    if (formOptions?.onBlur || analytics) {
       let lastFocusedField: string | null = null;
       
       const handleBlur = (event: FocusEvent) => {
@@ -481,12 +761,21 @@ export function useFormedible<TFormValues extends Record<string, any>>(
         const fieldName = target.getAttribute('name');
         
         if (fieldName && lastFocusedField === fieldName) {
-          clearTimeout(onBlurTimeout);
-          onBlurTimeout = setTimeout(() => {
-            const formApi = form;
-            const values = formApi.state.values;
-            formOptions.onBlur!({ value: values as TFormValues, formApi });
-          }, 100); // 100ms debounce for blur
+          // Analytics tracking
+          if (analytics?.onFieldBlur && fieldFocusTimes[fieldName]) {
+            const timeSpent = Date.now() - fieldFocusTimes[fieldName];
+            analytics.onFieldBlur(fieldName, timeSpent);
+          }
+          
+          // User's onBlur handler
+          if (formOptions?.onBlur) {
+            clearTimeout(onBlurTimeout);
+            onBlurTimeout = setTimeout(() => {
+              const formApi = form;
+              const values = formApi.state.values;
+              formOptions.onBlur!({ value: values as TFormValues, formApi });
+            }, 100); // 100ms debounce for blur
+          }
         }
       };
 
@@ -494,15 +783,41 @@ export function useFormedible<TFormValues extends Record<string, any>>(
         const target = event.target as HTMLElement;
         const fieldName = target.getAttribute('name');
         lastFocusedField = fieldName;
+        
+        // Analytics tracking
+        if (fieldName && analytics?.onFieldFocus) {
+          const timestamp = Date.now();
+          setFieldFocusTimes(prev => ({ ...prev, [fieldName]: timestamp }));
+          analytics.onFieldFocus(fieldName, timestamp);
+        }
       };
 
-      // Add event listeners to document for blur/focus events
+      const handleChange = (event: Event) => {
+        const target = event.target as HTMLElement;
+        const fieldName = target.getAttribute('name');
+        
+        if (fieldName && analytics?.onFieldChange) {
+          const value = (target as any).value;
+          analytics.onFieldChange(fieldName, value, Date.now());
+          
+          // Trigger async validation if configured
+          if (asyncValidation[fieldName]) {
+            validateFieldAsync(fieldName, value);
+          }
+        }
+      };
+
+      // Add event listeners to document for blur/focus/change events
       document.addEventListener('blur', handleBlur, true);
       document.addEventListener('focus', handleFocus, true);
+      document.addEventListener('change', handleChange, true);
+      document.addEventListener('input', handleChange, true);
       
       unsubscribers.push(() => {
         document.removeEventListener('blur', handleBlur, true);
         document.removeEventListener('focus', handleFocus, true);
+        document.removeEventListener('change', handleChange, true);
+        document.removeEventListener('input', handleChange, true);
       });
     }
 
@@ -511,6 +826,11 @@ export function useFormedible<TFormValues extends Record<string, any>>(
       clearTimeout(autoSubmitTimeout);
       clearTimeout(onChangeTimeout);
       clearTimeout(onBlurTimeout);
+      clearTimeout(persistenceTimeout.current);
+      // Clear async validation timeouts
+      Object.values(asyncValidationTimeouts.current).forEach(timeout => {
+        clearTimeout(timeout);
+      });
     });
 
     return () => {
@@ -542,7 +862,15 @@ export function useFormedible<TFormValues extends Record<string, any>>(
       }
 
       const newPage = currentPage + 1;
+      
+      // Analytics tracking
+      if (analytics?.onPageChange) {
+        const timeSpent = Date.now() - pageStartTime;
+        analytics.onPageChange(currentPage, newPage, timeSpent);
+      }
+      
       setCurrentPage(newPage);
+      setPageStartTime(Date.now());
       onPageChange?.(newPage, 'next');
     }
   };
@@ -550,7 +878,15 @@ export function useFormedible<TFormValues extends Record<string, any>>(
   const goToPreviousPage = () => {
     if (currentPage > 1) {
       const newPage = currentPage - 1;
+      
+      // Analytics tracking
+      if (analytics?.onPageChange) {
+        const timeSpent = Date.now() - pageStartTime;
+        analytics.onPageChange(currentPage, newPage, timeSpent);
+      }
+      
       setCurrentPage(newPage);
+      setPageStartTime(Date.now());
       onPageChange?.(newPage, 'previous');
     }
   };
@@ -729,7 +1065,11 @@ export function useFormedible<TFormValues extends Record<string, any>>(
         ratingConfig,
         phoneConfig,
         colorConfig,
-        multiSelectConfig
+        multiSelectConfig,
+        locationConfig,
+        durationConfig,
+        autocompleteConfig,
+        maskedInputConfig
       } = fieldConfig;
 
       return (
@@ -747,6 +1087,10 @@ export function useFormedible<TFormValues extends Record<string, any>>(
               return null;
             }
 
+            // Check for cross-field validation errors
+            const crossFieldError = crossFieldErrors[name];
+            const asyncValidationState = asyncValidationStates[name];
+            
             const baseProps = {
               fieldApi: field,
               label,
@@ -759,6 +1103,8 @@ export function useFormedible<TFormValues extends Record<string, any>>(
               accept,
               multiple,
               disabled: disabled || loading || field.form.state.isSubmitting,
+              crossFieldError,
+              asyncValidationState,
             };
 
             // Select the component to use
@@ -783,6 +1129,14 @@ export function useFormedible<TFormValues extends Record<string, any>>(
               props = { ...props, ratingConfig };
             } else if (type === 'phone') {
               props = { ...props, phoneConfig };
+            } else if (type === 'location') {
+              props = { ...props, locationConfig };
+            } else if (type === 'duration') {
+              props = { ...props, durationConfig };
+            } else if (type === 'autocomplete') {
+              props = { ...props, autocompleteConfig };
+            } else if (type === 'masked') {
+              props = { ...props, maskedInputConfig };
             }
 
             // Render the field component
@@ -822,9 +1176,24 @@ export function useFormedible<TFormValues extends Record<string, any>>(
     const renderPageContent = () => {
       const currentFields = getCurrentPageFields();
       const pageConfig = getCurrentPageConfig();
+      const currentValues = form.state.values;
+      
+      // Filter fields based on conditional sections
+      const visibleFields = currentFields.filter(field => {
+        // Check if field is part of any conditional section
+        const conditionalSection = conditionalSections.find(section => 
+          section.fields.includes(field.name)
+        );
+        
+        if (conditionalSection) {
+          return conditionalSection.condition(currentValues as TFormValues);
+        }
+        
+        return true;
+      });
       
       // Group fields by section and group
-      const groupedFields = currentFields.reduce((acc, field) => {
+      const groupedFields = visibleFields.reduce((acc, field) => {
         const sectionKey = field.section?.title || 'default';
         const groupKey = field.group || 'default';
         
@@ -1002,5 +1371,13 @@ export function useFormedible<TFormValues extends Record<string, any>>(
     isFirstPage,
     isLastPage,
     progressValue,
+    // Advanced features
+    crossFieldErrors,
+    asyncValidationStates,
+    validateCrossFields,
+    validateFieldAsync,
+    saveToStorage,
+    loadFromStorage,
+    clearStorage,
   };
 }
