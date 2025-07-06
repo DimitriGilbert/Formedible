@@ -1,13 +1,13 @@
 // Testing utilities for Formedible forms
 
-export interface FormTesterConfig<T extends Record<string, any>> {
+export interface FormTesterConfig<T extends Record<string, unknown>> {
   fields?: Array<{
     name: string;
     type: string;
     label?: string;
     page?: number;
   }>;
-  schema?: any;
+  schema?: unknown;
   crossFieldValidation?: Array<{
     fields: (keyof T)[];
     validator: (values: Partial<T>) => string | null;
@@ -15,20 +15,20 @@ export interface FormTesterConfig<T extends Record<string, any>> {
   }>;
   asyncValidation?: {
     [fieldName: string]: {
-      validator: (value: any) => Promise<string | null>;
+      validator: (value: unknown) => Promise<string | null>;
       debounceMs?: number;
       loadingMessage?: string;
     };
   };
 }
 
-export interface FormTesterOptions<T extends Record<string, any>> {
+export interface FormTesterOptions<T extends Record<string, unknown>> {
   config: FormTesterConfig<T>;
   container?: HTMLElement;
 }
 
-export interface FormTesterActions<T extends Record<string, any>> {
-  fillField: (name: keyof T, value: any) => Promise<void>;
+export interface FormTesterActions<T extends Record<string, unknown>> {
+  fillField: (name: keyof T, value: unknown) => Promise<void>;
   fillFields: (values: Partial<T>) => Promise<void>;
   submitForm: () => Promise<void>;
   resetForm: () => Promise<void>;
@@ -39,18 +39,23 @@ export interface FormTesterActions<T extends Record<string, any>> {
   expectNoError: (fieldName: keyof T) => void;
   expectValid: () => void;
   expectInvalid: () => void;
-  expectFieldValue: (fieldName: keyof T, value: any) => void;
+  expectFieldValue: (fieldName: keyof T, value: unknown) => void;
   expectCurrentPage: (page: number) => void;
   waitForAsyncValidation: (fieldName: keyof T) => Promise<void>;
   triggerFieldFocus: (fieldName: keyof T) => Promise<void>;
   triggerFieldBlur: (fieldName: keyof T) => Promise<void>;
-  getFormData: () => any;
+  getFormData: () => T;
 }
 
-export class FormTester<T extends Record<string, any>> {
+export class FormTester<T extends Record<string, unknown>> {
   private config: FormTesterConfig<T>;
   private container: HTMLElement;
-  private formInstance: any;
+  private formInstance: {
+    form?: { state?: unknown };
+    currentPage?: number;
+    asyncValidationStates?: Record<string, { loading?: boolean }>;
+    setCurrentPage?: (page: number) => void;
+  } = {};
 
   constructor(options: FormTesterOptions<T>) {
     this.config = options.config;
@@ -75,7 +80,7 @@ export class FormTester<T extends Record<string, any>> {
 
   async render(): Promise<FormTesterActions<T>> {
     const actions: FormTesterActions<T> = {
-      fillField: async (name: keyof T, value: any) => {
+      fillField: async (name: keyof T, value: unknown) => {
         const field = this.getFieldElement(name);
         if (field) {
           const input = field.querySelector('input, select, textarea') as HTMLInputElement;
@@ -113,8 +118,8 @@ export class FormTester<T extends Record<string, any>> {
       },
 
       goToPage: async (page: number) => {
-        if (this.formInstance && this.formInstance.setCurrentPage) {
-          this.formInstance.setCurrentPage(page);
+        if (this.formInstance && (this.formInstance as any).setCurrentPage) {
+          (this.formInstance as any).setCurrentPage(page);
         }
       },
 
@@ -162,7 +167,7 @@ export class FormTester<T extends Record<string, any>> {
 
       expectValid: () => {
         if (this.formInstance && this.formInstance.form) {
-          const isValid = this.formInstance.form.state.isValid;
+          const isValid = (this.formInstance.form.state as any)?.isValid;
           if (!isValid) {
             throw new Error('Expected form to be valid');
           }
@@ -171,14 +176,14 @@ export class FormTester<T extends Record<string, any>> {
 
       expectInvalid: () => {
         if (this.formInstance && this.formInstance.form) {
-          const isValid = this.formInstance.form.state.isValid;
+          const isValid = (this.formInstance.form.state as any)?.isValid;
           if (isValid) {
             throw new Error('Expected form to be invalid');
           }
         }
       },
 
-      expectFieldValue: (fieldName: keyof T, value: any) => {
+      expectFieldValue: (fieldName: keyof T, value: unknown) => {
         const field = this.getFieldElement(fieldName);
         if (!field) {
           throw new Error(`Field ${String(fieldName)} not found`);
@@ -240,7 +245,7 @@ export class FormTester<T extends Record<string, any>> {
 
       getFormData: () => {
         if (this.formInstance && this.formInstance.form) {
-          return this.formInstance.form.state.values;
+          return (this.formInstance.form.state as any)?.values;
         }
         return {};
       }
@@ -249,13 +254,18 @@ export class FormTester<T extends Record<string, any>> {
     return actions;
   }
 
-  setFormInstance(instance: any) {
+  setFormInstance(instance: {
+    form?: { state?: unknown };
+    currentPage?: number;
+    asyncValidationStates?: Record<string, { loading?: boolean }>;
+    setCurrentPage?: (page: number) => void;
+  }) {
     this.formInstance = instance;
   }
 }
 
 // Factory function for creating form testers
-export function createFormTester<T extends Record<string, any>>(
+export function createFormTester<T extends Record<string, unknown>>(
   config: FormTesterConfig<T>,
   container?: HTMLElement
 ): FormTester<T> {
@@ -264,7 +274,7 @@ export function createFormTester<T extends Record<string, any>>(
 
 // Jest/Vitest matcher extensions
 export const formMatchers = {
-  toHaveError<T extends Record<string, any>>(this: any, tester: FormTester<T>, fieldName: keyof T, message?: string) {
+  toHaveError<T extends Record<string, unknown>>(this: unknown, tester: FormTester<T>, fieldName: keyof T, message?: string) {
     try {
       const actions = tester.render();
       actions.then(a => a.expectError(fieldName, message));
@@ -274,7 +284,7 @@ export const formMatchers = {
     }
   },
 
-  toHaveNoError<T extends Record<string, any>>(this: any, tester: FormTester<T>, fieldName: keyof T) {
+  toHaveNoError<T extends Record<string, unknown>>(this: unknown, tester: FormTester<T>, fieldName: keyof T) {
     try {
       const actions = tester.render();
       actions.then(a => a.expectNoError(fieldName));
@@ -284,7 +294,7 @@ export const formMatchers = {
     }
   },
 
-  toBeValid<T extends Record<string, any>>(this: any, tester: FormTester<T>) {
+  toBeValid<T extends Record<string, unknown>>(this: unknown, tester: FormTester<T>) {
     try {
       const actions = tester.render();
       actions.then(a => a.expectValid());
@@ -294,7 +304,7 @@ export const formMatchers = {
     }
   },
 
-  toBeInvalid<T extends Record<string, any>>(this: any, tester: FormTester<T>) {
+  toBeInvalid<T extends Record<string, unknown>>(this: unknown, tester: FormTester<T>) {
     try {
       const actions = tester.render();
       actions.then(a => a.expectInvalid());

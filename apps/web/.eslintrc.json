@@ -1,1 +1,16 @@
-{"extends": "next/core-web-vitals"}
+{
+  "extends": "next/core-web-vitals",
+  "ignorePatterns": [
+    "dist/**",
+    "out/**",
+    "build/**", 
+    "public/**",
+    ".next/**",
+    "node_modules/**",
+    "coverage/**"
+  ],
+  "rules": {
+    "react/no-unescaped-entities": "off",
+    "react-hooks/exhaustive-deps": "warn"
+  }
+}

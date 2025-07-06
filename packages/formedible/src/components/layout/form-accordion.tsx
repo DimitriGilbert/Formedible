@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { Accordion, AccordionItem } from "@/components/ui/accordion";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
 
 interface FormAccordionProps {
@@ -25,20 +25,40 @@ export const FormAccordion: React.FC<FormAccordionProps> = ({
     <div className={cn("space-y-4", className)}>
       {children}
       
-      <Accordion type={type}>
-        {sections.map((section) => (
-          <AccordionItem
-            key={section.id}
-            id={section.id}
-            title={section.title}
-            defaultOpen={section.defaultOpen}
-          >
-            <div className="space-y-4">
-              {section.content}
-            </div>
-          </AccordionItem>
-        ))}
-      </Accordion>
+      {type === 'single' ? (
+        <Accordion 
+          type="single" 
+          defaultValue={sections.find(s => s.defaultOpen)?.id}
+          collapsible
+        >
+          {sections.map((section) => (
+            <AccordionItem key={section.id} value={section.id}>
+              <AccordionTrigger>{section.title}</AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-4">
+                  {section.content}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+      ) : (
+        <Accordion 
+          type="multiple" 
+          defaultValue={sections.filter(s => s.defaultOpen).map(s => s.id)}
+        >
+          {sections.map((section) => (
+            <AccordionItem key={section.id} value={section.id}>
+              <AccordionTrigger>{section.title}</AccordionTrigger>
+              <AccordionContent>
+                <div className="space-y-4">
+                  {section.content}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          ))}
+        </Accordion>
+      )}
     </div>
   );
 };

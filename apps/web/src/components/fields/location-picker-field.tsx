@@ -46,11 +46,11 @@ export const LocationPickerField: React.FC<LocationPickerFieldProps> = ({
 }) => {
   const {
     defaultLocation = { lat: 40.7128, lng: -74.0060 }, // NYC default
-    zoom: _zoom = 13,
+    zoom = 13,
     searchPlaceholder = "Search for a location...",
     enableSearch = true,
     enableGeolocation = true,
-    mapProvider: _mapProvider = 'openstreetmap'
+    mapProvider = 'openstreetmap'
   } = locationConfig;
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -61,7 +61,7 @@ export const LocationPickerField: React.FC<LocationPickerFieldProps> = ({
     fieldApi.state.value || (defaultLocation ? { ...defaultLocation, address: "Default Location" } : null)
   );
   const mapRef = useRef<HTMLDivElement>(null);
-  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [geoError, setGeoError] = useState<string | null>(null);
 
   const [showCoordinateInput, setShowCoordinateInput] = useState(false);

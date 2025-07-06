@@ -1,4 +1,20 @@
+import React from 'react';
 import type { AnyFieldApi } from '@tanstack/react-form';
+import type { FormApi } from '@tanstack/form-core';
+
+// Type alias for our FormApi - use the core FormApi type which is what useForm actually returns
+export type FormedibleFormApi<TFormData = Record<string, unknown>> = FormApi<
+  TFormData,
+  undefined,
+  undefined,
+  undefined,
+  undefined,
+  undefined,
+  undefined,
+  undefined,
+  undefined,
+  undefined
+>;
 
 // Props that all basic field components rendered by FormedibleRoot will receive
 export interface BaseFieldProps {
@@ -11,8 +27,24 @@ export interface BaseFieldProps {
   wrapperClassName?: string; // For the div wrapping label and input
 }
 
+// Union type for all possible field component props
+export type FieldComponentProps = BaseFieldProps & {
+  // Optional props that specific field types might need
+  options?: Array<{ value: string; label: string }>;
+  arrayConfig?: {
+    minItems?: number;
+    maxItems?: number;
+    itemValidation?: unknown;
+    itemComponent?: React.ComponentType<BaseFieldProps>;
+    addButtonText?: string;
+    removeButtonText?: string;
+    defaultValue?: unknown;
+  };
+  [key: string]: unknown; // Allow additional props
+};
+
 // Cross-field validation configuration
-export interface CrossFieldValidation<TFormValues = any> {
+export interface CrossFieldValidation<TFormValues = Record<string, unknown>> {
   fields: (keyof TFormValues)[];
   validator: (values: Partial<TFormValues>) => string | null;
   message: string;
@@ -20,7 +52,7 @@ export interface CrossFieldValidation<TFormValues = any> {
 
 // Async validation configuration
 export interface AsyncValidation {
-  validator: (value: any) => Promise<string | null>;
+  validator: (value: unknown) => Promise<string | null>;
   debounceMs?: number;
   loadingMessage?: string;
 }
@@ -31,9 +63,8 @@ export interface FormAnalytics {
   onFieldBlur?: (fieldName: string, timeSpent: number) => void;
   onFormAbandon?: (completionPercentage: number) => void;
   onPageChange?: (fromPage: number, toPage: number, timeSpent: number) => void;
-  onFieldChange?: (fieldName: string, value: any, timestamp: number) => void;
-  onFormStart?: (timestamp: number) => void;
-  onFormComplete?: (timeSpent: number, formData: any) => void;
+  onFieldChange?: (fieldName: string, value: unknown, timestamp: number) => void;
+  onFormComplete?: (timeSpent: number, formData: unknown) => void;
 }
 
 // Layout configuration for forms
@@ -46,7 +77,7 @@ export interface LayoutConfig {
 }
 
 // Conditional sections configuration
-export interface ConditionalSection<TFormValues = any> {
+export interface ConditionalSection<TFormValues = Record<string, unknown>> {
   condition: (values: TFormValues) => boolean;
   fields: string[];
   layout?: LayoutConfig;
@@ -93,5 +124,5 @@ export interface MaskedInputConfig {
   showMask?: boolean;
   guide?: boolean;
   keepCharPositions?: boolean;
-  pipe?: (conformedValue: string, config: any) => false | string | { value: string; indexesOfPipedChars: number[] };
+  pipe?: (conformedValue: string, config: unknown) => false | string | { value: string; indexesOfPipedChars: number[] };
 } 
