@@ -23,3 +23,5 @@
 - Dependencies: Check existing package.json before adding new dependencies
 - Unused vars: Prefix with underscore to ignore ESLint warnings
 
+## formedible work
+Always work on the package first then unse `scripts/sync-formedible` to sync the changes to the web app.
