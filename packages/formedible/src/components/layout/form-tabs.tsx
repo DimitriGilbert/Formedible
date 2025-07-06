@@ -22,7 +22,11 @@ export const FormTabs: React.FC<FormTabsProps> = ({
   className,
   onTabChange,
 }) => {
-  const [activeTab, setActiveTab] = useState(defaultTab || tabs[0]?.id || '');
+  const [activeTab, setActiveTab] = useState(() => {
+    if (defaultTab) return defaultTab;
+    if (tabs.length > 0) return tabs[0].id;
+    return '';
+  });
 
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId);
