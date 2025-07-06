@@ -153,6 +153,16 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
           <div
             key={index}
             className="flex items-start gap-2 p-3 border rounded-lg bg-card"
+            onDragOver={sortable ? (e) => {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = 'move';
+            } : undefined}
+            onDrop={sortable ? (e) => {
+              e.preventDefault();
+              if (draggedIndex !== null && draggedIndex !== index) {
+                moveItem(draggedIndex, index);
+              }
+            } : undefined}
           >
             {sortable && (
               <button
@@ -165,16 +175,6 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
                 }}
                 onDragEnd={() => {
                   setDraggedIndex(null);
-                }}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  e.dataTransfer.dropEffect = 'move';
-                }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  if (draggedIndex !== null && draggedIndex !== index) {
-                    moveItem(draggedIndex, index);
-                  }
                 }}
               >
                 <GripVertical className="h-4 w-4 text-muted-foreground" />
