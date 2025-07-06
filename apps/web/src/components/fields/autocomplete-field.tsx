@@ -55,7 +55,7 @@ export const AutocompleteField: React.FC<AutocompleteFieldProps> = ({
   
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Normalize options to consistent format
   const normalizeOptions = (opts: string[] | AutocompleteOption[]): AutocompleteOption[] => {

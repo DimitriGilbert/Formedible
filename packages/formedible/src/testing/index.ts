@@ -48,7 +48,7 @@ export interface FormTesterActions<T extends Record<string, unknown>> {
 }
 
 export class FormTester<T extends Record<string, unknown>> {
-  private config: FormTesterConfig<T>;
+
   private container: HTMLElement;
   private formInstance: {
     form?: { state?: unknown };
@@ -58,7 +58,7 @@ export class FormTester<T extends Record<string, unknown>> {
   } = {};
 
   constructor(options: FormTesterOptions<T>) {
-    this.config = options.config;
+
     this.container = options.container || document.body;
   }
 
@@ -118,8 +118,8 @@ export class FormTester<T extends Record<string, unknown>> {
       },
 
       goToPage: async (page: number) => {
-        if (this.formInstance && (this.formInstance as any).setCurrentPage) {
-          (this.formInstance as any).setCurrentPage(page);
+        if (this.formInstance && 'setCurrentPage' in this.formInstance && typeof this.formInstance.setCurrentPage === 'function') {
+          this.formInstance.setCurrentPage(page);
         }
       },
 

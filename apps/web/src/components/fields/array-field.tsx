@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
@@ -99,14 +99,7 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
     handleChange(newValue);
   }, [value, handleChange]);
 
-  const moveItem = useCallback((fromIndex: number, toIndex: number) => {
-    if (!sortable) return;
-    
-    const newValue = [...value];
-    const [movedItem] = newValue.splice(fromIndex, 1);
-    newValue.splice(toIndex, 0, movedItem);
-    handleChange(newValue);
-  }, [value, sortable, handleChange]);
+
 
   // Create a mock field API for each item
   const createItemFieldApi = useCallback((index: number) => {
@@ -144,7 +137,7 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
       {description && <p className="text-xs text-muted-foreground">{description}</p>}
       
       <div className="space-y-3">
-        {value.map((item, index) => (
+        {value.map((_, index) => (
           <div
             key={index}
             className="flex items-start gap-2 p-3 border rounded-lg bg-card"

@@ -40,7 +40,7 @@ export const DurationPickerField: React.FC<DurationPickerFieldProps> = ({
     maxMinutes = 59,
     maxSeconds = 59,
     showLabels = true,
-    allowNegative = false
+
   } = durationConfig;
 
   const [hours, setHours] = useState(0);

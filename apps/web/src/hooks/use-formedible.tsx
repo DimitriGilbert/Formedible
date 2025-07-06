@@ -3,6 +3,7 @@ import React, { useState, useMemo } from "react";
 import { useForm } from "@tanstack/react-form";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
+import type { FormedibleFormApi, FieldComponentProps } from "@/lib/formedible/types";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { TextField } from "@/components/fields/text-field";
@@ -45,7 +46,7 @@ interface FormProps {
   onInvalid?: (e: React.FormEvent) => void;
   onKeyDown?: (e: React.KeyboardEvent) => void;
   onKeyUp?: (e: React.KeyboardEvent) => void;
-  onKeyPress?: (e: React.KeyboardEvent) => void;
+
   onFocus?: (e: React.FocusEvent) => void;
   onBlur?: (e: React.FocusEvent) => void;
   // Accessibility
@@ -68,25 +69,25 @@ interface FieldConfig {
   step?: number;
   accept?: string;
   multiple?: boolean;
-  component?: React.ComponentType<any>;
+  component?: React.ComponentType<FieldComponentProps>;
   wrapper?: React.ComponentType<{ children: React.ReactNode; field: FieldConfig }>;
   page?: number;
-  validation?: z.ZodSchema<any>;
+  validation?: z.ZodSchema<unknown>;
   dependencies?: string[];
-  conditional?: (values: any) => boolean;
+  conditional?: (values: Record<string, unknown>) => boolean;
   // Array field configuration
   arrayConfig?: {
     itemType: string; // Type of items in the array ('text', 'email', 'number', etc.)
     itemLabel?: string; // Label for each item (e.g., "Email Address")
     itemPlaceholder?: string; // Placeholder for each item
-    itemValidation?: z.ZodSchema<any>; // Validation for each item
+    itemValidation?: z.ZodSchema<unknown>; // Validation for each item
     minItems?: number; // Minimum number of items
     maxItems?: number; // Maximum number of items
     addButtonLabel?: string; // Label for add button
     removeButtonLabel?: string; // Label for remove button
-    itemComponent?: React.ComponentType<any>; // Custom component for each item
+    itemComponent?: React.ComponentType<FieldComponentProps>; // Custom component for each item
     sortable?: boolean; // Whether items can be reordered
-    defaultValue?: any; // Default value for new items
+    defaultValue?: unknown; // Default value for new items
   };
   // Datalist configuration for text inputs
   datalist?: {
@@ -108,7 +109,7 @@ interface FieldConfig {
     enabled?: boolean; // Enable inline validation
     debounceMs?: number; // Debounce time for validation
     showSuccess?: boolean; // Show success state
-    asyncValidator?: (value: any) => Promise<string | null>; // Async validation function
+    asyncValidator?: (value: unknown) => Promise<string | null>; // Async validation function
   };
   // Field grouping
   group?: string; // Group name for organizing fields
@@ -187,7 +188,7 @@ interface FieldConfig {
     showMask?: boolean;
     guide?: boolean;
     keepCharPositions?: boolean;
-    pipe?: (conformedValue: string, config: any) => false | string | { value: string; indexesOfPipedChars: number[] };
+    pipe?: (conformedValue: string, config: unknown) => false | string | { value: string; indexesOfPipedChars: number[] };
   };
 }
 
@@ -227,29 +228,20 @@ interface UseFormedibleOptions<TFormValues> {
   pages?: PageConfig[];
   progress?: ProgressConfig;
   defaultComponents?: {
-    [key: string]: React.ComponentType<any>;
+    [key: string]: React.ComponentType<FieldComponentProps>;
   };
   globalWrapper?: React.ComponentType<{ children: React.ReactNode; field: FieldConfig }>;
   formOptions?: Partial<{
     defaultValues: TFormValues;
-    onSubmit: (props: { value: TFormValues; formApi: any }) => any | Promise<any>;
-    onSubmitInvalid: (props: { value: TFormValues; formApi: any }) => void;
-    onChange?: (props: { value: TFormValues; formApi: any }) => void;
-    onBlur?: (props: { value: TFormValues; formApi: any }) => void;
-    onFocus?: (props: { value: TFormValues; formApi: any }) => void;
-    onReset?: (props: { value: TFormValues; formApi: any }) => void;
+    onSubmit: (props: { value: TFormValues; formApi: FormedibleFormApi<TFormValues> }) => unknown | Promise<unknown>;
+    onSubmitInvalid: (props: { value: TFormValues; formApi: FormedibleFormApi<TFormValues> }) => void;
+    onChange?: (props: { value: TFormValues; formApi: FormedibleFormApi<TFormValues> }) => void;
+    onBlur?: (props: { value: TFormValues; formApi: FormedibleFormApi<TFormValues> }) => void;
+    onFocus?: (props: { value: TFormValues; formApi: FormedibleFormApi<TFormValues> }) => void;
+    onReset?: (props: { value: TFormValues; formApi: FormedibleFormApi<TFormValues> }) => void;
     asyncDebounceMs: number;
     canSubmitWhenInvalid: boolean;
-    validators: {
-      onChange?: z.ZodSchema<any>;
-      onChangeAsync?: z.ZodSchema<any>;
-      onChangeAsyncDebounceMs?: number;
-      onBlur?: z.ZodSchema<any>;
-      onBlurAsync?: z.ZodSchema<any>;
-      onBlurAsyncDebounceMs?: number;
-      onSubmit?: z.ZodSchema<any>;
-      onSubmitAsync?: z.ZodSchema<any>;
-    };
+
   }>;
   onPageChange?: (page: number, direction: 'next' | 'previous') => void;
   autoSubmitOnChange?: boolean;
@@ -259,13 +251,13 @@ interface UseFormedibleOptions<TFormValues> {
   resetOnSubmitSuccess?: boolean;
   showSubmitButton?: boolean;
   // Form-level event handlers
-  onFormReset?: (e: React.FormEvent, formApi: any) => void;
-  onFormInput?: (e: React.FormEvent, formApi: any) => void;
-  onFormInvalid?: (e: React.FormEvent, formApi: any) => void;
-  onFormKeyDown?: (e: React.KeyboardEvent, formApi: any) => void;
-  onFormKeyUp?: (e: React.KeyboardEvent, formApi: any) => void;
-  onFormFocus?: (e: React.FocusEvent, formApi: any) => void;
-  onFormBlur?: (e: React.FocusEvent, formApi: any) => void;
+  onFormReset?: (e: React.FormEvent, formApi: FormedibleFormApi<TFormValues>) => void;
+  onFormInput?: (e: React.FormEvent, formApi: FormedibleFormApi<TFormValues>) => void;
+  onFormInvalid?: (e: React.FormEvent, formApi: FormedibleFormApi<TFormValues>) => void;
+  onFormKeyDown?: (e: React.KeyboardEvent, formApi: FormedibleFormApi<TFormValues>) => void;
+  onFormKeyUp?: (e: React.KeyboardEvent, formApi: FormedibleFormApi<TFormValues>) => void;
+  onFormFocus?: (e: React.FocusEvent, formApi: FormedibleFormApi<TFormValues>) => void;
+  onFormBlur?: (e: React.FocusEvent, formApi: FormedibleFormApi<TFormValues>) => void;
   // Advanced validation features
   crossFieldValidation?: {
     fields: (keyof TFormValues)[];
@@ -274,7 +266,7 @@ interface UseFormedibleOptions<TFormValues> {
   }[];
   asyncValidation?: {
     [fieldName: string]: {
-      validator: (value: any) => Promise<string | null>;
+      validator: (value: unknown) => Promise<string | null>;
       debounceMs?: number;
       loadingMessage?: string;
     };
@@ -285,9 +277,9 @@ interface UseFormedibleOptions<TFormValues> {
     onFieldBlur?: (fieldName: string, timeSpent: number) => void;
     onFormAbandon?: (completionPercentage: number) => void;
     onPageChange?: (fromPage: number, toPage: number, timeSpent: number) => void;
-    onFieldChange?: (fieldName: string, value: any, timestamp: number) => void;
+    onFieldChange?: (fieldName: string, value: unknown, timestamp: number) => void;
     onFormStart?: (timestamp: number) => void;
-    onFormComplete?: (timeSpent: number, formData: any) => void;
+    onFormComplete?: (timeSpent: number, formData: Record<string, unknown>) => void;
   };
   // Layout configuration
   layout?: {
@@ -382,7 +374,12 @@ const DefaultPageComponent: React.FC<{
 interface SectionRendererProps {
   sectionKey: string;
   sectionData: {
-    section?: any;
+    section?: {
+      title: string;
+      description?: string;
+      collapsible?: boolean;
+      defaultExpanded?: boolean;
+    };
     groups: Record<string, FieldConfig[]>;
   };
   renderField: (field: FieldConfig) => React.ReactNode;
@@ -446,30 +443,29 @@ const SectionRenderer: React.FC<SectionRendererProps> = ({ sectionKey, sectionDa
   return sectionContent;
 };
 
-export function useFormedible<TFormValues extends Record<string, any>>(
+export function useFormedible<TFormValues extends Record<string, unknown>>(
   options: UseFormedibleOptions<TFormValues>
 ) {
   const {
     fields = [],
-    schema,
+
     submitLabel = "Submit",
     nextLabel = "Next",
     previousLabel = "Previous",
     formClassName,
     fieldClassName,
-    pages = [],
+    pages,
     progress,
-    defaultComponents = {},
+    defaultComponents,
     globalWrapper,
     formOptions,
     onPageChange,
-    autoSubmitOnChange = false,
-    autoSubmitDebounceMs = 1000,
-    disabled = false,
-    loading = false,
-    resetOnSubmitSuccess = false,
-    showSubmitButton = true,
-    // Form-level event handlers
+    autoSubmitOnChange,
+    autoSubmitDebounceMs,
+    disabled,
+    loading,
+    resetOnSubmitSuccess,
+    showSubmitButton,
     onFormReset,
     onFormInput,
     onFormInvalid,
@@ -481,7 +477,6 @@ export function useFormedible<TFormValues extends Record<string, any>>(
     crossFieldValidation = [],
     asyncValidation = {},
     analytics,
-    layout,
     conditionalSections = [],
     persistence,
   } = options;
@@ -518,10 +513,10 @@ export function useFormedible<TFormValues extends Record<string, any>>(
   const progressValue = hasPages ? ((currentPage - 1) / (totalPages - 1)) * 100 : 100;
 
   // Create a ref to store the form instance for the onSubmit callback
-  const formRef = React.useRef<any>(null);
+  const formRef = React.useRef<FormedibleFormApi<TFormValues> | null>(null);
   
   // Refs for async validation debouncing
-  const asyncValidationTimeouts = React.useRef<Record<string, NodeJS.Timeout>>({});
+  const asyncValidationTimeouts = React.useRef<Record<string, ReturnType<typeof setTimeout>>>({});
   
   // Keep track of AbortControllers for async validations
   const asyncValidationAbortControllers = React.useRef<Record<string, AbortController>>({});
@@ -549,7 +544,7 @@ export function useFormedible<TFormValues extends Record<string, any>>(
   }, [crossFieldValidation]);
   
   // Async validation function
-  const validateFieldAsync = React.useCallback(async (fieldName: string, value: any) => {
+  const validateFieldAsync = React.useCallback(async (fieldName: string, value: unknown) => {
     const asyncConfig = asyncValidation[fieldName];
     if (!asyncConfig) return;
     
@@ -589,12 +584,12 @@ export function useFormedible<TFormValues extends Record<string, any>>(
         
         // Update form field error if needed
         if (formRef.current) {
-          formRef.current.setFieldMeta(fieldName, (prev: any) => ({
+          formRef.current?.setFieldMeta(fieldName, (prev) => ({
             ...prev,
             errors: error ? [error] : []
           }));
         }
-      } catch (err) {
+      } catch {
         setAsyncValidationStates(prev => ({
           ...prev,
           [fieldName]: { loading: false, error: 'Validation failed' }
@@ -606,45 +601,35 @@ export function useFormedible<TFormValues extends Record<string, any>>(
   // Setup form with schema validation if provided
   const formConfig = {
     ...formOptions,
-    ...(schema && {
-      validators: {
-        onChange: schema,
-        ...formOptions?.validators,
-      }
-    }),
     ...(resetOnSubmitSuccess && formOptions?.onSubmit && {
-      onSubmit: async (props: any) => {
-        try {
-          // Run cross-field validation before submit
-          const crossFieldErrors = validateCrossFields(props.value as Partial<TFormValues>);
-          if (Object.keys(crossFieldErrors).length > 0) {
-            throw new Error('Cross-field validation failed');
-          }
-          
-          // Call analytics if provided
-          if (analytics?.onFormComplete) {
-            const timeSpent = Date.now() - formStartTime;
-            analytics.onFormComplete(timeSpent, props.value);
-          }
-          
-          const result = await formOptions.onSubmit!(props);
-          
-          // Clear storage on successful submit
-          clearStorage();
-          
-          // Reset form on successful submit if option is enabled
-          if (formRef.current) {
-            formRef.current.reset();
-          }
-          return result;
-        } catch (error) {
-          throw error;
+      onSubmit: async (props: { value: TFormValues; formApi: FormedibleFormApi<TFormValues> }) => {
+        // Run cross-field validation before submit
+        const crossFieldErrors = validateCrossFields(props.value as Partial<TFormValues>);
+        if (Object.keys(crossFieldErrors).length > 0) {
+          throw new Error('Cross-field validation failed');
         }
+        
+        // Call analytics if provided
+        if (analytics?.onFormComplete) {
+          const timeSpent = Date.now() - formStartTime;
+          analytics.onFormComplete(timeSpent, props.value);
+        }
+        
+        const result = await formOptions.onSubmit!(props);
+        
+        // Clear storage on successful submit
+        clearStorage();
+        
+        // Reset form on successful submit if option is enabled
+        if (formRef.current) {
+          formRef.current?.reset();
+        }
+        return result;
       }
     })
   };
 
-  const form = useForm(formConfig as any);
+  const form = useForm(formConfig);
 
   // Store form reference for the onSubmit callback
   React.useEffect(() => {
@@ -652,7 +637,7 @@ export function useFormedible<TFormValues extends Record<string, any>>(
   }, [form]);
 
   // Form persistence logic
-  const persistenceTimeout = React.useRef<NodeJS.Timeout | undefined>(undefined);
+  const persistenceTimeout = React.useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   
   const saveToStorage = React.useCallback((values: Partial<TFormValues>) => {
     if (!persistence) return;
@@ -661,7 +646,7 @@ export function useFormedible<TFormValues extends Record<string, any>>(
       const storage = persistence.storage === 'localStorage' ? localStorage : sessionStorage;
       const filteredValues = persistence.exclude 
         ? Object.fromEntries(
-            Object.entries(values as Record<string, any>).filter(([key]) => !persistence.exclude!.includes(key))
+            Object.entries(values as Record<string, unknown>).filter(([key]) => !persistence.exclude!.includes(key))
           )
         : values;
       
@@ -707,8 +692,12 @@ export function useFormedible<TFormValues extends Record<string, any>>(
     const savedData = loadFromStorage();
     if (savedData && savedData.values) {
       // Restore form values
-      Object.entries(savedData.values as Record<string, any>).forEach(([key, value]) => {
-        form.setFieldValue(key, value);
+      Object.entries(savedData.values as Record<string, unknown>).forEach(([key, value]) => {
+        try {
+          form.setFieldValue(key as keyof TFormValues & string, value as any);
+        } catch (error) {
+          console.warn(`Failed to restore field value for ${key}:`, error);
+        }
       });
       
       // Restore current page if it was saved
@@ -721,9 +710,9 @@ export function useFormedible<TFormValues extends Record<string, any>>(
   // Set up form event listeners if provided
   React.useEffect(() => {
     const unsubscribers: (() => void)[] = [];
-    let autoSubmitTimeout: NodeJS.Timeout;
-    let onChangeTimeout: NodeJS.Timeout;
-    let onBlurTimeout: NodeJS.Timeout;
+    let autoSubmitTimeout: ReturnType<typeof setTimeout>;
+    let onChangeTimeout: ReturnType<typeof setTimeout>;
+    let onBlurTimeout: ReturnType<typeof setTimeout>;
 
     // Call analytics onFormStart if provided
     if (analytics?.onFormStart) {
@@ -814,7 +803,7 @@ export function useFormedible<TFormValues extends Record<string, any>>(
         const fieldName = target.getAttribute('name');
         
         if (fieldName && analytics?.onFieldChange) {
-          const value = (target as any).value;
+          const value = (target as HTMLInputElement).value;
           analytics.onFieldChange(fieldName, value, Date.now());
           
           // Trigger async validation if configured
@@ -880,7 +869,7 @@ export function useFormedible<TFormValues extends Record<string, any>>(
 
   const getCurrentPageFields = () => fieldsByPage[currentPage] || [];
 
-  const getCurrentPageConfig = () => pages.find(p => p.page === currentPage);
+  const getCurrentPageConfig = () => pages?.find(p => p.page === currentPage);
 
   const goToNextPage = () => {
     if (currentPage < totalPages) {
@@ -889,7 +878,7 @@ export function useFormedible<TFormValues extends Record<string, any>>(
       const formState = form.state;
       
       const hasPageErrors = currentPageFields.some(field => {
-        const fieldState = formState.fieldMeta[field.name];
+        const fieldState = formState.fieldMeta[field.name as keyof typeof formState.fieldMeta];
         return fieldState && fieldState.errors && fieldState.errors.length > 0;
       });
 
@@ -947,7 +936,7 @@ export function useFormedible<TFormValues extends Record<string, any>>(
         const formState = form.state;
         
         const hasPageErrors = pageFields.some(field => {
-          const fieldState = formState.fieldMeta[field.name];
+        const fieldState = formState.fieldMeta[field.name as keyof typeof formState.fieldMeta];
           return fieldState && fieldState.errors && fieldState.errors.length > 0;
         });
 
@@ -984,7 +973,7 @@ export function useFormedible<TFormValues extends Record<string, any>>(
     onInvalid,
     onKeyDown,
     onKeyUp,
-    onKeyPress,
+
     onFocus,
     onBlur,
     // Accessibility
@@ -1053,11 +1042,7 @@ export function useFormedible<TFormValues extends Record<string, any>>(
       }
     };
 
-    const handleKeyPress = (e: React.KeyboardEvent) => {
-      if (onKeyPress) {
-        onKeyPress(e);
-      }
-    };
+
 
     const handleFocus = (e: React.FocusEvent) => {
       if (onFocus) {
@@ -1100,8 +1085,7 @@ export function useFormedible<TFormValues extends Record<string, any>>(
         datalist,
         help,
         inlineValidation,
-        group,
-        section,
+
         ratingConfig,
         phoneConfig,
         colorConfig,
@@ -1116,7 +1100,12 @@ export function useFormedible<TFormValues extends Record<string, any>>(
         <form.Field 
           key={name} 
           name={name as keyof TFormValues & string}
-          validators={validation ? { onChange: validation } : undefined}
+          validators={validation ? { 
+            onChange: ({ value }) => {
+              const result = validation.safeParse(value);
+              return result.success ? undefined : result.error.errors[0]?.message || 'Invalid value';
+            }
+          } : undefined}
         >
           {(field) => {
             // Get current form values directly from the field
@@ -1151,18 +1140,32 @@ export function useFormedible<TFormValues extends Record<string, any>>(
             const FieldComponent = CustomComponent || fieldComponents[type] || TextField;
 
             // Add type-specific props
-            let props: any = { ...baseProps };
+            let props: FieldComponentProps = { ...baseProps };
             
+            // Normalize options to the expected format
+            const normalizedOptions = options ? options.map(opt => 
+              typeof opt === 'string' ? { value: opt, label: opt } : opt
+            ) : [];
+
             if (type === 'select') {
-              props = { ...props, options: options || [] };
+              props = { ...props, options: normalizedOptions };
             } else if (type === 'array') {
-              props = { ...props, arrayConfig };
+              const mappedArrayConfig = arrayConfig ? {
+                minItems: arrayConfig.minItems,
+                maxItems: arrayConfig.maxItems,
+                itemValidation: arrayConfig.itemValidation,
+                itemComponent: arrayConfig.itemComponent as any,
+                addButtonText: arrayConfig.addButtonLabel,
+                removeButtonText: arrayConfig.removeButtonLabel,
+                defaultValue: arrayConfig.defaultValue
+              } : undefined;
+              props = { ...props, arrayConfig: mappedArrayConfig };
             } else if (['text', 'email', 'password', 'url', 'tel'].includes(type)) {
               props = { ...props, type, datalist };
             } else if (type === 'radio') {
-              props = { ...props, options: options || [] };
+              props = { ...props, options: normalizedOptions };
             } else if (type === 'multiSelect') {
-              props = { ...props, options: options || [], multiSelectConfig };
+              props = { ...props, options: normalizedOptions, multiSelectConfig };
             } else if (type === 'colorPicker') {
               props = { ...props, colorConfig };
             } else if (type === 'rating') {
@@ -1250,9 +1253,9 @@ export function useFormedible<TFormValues extends Record<string, any>>(
         
         acc[sectionKey].groups[groupKey].push(field);
         return acc;
-      }, {} as Record<string, { section?: any; groups: Record<string, FieldConfig[]> }>);
+      }, {} as Record<string, { section?: { title: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean }; groups: Record<string, FieldConfig[]> }>);
 
-      const renderSection = (sectionKey: string, sectionData: any) => (
+      const renderSection = (sectionKey: string, sectionData: { section?: { title: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean }; groups: Record<string, FieldConfig[]> }) => (
         <SectionRenderer
           key={sectionKey}
           sectionKey={sectionKey}
@@ -1308,7 +1311,7 @@ export function useFormedible<TFormValues extends Record<string, any>>(
             })}
           >
             {(state) => {
-              const { canSubmit, isSubmitting } = state as any;
+              const { canSubmit, isSubmitting } = state as { canSubmit: boolean; isSubmitting: boolean };
               return (
                 <Button
                   type="submit"
@@ -1331,7 +1334,7 @@ export function useFormedible<TFormValues extends Record<string, any>>(
           })}
         >
           {(state) => {
-            const { canSubmit, isSubmitting } = state as any;
+            const { canSubmit, isSubmitting } = state as { canSubmit: boolean; isSubmitting: boolean };
             return (
               <div className="flex justify-between gap-4">
                 <Button
@@ -1380,7 +1383,7 @@ export function useFormedible<TFormValues extends Record<string, any>>(
           onInvalid={handleInvalid}
           onKeyDown={handleKeyDown}
           onKeyUp={handleKeyUp}
-          onKeyPress={handleKeyPress}
+
           onFocus={handleFocus}
           onBlur={handleBlur}
           role={role}

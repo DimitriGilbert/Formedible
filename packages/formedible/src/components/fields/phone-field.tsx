@@ -77,7 +77,7 @@ export const PhoneField: React.FC<PhoneFieldSpecificProps> = ({
     placeholder,
   } = phoneConfig;
 
-  const { name, state, handleChange, handleBlur } = fieldApi;
+  const { state, handleChange, handleBlur } = fieldApi;
   const value = (state.value as string) || '';
   
   const [selectedCountry, setSelectedCountry] = useState(defaultCountry);

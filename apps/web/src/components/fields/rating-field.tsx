@@ -43,7 +43,7 @@ export const RatingField: React.FC<RatingFieldSpecificProps> = ({
     showValue = false,
   } = ratingConfig;
 
-  const { name, state, handleChange, handleBlur } = fieldApi;
+  const { state, handleChange, handleBlur } = fieldApi;
   const value = (state.value as number) || 0;
   
   const [hoverValue, setHoverValue] = useState<number | null>(null);

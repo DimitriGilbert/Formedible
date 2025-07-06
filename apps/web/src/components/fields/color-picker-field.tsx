@@ -32,13 +32,7 @@ const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
   } : null;
 };
 
-const rgbToHex = (r: number, g: number, b: number): string => {
-  const toHex = (n: number) => {
-    const hex = Math.round(n).toString(16);
-    return hex.length === 1 ? '0' + hex : hex;
-  };
-  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
-};
+
 
 const hexToHsl = (hex: string): { h: number; s: number; l: number } | null => {
   const rgb = hexToRgb(hex);
@@ -112,7 +106,7 @@ export const ColorPickerField: React.FC<ColorPickerFieldSpecificProps> = ({
     allowCustom = true,
   } = colorConfig;
 
-  const { name, state, handleChange, handleBlur } = fieldApi;
+  const { state, handleChange, handleBlur } = fieldApi;
   const value = (state.value as string) || '#000000';
   
   const [isOpen, setIsOpen] = useState(false);

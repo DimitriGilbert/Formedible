@@ -42,7 +42,7 @@ export const MaskedInputField: React.FC<MaskedInputFieldProps> = ({
     mask = '',
     showMask = false,
     guide = true,
-    keepCharPositions = false,
+
     pipe
   } = maskedInputConfig;
 

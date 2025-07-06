@@ -3,7 +3,7 @@ import React, { useState, useMemo } from "react";
 import { useForm } from "@tanstack/react-form";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
-import { FormedibleFormApi, FieldComponentProps } from "@/lib/formedible/types";
+import type { FormedibleFormApi, FieldComponentProps } from "@/lib/formedible/types";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { TextField } from "@/components/fields/text-field";
@@ -46,7 +46,7 @@ interface FormProps {
   onInvalid?: (e: React.FormEvent) => void;
   onKeyDown?: (e: React.KeyboardEvent) => void;
   onKeyUp?: (e: React.KeyboardEvent) => void;
-  onKeyPress?: (e: React.KeyboardEvent) => void;
+
   onFocus?: (e: React.FocusEvent) => void;
   onBlur?: (e: React.FocusEvent) => void;
   // Accessibility
@@ -72,22 +72,22 @@ interface FieldConfig {
   component?: React.ComponentType<FieldComponentProps>;
   wrapper?: React.ComponentType<{ children: React.ReactNode; field: FieldConfig }>;
   page?: number;
-  validation?: z.ZodSchema<any>;
+  validation?: z.ZodSchema<unknown>;
   dependencies?: string[];
-  conditional?: (values: any) => boolean;
+  conditional?: (values: Record<string, unknown>) => boolean;
   // Array field configuration
   arrayConfig?: {
     itemType: string; // Type of items in the array ('text', 'email', 'number', etc.)
     itemLabel?: string; // Label for each item (e.g., "Email Address")
     itemPlaceholder?: string; // Placeholder for each item
-    itemValidation?: z.ZodSchema<any>; // Validation for each item
+    itemValidation?: z.ZodSchema<unknown>; // Validation for each item
     minItems?: number; // Minimum number of items
     maxItems?: number; // Maximum number of items
     addButtonLabel?: string; // Label for add button
     removeButtonLabel?: string; // Label for remove button
     itemComponent?: React.ComponentType<FieldComponentProps>; // Custom component for each item
     sortable?: boolean; // Whether items can be reordered
-    defaultValue?: any; // Default value for new items
+    defaultValue?: unknown; // Default value for new items
   };
   // Datalist configuration for text inputs
   datalist?: {
@@ -188,7 +188,7 @@ interface FieldConfig {
     showMask?: boolean;
     guide?: boolean;
     keepCharPositions?: boolean;
-    pipe?: (conformedValue: string, config: any) => false | string | { value: string; indexesOfPipedChars: number[] };
+    pipe?: (conformedValue: string, config: unknown) => false | string | { value: string; indexesOfPipedChars: number[] };
   };
 }
 
@@ -279,7 +279,7 @@ interface UseFormedibleOptions<TFormValues> {
     onPageChange?: (fromPage: number, toPage: number, timeSpent: number) => void;
     onFieldChange?: (fieldName: string, value: unknown, timestamp: number) => void;
     onFormStart?: (timestamp: number) => void;
-    onFormComplete?: (timeSpent: number, formData: any) => void;
+    onFormComplete?: (timeSpent: number, formData: Record<string, unknown>) => void;
   };
   // Layout configuration
   layout?: {
@@ -374,7 +374,12 @@ const DefaultPageComponent: React.FC<{
 interface SectionRendererProps {
   sectionKey: string;
   sectionData: {
-    section?: any;
+    section?: {
+      title: string;
+      description?: string;
+      collapsible?: boolean;
+      defaultExpanded?: boolean;
+    };
     groups: Record<string, FieldConfig[]>;
   };
   renderField: (field: FieldConfig) => React.ReactNode;
@@ -443,7 +448,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
 ) {
   const {
     fields = [],
-    schema,
+
     submitLabel = "Submit",
     nextLabel = "Next",
     previousLabel = "Previous",
@@ -584,7 +589,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
             errors: error ? [error] : []
           }));
         }
-      } catch (err) {
+      } catch {
         setAsyncValidationStates(prev => ({
           ...prev,
           [fieldName]: { loading: false, error: 'Validation failed' }
@@ -688,7 +693,11 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     if (savedData && savedData.values) {
       // Restore form values
       Object.entries(savedData.values as Record<string, unknown>).forEach(([key, value]) => {
-        form.setFieldValue(key, value as any);
+        try {
+          form.setFieldValue(key as keyof TFormValues & string, value as any);
+        } catch (error) {
+          console.warn(`Failed to restore field value for ${key}:`, error);
+        }
       });
       
       // Restore current page if it was saved
@@ -964,7 +973,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     onInvalid,
     onKeyDown,
     onKeyUp,
-    onKeyPress,
+
     onFocus,
     onBlur,
     // Accessibility
@@ -1033,11 +1042,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
       }
     };
 
-    const handleKeyPress = (e: React.KeyboardEvent) => {
-      if (onKeyPress) {
-        onKeyPress(e);
-      }
-    };
+
 
     const handleFocus = (e: React.FocusEvent) => {
       if (onFocus) {
@@ -1080,8 +1085,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
         datalist,
         help,
         inlineValidation,
-        group,
-        section,
+
         ratingConfig,
         phoneConfig,
         colorConfig,
@@ -1096,7 +1100,12 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
         <form.Field 
           key={name} 
           name={name as keyof TFormValues & string}
-          validators={validation ? { onChange: validation } : undefined}
+          validators={validation ? { 
+            onChange: ({ value }) => {
+              const result = validation.safeParse(value);
+              return result.success ? undefined : result.error.errors[0]?.message || 'Invalid value';
+            }
+          } : undefined}
         >
           {(field) => {
             // Get current form values directly from the field
@@ -1131,18 +1140,32 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
             const FieldComponent = CustomComponent || fieldComponents[type] || TextField;
 
             // Add type-specific props
-            let props: any = { ...baseProps };
+            let props: FieldComponentProps = { ...baseProps };
             
+            // Normalize options to the expected format
+            const normalizedOptions = options ? options.map(opt => 
+              typeof opt === 'string' ? { value: opt, label: opt } : opt
+            ) : [];
+
             if (type === 'select') {
-              props = { ...props, options: options || [] };
+              props = { ...props, options: normalizedOptions };
             } else if (type === 'array') {
-              props = { ...props, arrayConfig };
+              const mappedArrayConfig = arrayConfig ? {
+                minItems: arrayConfig.minItems,
+                maxItems: arrayConfig.maxItems,
+                itemValidation: arrayConfig.itemValidation,
+                itemComponent: arrayConfig.itemComponent as any,
+                addButtonText: arrayConfig.addButtonLabel,
+                removeButtonText: arrayConfig.removeButtonLabel,
+                defaultValue: arrayConfig.defaultValue
+              } : undefined;
+              props = { ...props, arrayConfig: mappedArrayConfig };
             } else if (['text', 'email', 'password', 'url', 'tel'].includes(type)) {
               props = { ...props, type, datalist };
             } else if (type === 'radio') {
-              props = { ...props, options: options || [] };
+              props = { ...props, options: normalizedOptions };
             } else if (type === 'multiSelect') {
-              props = { ...props, options: options || [], multiSelectConfig };
+              props = { ...props, options: normalizedOptions, multiSelectConfig };
             } else if (type === 'colorPicker') {
               props = { ...props, colorConfig };
             } else if (type === 'rating') {
@@ -1230,9 +1253,9 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
         
         acc[sectionKey].groups[groupKey].push(field);
         return acc;
-      }, {} as Record<string, { section?: any; groups: Record<string, FieldConfig[]> }>);
+      }, {} as Record<string, { section?: { title: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean }; groups: Record<string, FieldConfig[]> }>);
 
-      const renderSection = (sectionKey: string, sectionData: any) => (
+      const renderSection = (sectionKey: string, sectionData: { section?: { title: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean }; groups: Record<string, FieldConfig[]> }) => (
         <SectionRenderer
           key={sectionKey}
           sectionKey={sectionKey}
@@ -1360,7 +1383,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
           onInvalid={handleInvalid}
           onKeyDown={handleKeyDown}
           onKeyUp={handleKeyUp}
-          onKeyPress={handleKeyPress}
+
           onFocus={handleFocus}
           onBlur={handleBlur}
           role={role}

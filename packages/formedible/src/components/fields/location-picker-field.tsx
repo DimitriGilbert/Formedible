@@ -46,11 +46,11 @@ export const LocationPickerField: React.FC<LocationPickerFieldProps> = ({
 }) => {
   const {
     defaultLocation = { lat: 40.7128, lng: -74.0060 }, // NYC default
-    zoom: _zoom = 13,
+    zoom = 13,
     searchPlaceholder = "Search for a location...",
     enableSearch = true,
     enableGeolocation = true,
-    mapProvider: _mapProvider = 'openstreetmap'
+    mapProvider = 'openstreetmap'
   } = locationConfig;
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -64,13 +64,8 @@ export const LocationPickerField: React.FC<LocationPickerFieldProps> = ({
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [geoError, setGeoError] = useState<string | null>(null);
 
-  const [showCoordinateInput, setShowCoordinateInput] = useState(false);
   const [manualLat, setManualLat] = useState('');
   const [manualLng, setManualLng] = useState('');
-
-  const handleManualCoordinates = () => {
-    setShowCoordinateInput(true);
-  };
 
   const handleManualCoordinatesSubmit = () => {
     const lat = parseFloat(manualLat);
@@ -82,7 +77,7 @@ export const LocationPickerField: React.FC<LocationPickerFieldProps> = ({
         address: `${lat}, ${lng}`
       };
       handleLocationSelect(location);
-      setShowCoordinateInput(false);
+
     } else {
       alert("Invalid coordinates. Please enter valid numbers.");
     }

@@ -61,16 +61,11 @@ export const LocationPickerField: React.FC<LocationPickerFieldProps> = ({
     fieldApi.state.value || (defaultLocation ? { ...defaultLocation, address: "Default Location" } : null)
   );
   const mapRef = useRef<HTMLDivElement>(null);
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [geoError, setGeoError] = useState<string | null>(null);
 
-  const [showCoordinateInput, setShowCoordinateInput] = useState(false);
   const [manualLat, setManualLat] = useState('');
   const [manualLng, setManualLng] = useState('');
-
-  const handleManualCoordinates = () => {
-    setShowCoordinateInput(true);
-  };
 
   const handleManualCoordinatesSubmit = () => {
     const lat = parseFloat(manualLat);
@@ -82,7 +77,7 @@ export const LocationPickerField: React.FC<LocationPickerFieldProps> = ({
         address: `${lat}, ${lng}`
       };
       handleLocationSelect(location);
-      setShowCoordinateInput(false);
+
     } else {
       alert("Invalid coordinates. Please enter valid numbers.");
     }
