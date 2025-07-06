@@ -3,7 +3,7 @@
 # Library: Formedible
 # Purpose: Knowledge base for LLM to understand and generate code for the
 #          Formedible React hook.
-# Version: 1.1.0 (Updated with recent bug fixes and improvements)
+# Version: 0.1.0 (Updated with recent bug fixes and improvements)
 # Date: 2025-07-06
 #
 ################################################################################

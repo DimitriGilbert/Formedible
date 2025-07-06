@@ -854,7 +854,7 @@ npm run lint
 
 ## 📝 Recent Updates
 
-### v1.1.0 (Latest)
+### v0.1.0 (Latest)
 - **🐛 Fixed ArrayField sorting bug**: The `moveItem` function now properly respects the `sortable` configuration
 - **🔧 Improved type safety**: Replaced 23 instances of `any` types with more specific TypeScript types
 - **✨ Enhanced field components**: Added better error handling and type definitions across all field components
