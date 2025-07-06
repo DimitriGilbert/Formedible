@@ -1,4 +1,5 @@
 // Testing utilities for Formedible forms
+import type { FormedibleFormApi } from '@/lib/formedible/types';
 
 export interface FormTesterConfig<T extends Record<string, unknown>> {
   fields?: Array<{
@@ -167,8 +168,8 @@ export class FormTester<T extends Record<string, unknown>> {
 
       expectValid: () => {
         if (this.formInstance && this.formInstance.form) {
-          const isValid = (this.formInstance.form.state as any)?.isValid;
-          if (!isValid) {
+          const state = this.formInstance.form.state as { isValid: boolean };
+          if (!state.isValid) {
             throw new Error('Expected form to be valid');
           }
         }
@@ -176,8 +177,8 @@ export class FormTester<T extends Record<string, unknown>> {
 
       expectInvalid: () => {
         if (this.formInstance && this.formInstance.form) {
-          const isValid = (this.formInstance.form.state as any)?.isValid;
-          if (isValid) {
+          const state = this.formInstance.form.state as { isValid: boolean };
+          if (state.isValid) {
             throw new Error('Expected form to be invalid');
           }
         }
@@ -245,9 +246,10 @@ export class FormTester<T extends Record<string, unknown>> {
 
       getFormData: () => {
         if (this.formInstance && this.formInstance.form) {
-          return (this.formInstance.form.state as any)?.values;
+          const state = this.formInstance.form.state as { values: T };
+          return state.values;
         }
-        return {};
+        return {} as T;
       }
     };
 

@@ -2,15 +2,17 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { Check, X, Loader2 } from 'lucide-react';
+import type { AnyFieldApi } from '@tanstack/react-form';
+import type { FieldValidationError } from '@/lib/formedible/types';
 
 interface InlineValidationWrapperProps {
   children: React.ReactNode;
-  fieldApi: any;
+  fieldApi: AnyFieldApi;
   inlineValidation?: {
     enabled?: boolean;
     debounceMs?: number;
     showSuccess?: boolean;
-    asyncValidator?: (value: any) => Promise<string | null>;
+    asyncValidator?: (value: unknown) => Promise<string | null>;
   };
   className?: string;
 }
@@ -44,7 +46,7 @@ export const InlineValidationWrapper: React.FC<InlineValidationWrapperProps> = (
   const isTouched = state.meta.isTouched;
 
   // Validation function
-  const validateValue = useCallback(async (currentValue: any) => {
+  const validateValue = useCallback(async (currentValue: unknown) => {
     if (!enabled || !asyncValidator) return;
 
     setValidationState(prev => ({ ...prev, isValidating: true }));

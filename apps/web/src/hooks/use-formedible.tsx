@@ -311,6 +311,8 @@ interface UseFormedibleOptions<TFormValues> {
   };
 }
 
+// Note: Using 'any' here is necessary because field components have different specific prop requirements
+// that cannot be unified into a single type without losing type safety within each component
 const defaultFieldComponents: Record<string, React.ComponentType<any>> = {
   text: TextField,
   email: TextField,
@@ -1151,17 +1153,21 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
               props = { ...props, options: normalizedOptions };
             } else if (type === 'array') {
               const mappedArrayConfig = arrayConfig ? {
+                itemType: arrayConfig.itemType || 'text',
+                itemLabel: arrayConfig.itemLabel,
+                itemPlaceholder: arrayConfig.itemPlaceholder,
                 minItems: arrayConfig.minItems,
                 maxItems: arrayConfig.maxItems,
                 itemValidation: arrayConfig.itemValidation,
                 itemComponent: arrayConfig.itemComponent as React.ComponentType<BaseFieldProps>,
-                addButtonText: arrayConfig.addButtonLabel,
-                removeButtonText: arrayConfig.removeButtonLabel,
+                addButtonLabel: arrayConfig.addButtonLabel,
+                removeButtonLabel: arrayConfig.removeButtonLabel,
+                sortable: arrayConfig.sortable,
                 defaultValue: arrayConfig.defaultValue
               } : undefined;
               props = { ...props, arrayConfig: mappedArrayConfig };
             } else if (['text', 'email', 'password', 'url', 'tel'].includes(type)) {
-              props = { ...props, type, datalist };
+              props = { ...props, type: type as 'text' | 'email' | 'password' | 'url' | 'tel', datalist: datalist?.options };
             } else if (type === 'radio') {
               props = { ...props, options: normalizedOptions };
             } else if (type === 'multiSelect') {
