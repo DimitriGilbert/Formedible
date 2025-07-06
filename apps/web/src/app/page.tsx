@@ -35,7 +35,6 @@ import Link from "next/link";
 import { DemoCard } from "@/components/demo/demo-card";
 import { CustomProgress } from "@/components/demo/custom-progress";
 
-
 // Code examples
 import {
   contactFormCode,
@@ -118,11 +117,13 @@ const EnhancedAnimatedWrapper: React.FC<{
   ];
 
   // Use field name hash for deterministic animation selection
-  const fieldNameHash = field?.name ? field.name.split('').reduce((a: number, b: string) => {
-    a = ((a << 5) - a) + b.charCodeAt(0);
-    return a & a;
-  }, 0) : 0;
-  
+  const fieldNameHash = field?.name
+    ? field.name.split("").reduce((a: number, b: string) => {
+        a = (a << 5) - a + b.charCodeAt(0);
+        return a & a;
+      }, 0)
+    : 0;
+
   const animationIndex = Math.abs(fieldNameHash) % animations.length;
   const selectedAnimation = animations[animationIndex];
 
@@ -614,13 +615,15 @@ export default function Home() {
     },
   });
 
-  const [origin, setOrigin] = React.useState('');
+  const [origin, setOrigin] = React.useState("");
 
   React.useEffect(() => {
     setOrigin(window.location.origin);
   }, []);
 
-  const installCommand = `npx shadcn@latest add ${origin || 'https://formedible.dev'}/r/use-formedible.json`;
+  const installCommand = `npx shadcn@latest add ${
+    origin || "https://formedible.dev"
+  }/r/use-formedible.json`;
 
   return (
     <>
@@ -790,7 +793,7 @@ export default function Home() {
                 </div>
               </div>
               <code className="text-green-400 font-mono text-sm block">
-                npx shadcn@latest add {origin || 'https://formedible.dev'}
+                npx shadcn@latest add {origin || "https://formedible.dev"}
                 /r/use-formedible.json
               </code>
             </motion.div>
@@ -1219,7 +1222,7 @@ export function MyForm() {
               </TabsContent>
             </AnimatePresence>
           </Tabs>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto p-4">
             <motion.div
               initial={{ y: 30, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
