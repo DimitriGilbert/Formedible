@@ -37,16 +37,16 @@ export interface ArrayFieldSpecificProps extends BaseFieldProps {
     itemType: string;
     itemLabel?: string;
     itemPlaceholder?: string;
-    itemValidation?: any;
+    itemValidation?: unknown;
     minItems?: number;
     maxItems?: number;
     addButtonLabel?: string;
     removeButtonLabel?: string;
     itemComponent?: React.ComponentType<any>;
     sortable?: boolean;
-    defaultValue?: any;
+    defaultValue?: unknown;
     // Additional props to pass to item components
-    itemProps?: Record<string, any>;
+    itemProps?: Record<string, unknown>;
   };
 }
 
@@ -153,16 +153,6 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
           <div
             key={index}
             className="flex items-start gap-2 p-3 border rounded-lg bg-card"
-            onDragOver={sortable ? (e) => {
-              e.preventDefault();
-              e.dataTransfer.dropEffect = 'move';
-            } : undefined}
-            onDrop={sortable ? (e) => {
-              e.preventDefault();
-              if (draggedIndex !== null && draggedIndex !== index) {
-                moveItem(draggedIndex, index);
-              }
-            } : undefined}
           >
             {sortable && (
               <button
@@ -175,6 +165,16 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
                 }}
                 onDragEnd={() => {
                   setDraggedIndex(null);
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = 'move';
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (draggedIndex !== null && draggedIndex !== index) {
+                    moveItem(draggedIndex, index);
+                  }
                 }}
               >
                 <GripVertical className="h-4 w-4 text-muted-foreground" />
@@ -204,7 +204,7 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
                   accept: itemProps.accept,
                   multiple: itemProps.multiple 
                 })}
-                {...(itemType === 'date' && itemProps.dateProps)}
+                {...(itemType === 'date' && typeof itemProps.dateProps === 'object' && itemProps.dateProps ? itemProps.dateProps : {})}
                 {...(['text', 'email', 'password', 'url', 'tel'].includes(itemType) && {
                   type: itemType,
                   datalist: itemProps.datalist,

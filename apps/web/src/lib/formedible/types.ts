@@ -1,6 +1,6 @@
 import React from 'react';
-import type { AnyFieldApi, FieldApi } from '@tanstack/react-form';
-import type { FormApi, ValidationError, DeepKeys, DeepValue } from '@tanstack/form-core';
+import type { AnyFieldApi } from '@tanstack/react-form';
+import type { FormApi, ValidationError } from '@tanstack/form-core';
 
 // Validation error types based on TanStack Form
 export type FormedibleValidationError = ValidationError;

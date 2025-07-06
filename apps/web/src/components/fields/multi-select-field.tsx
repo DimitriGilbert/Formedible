@@ -74,7 +74,7 @@ export const MultiSelectField: React.FC<MultiSelectFieldSpecificProps> = ({
       value: searchQuery.trim(),
       label: `Create "${searchQuery.trim()}"`,
       isCreateOption: true
-    } as any);
+    } as { value: string; label: string; isCreateOption: true });
   }
 
   // Close dropdown when clicking outside
@@ -228,7 +228,7 @@ export const MultiSelectField: React.FC<MultiSelectFieldSpecificProps> = ({
                 {noOptionsText}
               </div>
             ) : (
-              displayOptions.map((option: any, index) => {
+              displayOptions.map((option: { value: string; label: string; isCreateOption?: boolean }, index) => {
                 const isSelected = selectedValues.includes(option.value);
                 const isDisabled = !isSelected && selectedValues.length >= maxSelections;
                 
@@ -258,7 +258,7 @@ export const MultiSelectField: React.FC<MultiSelectFieldSpecificProps> = ({
 
       {state.meta.isTouched && state.meta.errors.length > 0 && (
         <div className="text-xs text-destructive pt-1">
-          {state.meta.errors.map((err: any, index: number) => (
+          {state.meta.errors.map((err: string | Error, index: number) => (
             <p key={index}>{typeof err === 'string' ? err : (err as Error)?.message || 'Invalid'}</p>
           ))}
         </div>

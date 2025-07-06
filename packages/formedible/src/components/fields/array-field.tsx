@@ -16,7 +16,6 @@ import { SliderField } from './slider-field';
 import { FileUploadField } from './file-upload-field';
 
 // Map of field types to components
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const fieldTypeComponents: Record<string, React.ComponentType<any>> = {
   text: TextField,
   email: TextField,
@@ -43,7 +42,6 @@ export interface ArrayFieldSpecificProps extends BaseFieldProps {
     maxItems?: number;
     addButtonLabel?: string;
     removeButtonLabel?: string;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     itemComponent?: React.ComponentType<any>;
     sortable?: boolean;
     defaultValue?: unknown;

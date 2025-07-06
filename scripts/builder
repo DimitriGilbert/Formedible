@@ -328,14 +328,21 @@ commit_changes() {
   
   log_info "Committing changes..."
   
+  # Only add source code changes, not build artifacts
+  # Add package source changes
+  git add packages/formedible/src/ packages/formedible/package.json packages/formedible/registry.json packages/formedible/public/r/ || true
+  
+  # Add web app source changes (components copied from package)
+  git add apps/web/src/ apps/web/r/ apps/web/public/r/ || true
+  
+  # Add any other source files that might have changed
+  git add *.md *.json *.js *.ts *.tsx scripts/ || true
+  
   # Check if there are changes to commit
-  if git diff-index --quiet HEAD --; then
-    log_info "No changes to commit"
+  if git diff-index --quiet --cached HEAD --; then
+    log_info "No source changes to commit"
     return
   fi
-  
-  # Add all changes
-  git add .
   
   # Create commit message
   local commit_message="Release $RELEASE_NAME

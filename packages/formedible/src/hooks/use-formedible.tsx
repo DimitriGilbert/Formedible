@@ -313,7 +313,6 @@ interface UseFormedibleOptions<TFormValues> {
 
 // Note: Using 'any' here is necessary because field components have different specific prop requirements
 // that cannot be unified into a single type without losing type safety within each component
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const defaultFieldComponents: Record<string, React.ComponentType<any>> = {
   text: TextField,
   email: TextField,
@@ -697,7 +696,6 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
       // Restore form values
       Object.entries(savedData.values as Record<string, unknown>).forEach(([key, value]) => {
         try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           form.setFieldValue(key as keyof TFormValues & string, value as any);
         } catch (error) {
           console.warn(`Failed to restore field value for ${key}:`, error);

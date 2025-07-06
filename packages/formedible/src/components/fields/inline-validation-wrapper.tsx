@@ -174,7 +174,6 @@ export const InlineValidationWrapper: React.FC<InlineValidationWrapperProps> = (
 };
 
 // Debounce utility function
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function debounce<T extends (...args: any[]) => any>(
   func: T,
   wait: number

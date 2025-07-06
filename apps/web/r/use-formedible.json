@@ -1,0 +1,154 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "formedible",
+  "homepage": "https://github.com/DimitriGilbert/Formedible",
+  "items": [
+    {
+      "name": "use-formedible",
+      "type": "registry:hook",
+      "title": "Use Formedible",
+      "description": "A powerful React hook for creating schema-driven forms with TanStack Form and shadcn/ui components",
+      "registryDependencies": [
+        "button",
+        "input",
+        "textarea",
+        "select",
+        "checkbox",
+        "switch",
+        "label",
+        "calendar",
+        "popover"
+      ],
+      "dependencies": [
+        "@tanstack/react-form",
+        "@radix-ui/react-checkbox",
+        "@radix-ui/react-label",
+        "@radix-ui/react-select",
+        "@radix-ui/react-switch",
+        "date-fns",
+        "react-day-picker",
+        "lucide-react",
+        "zod"
+      ],
+      "files": [
+        {
+          "path": "src/hooks/use-formedible.tsx",
+          "type": "registry:hook",
+          "target": "hooks/use-formedible.tsx"
+        },
+        {
+          "path": "src/lib/formedible/types.ts",
+          "type": "registry:hook",
+          "target": "lib/formedible/types.ts"
+        },
+        {
+          "path": "src/components/fields/array-field.tsx",
+          "type": "registry:component",
+          "target": "components/fields/array-field.tsx"
+        },
+        {
+          "path": "src/components/fields/autocomplete-field.tsx",
+          "type": "registry:component",
+          "target": "components/fields/autocomplete-field.tsx"
+        },
+        {
+          "path": "src/components/fields/checkbox-field.tsx",
+          "type": "registry:component",
+          "target": "components/fields/checkbox-field.tsx"
+        },
+        {
+          "path": "src/components/fields/color-picker-field.tsx",
+          "type": "registry:component",
+          "target": "components/fields/color-picker-field.tsx"
+        },
+        {
+          "path": "src/components/fields/date-field.tsx",
+          "type": "registry:component",
+          "target": "components/fields/date-field.tsx"
+        },
+        {
+          "path": "src/components/fields/duration-picker-field.tsx",
+          "type": "registry:component",
+          "target": "components/fields/duration-picker-field.tsx"
+        },
+        {
+          "path": "src/components/fields/field-help.tsx",
+          "type": "registry:component",
+          "target": "components/fields/field-help.tsx"
+        },
+        {
+          "path": "src/components/fields/file-upload-field.tsx",
+          "type": "registry:component",
+          "target": "components/fields/file-upload-field.tsx"
+        },
+        {
+          "path": "src/components/fields/inline-validation-wrapper.tsx",
+          "type": "registry:component",
+          "target": "components/fields/inline-validation-wrapper.tsx"
+        },
+        {
+          "path": "src/components/fields/location-picker-field.tsx",
+          "type": "registry:component",
+          "target": "components/fields/location-picker-field.tsx"
+        },
+        {
+          "path": "src/components/fields/masked-input-field.tsx",
+          "type": "registry:component",
+          "target": "components/fields/masked-input-field.tsx"
+        },
+        {
+          "path": "src/components/fields/multi-select-field.tsx",
+          "type": "registry:component",
+          "target": "components/fields/multi-select-field.tsx"
+        },
+        {
+          "path": "src/components/fields/number-field.tsx",
+          "type": "registry:component",
+          "target": "components/fields/number-field.tsx"
+        },
+        {
+          "path": "src/components/fields/phone-field.tsx",
+          "type": "registry:component",
+          "target": "components/fields/phone-field.tsx"
+        },
+        {
+          "path": "src/components/fields/radio-field.tsx",
+          "type": "registry:component",
+          "target": "components/fields/radio-field.tsx"
+        },
+        {
+          "path": "src/components/fields/rating-field.tsx",
+          "type": "registry:component",
+          "target": "components/fields/rating-field.tsx"
+        },
+        {
+          "path": "src/components/fields/select-field.tsx",
+          "type": "registry:component",
+          "target": "components/fields/select-field.tsx"
+        },
+        {
+          "path": "src/components/fields/slider-field.tsx",
+          "type": "registry:component",
+          "target": "components/fields/slider-field.tsx"
+        },
+        {
+          "path": "src/components/fields/switch-field.tsx",
+          "type": "registry:component",
+          "target": "components/fields/switch-field.tsx"
+        },
+        {
+          "path": "src/components/fields/text-field.tsx",
+          "type": "registry:component",
+          "target": "components/fields/text-field.tsx"
+        },
+        {
+          "path": "src/components/fields/textarea-field.tsx",
+          "type": "registry:component",
+          "target": "components/fields/textarea-field.tsx"
+        }
+      ],
+      "categories": ["form", "hook"],
+      "docs": "Make sure to install @tanstack/react-form and configure your shadcn/ui components before using this hook."
+    }
+  ]
+} 
