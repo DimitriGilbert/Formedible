@@ -60,7 +60,7 @@ Ensure you have the required shadcn/ui installed.
 via shadcn CLI
 
 ```bash
-npx shadcn@latest add formedible.com/r/use-formedible.json
+npx shadcn@latest add formedible.dev/r/use-formedible.json
 ```
 
 ## 🎯 Core Features
@@ -734,7 +734,7 @@ export function ContactForm() {
 
 This component is distributed as a shadcn/ui registry item:
 
-- **Registry URL**: `formedible.com/r/use-formedible.json`
+- **Registry URL**: `formedible.dev/r/use-formedible.json`
 - **Type**: `registry:hook`
 - **Categories**: `form`, `hook`
 - **Dependencies**: TanStack Form, Zod, Radix UI components

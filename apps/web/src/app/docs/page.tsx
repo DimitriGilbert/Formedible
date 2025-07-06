@@ -121,7 +121,7 @@ export default function DocsPage() {
               </div>
               <div className="bg-slate-900 dark:bg-slate-800 rounded-lg p-4 max-w-2xl mx-auto">
                 <code className="text-green-400 font-mono text-sm block text-center">
-                  npx shadcn@latest add formedible.com/r/use-formedible.json
+                  npx shadcn@latest add formedible.dev/r/use-formedible.json
                 </code>
               </div>
               <p className="text-sm text-blue-700 dark:text-blue-300 mt-3">

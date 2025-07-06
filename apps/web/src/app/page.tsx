@@ -118,7 +118,7 @@ const EnhancedAnimatedWrapper: React.FC<{
   ];
 
   // Use field name hash for deterministic animation selection
-  const fieldNameHash = field?.name ? field.name.split('').reduce((a, b) => {
+  const fieldNameHash = field?.name ? field.name.split('').reduce((a: number, b: string) => {
     a = ((a << 5) - a) + b.charCodeAt(0);
     return a & a;
   }, 0) : 0;

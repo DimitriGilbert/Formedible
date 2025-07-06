@@ -22,6 +22,13 @@ interface LocationValue {
   address?: string;
 }
 
+interface SearchResult {
+  id: number;
+  address: string;
+  lat: number;
+  lng: number;
+}
+
 interface LocationPickerFieldProps extends BaseFieldProps {
   locationConfig?: {
     apiKey?: string;
@@ -53,7 +60,7 @@ export const LocationPickerField: React.FC<LocationPickerFieldProps> = ({
 
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<LocationValue | null>(
     fieldApi.state.value || (defaultLocation ? { ...defaultLocation, address: "Default Location" } : null)
@@ -81,29 +88,29 @@ export const LocationPickerField: React.FC<LocationPickerFieldProps> = ({
     }
   };
 
-  // Initialize map (simplified version without external dependencies)
-{/* Map placeholder */}
-<div ref={mapRef} className="w-full h-48 border rounded-md">
-  {currentLocation ? (
-    <div className="w-full h-48 bg-muted rounded-md flex items-center justify-center text-muted-foreground">
-      <div className="text-center">
-        <div className="text-sm font-medium">
-          Location: {currentLocation.lat.toFixed(4)}, {currentLocation.lng.toFixed(4)}
-        </div>
-        {currentLocation.address && (
-          <div className="text-xs mt-1">{currentLocation.address}</div>
-        )}
-      </div>
-    </div>
-  ) : (
-    <div className="w-full h-full bg-muted rounded-md flex items-center justify-center text-muted-foreground">
-      <div className="text-center">
-        <div className="text-sm">No location selected</div>
-        <div className="text-xs mt-1">Search or use current location</div>
-      </div>
-    </div>
-  )}
-</div>
+//   // Initialize map (simplified version without external dependencies)
+// {/* Map placeholder */}
+// <div ref={mapRef} className="w-full h-48 border rounded-md">
+//   {currentLocation ? (
+//     <div className="w-full h-48 bg-muted rounded-md flex items-center justify-center text-muted-foreground">
+//       <div className="text-center">
+//         <div className="text-sm font-medium">
+//           Location: {currentLocation.lat.toFixed(4)}, {currentLocation.lng.toFixed(4)}
+//         </div>
+//         {currentLocation.address && (
+//           <div className="text-xs mt-1">{currentLocation.address}</div>
+//         )}
+//       </div>
+//     </div>
+//   ) : (
+//     <div className="w-full h-full bg-muted rounded-md flex items-center justify-center text-muted-foreground">
+//       <div className="text-center">
+//         <div className="text-sm">No location selected</div>
+//         <div className="text-xs mt-1">Search or use current location</div>
+//       </div>
+//     </div>
+//   )}
+// </div>
 
   // Handle search with debouncing
   useEffect(() => {
@@ -121,7 +128,7 @@ export const LocationPickerField: React.FC<LocationPickerFieldProps> = ({
       setIsSearching(true);
       try {
         // Mock search results - in real implementation, this would call a geocoding API
-        const mockResults = [
+        const mockResults: SearchResult[] = [
           {
             id: 1,
             address: `${searchQuery} Street, New York, NY`,

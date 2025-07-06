@@ -70,8 +70,11 @@ export const FormStepper: React.FC<FormStepperProps> = ({
   };
 
   const canGoToStep = (stepIndex: number) => {
-    // Can go to current step, previous steps, or next step if current is completed
-    return stepIndex <= activeStep || completedSteps.has(stepIndex - 1);
+    // Can go to current step, previous steps, or next step only if the current step is completed
+    return (
+      stepIndex <= activeStep ||
+      (stepIndex === activeStep + 1 && completedSteps.has(activeStep))
+    );
   };
 
   const isStepCompleted = (stepIndex: number) => {

@@ -11,7 +11,7 @@ export default function GettingStartedPage() {
     {
       title: "Install Formedible",
       description: "Add Formedible to your project with one command",
-      code: "npx shadcn@latest add formedible.com/r/use-formedible.json",
+      code: "npx shadcn@latest add formedible.dev/r/use-formedible.json",
       details: [
         "Installs the useFormedible hook",
         "Adds all field components to your project", 
