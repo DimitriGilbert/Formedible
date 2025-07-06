@@ -1,66 +1,45 @@
 "use client";
 
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CheckCircle, Copy, ExternalLink, Rocket, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 
 export default function GettingStartedPage() {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-      <header className="border-b bg-white/80 backdrop-blur-sm dark:bg-slate-950/80 sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/docs">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Docs
-              </Link>
-            </Button>
-            <div>
-              <h1 className="text-xl font-bold">Getting Started</h1>
-              <p className="text-sm text-muted-foreground">
-                Learn how to install and use Formedible
-              </p>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div className="container mx-auto px-4 py-16">
-        <div className="max-w-4xl mx-auto prose prose-slate dark:prose-invert">
-          <h1>Getting Started</h1>
-          
-          <p>Welcome to Formedible! This guide will help you get up and running with schema-driven forms in your Next.js project.</p>
-
-          <h2>Installation</h2>
-          
-          <p>Install Formedible using the shadcn CLI:</p>
-          
-          <pre className="bg-slate-900 text-slate-100 p-4 rounded-lg font-mono text-sm overflow-x-auto">
-            <code>npx shadcn@latest add formedible.com/r/use-formedible.json</code>
-          </pre>
-
-          <p>This command will:</p>
-          <ul>
-            <li>Install the <code>useFormedible</code> hook</li>
-            <li>Add all field components to your project</li>
-            <li>Install required dependencies</li>
-            <li>Set up TypeScript definitions</li>
-          </ul>
-
-          <h2>Your First Form</h2>
-          
-          <p>Let&apos;s create a simple contact form to get you started:</p>
-
-          <pre className="bg-slate-900 text-slate-100 p-4 rounded-lg font-mono text-sm overflow-x-auto">
-            <code>{`import { useFormedible } from "@/hooks/use-formedible";
-import { z } from "zod";
+  const steps = [
+    {
+      title: "Install Formedible",
+      description: "Add Formedible to your project with one command",
+      code: "npx shadcn@latest add formedible.com/r/use-formedible.json",
+      details: [
+        "Installs the useFormedible hook",
+        "Adds all field components to your project", 
+        "Installs required dependencies",
+        "Sets up TypeScript definitions"
+      ]
+    },
+    {
+      title: "Define Your Schema",
+      description: "Create a Zod schema for type-safe validation",
+      code: `import { z } from "zod";
 
 const contactSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email"),
   message: z.string().min(10, "Message must be at least 10 characters"),
-});
+});`,
+      details: [
+        "Full TypeScript support",
+        "Runtime validation",
+        "Automatic error messages",
+        "Composable and reusable"
+      ]
+    },
+    {
+      title: "Build Your Form",
+      description: "Use the useFormedible hook to create your form",
+      code: `import { useFormedible } from "@/hooks/use-formedible";
 
 export function ContactForm() {
   const { Form } = useFormedible({
@@ -71,58 +50,173 @@ export function ContactForm() {
       { name: "message", type: "textarea", label: "Message" },
     ],
     formOptions: {
-      defaultValues: {
-        name: "",
-        email: "",
-        message: "",
-      },
+      defaultValues: { name: "", email: "", message: "" },
       onSubmit: async ({ value }) => {
         console.log("Form submitted:", value);
-        // Handle form submission here
       },
     },
   });
 
   return <Form />;
-}`}</code>
-          </pre>
+}`,
+      details: [
+        "Declarative field configuration",
+        "Built-in form state management",
+        "Automatic validation integration",
+        "Customizable styling"
+      ]
+    }
+  ];
 
-          <h2>Key Concepts</h2>
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto">
+          {/* Header */}
+          <div className="mb-12">
+            <div className="flex items-center gap-4 mb-6">
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/docs">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Docs
+                </Link>
+              </Button>
+            </div>
+            
+            <div className="text-center mb-8">
+              <Badge variant="secondary" className="mb-4">
+                <Rocket className="w-3 h-3 mr-1" />
+                Getting Started
+              </Badge>
+              <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-slate-900 to-blue-800 dark:from-slate-100 dark:to-blue-200 bg-clip-text text-transparent">
+                Build Your First Form
+              </h1>
+              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+                Get up and running with Formedible in under 5 minutes. 
+                This guide will walk you through creating a beautiful, type-safe form.
+              </p>
+            </div>
 
-          <h3>Schema Validation</h3>
-          <p>Formedible uses Zod schemas for validation. Define your schema once and get:</p>
-          <ul>
-            <li>Type safety</li>
-            <li>Runtime validation</li>
-            <li>Automatic error messages</li>
-          </ul>
+            <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-950/20 dark:to-blue-950/20 p-6 rounded-xl border border-green-200 dark:border-green-800">
+              <div className="flex items-center gap-2 mb-2">
+                <Zap className="w-5 h-5 text-green-600" />
+                <span className="font-semibold text-green-800 dark:text-green-200">Quick Start</span>
+              </div>
+              <p className="text-green-700 dark:text-green-300 text-sm">
+                Already familiar with React and Zod? Jump straight to step 1 and have your form running in 2 minutes.
+              </p>
+            </div>
+          </div>
 
-          <h3>Field Configuration</h3>
-          <p>Each field is configured with:</p>
-          <ul>
-            <li><code>name</code>: The field name (must match schema)</li>
-            <li><code>type</code>: The field type (text, email, select, etc.)</li>
-            <li><code>label</code>: Display label for the field</li>
-            <li>Additional type-specific options</li>
-          </ul>
+          {/* Steps */}
+          <div className="space-y-12">
+            {steps.map((step, index) => (
+              <Card key={index} className="overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-700">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-sm">
+                      {index + 1}
+                    </div>
+                    <div>
+                      <CardTitle className="text-xl">{step.title}</CardTitle>
+                      <CardDescription className="text-base">{step.description}</CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Code */}
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Code</h4>
+                        <Button variant="ghost" size="sm" className="h-8 px-2">
+                          <Copy className="w-3 h-3" />
+                        </Button>
+                      </div>
+                      <div className="bg-slate-900 dark:bg-slate-800 rounded-lg p-4 overflow-x-auto">
+                        <pre className="text-sm">
+                          <code className="text-slate-100 font-mono whitespace-pre">
+                            {step.code}
+                          </code>
+                        </pre>
+                      </div>
+                    </div>
 
-          <h3>Form Options</h3>
-          <p>The <code>formOptions</code> object accepts all TanStack Form options:</p>
-          <ul>
-            <li><code>defaultValues</code>: Initial form values</li>
-            <li><code>onSubmit</code>: Form submission handler</li>
-            <li><code>validators</code>: Additional validation logic</li>
-          </ul>
+                    {/* Details */}
+                    <div>
+                      <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-3">What This Does</h4>
+                      <ul className="space-y-2">
+                        {step.details.map((detail, detailIndex) => (
+                          <li key={detailIndex} className="flex items-start gap-2">
+                            <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                            <span className="text-sm">{detail}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
 
-          <h2>Next Steps</h2>
-          <ul>
-            <li>Explore Field Types to see all available components</li>
-            <li>Check out Examples for real-world use cases</li>
-            <li>Read the API Reference for complete documentation</li>
-          </ul>
+          {/* Next Steps */}
+          <div className="mt-16">
+            <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border-blue-200 dark:border-blue-800">
+              <CardHeader className="text-center">
+                <CardTitle className="text-2xl text-blue-800 dark:text-blue-200">
+                  🎉 Congratulations!
+                </CardTitle>
+                <CardDescription className="text-base text-blue-700 dark:text-blue-300">
+                  You've created your first Formedible form. Here's what to explore next:
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Link href="/docs/fields">
+                    <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border hover:shadow-md transition-shadow cursor-pointer">
+                      <h4 className="font-semibold mb-2">Field Types</h4>
+                      <p className="text-sm text-muted-foreground">Explore 15+ field components</p>
+                    </div>
+                  </Link>
+                  <Link href="/docs/examples">
+                    <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border hover:shadow-md transition-shadow cursor-pointer">
+                      <h4 className="font-semibold mb-2">Examples</h4>
+                      <p className="text-sm text-muted-foreground">See real-world implementations</p>
+                    </div>
+                  </Link>
+                  <Link href="/docs/api">
+                    <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border hover:shadow-md transition-shadow cursor-pointer">
+                      <h4 className="font-semibold mb-2">API Reference</h4>
+                      <p className="text-sm text-muted-foreground">Complete documentation</p>
+                    </div>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-          <h2>Need Help?</h2>
-          <p>If you run into any issues, check out our examples or create an issue on GitHub.</p>
+          {/* Help Section */}
+          <div className="mt-12 text-center">
+            <h3 className="text-xl font-semibold mb-4">Need Help?</h3>
+            <p className="text-muted-foreground mb-6">
+              If you run into any issues or have questions, we're here to help.
+            </p>
+            <div className="flex flex-wrap justify-center gap-4">
+              <Button variant="outline" asChild>
+                <Link href="/docs/examples">
+                  View Examples
+                  <ExternalLink className="w-4 h-4 ml-2" />
+                </Link>
+              </Button>
+              <Button variant="outline" asChild>
+                <a href="https://github.com/your-repo/formedible/issues" target="_blank" rel="noopener noreferrer">
+                  Report Issue
+                  <ExternalLink className="w-4 h-4 ml-2" />
+                </a>
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

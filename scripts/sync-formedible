@@ -1,10 +1,10 @@
 #!/bin/bash
 
 rm -rf \
-  apps/web/src/components/{field,layout} \
+  apps/web/src/components/{fields,layout} \
   apps/web/src/hooks/use-formedible.tsx \
   apps/web/src/lib/formedible/types.ts
-cp packages/formedible/src/components/field apps/web/src/components/field -r
+cp packages/formedible/src/components/fields apps/web/src/components/fields -r
 cp packages/formedible/src/components/layout apps/web/src/components/layout -r
 cp packages/formedible/src/hooks/use-formedible.tsx apps/web/src/hooks/use-formedible.tsx
 cp packages/formedible/src/lib/formedible/types.ts apps/web/src/lib/formedible/types.ts

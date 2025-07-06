@@ -105,11 +105,11 @@ const comprehensiveSchema = z.object({
   newsletter: z.boolean(),
 });
 
-// Enhanced Animated Field Wrapper with random intro animations that ALL end in the same normal state
+// Enhanced Animated Field Wrapper with deterministic intro animations
 const EnhancedAnimatedWrapper: React.FC<{
   children: React.ReactNode;
   field: any;
-}> = ({ children }) => {
+}> = ({ children, field }) => {
   const animations = [
     { opacity: 0, y: 15 },
     { opacity: 0, x: -15 },
@@ -117,13 +117,19 @@ const EnhancedAnimatedWrapper: React.FC<{
     { opacity: 0, y: -10 },
   ];
 
-  const randomInitial =
-    animations[Math.floor(Math.random() * animations.length)];
+  // Use field name hash for deterministic animation selection
+  const fieldNameHash = field?.name ? field.name.split('').reduce((a, b) => {
+    a = ((a << 5) - a) + b.charCodeAt(0);
+    return a & a;
+  }, 0) : 0;
+  
+  const animationIndex = Math.abs(fieldNameHash) % animations.length;
+  const selectedAnimation = animations[animationIndex];
 
   return (
     <motion.div
-      initial={randomInitial}
-      animate={{ opacity: 1, y: 0, x: 0, scale: 1 }} // ALL animations end here - normal state!
+      initial={selectedAnimation}
+      animate={{ opacity: 1, y: 0, x: 0, scale: 1 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
       whileHover={{ scale: 1.01 }}
       className="space-y-2"

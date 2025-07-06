@@ -38,7 +38,16 @@ npm run dev:web
 - `npm run dev:pkg` - Develop library with watch mode
 - `npm run dev:web` - Develop website
 - `npm run lint` - Lint all packages
+- `npm run lint:pkg` - Lint library only
+- `npm run lint:web` - Lint website only
 - `npm run test:pkg` - Run library tests
+
+### Code Quality
+The project maintains high code quality standards with:
+- **TypeScript strict mode** for type safety
+- **ESLint** with comprehensive rules including no-explicit-any warnings
+- **Consistent code style** with Prettier integration
+- **Component architecture** following React best practices
 
 ## 🚀 Quick Start
 
@@ -454,8 +463,9 @@ interface FieldConfig {
     addButtonLabel?: string;                 // Label for add button
     removeButtonLabel?: string;              // Label for remove button
     itemComponent?: React.ComponentType<any>; // Custom component for each item
-    sortable?: boolean;                      // Whether items can be reordered
+    sortable?: boolean;                      // Whether items can be reordered (drag & drop)
     defaultValue?: any;                      // Default value for new items
+    itemProps?: Record<string, unknown>;     // Additional props for item components
   };
   
   // Help and tooltip configuration
@@ -541,7 +551,11 @@ interface FieldConfig {
 | `phone` | `PhoneField` | International phone number input |
 | `colorPicker` | `ColorPickerField` | Color picker with preview |
 | `file` | `FileUploadField` | File upload with drag & drop |
-| `array` | `ArrayField` | Dynamic array of fields with add/remove |
+| `array` | `ArrayField` | Dynamic array of fields with add/remove/sort |
+| `autocomplete` | `AutocompleteField` | Text input with autocomplete suggestions |
+| `durationPicker` | `DurationPickerField` | Time duration picker (hours/minutes/seconds) |
+| `locationPicker` | `LocationPickerField` | Location picker with map integration |
+| `maskedInput` | `MaskedInputField` | Text input with formatting masks |
 
 ## 🎭 Component Architecture
 
@@ -837,6 +851,20 @@ npm run test:pkg
 # Lint everything
 npm run lint
 ```
+
+## 📝 Recent Updates
+
+### v1.1.0 (Latest)
+- **🐛 Fixed ArrayField sorting bug**: The `moveItem` function now properly respects the `sortable` configuration
+- **🔧 Improved type safety**: Replaced 23 instances of `any` types with more specific TypeScript types
+- **✨ Enhanced field components**: Added better error handling and type definitions across all field components
+- **🧹 Code cleanup**: Removed unused imports and variables, improved ESLint compliance
+- **📚 Updated documentation**: Enhanced README with comprehensive API reference and examples
+
+### Key Bug Fixes
+- **ArrayField**: Fixed issue where items could be moved even when `sortable: false`
+- **Type Safety**: Eliminated explicit `any` types in favor of proper TypeScript interfaces
+- **Error Handling**: Standardized error display across all field components
 
 ## 📄 License
 

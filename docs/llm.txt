@@ -3,8 +3,8 @@
 # Library: Formedible
 # Purpose: Knowledge base for LLM to understand and generate code for the
 #          Formedible React hook.
-# Version: 1.0 (Based on provided documentation)
-# Date: 2025-06-15
+# Version: 1.1.0 (Updated with recent bug fixes and improvements)
+# Date: 2025-07-06
 #
 ################################################################################
 
@@ -130,7 +130,7 @@ Defines a single field within the `fields` array.
 - **`dependencies?: string[]`**: Array of field names this field depends on.
 
 **Array Field Configuration:**
-- **`arrayConfig?: { itemType: string; itemLabel?: string; itemPlaceholder?: string; itemValidation?: z.ZodSchema<any>; minItems?: number; maxItems?: number; addButtonLabel?: string; removeButtonLabel?: string; itemComponent?: React.ComponentType<any>; sortable?: boolean; defaultValue?: any; }`**: Configuration for array fields.
+- **`arrayConfig?: { itemType: string; itemLabel?: string; itemPlaceholder?: string; itemValidation?: z.ZodSchema<any>; minItems?: number; maxItems?: number; addButtonLabel?: string; removeButtonLabel?: string; itemComponent?: React.ComponentType<any>; sortable?: boolean; defaultValue?: any; itemProps?: Record<string, unknown>; }`**: Configuration for array fields. The `sortable` option enables drag-and-drop reordering of items.
 
 **Help and Tooltip Configuration:**
 - **`help?: { text?: string; tooltip?: string; position?: 'top' | 'bottom' | 'left' | 'right'; link?: { url: string; text: string }; }`**: Help text and tooltip configuration.
@@ -181,7 +181,11 @@ The props interface that all field components (default and custom) must adhere t
 | `phone`       | `PhoneField`           | International phone number input.             |
 | `colorPicker` | `ColorPickerField`     | Color picker with preview.                   |
 | `file`        | `FileUploadField`      | File input with drag & drop.                 |
-| `array`       | `ArrayField`           | Dynamic array of fields with add/remove.     |
+| `array`       | `ArrayField`           | Dynamic array of fields with add/remove/sort.|
+| `autocomplete`| `AutocompleteField`    | Text input with autocomplete suggestions.    |
+| `durationPicker`| `DurationPickerField`| Time duration picker (hours/minutes/seconds).|
+| `locationPicker`| `LocationPickerField`| Location picker with map integration.        |
+| `maskedInput` | `MaskedInputField`     | Text input with formatting masks.            |
 
 ### USAGE PATTERNS
 ---
