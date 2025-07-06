@@ -6,6 +6,15 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 
 interface LocationValue {
   lat: number;
@@ -53,22 +62,55 @@ export const LocationPickerField: React.FC<LocationPickerFieldProps> = ({
   );
   const mapRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [geoError, setGeoError] = useState<string | null>(null);
+
+  const [showCoordinateInput, setShowCoordinateInput] = useState(false);
+  const [manualLat, setManualLat] = useState('');
+  const [manualLng, setManualLng] = useState('');
+
+  const handleManualCoordinates = () => {
+    setShowCoordinateInput(true);
+  };
+
+  const handleManualCoordinatesSubmit = () => {
+    const lat = parseFloat(manualLat);
+    const lng = parseFloat(manualLng);
+    if (!isNaN(lat) && !isNaN(lng)) {
+      const location: LocationValue = {
+        lat,
+        lng,
+        address: `${lat}, ${lng}`
+      };
+      handleLocationSelect(location);
+      setShowCoordinateInput(false);
+    } else {
+      alert("Invalid coordinates. Please enter valid numbers.");
+    }
+  };
 
   // Initialize map (simplified version without external dependencies)
-  useEffect(() => {
-    if (mapRef.current && currentLocation) {
-      // This would integrate with a real map library like Leaflet or Google Maps
-      // For now, we'll show a placeholder
-      mapRef.current.innerHTML = `
-        <div class="w-full h-48 bg-muted rounded-md flex items-center justify-center text-muted-foreground">
-          <div class="text-center">
-            <div class="text-sm font-medium">Location: ${currentLocation.lat.toFixed(4)}, ${currentLocation.lng.toFixed(4)}</div>
-            ${currentLocation.address ? `<div class="text-xs mt-1">${currentLocation.address}</div>` : ''}
-          </div>
+{/* Map placeholder */}
+<div ref={mapRef} className="w-full h-48 border rounded-md">
+  {currentLocation ? (
+    <div className="w-full h-48 bg-muted rounded-md flex items-center justify-center text-muted-foreground">
+      <div className="text-center">
+        <div className="text-sm font-medium">
+          Location: {currentLocation.lat.toFixed(4)}, {currentLocation.lng.toFixed(4)}
         </div>
-      `;
-    }
-  }, [currentLocation]);
+        {currentLocation.address && (
+          <div className="text-xs mt-1">{currentLocation.address}</div>
+        )}
+      </div>
+    </div>
+  ) : (
+    <div className="w-full h-full bg-muted rounded-md flex items-center justify-center text-muted-foreground">
+      <div className="text-center">
+        <div className="text-sm">No location selected</div>
+        <div className="text-xs mt-1">Search or use current location</div>
+      </div>
+    </div>
+  )}
+</div>
 
   // Handle search with debouncing
   useEffect(() => {
@@ -127,6 +169,7 @@ export const LocationPickerField: React.FC<LocationPickerFieldProps> = ({
 
   const handleGetCurrentLocation = () => {
     if (!enableGeolocation || !navigator.geolocation) {
+      setGeoError('Geolocation is not supported by your browser');
       return;
     }
 
@@ -138,26 +181,17 @@ export const LocationPickerField: React.FC<LocationPickerFieldProps> = ({
           address: "Current Location"
         };
         handleLocationSelect(location);
+        setGeoError(null);
       },
       (error) => {
-        console.error('Geolocation error:', error);
+        const errorMessages: Record<number, string> = {
+          1: 'Location access denied. Please enable location permissions.',
+          2: 'Location unavailable. Please try again.',
+          3: 'Location request timed out. Please try again.'
+        };
+        setGeoError(errorMessages[error.code] || 'Failed to get location');
       }
     );
-  };
-
-  const handleManualCoordinates = () => {
-    const coords = window.prompt("Enter coordinates (lat, lng):");
-    if (coords) {
-      const [lat, lng] = coords.split(',').map(s => parseFloat(s.trim()));
-      if (!isNaN(lat) && !isNaN(lng)) {
-        const location: LocationValue = {
-          lat,
-          lng,
-          address: `${lat}, ${lng}`
-        };
-        handleLocationSelect(location);
-      }
-    }
   };
 
   return (
@@ -224,14 +258,42 @@ export const LocationPickerField: React.FC<LocationPickerFieldProps> = ({
             </Button>
           )}
           
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleManualCoordinates}
-          >
-            Enter Coordinates
-          </Button>
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+              >
+                Enter Coordinates
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Enter Coordinates</DialogTitle>
+                <DialogDescription>
+                  Enter the latitude and longitude.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="latitude" className="text-right">
+                    Latitude
+                  </Label>
+                  <Input id="latitude" value={manualLat} onChange={(e) => setManualLat(e.target.value)} className="col-span-3" />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="longitude" className="text-right">
+                    Longitude
+                  </Label>
+                  <Input id="longitude" value={manualLng} onChange={(e) => setManualLng(e.target.value)} className="col-span-3" />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" onClick={handleManualCoordinatesSubmit}>Save changes</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Map placeholder */}
@@ -252,6 +314,10 @@ export const LocationPickerField: React.FC<LocationPickerFieldProps> = ({
           </div>
         )}
       </div>
+
+      {geoError && (
+        <p className="text-sm text-destructive mt-2">{geoError}</p>
+      )}
 
       {fieldApi.state.meta.errors && fieldApi.state.meta.errors.length > 0 && (
         <p className="text-sm text-destructive">

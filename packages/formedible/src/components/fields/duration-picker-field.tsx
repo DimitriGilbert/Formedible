@@ -54,17 +54,20 @@ export const DurationPickerField: React.FC<DurationPickerFieldProps> = ({
       if (typeof value === 'number') {
         // Value is total seconds
         const totalSeconds = Math.abs(value);
-        setHours(Math.floor(totalSeconds / 3600));
-        setMinutes(Math.floor((totalSeconds % 3600) / 60));
-        setSeconds(totalSeconds % 60);
+        const newHours = Math.min(Math.floor(totalSeconds / 3600), maxHours);
+        const newMinutes = Math.min(Math.floor((totalSeconds % 3600) / 60), maxMinutes);
+        const newSeconds = Math.min(totalSeconds % 60, maxSeconds);
+        setHours(newHours);
+        setMinutes(newMinutes);
+        setSeconds(newSeconds);
       } else if (typeof value === 'object') {
         // Value is duration object
-        setHours(value.hours || 0);
-        setMinutes(value.minutes || 0);
-        setSeconds(value.seconds || 0);
+        setHours(Math.min(value.hours || 0, maxHours));
+        setMinutes(Math.min(value.minutes || 0, maxMinutes));
+        setSeconds(Math.min(value.seconds || 0, maxSeconds));
       }
     }
-  }, [fieldApi.state.value]);
+  }, [fieldApi.state.value, maxHours, maxMinutes, maxSeconds]);
 
   // Update field value when duration changes
   useEffect(() => {
@@ -146,18 +149,21 @@ export const DurationPickerField: React.FC<DurationPickerFieldProps> = ({
           onChange={(e) => {
             const input = e.target.value;
             // Parse manual input like "1h 30m 45s" or "90m" or "3600s"
-            const hourMatch = input.match(/(\d+)h/);
-            const minuteMatch = input.match(/(\d+)m/);
-            const secondMatch = input.match(/(\d+)s/);
+            const hourMatch = input.match(/(\d+)h/i);
+            const minuteMatch = input.match(/(\d+)m(?!s)/i); // Don't match 'ms'
+            const secondMatch = input.match(/(\d+)s/i);
             
-            const newHours = hourMatch ? parseInt(hourMatch[1]) : 0;
-            const newMinutes = minuteMatch ? parseInt(minuteMatch[1]) : 0;
-            const newSeconds = secondMatch ? parseInt(secondMatch[1]) : 0;
+            const newHours = hourMatch ? Math.max(0, parseInt(hourMatch[1], 10)) : 0;
+            const newMinutes = minuteMatch ? Math.max(0, parseInt(minuteMatch[1], 10)) : 0;
+            const newSeconds = secondMatch ? Math.max(0, parseInt(secondMatch[1], 10)) : 0;
             
             if (newHours <= maxHours && newMinutes <= maxMinutes && newSeconds <= maxSeconds) {
               setHours(newHours);
               setMinutes(newMinutes);
               setSeconds(newSeconds);
+            } else {
+              // Provide feedback for invalid input
+              console.warn('Duration values exceed maximum limits');
             }
           }}
         />

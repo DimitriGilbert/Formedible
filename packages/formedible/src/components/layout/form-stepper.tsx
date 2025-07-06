@@ -42,12 +42,14 @@ export const FormStepper: React.FC<FormStepperProps> = ({
 
   const handleNext = () => {
     if (activeStep < steps.length - 1) {
-      setCompletedSteps(prev => new Set([...prev, activeStep]));
       handleStepChange(activeStep + 1);
     } else {
-      setCompletedSteps(prev => new Set([...prev, activeStep]));
       onComplete?.();
     }
+  };
+
+  const markStepComplete = (stepIndex: number) => {
+    setCompletedSteps(prev => new Set([...prev, stepIndex]));
   };
 
   const handlePrevious = () => {

@@ -181,23 +181,21 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
   // Create the form using formedible - call hook at top level
   const formResult = useFormedible(formedibleConfig);
 
-  // Handle empty state early
-  if (config.fields.length === 0) {
-    return (
-      <Card className={className}>
-        <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="text-4xl mb-4">📝</div>
-          <h3 className="text-lg font-medium mb-2">No Fields Added</h3>
-          <p className="text-muted-foreground">
-            Add some fields from the sidebar to see your form preview
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Handle configuration errors
-  if (!formResult) {
+  // Handle configuration errors or empty fields
+  if (!formResult || !formResult.Form || config.fields.length === 0) {
+    if (config.fields.length === 0) {
+      return (
+        <Card className={className}>
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="text-4xl mb-4">📝</div>
+            <h3 className="text-lg font-medium mb-2">No Fields Added</h3>
+            <p className="text-muted-foreground">
+              Add some fields from the sidebar to see your form preview
+            </p>
+          </CardContent>
+        </Card>
+      );
+    }
     return (
       <Card className={className}>
         <CardContent className="py-6">
@@ -332,4 +330,4 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
       </CardContent>
     </Card>
   );
-}; 
+};

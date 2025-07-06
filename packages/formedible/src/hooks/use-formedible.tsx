@@ -836,7 +836,23 @@ export function useFormedible<TFormValues extends Record<string, any>>(
     return () => {
       unsubscribers.forEach(unsub => unsub());
     };
-  }, [form, autoSubmitOnChange, autoSubmitDebounceMs, disabled, loading, formOptions?.onChange, formOptions?.onBlur]);
+  }, [
+    form, 
+    autoSubmitOnChange, 
+    autoSubmitDebounceMs, 
+    disabled, 
+    loading, 
+    formOptions?.onChange, 
+    formOptions?.onBlur,
+    crossFieldValidation,
+    analytics,
+    asyncValidation,
+    fieldFocusTimes,
+    validateFieldAsync,
+    persistence,
+    saveToStorage,
+    currentPage
+  ]);
 
   const getCurrentPageFields = () => fieldsByPage[currentPage] || [];
 

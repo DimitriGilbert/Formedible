@@ -67,28 +67,34 @@ export const MaskedInputField: React.FC<MaskedInputFieldProps> = ({
 
     // Handle string mask patterns
     let maskedValue = '';
-    let valueIndex = 0;
-    const cleanValue = value.replace(/\D/g, ''); // Remove non-digits for most masks
+    let digitIndex = 0;
+    let letterIndex = 0;
+    const cleanDigits = value.replace(/\D/g, ''); // Extract digits
+    const cleanLetters = value.replace(/[^a-zA-Z]/g, ''); // Extract letters
 
-    for (let i = 0; i < mask.length && valueIndex < cleanValue.length; i++) {
+    for (let i = 0; i < mask.length; i++) {
       const maskChar = mask[i];
       
       if (maskChar === '0' || maskChar === '9') {
         // Digit placeholder
-        if (cleanValue[valueIndex]) {
-          maskedValue += cleanValue[valueIndex];
-          valueIndex++;
+        if (digitIndex < cleanDigits.length) {
+          maskedValue += cleanDigits[digitIndex];
+          digitIndex++;
         } else if (guide && showMask) {
           maskedValue += '_';
+        } else {
+          break; // Stop if no more digits and not showing guide
         }
       } else if (maskChar === 'A' || maskChar === 'a') {
         // Letter placeholder
-        const char = value[valueIndex];
-        if (char && /[a-zA-Z]/.test(char)) {
+        if (letterIndex < cleanLetters.length) {
+          const char = cleanLetters[letterIndex];
           maskedValue += maskChar === 'A' ? char.toUpperCase() : char.toLowerCase();
-          valueIndex++;
+          letterIndex++;
         } else if (guide && showMask) {
           maskedValue += '_';
+        } else {
+          break; // Stop if no more letters and not showing guide
         }
       } else {
         // Literal character
