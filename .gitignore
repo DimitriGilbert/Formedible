@@ -3,3 +3,8 @@ node_modules
 .turbo
 packages/formedible/out
 packages/formedible/public
+
+# Build artifacts (should not be committed)
+build/
+release/
+apps/web/out/

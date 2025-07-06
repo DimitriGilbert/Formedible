@@ -354,12 +354,18 @@ Co-Authored-By: opencode <noreply@opencode.ai>"
   # Commit changes
   git commit -m "$commit_message"
   
-  # Push to origin
-  if git push; then
+  # Push to origin (handle upstream branch setup)
+  if git push 2>/dev/null; then
     log_success "Changes committed and pushed"
   else
-    log_error "Failed to push changes"
-    exit 1
+    log_info "Setting upstream branch and pushing..."
+    current_branch=$(git branch --show-current)
+    if git push --set-upstream origin "$current_branch"; then
+      log_success "Changes committed and pushed with upstream set"
+    else
+      log_error "Failed to push changes"
+      exit 1
+    fi
   fi
 }
 
@@ -411,13 +417,22 @@ create_github_release() {
   # Create the release
   log_info "Creating release with assets: ${RELEASE_ASSETS[*]}"
   
-  gh release create "$RELEASE_NAME" \
+  # Check if release already exists and delete it if so
+  if gh release view "$RELEASE_NAME" >/dev/null 2>&1; then
+    log_info "Release $RELEASE_NAME already exists, deleting it first..."
+    gh release delete "$RELEASE_NAME" --yes
+  fi
+  
+  if gh release create "$RELEASE_NAME" \
     "${RELEASE_ASSETS[@]}" \
     --title "Formedible $RELEASE_NAME" \
-    --generate-notes
-  
-  log_success "GitHub release created successfully!"
-  log_info "View the release at: $(gh browse --no-browser -p)/releases/tag/$RELEASE_NAME"
+    --generate-notes; then
+    log_success "GitHub release created successfully!"
+    log_info "View the release at: $(gh browse --no-browser -p)/releases/tag/$RELEASE_NAME"
+  else
+    log_error "Failed to create GitHub release"
+    exit 1
+  fi
 }
 
 show_summary() {
