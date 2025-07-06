@@ -55,63 +55,98 @@ This is the main hook and entry point for the library.
   - `isFirstPage`: `boolean`. True if on the first page.
   - `isLastPage`: `boolean`. True if on the last page.
   - `progressValue`: `number`. The completion percentage (0-100) for multi-page forms.
+  - `isSubmitting`: `boolean`. True if the form is currently submitting.
+  - `isValid`: `boolean`. True if the form is currently valid.
+  - `isDirty`: `boolean`. True if the form has been modified.
+  - `values`: `TFormValues`. The current form values.
 
 ### CONFIGURATION: `UseFormedibleOptions<TFormValues>`
 ---
 This is the main configuration object passed to the hook.
 
-- **`fields?: FieldConfig[]`**:
-  - **Purpose**: An array defining each field for auto-generation.
-  - **If omitted**: Manual rendering is assumed.
+**Core Options:**
+- **`fields?: FieldConfig[]`**: An array defining each field for auto-generation. If omitted, manual rendering is assumed.
+- **`schema?: z.ZodSchema<TFormValues>`**: The Zod schema for the form. Enables automatic validation.
+- **`formOptions?: { defaultValues: TFormValues; onSubmit: (props: { value: TFormValues; formApi: any }) => any | Promise<any>; onSubmitInvalid?: (props: { value: TFormValues; formApi: any }) => void; onChange?: (props: { value: TFormValues; formApi: any }) => void; onBlur?: (props: { value: TFormValues; formApi: any }) => void; onFocus?: (props: { value: TFormValues; formApi: any }) => void; onReset?: (props: { value: TFormValues; formApi: any }) => void; asyncDebounceMs?: number; canSubmitWhenInvalid?: boolean; validators?: { onChange?: z.ZodSchema<any>; onChangeAsync?: z.ZodSchema<any>; onChangeAsyncDebounceMs?: number; onBlur?: z.ZodSchema<any>; onBlurAsync?: z.ZodSchema<any>; onBlurAsyncDebounceMs?: number; onSubmit?: z.ZodSchema<any>; onSubmitAsync?: z.ZodSchema<any>; }; }`**: TanStack Form options with required `defaultValues` and `onSubmit`.
 
-- **`schema?: z.ZodSchema<TFormValues>`**:
-  - **Purpose**: The Zod schema for the form. Enables automatic validation.
-
-- **`formOptions: TanStackFormOptions`**:
-  - **Purpose**: The options object passed directly to TanStack Form's `useForm`.
-  - **Required Properties**: `defaultValues`, `onSubmit`.
-
+**UI Customization:**
 - **`submitLabel?: string`**: Text for the submit button. Default: `"Submit"`.
 - **`nextLabel?: string`**: Text for the "Next" button in multi-page forms. Default: `"Next"`.
 - **`previousLabel?: string`**: Text for the "Previous" button in multi-page forms. Default: `"Previous"`.
 - **`formClassName?: string`**: CSS classes for the root `<form>` element.
 - **`fieldClassName?: string`**: CSS classes applied to the wrapper of each auto-generated field.
 
-- **`pages?: PageConfig[]`**:
-  - **Purpose**: Defines titles and descriptions for each page in a multi-page form.
+**Multi-page Support:**
+- **`pages?: PageConfig[]`**: Defines titles and descriptions for each page in a multi-page form.
+- **`progress?: ProgressConfig`**: Configures the progress indicator for multi-page forms.
+- **`onPageChange?: (page: number, direction: 'next' | 'previous') => void`**: Callback function executed when the page changes.
 
-- **`progress?: ProgressConfig`**:
-  - **Purpose**: Configures the progress indicator for multi-page forms.
+**Component Overrides:**
+- **`defaultComponents?: { [fieldType: string]: React.ComponentType<any> }`**: Override the default component for a given field `type` globally.
+- **`globalWrapper?: React.ComponentType<{ children: React.ReactNode; field: FieldConfig }>`**: A React component to wrap around *every* field in the form.
 
-- **`onPageChange?: (page: number, direction: 'next' | 'previous') => void`**:
-  - **Purpose**: Callback function executed when the page changes.
+**Form Behavior:**
+- **`autoSubmitOnChange?: boolean`**: Auto-submit form on value change.
+- **`autoSubmitDebounceMs?: number`**: Debounce time for auto-submit.
+- **`disabled?: boolean`**: Disable entire form.
+- **`loading?: boolean`**: Show loading state.
+- **`resetOnSubmitSuccess?: boolean`**: Reset form after successful submit.
+- **`showSubmitButton?: boolean`**: Show/hide submit button.
 
-- **`defaultComponents?: { [fieldType: string]: React.ComponentType<any> }`**:
-  - **Purpose**: Override the default component for a given field `type` globally.
-
-- **`globalWrapper?: React.ComponentType<{ children: React.ReactNode; field: FieldConfig }>`**:
-  - **Purpose**: A React component to wrap around *every* field in the form.
+**Form-level Event Handlers:**
+- **`onFormReset?: (e: React.FormEvent, formApi: any) => void`**: Form reset handler.
+- **`onFormInput?: (e: React.FormEvent, formApi: any) => void`**: Form input handler.
+- **`onFormInvalid?: (e: React.FormEvent, formApi: any) => void`**: Form invalid handler.
+- **`onFormKeyDown?: (e: React.KeyboardEvent, formApi: any) => void`**: Form keydown handler.
+- **`onFormKeyUp?: (e: React.KeyboardEvent, formApi: any) => void`**: Form keyup handler.
+- **`onFormFocus?: (e: React.FocusEvent, formApi: any) => void`**: Form focus handler.
+- **`onFormBlur?: (e: React.FocusEvent, formApi: any) => void`**: Form blur handler.
 
 ### INTERFACE: `FieldConfig`
 ---
 Defines a single field within the `fields` array.
 
+**Core Properties:**
 - **`name: string`**: (Required) The key in the form values object. Must match the Zod schema.
 - **`type: string`**: (Required) The type of field to render. See "Supported Field Types".
 - **`label?: string`**: The text for the `<Label>` component.
 - **`placeholder?: string`**: The placeholder text for the input.
 - **`description?: string`**: Help text displayed below the label.
-- **`options?: string[] | Array<{value: string; label: string}>`**: For `select` type.
-- **`min?: number`**: For `number`, `date`, `slider`.
-- **`max?: number`**: For `number`, `date`, `slider`.
-- **`step?: number`**: For `number`, `slider`.
-- **`accept?: string`**: For `file` type.
-- **`multiple?: boolean`**: For `file`, `select`.
+
+**Basic Options:**
+- **`options?: string[] | Array<{value: string; label: string}>`**: For `select`, `radio`, `multiSelect` types.
+- **`min?: number`**: For `number`, `date`, `slider` types.
+- **`max?: number`**: For `number`, `date`, `slider` types.
+- **`step?: number`**: For `number`, `slider` types.
+- **`accept?: string`**: For `file` type (e.g., "image/*", ".pdf").
+- **`multiple?: boolean`**: For `file`, `select` types.
+
+**Advanced Options:**
 - **`component?: React.ComponentType<any>`**: A custom React component to render this specific field, overriding the default for its `type`.
 - **`wrapper?: React.ComponentType<{ children: React.ReactNode; field: FieldConfig }>`**: A custom wrapper component for this specific field.
 - **`page?: number`**: The page number this field should appear on in a multi-page form.
+- **`validation?: z.ZodSchema<any>`**: Field-specific validation schema.
 - **`conditional?: (values: TFormValues) => boolean`**: A function that receives the current form values and returns `true` if the field should be rendered.
-- **`dependencies?: string[]`**: (Future use) For explicitly declaring dependencies.
+- **`dependencies?: string[]`**: Array of field names this field depends on.
+
+**Array Field Configuration:**
+- **`arrayConfig?: { itemType: string; itemLabel?: string; itemPlaceholder?: string; itemValidation?: z.ZodSchema<any>; minItems?: number; maxItems?: number; addButtonLabel?: string; removeButtonLabel?: string; itemComponent?: React.ComponentType<any>; sortable?: boolean; defaultValue?: any; }`**: Configuration for array fields.
+
+**Help and Tooltip Configuration:**
+- **`help?: { text?: string; tooltip?: string; position?: 'top' | 'bottom' | 'left' | 'right'; link?: { url: string; text: string }; }`**: Help text and tooltip configuration.
+
+**Inline Validation Configuration:**
+- **`inlineValidation?: { enabled?: boolean; debounceMs?: number; showSuccess?: boolean; asyncValidator?: (value: any) => Promise<string | null>; }`**: Inline validation settings.
+
+**Field Grouping and Sections:**
+- **`group?: string`**: Group name for organizing fields.
+- **`section?: { title: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean; }`**: Section configuration for organizing fields.
+
+**Field-Specific Configurations:**
+- **`ratingConfig?: { max?: number; allowHalf?: boolean; icon?: 'star' | 'heart' | 'thumbs'; size?: 'sm' | 'md' | 'lg'; showValue?: boolean; }`**: Rating field configuration.
+- **`phoneConfig?: { defaultCountry?: string; format?: 'national' | 'international'; allowedCountries?: string[]; placeholder?: string; }`**: Phone field configuration.
+- **`colorConfig?: { format?: 'hex' | 'rgb' | 'hsl'; showPreview?: boolean; presetColors?: string[]; allowCustom?: boolean; }`**: Color picker configuration.
+- **`multiSelectConfig?: { maxSelections?: number; searchable?: boolean; creatable?: boolean; placeholder?: string; noOptionsText?: string; loadingText?: string; }`**: Multi-select configuration.
 
 ### INTERFACE: `BaseFieldProps`
 ---
@@ -127,21 +162,26 @@ The props interface that all field components (default and custom) must adhere t
 
 ### SUPPORTED FIELD TYPES
 ---
-| Type       | Default Component   | Description                               |
-|------------|---------------------|-------------------------------------------|
-| `text`     | `TextField`         | Standard text input.                      |
-| `email`    | `TextField`         | Text input with `type="email"`.           |
-| `password` | `TextField`         | Text input with `type="password"`.        |
-| `url`      | `TextField`         | Text input with `type="url"`.             |
-| `tel`      | `TextField`         | Text input with `type="tel"`.             |
-| `textarea` | `TextareaField`     | Multi-line text area.                     |
-| `select`   | `SelectField`       | Dropdown menu.                            |
-| `checkbox` | `CheckboxField`     | A single checkbox for boolean values.     |
-| `switch`   | `SwitchField`       | A toggle switch for boolean values.       |
-| `number`   | `NumberField`       | Input with `type="number"`.               |
-| `date`     | `DateField`         | Date picker with a popover calendar.      |
-| `slider`   | `SliderField`       | A range slider.                           |
-| `file`     | `FileUploadField`   | File input, likely with drag & drop.      |
+| Type          | Default Component      | Description                                    |
+|---------------|------------------------|------------------------------------------------|
+| `text`        | `TextField`            | Standard text input.                           |
+| `email`       | `TextField`            | Text input with `type="email"`.               |
+| `password`    | `TextField`            | Text input with `type="password"`.            |
+| `url`         | `TextField`            | Text input with `type="url"`.                 |
+| `textarea`    | `TextareaField`        | Multi-line text area.                         |
+| `select`      | `SelectField`          | Dropdown menu.                                |
+| `multiSelect` | `MultiSelectField`     | Multiple selection dropdown with search.      |
+| `checkbox`    | `CheckboxField`        | A single checkbox for boolean values.         |
+| `switch`      | `SwitchField`          | A toggle switch for boolean values.           |
+| `radio`       | `RadioField`           | Radio button group for single selection.      |
+| `number`      | `NumberField`          | Input with `type="number"`.                   |
+| `date`        | `DateField`            | Date picker with a popover calendar.          |
+| `slider`      | `SliderField`          | A range slider.                               |
+| `rating`      | `RatingField`          | Star rating component.                        |
+| `phone`       | `PhoneField`           | International phone number input.             |
+| `colorPicker` | `ColorPickerField`     | Color picker with preview.                   |
+| `file`        | `FileUploadField`      | File input with drag & drop.                 |
+| `array`       | `ArrayField`           | Dynamic array of fields with add/remove.     |
 
 ### USAGE PATTERNS
 ---

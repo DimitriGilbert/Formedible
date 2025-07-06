@@ -42,6 +42,46 @@
           "target": "lib/formedible/types.ts"
         },
         {
+          "path": "src/components/fields/array-field.tsx",
+          "type": "registry:component",
+          "target": "components/fields/array-field.tsx"
+        },
+        {
+          "path": "src/components/fields/color-picker-field.tsx",
+          "type": "registry:component",
+          "target": "components/fields/color-picker-field.tsx"
+        },
+        {
+          "path": "src/components/fields/field-help.tsx",
+          "type": "registry:component",
+          "target": "components/fields/field-help.tsx"
+        },
+        {
+          "path": "src/components/fields/inline-validation-wrapper.tsx",
+          "type": "registry:component",
+          "target": "components/fields/inline-validation-wrapper.tsx"
+        },
+        {
+          "path": "src/components/fields/multi-select.tsx",
+          "type": "registry:component",
+          "target": "components/fields/multi-select.tsx"
+        },
+        {
+          "path": "src/components/fields/phone-field.tsx",
+          "type": "registry:component",
+          "target": "components/fields/phone-field.tsx"
+        },
+        {
+          "path": "src/components/fields/rating-field.tsx",
+          "type": "registry:component",
+          "target": "components/fields/rating-field.tsx"
+        },
+        {
+          "path": "src/components/fields/radio-field.tsx",
+          "type": "registry:component",
+          "target": "components/fields/radio-field.tsx"
+        },
+        {
           "path": "src/components/fields/text-field.tsx",
           "type": "registry:component",
           "target": "components/fields/text-field.tsx"
