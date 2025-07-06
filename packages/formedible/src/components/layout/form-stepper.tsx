@@ -90,6 +90,9 @@ export const FormStepper: React.FC<FormStepperProps> = ({
                 type="button"
                 onClick={() => canGoToStep(index) && handleStepChange(index)}
                 disabled={!canGoToStep(index)}
+                aria-label={`Go to step ${index + 1}: ${step.title}`}
+                aria-current={isStepActive(index) ? 'step' : undefined}
+                tabIndex={canGoToStep(index) ? 0 : -1}
                 className={cn(
                   "w-10 h-10 rounded-full border-2 flex items-center justify-center text-sm font-medium transition-colors",
                   isStepActive(index) && "border-primary bg-primary text-primary-foreground",
