@@ -1,0 +1,190 @@
+<!DOCTYPE html><html lang="en"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="preload" href="/_next/static/media/569ce4b8f30dc480-s.p.woff2" as="font" crossorigin="" type="font/woff2"/><link rel="preload" href="/_next/static/media/93f479601ee12b01-s.p.woff2" as="font" crossorigin="" type="font/woff2"/><link rel="stylesheet" href="/_next/static/css/f4ac641ba1d6e39c.css" data-precedence="next"/><link rel="preload" as="script" fetchPriority="low" href="/_next/static/chunks/webpack-c32ffc285b896d43.js"/><script src="/_next/static/chunks/87c73c54-ce57a091352db580.js" async=""></script><script src="/_next/static/chunks/315-10c2f9a24df10179.js" async=""></script><script src="/_next/static/chunks/main-app-bae3afea1206b8af.js" async=""></script><script src="/_next/static/chunks/261-50dd4dfeb4e4d897.js" async=""></script><script src="/_next/static/chunks/637-022c5890a711174e.js" async=""></script><script src="/_next/static/chunks/443-3debf71ab2bd9ff1.js" async=""></script><script src="/_next/static/chunks/478-dfef0bf3f1a75c1b.js" async=""></script><script src="/_next/static/chunks/749-53ed9c0efabb3aac.js" async=""></script><script src="/_next/static/chunks/app/layout-44286374b321ee7b.js" async=""></script><meta name="next-size-adjust" content=""/><title>Advanced Field Types - Formedible</title><meta name="description" content="Explore advanced field types in Formedible including location picker, duration picker, autocomplete, and masked input fields."/><link rel="icon" href="/favicon.ico" type="image/x-icon" sizes="16x16"/><script>document.querySelectorAll('body link[rel="icon"], body link[rel="apple-touch-icon"]').forEach(el => document.head.appendChild(el))</script><script src="/_next/static/chunks/polyfills-42372ed130431b0a.js" noModule=""></script></head><body class="__variable_5cfdac __variable_9a8899 antialiased"><script>((e,t,r,n,o,a,i,l)=>{let u=document.documentElement,s=["light","dark"];function c(t){var r;(Array.isArray(e)?e:[e]).forEach(e=>{let r="class"===e,n=r&&a?o.map(e=>a[e]||e):o;r?(u.classList.remove(...n),u.classList.add(a&&a[t]?a[t]:t)):u.setAttribute(e,t)}),r=t,l&&s.includes(r)&&(u.style.colorScheme=r)}if(n)c(n);else try{let e=localStorage.getItem(t)||r,n=i&&"system"===e?window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light":e;c(n)}catch(e){}})("class","theme","system",null,["light","dark"],null,true,true)</script><header class="border-b bg-white/80 backdrop-blur-sm dark:bg-slate-950/80 sticky top-0 z-50"><div class="container mx-auto px-4 py-4"><div class="flex items-center justify-between"><div class="flex items-center gap-8"><a class="flex items-center gap-2" href="/"><div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center"><span class="text-white font-bold text-sm">F</span></div><span class="font-bold text-xl">Formedible</span></a><nav class="hidden md:flex gap-6"><a class="text-sm font-medium transition-colors hover:text-blue-600 dark:hover:text-blue-400 text-muted-foreground" href="/">Home</a><a class="text-sm font-medium transition-colors hover:text-blue-600 dark:hover:text-blue-400 text-blue-600 dark:text-blue-400" href="/docs">Documentation</a><a class="text-sm font-medium transition-colors hover:text-blue-600 dark:hover:text-blue-400 text-muted-foreground" href="/builder">Form Builder</a></nav></div><div class="flex items-center gap-4"><button data-slot="dropdown-menu-trigger" class="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg:not([class*=&#x27;size-&#x27;])]:size-4 shrink-0 [&amp;_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50 size-9" type="button" id="radix-«R9db»" aria-haspopup="menu" aria-expanded="false" data-state="closed"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg><span class="sr-only">Toggle theme</span></button></div></div></div></header><div class="container mx-auto py-8 px-4 max-w-4xl"><div class="space-y-8"><div><h1 class="text-4xl font-bold mb-4">Advanced Field Types</h1><p class="text-lg text-muted-foreground">Formedible includes several advanced field types for complex data input scenarios, from location selection to duration input and masked text fields.</p></div><div class="space-y-6"><section><h2 class="text-2xl font-semibold mb-4">Location Picker</h2><p class="mb-4">The location picker field allows users to select geographic locations through search, geolocation, or manual coordinate entry.</p><div class="bg-muted p-4 rounded-lg"><h3 class="font-semibold mb-2">Basic Usage</h3><pre class="text-sm overflow-x-auto">{
+  name: &#x27;location&#x27;,
+  type: &#x27;location&#x27;,
+  label: &#x27;Select Location&#x27;,
+  locationConfig: {
+    apiKey: &#x27;your-maps-api-key&#x27;,
+    defaultLocation: { lat: 40.7128, lng: -74.0060 },
+    zoom: 13,
+    searchPlaceholder: &#x27;Search for a location...&#x27;,
+    enableSearch: true,
+    enableGeolocation: true,
+    mapProvider: &#x27;google&#x27; // or &#x27;openstreetmap&#x27;
+  }
+}</pre></div><div class="bg-muted p-4 rounded-lg mt-4"><h3 class="font-semibold mb-2">Configuration Options</h3><ul class="text-sm space-y-2"><li><code>apiKey</code> - API key for map service (Google Maps, etc.)</li><li><code>defaultLocation</code> - Initial map center coordinates</li><li><code>zoom</code> - Initial zoom level</li><li><code>enableSearch</code> - Enable location search functionality</li><li><code>enableGeolocation</code> - Allow users to use their current location</li><li><code>mapProvider</code> - Choose between &#x27;google&#x27; or &#x27;openstreetmap&#x27;</li></ul></div></section><section><h2 class="text-2xl font-semibold mb-4">Duration Picker</h2><p class="mb-4">The duration picker allows users to input time durations in various formats, from hours and minutes to seconds.</p><div class="bg-muted p-4 rounded-lg"><h3 class="font-semibold mb-2">Basic Usage</h3><pre class="text-sm overflow-x-auto">{
+  name: &#x27;duration&#x27;,
+  type: &#x27;duration&#x27;,
+  label: &#x27;Duration&#x27;,
+  durationConfig: {
+    format: &#x27;hms&#x27;, // &#x27;hms&#x27;, &#x27;hm&#x27;, &#x27;ms&#x27;, &#x27;hours&#x27;, &#x27;minutes&#x27;, &#x27;seconds&#x27;
+    maxHours: 24,
+    maxMinutes: 59,
+    maxSeconds: 59,
+    showLabels: true,
+    allowNegative: false
+  }
+}</pre></div><div class="bg-muted p-4 rounded-lg mt-4"><h3 class="font-semibold mb-2">Format Options</h3><ul class="text-sm space-y-2"><li><code>hms</code> - Hours, minutes, and seconds (e.g., &quot;2h 30m 15s&quot;)</li><li><code>hm</code> - Hours and minutes only (e.g., &quot;2h 30m&quot;)</li><li><code>ms</code> - Minutes and seconds only (e.g., &quot;30m 15s&quot;)</li><li><code>hours</code> - Hours only with decimal support (e.g., &quot;2.5&quot;)</li><li><code>minutes</code> - Minutes only (e.g., &quot;150&quot;)</li><li><code>seconds</code> - Seconds only (e.g., &quot;9015&quot;)</li></ul></div></section><section><h2 class="text-2xl font-semibold mb-4">Autocomplete Field</h2><p class="mb-4">The autocomplete field provides search-as-you-type functionality with support for both static and dynamic option lists.</p><div class="bg-muted p-4 rounded-lg"><h3 class="font-semibold mb-2">Static Options</h3><pre class="text-sm overflow-x-auto">{
+  name: &#x27;country&#x27;,
+  type: &#x27;autocomplete&#x27;,
+  label: &#x27;Country&#x27;,
+  autocompleteConfig: {
+    options: [
+      { value: &#x27;us&#x27;, label: &#x27;United States&#x27; },
+      { value: &#x27;ca&#x27;, label: &#x27;Canada&#x27; },
+      { value: &#x27;uk&#x27;, label: &#x27;United Kingdom&#x27; },
+      { value: &#x27;de&#x27;, label: &#x27;Germany&#x27; },
+    ],
+    allowCustom: false,
+    placeholder: &#x27;Search countries...&#x27;,
+    noOptionsText: &#x27;No countries found&#x27;,
+    maxResults: 10
+  }
+}</pre></div><div class="bg-muted p-4 rounded-lg mt-4"><h3 class="font-semibold mb-2">Async Options</h3><pre class="text-sm overflow-x-auto">{
+  name: &#x27;user&#x27;,
+  type: &#x27;autocomplete&#x27;,
+  label: &#x27;Select User&#x27;,
+  autocompleteConfig: {
+    asyncOptions: async (query) =&gt; {
+      const response = await fetch(`/api/users/search?q=${query}`);
+      const users = await response.json();
+      return users.map(user =&gt; ({
+        value: user.id,
+        label: `${user.name} (${user.email})`
+      }));
+    },
+    debounceMs: 300,
+    minChars: 2,
+    maxResults: 20,
+    loadingText: &#x27;Searching users...&#x27;,
+    allowCustom: true
+  }
+}</pre></div></section><section><h2 class="text-2xl font-semibold mb-4">Masked Input Field</h2><p class="mb-4">The masked input field applies formatting masks to user input, perfect for phone numbers, credit cards, social security numbers, and other formatted data.</p><div class="bg-muted p-4 rounded-lg"><h3 class="font-semibold mb-2">Common Patterns</h3><pre class="text-sm overflow-x-auto">// Phone number
+{
+  name: &#x27;phone&#x27;,
+  type: &#x27;masked&#x27;,
+  label: &#x27;Phone Number&#x27;,
+  maskedInputConfig: {
+    mask: &#x27;(999) 999-9999&#x27;,
+    placeholder: &#x27;(555) 123-4567&#x27;,
+    showMask: true,
+    guide: true
+  }
+}
+
+// Credit card
+{
+  name: &#x27;creditCard&#x27;,
+  type: &#x27;masked&#x27;,
+  label: &#x27;Credit Card&#x27;,
+  maskedInputConfig: {
+    mask: &#x27;9999 9999 9999 9999&#x27;,
+    placeholder: &#x27;1234 5678 9012 3456&#x27;,
+    showMask: false,
+    guide: false
+  }
+}
+
+// Social Security Number
+{
+  name: &#x27;ssn&#x27;,
+  type: &#x27;masked&#x27;,
+  label: &#x27;SSN&#x27;,
+  maskedInputConfig: {
+    mask: &#x27;999-99-9999&#x27;,
+    placeholder: &#x27;123-45-6789&#x27;,
+    showMask: true
+  }
+}</pre></div><div class="bg-muted p-4 rounded-lg mt-4"><h3 class="font-semibold mb-2">Custom Mask Function</h3><pre class="text-sm overflow-x-auto">{
+  name: &#x27;customFormat&#x27;,
+  type: &#x27;masked&#x27;,
+  label: &#x27;Custom Format&#x27;,
+  maskedInputConfig: {
+    mask: (value) =&gt; {
+      // Custom logic for dynamic masking
+      if (value.startsWith(&#x27;A&#x27;)) {
+        return &#x27;A999-999&#x27;;
+      } else if (value.startsWith(&#x27;B&#x27;)) {
+        return &#x27;B99-9999&#x27;;
+      }
+      return &#x27;999-9999&#x27;;
+    },
+    placeholder: &#x27;Enter code...&#x27;,
+    pipe: (conformedValue, config) =&gt; {
+      // Additional processing after masking
+      return conformedValue.toUpperCase();
+    }
+  }
+}</pre></div><div class="bg-muted p-4 rounded-lg mt-4"><h3 class="font-semibold mb-2">Mask Characters</h3><ul class="text-sm space-y-2"><li><code>9</code> - Any digit (0-9)</li><li><code>A</code> - Any letter (a-z, A-Z)</li><li><code>S</code> - Any letter or digit</li><li><code>*</code> - Any character</li><li>Any other character is treated as a literal</li></ul></div></section><section><h2 class="text-2xl font-semibold mb-4">Field Integration</h2><p class="mb-4">All advanced fields integrate seamlessly with Formedible&#x27;s validation, analytics, and persistence systems:</p><div class="bg-muted p-4 rounded-lg"><h3 class="font-semibold mb-2">Complete Example</h3><pre class="text-sm overflow-x-auto">const { Form } = useFormedible({
+  fields: [
+    {
+      name: &#x27;meetingLocation&#x27;,
+      type: &#x27;location&#x27;,
+      label: &#x27;Meeting Location&#x27;,
+      locationConfig: {
+        enableSearch: true,
+        enableGeolocation: true
+      },
+      validation: z.object({
+        lat: z.number(),
+        lng: z.number(),
+        address: z.string().min(1, &#x27;Please select a location&#x27;)
+      })
+    },
+    {
+      name: &#x27;meetingDuration&#x27;,
+      type: &#x27;duration&#x27;,
+      label: &#x27;Meeting Duration&#x27;,
+      durationConfig: {
+        format: &#x27;hm&#x27;,
+        maxHours: 8
+      },
+      validation: z.number().min(15, &#x27;Minimum 15 minutes&#x27;).max(480, &#x27;Maximum 8 hours&#x27;)
+    },
+    {
+      name: &#x27;attendee&#x27;,
+      type: &#x27;autocomplete&#x27;,
+      label: &#x27;Select Attendee&#x27;,
+      autocompleteConfig: {
+        asyncOptions: async (query) =&gt; {
+          // Fetch attendees from API
+          return await searchAttendees(query);
+        },
+        debounceMs: 300,
+        minChars: 2
+      }
+    },
+    {
+      name: &#x27;contactPhone&#x27;,
+      type: &#x27;masked&#x27;,
+      label: &#x27;Contact Phone&#x27;,
+      maskedInputConfig: {
+        mask: &#x27;(999) 999-9999&#x27;,
+        showMask: true
+      },
+      validation: z.string().min(14, &#x27;Please enter a valid phone number&#x27;)
+    }
+  ],
+  // Advanced fields work with all Formedible features
+  persistence: {
+    key: &#x27;meeting-form&#x27;,
+    storage: &#x27;localStorage&#x27;
+  },
+  analytics: {
+    onFieldChange: (fieldName, value) =&gt; {
+      console.log(`${fieldName} changed to:`, value);
+    }
+  }
+});</pre></div></section><section><h2 class="text-2xl font-semibold mb-4">Styling and Customization</h2><p class="mb-4">Advanced fields support all standard Formedible styling and customization options:</p><div class="bg-muted p-4 rounded-lg"><pre class="text-sm overflow-x-auto">{
+  name: &#x27;location&#x27;,
+  type: &#x27;location&#x27;,
+  label: &#x27;Location&#x27;,
+  description: &#x27;Select your preferred meeting location&#x27;,
+  wrapperClassName: &#x27;custom-location-wrapper&#x27;,
+  help: {
+    text: &#x27;You can search for an address or use your current location&#x27;,
+    tooltip: &#x27;Click the location icon to use GPS&#x27;
+  },
+  locationConfig: {
+    // ... configuration
+  }
+}</pre></div></section><section><h2 class="text-2xl font-semibold mb-4">Best Practices</h2><div class="space-y-4"><div class="border-l-4 border-blue-500 pl-4"><h3 class="font-semibold">Location Picker</h3><p class="text-sm text-muted-foreground">Always provide fallback options when GPS is unavailable and consider privacy implications.</p></div><div class="border-l-4 border-green-500 pl-4"><h3 class="font-semibold">Duration Picker</h3><p class="text-sm text-muted-foreground">Choose the appropriate format based on your use case - use &#x27;hm&#x27; for meetings, &#x27;hms&#x27; for precise timing.</p></div><div class="border-l-4 border-yellow-500 pl-4"><h3 class="font-semibold">Autocomplete</h3><p class="text-sm text-muted-foreground">Implement proper debouncing for async options and provide clear loading states.</p></div><div class="border-l-4 border-purple-500 pl-4"><h3 class="font-semibold">Masked Input</h3><p class="text-sm text-muted-foreground">Test masks thoroughly with various input patterns and provide clear examples to users.</p></div></div></section></div></div></div><!--$--><!--/$--><!--$--><!--/$--><section aria-label="Notifications alt+T" tabindex="-1" aria-live="polite" aria-relevant="additions text" aria-atomic="false"></section><script src="/_next/static/chunks/webpack-c32ffc285b896d43.js" async=""></script><script>(self.__next_f=self.__next_f||[]).push([0])</script><script>self.__next_f.push([1,"1:\"$Sreact.fragment\"\n2:I[8024,[\"261\",\"static/chunks/261-50dd4dfeb4e4d897.js\",\"637\",\"static/chunks/637-022c5890a711174e.js\",\"443\",\"static/chunks/443-3debf71ab2bd9ff1.js\",\"478\",\"static/chunks/478-dfef0bf3f1a75c1b.js\",\"749\",\"static/chunks/749-53ed9c0efabb3aac.js\",\"177\",\"static/chunks/app/layout-44286374b321ee7b.js\"],\"default\"]\n3:I[3073,[\"261\",\"static/chunks/261-50dd4dfeb4e4d897.js\",\"637\",\"static/chunks/637-022c5890a711174e.js\",\"443\",\"static/chunks/443-3debf71ab2bd9ff1.js\",\"478\",\"static/chunks/478-dfef0bf3f1a75c1b.js\",\"749\",\"static/chunks/749-53ed9c0efabb3aac.js\",\"177\",\"static/chunks/app/layout-44286374b321ee7b.js\"],\"default\"]\n4:I[7132,[],\"\"]\n5:I[5082,[],\"\"]\n7:I[700,[],\"MetadataBoundary\"]\n9:I[700,[],\"OutletBoundary\"]\nc:I[7748,[],\"AsyncMetadataOutlet\"]\ne:I[700,[],\"ViewportBoundary\"]\n10:I[9699,[],\"\"]\n:HL[\"/_next/static/media/569ce4b8f30dc480-s.p.woff2\",\"font\",{\"crossOrigin\":\"\",\"type\":\"font/woff2\"}]\n:HL[\"/_next/static/media/93f479601ee12b01-s.p.woff2\",\"font\",{\"crossOrigin\":\"\",\"type\":\"font/woff2\"}]\n:HL[\"/_next/static/css/f4ac641ba1d6e39c.css\",\"style\"]\n6:T5cd,const { Form } = useFormedible({\n  fields: [\n    {\n      name: 'meetingLocation',\n      type: 'location',\n      label: 'Meeting Location',\n      locationConfig: {\n        enableSearch: true,\n        enableGeolocation: true\n      },\n      validation: z.object({\n        lat: z.number(),\n        lng: z.number(),\n        address: z.string().min(1, 'Please select a location')\n      })\n    },\n    {\n      name: 'meetingDuration',\n      type: 'duration',\n      label: 'Meeting Duration',\n      durationConfig: {\n        format: 'hm',\n        maxHours: 8\n      },\n      validation: z.number().min(15, 'Minimum 15 minutes').max(480, 'Maximum 8 hours')\n    },\n    {\n      name: 'attendee',\n      type: 'autocomplete',\n      label: 'Select Attendee',\n      autocompleteConfig: {\n        asyncOptions: async (query) =\u003e {\n          // Fetch attendees from API\n          return await searchAttendees(query);\n        },\n        debounceMs: 300,\n        minChars: 2\n      }\n    },\n    {\n      n"])</script><script>self.__next_f.push([1,"ame: 'contactPhone',\n      type: 'masked',\n      label: 'Contact Phone',\n      maskedInputConfig: {\n        mask: '(999) 999-9999',\n        showMask: true\n      },\n      validation: z.string().min(14, 'Please enter a valid phone number')\n    }\n  ],\n  // Advanced fields work with all Formedible features\n  persistence: {\n    key: 'meeting-form',\n    storage: 'localStorage'\n  },\n  analytics: {\n    onFieldChange: (fieldName, value) =\u003e {\n      console.log(`${fieldName} changed to:`, value);\n    }\n  }\n});"])</script><script>self.__next_f.push([1,"0:{\"P\":null,\"b\":\"gMxVmg2CXXvsjI-ybeRtA\",\"p\":\"\",\"c\":[\"\",\"docs\",\"advanced-fields\"],\"i\":false,\"f\":[[[\"\",{\"children\":[\"docs\",{\"children\":[\"advanced-fields\",{\"children\":[\"__PAGE__\",{}]}]}]},\"$undefined\",\"$undefined\",true],[\"\",[\"$\",\"$1\",\"c\",{\"children\":[[[\"$\",\"link\",\"0\",{\"rel\":\"stylesheet\",\"href\":\"/_next/static/css/f4ac641ba1d6e39c.css\",\"precedence\":\"next\",\"crossOrigin\":\"$undefined\",\"nonce\":\"$undefined\"}]],[\"$\",\"html\",null,{\"lang\":\"en\",\"suppressHydrationWarning\":true,\"children\":[\"$\",\"body\",null,{\"className\":\"__variable_5cfdac __variable_9a8899 antialiased\",\"children\":[\"$\",\"$L2\",null,{\"children\":[[\"$\",\"$L3\",null,{}],[\"$\",\"$L4\",null,{\"parallelRouterKey\":\"children\",\"error\":\"$undefined\",\"errorStyles\":\"$undefined\",\"errorScripts\":\"$undefined\",\"template\":[\"$\",\"$L5\",null,{}],\"templateStyles\":\"$undefined\",\"templateScripts\":\"$undefined\",\"notFound\":[[[\"$\",\"title\",null,{\"children\":\"404: This page could not be found.\"}],[\"$\",\"div\",null,{\"style\":{\"fontFamily\":\"system-ui,\\\"Segoe UI\\\",Roboto,Helvetica,Arial,sans-serif,\\\"Apple Color Emoji\\\",\\\"Segoe UI Emoji\\\"\",\"height\":\"100vh\",\"textAlign\":\"center\",\"display\":\"flex\",\"flexDirection\":\"column\",\"alignItems\":\"center\",\"justifyContent\":\"center\"},\"children\":[\"$\",\"div\",null,{\"children\":[[\"$\",\"style\",null,{\"dangerouslySetInnerHTML\":{\"__html\":\"body{color:#000;background:#fff;margin:0}.next-error-h1{border-right:1px solid rgba(0,0,0,.3)}@media (prefers-color-scheme:dark){body{color:#fff;background:#000}.next-error-h1{border-right:1px solid rgba(255,255,255,.3)}}\"}}],[\"$\",\"h1\",null,{\"className\":\"next-error-h1\",\"style\":{\"display\":\"inline-block\",\"margin\":\"0 20px 0 0\",\"padding\":\"0 23px 0 0\",\"fontSize\":24,\"fontWeight\":500,\"verticalAlign\":\"top\",\"lineHeight\":\"49px\"},\"children\":404}],[\"$\",\"div\",null,{\"style\":{\"display\":\"inline-block\"},\"children\":[\"$\",\"h2\",null,{\"style\":{\"fontSize\":14,\"fontWeight\":400,\"lineHeight\":\"49px\",\"margin\":0},\"children\":\"This page could not be found.\"}]}]]}]}]],[]],\"forbidden\":\"$undefined\",\"unauthorized\":\"$undefined\"}]]}]}]}]]}],{\"children\":[\"docs\",[\"$\",\"$1\",\"c\",{\"children\":[null,[\"$\",\"$L4\",null,{\"parallelRouterKey\":\"children\",\"error\":\"$undefined\",\"errorStyles\":\"$undefined\",\"errorScripts\":\"$undefined\",\"template\":[\"$\",\"$L5\",null,{}],\"templateStyles\":\"$undefined\",\"templateScripts\":\"$undefined\",\"notFound\":\"$undefined\",\"forbidden\":\"$undefined\",\"unauthorized\":\"$undefined\"}]]}],{\"children\":[\"advanced-fields\",[\"$\",\"$1\",\"c\",{\"children\":[null,[\"$\",\"$L4\",null,{\"parallelRouterKey\":\"children\",\"error\":\"$undefined\",\"errorStyles\":\"$undefined\",\"errorScripts\":\"$undefined\",\"template\":[\"$\",\"$L5\",null,{}],\"templateStyles\":\"$undefined\",\"templateScripts\":\"$undefined\",\"notFound\":\"$undefined\",\"forbidden\":\"$undefined\",\"unauthorized\":\"$undefined\"}]]}],{\"children\":[\"__PAGE__\",[\"$\",\"$1\",\"c\",{\"children\":[[\"$\",\"div\",null,{\"className\":\"container mx-auto py-8 px-4 max-w-4xl\",\"children\":[\"$\",\"div\",null,{\"className\":\"space-y-8\",\"children\":[[\"$\",\"div\",null,{\"children\":[[\"$\",\"h1\",null,{\"className\":\"text-4xl font-bold mb-4\",\"children\":\"Advanced Field Types\"}],[\"$\",\"p\",null,{\"className\":\"text-lg text-muted-foreground\",\"children\":\"Formedible includes several advanced field types for complex data input scenarios, from location selection to duration input and masked text fields.\"}]]}],[\"$\",\"div\",null,{\"className\":\"space-y-6\",\"children\":[[\"$\",\"section\",null,{\"children\":[[\"$\",\"h2\",null,{\"className\":\"text-2xl font-semibold mb-4\",\"children\":\"Location Picker\"}],[\"$\",\"p\",null,{\"className\":\"mb-4\",\"children\":\"The location picker field allows users to select geographic locations through search, geolocation, or manual coordinate entry.\"}],[\"$\",\"div\",null,{\"className\":\"bg-muted p-4 rounded-lg\",\"children\":[[\"$\",\"h3\",null,{\"className\":\"font-semibold mb-2\",\"children\":\"Basic Usage\"}],[\"$\",\"pre\",null,{\"className\":\"text-sm overflow-x-auto\",\"children\":\"{\\n  name: 'location',\\n  type: 'location',\\n  label: 'Select Location',\\n  locationConfig: {\\n    apiKey: 'your-maps-api-key',\\n    defaultLocation: { lat: 40.7128, lng: -74.0060 },\\n    zoom: 13,\\n    searchPlaceholder: 'Search for a location...',\\n    enableSearch: true,\\n    enableGeolocation: true,\\n    mapProvider: 'google' // or 'openstreetmap'\\n  }\\n}\"}]]}],[\"$\",\"div\",null,{\"className\":\"bg-muted p-4 rounded-lg mt-4\",\"children\":[[\"$\",\"h3\",null,{\"className\":\"font-semibold mb-2\",\"children\":\"Configuration Options\"}],[\"$\",\"ul\",null,{\"className\":\"text-sm space-y-2\",\"children\":[[\"$\",\"li\",null,{\"children\":[[\"$\",\"code\",null,{\"children\":\"apiKey\"}],\" - API key for map service (Google Maps, etc.)\"]}],[\"$\",\"li\",null,{\"children\":[[\"$\",\"code\",null,{\"children\":\"defaultLocation\"}],\" - Initial map center coordinates\"]}],[\"$\",\"li\",null,{\"children\":[[\"$\",\"code\",null,{\"children\":\"zoom\"}],\" - Initial zoom level\"]}],[\"$\",\"li\",null,{\"children\":[[\"$\",\"code\",null,{\"children\":\"enableSearch\"}],\" - Enable location search functionality\"]}],[\"$\",\"li\",null,{\"children\":[[\"$\",\"code\",null,{\"children\":\"enableGeolocation\"}],\" - Allow users to use their current location\"]}],[\"$\",\"li\",null,{\"children\":[[\"$\",\"code\",null,{\"children\":\"mapProvider\"}],\" - Choose between 'google' or 'openstreetmap'\"]}]]}]]}]]}],[\"$\",\"section\",null,{\"children\":[[\"$\",\"h2\",null,{\"className\":\"text-2xl font-semibold mb-4\",\"children\":\"Duration Picker\"}],[\"$\",\"p\",null,{\"className\":\"mb-4\",\"children\":\"The duration picker allows users to input time durations in various formats, from hours and minutes to seconds.\"}],[\"$\",\"div\",null,{\"className\":\"bg-muted p-4 rounded-lg\",\"children\":[[\"$\",\"h3\",null,{\"className\":\"font-semibold mb-2\",\"children\":\"Basic Usage\"}],[\"$\",\"pre\",null,{\"className\":\"text-sm overflow-x-auto\",\"children\":\"{\\n  name: 'duration',\\n  type: 'duration',\\n  label: 'Duration',\\n  durationConfig: {\\n    format: 'hms', // 'hms', 'hm', 'ms', 'hours', 'minutes', 'seconds'\\n    maxHours: 24,\\n    maxMinutes: 59,\\n    maxSeconds: 59,\\n    showLabels: true,\\n    allowNegative: false\\n  }\\n}\"}]]}],[\"$\",\"div\",null,{\"className\":\"bg-muted p-4 rounded-lg mt-4\",\"children\":[[\"$\",\"h3\",null,{\"className\":\"font-semibold mb-2\",\"children\":\"Format Options\"}],[\"$\",\"ul\",null,{\"className\":\"text-sm space-y-2\",\"children\":[[\"$\",\"li\",null,{\"children\":[[\"$\",\"code\",null,{\"children\":\"hms\"}],\" - Hours, minutes, and seconds (e.g., \\\"2h 30m 15s\\\")\"]}],[\"$\",\"li\",null,{\"children\":[[\"$\",\"code\",null,{\"children\":\"hm\"}],\" - Hours and minutes only (e.g., \\\"2h 30m\\\")\"]}],[\"$\",\"li\",null,{\"children\":[[\"$\",\"code\",null,{\"children\":\"ms\"}],\" - Minutes and seconds only (e.g., \\\"30m 15s\\\")\"]}],[\"$\",\"li\",null,{\"children\":[[\"$\",\"code\",null,{\"children\":\"hours\"}],\" - Hours only with decimal support (e.g., \\\"2.5\\\")\"]}],[\"$\",\"li\",null,{\"children\":[[\"$\",\"code\",null,{\"children\":\"minutes\"}],\" - Minutes only (e.g., \\\"150\\\")\"]}],[\"$\",\"li\",null,{\"children\":[[\"$\",\"code\",null,{\"children\":\"seconds\"}],\" - Seconds only (e.g., \\\"9015\\\")\"]}]]}]]}]]}],[\"$\",\"section\",null,{\"children\":[[\"$\",\"h2\",null,{\"className\":\"text-2xl font-semibold mb-4\",\"children\":\"Autocomplete Field\"}],[\"$\",\"p\",null,{\"className\":\"mb-4\",\"children\":\"The autocomplete field provides search-as-you-type functionality with support for both static and dynamic option lists.\"}],[\"$\",\"div\",null,{\"className\":\"bg-muted p-4 rounded-lg\",\"children\":[[\"$\",\"h3\",null,{\"className\":\"font-semibold mb-2\",\"children\":\"Static Options\"}],[\"$\",\"pre\",null,{\"className\":\"text-sm overflow-x-auto\",\"children\":\"{\\n  name: 'country',\\n  type: 'autocomplete',\\n  label: 'Country',\\n  autocompleteConfig: {\\n    options: [\\n      { value: 'us', label: 'United States' },\\n      { value: 'ca', label: 'Canada' },\\n      { value: 'uk', label: 'United Kingdom' },\\n      { value: 'de', label: 'Germany' },\\n    ],\\n    allowCustom: false,\\n    placeholder: 'Search countries...',\\n    noOptionsText: 'No countries found',\\n    maxResults: 10\\n  }\\n}\"}]]}],[\"$\",\"div\",null,{\"className\":\"bg-muted p-4 rounded-lg mt-4\",\"children\":[[\"$\",\"h3\",null,{\"className\":\"font-semibold mb-2\",\"children\":\"Async Options\"}],[\"$\",\"pre\",null,{\"className\":\"text-sm overflow-x-auto\",\"children\":\"{\\n  name: 'user',\\n  type: 'autocomplete',\\n  label: 'Select User',\\n  autocompleteConfig: {\\n    asyncOptions: async (query) =\u003e {\\n      const response = await fetch(`/api/users/search?q=${query}`);\\n      const users = await response.json();\\n      return users.map(user =\u003e ({\\n        value: user.id,\\n        label: `${user.name} (${user.email})`\\n      }));\\n    },\\n    debounceMs: 300,\\n    minChars: 2,\\n    maxResults: 20,\\n    loadingText: 'Searching users...',\\n    allowCustom: true\\n  }\\n}\"}]]}]]}],[\"$\",\"section\",null,{\"children\":[[\"$\",\"h2\",null,{\"className\":\"text-2xl font-semibold mb-4\",\"children\":\"Masked Input Field\"}],[\"$\",\"p\",null,{\"className\":\"mb-4\",\"children\":\"The masked input field applies formatting masks to user input, perfect for phone numbers, credit cards, social security numbers, and other formatted data.\"}],[\"$\",\"div\",null,{\"className\":\"bg-muted p-4 rounded-lg\",\"children\":[[\"$\",\"h3\",null,{\"className\":\"font-semibold mb-2\",\"children\":\"Common Patterns\"}],[\"$\",\"pre\",null,{\"className\":\"text-sm overflow-x-auto\",\"children\":\"// Phone number\\n{\\n  name: 'phone',\\n  type: 'masked',\\n  label: 'Phone Number',\\n  maskedInputConfig: {\\n    mask: '(999) 999-9999',\\n    placeholder: '(555) 123-4567',\\n    showMask: true,\\n    guide: true\\n  }\\n}\\n\\n// Credit card\\n{\\n  name: 'creditCard',\\n  type: 'masked',\\n  label: 'Credit Card',\\n  maskedInputConfig: {\\n    mask: '9999 9999 9999 9999',\\n    placeholder: '1234 5678 9012 3456',\\n    showMask: false,\\n    guide: false\\n  }\\n}\\n\\n// Social Security Number\\n{\\n  name: 'ssn',\\n  type: 'masked',\\n  label: 'SSN',\\n  maskedInputConfig: {\\n    mask: '999-99-9999',\\n    placeholder: '123-45-6789',\\n    showMask: true\\n  }\\n}\"}]]}],[\"$\",\"div\",null,{\"className\":\"bg-muted p-4 rounded-lg mt-4\",\"children\":[[\"$\",\"h3\",null,{\"className\":\"font-semibold mb-2\",\"children\":\"Custom Mask Function\"}],[\"$\",\"pre\",null,{\"className\":\"text-sm overflow-x-auto\",\"children\":\"{\\n  name: 'customFormat',\\n  type: 'masked',\\n  label: 'Custom Format',\\n  maskedInputConfig: {\\n    mask: (value) =\u003e {\\n      // Custom logic for dynamic masking\\n      if (value.startsWith('A')) {\\n        return 'A999-999';\\n      } else if (value.startsWith('B')) {\\n        return 'B99-9999';\\n      }\\n      return '999-9999';\\n    },\\n    placeholder: 'Enter code...',\\n    pipe: (conformedValue, config) =\u003e {\\n      // Additional processing after masking\\n      return conformedValue.toUpperCase();\\n    }\\n  }\\n}\"}]]}],[\"$\",\"div\",null,{\"className\":\"bg-muted p-4 rounded-lg mt-4\",\"children\":[[\"$\",\"h3\",null,{\"className\":\"font-semibold mb-2\",\"children\":\"Mask Characters\"}],[\"$\",\"ul\",null,{\"className\":\"text-sm space-y-2\",\"children\":[[\"$\",\"li\",null,{\"children\":[[\"$\",\"code\",null,{\"children\":\"9\"}],\" - Any digit (0-9)\"]}],[\"$\",\"li\",null,{\"children\":[[\"$\",\"code\",null,{\"children\":\"A\"}],\" - Any letter (a-z, A-Z)\"]}],[\"$\",\"li\",null,{\"children\":[[\"$\",\"code\",null,{\"children\":\"S\"}],\" - Any letter or digit\"]}],[\"$\",\"li\",null,{\"children\":[[\"$\",\"code\",null,{\"children\":\"*\"}],\" - Any character\"]}],[\"$\",\"li\",null,{\"children\":\"Any other character is treated as a literal\"}]]}]]}]]}],[\"$\",\"section\",null,{\"children\":[[\"$\",\"h2\",null,{\"className\":\"text-2xl font-semibold mb-4\",\"children\":\"Field Integration\"}],[\"$\",\"p\",null,{\"className\":\"mb-4\",\"children\":\"All advanced fields integrate seamlessly with Formedible's validation, analytics, and persistence systems:\"}],[\"$\",\"div\",null,{\"className\":\"bg-muted p-4 rounded-lg\",\"children\":[[\"$\",\"h3\",null,{\"className\":\"font-semibold mb-2\",\"children\":\"Complete Example\"}],[\"$\",\"pre\",null,{\"className\":\"text-sm overflow-x-auto\",\"children\":\"$6\"}]]}]]}],[\"$\",\"section\",null,{\"children\":[[\"$\",\"h2\",null,{\"className\":\"text-2xl font-semibold mb-4\",\"children\":\"Styling and Customization\"}],[\"$\",\"p\",null,{\"className\":\"mb-4\",\"children\":\"Advanced fields support all standard Formedible styling and customization options:\"}],[\"$\",\"div\",null,{\"className\":\"bg-muted p-4 rounded-lg\",\"children\":[\"$\",\"pre\",null,{\"className\":\"text-sm overflow-x-auto\",\"children\":\"{\\n  name: 'location',\\n  type: 'location',\\n  label: 'Location',\\n  description: 'Select your preferred meeting location',\\n  wrapperClassName: 'custom-location-wrapper',\\n  help: {\\n    text: 'You can search for an address or use your current location',\\n    tooltip: 'Click the location icon to use GPS'\\n  },\\n  locationConfig: {\\n    // ... configuration\\n  }\\n}\"}]}]]}],[\"$\",\"section\",null,{\"children\":[[\"$\",\"h2\",null,{\"className\":\"text-2xl font-semibold mb-4\",\"children\":\"Best Practices\"}],[\"$\",\"div\",null,{\"className\":\"space-y-4\",\"children\":[[\"$\",\"div\",null,{\"className\":\"border-l-4 border-blue-500 pl-4\",\"children\":[[\"$\",\"h3\",null,{\"className\":\"font-semibold\",\"children\":\"Location Picker\"}],[\"$\",\"p\",null,{\"className\":\"text-sm text-muted-foreground\",\"children\":\"Always provide fallback options when GPS is unavailable and consider privacy implications.\"}]]}],[\"$\",\"div\",null,{\"className\":\"border-l-4 border-green-500 pl-4\",\"children\":[[\"$\",\"h3\",null,{\"className\":\"font-semibold\",\"children\":\"Duration Picker\"}],[\"$\",\"p\",null,{\"className\":\"text-sm text-muted-foreground\",\"children\":\"Choose the appropriate format based on your use case - use 'hm' for meetings, 'hms' for precise timing.\"}]]}],[\"$\",\"div\",null,{\"className\":\"border-l-4 border-yellow-500 pl-4\",\"children\":[[\"$\",\"h3\",null,{\"className\":\"font-semibold\",\"children\":\"Autocomplete\"}],[\"$\",\"p\",null,{\"className\":\"text-sm text-muted-foreground\",\"children\":\"Implement proper debouncing for async options and provide clear loading states.\"}]]}],[\"$\",\"div\",null,{\"className\":\"border-l-4 border-purple-500 pl-4\",\"children\":[[\"$\",\"h3\",null,{\"className\":\"font-semibold\",\"children\":\"Masked Input\"}],[\"$\",\"p\",null,{\"className\":\"text-sm text-muted-foreground\",\"children\":\"Test masks thoroughly with various input patterns and provide clear examples to users.\"}]]}]]}]]}]]}]]}]}],[\"$\",\"$L7\",null,{\"children\":\"$L8\"}],null,[\"$\",\"$L9\",null,{\"children\":[\"$La\",\"$Lb\",[\"$\",\"$Lc\",null,{\"promise\":\"$@d\"}]]}]]}],{},null,false]},null,false]},null,false]},null,false],[\"$\",\"$1\",\"h\",{\"children\":[null,[\"$\",\"$1\",\"NzqkbMwZaDiW9Q8qoKd3C\",{\"children\":[[\"$\",\"$Le\",null,{\"children\":\"$Lf\"}],[\"$\",\"meta\",null,{\"name\":\"next-size-adjust\",\"content\":\"\"}]]}],null]}],false]],\"m\":\"$undefined\",\"G\":[\"$10\",\"$undefined\"],\"s\":false,\"S\":true}\n"])</script><script>self.__next_f.push([1,"11:\"$Sreact.suspense\"\n12:I[7748,[],\"AsyncMetadata\"]\n8:[\"$\",\"$11\",null,{\"fallback\":null,\"children\":[\"$\",\"$L12\",null,{\"promise\":\"$@13\"}]}]\n"])</script><script>self.__next_f.push([1,"b:null\n"])</script><script>self.__next_f.push([1,"f:[[\"$\",\"meta\",\"0\",{\"charSet\":\"utf-8\"}],[\"$\",\"meta\",\"1\",{\"name\":\"viewport\",\"content\":\"width=device-width, initial-scale=1\"}]]\na:null\n"])</script><script>self.__next_f.push([1,"13:{\"metadata\":[[\"$\",\"title\",\"0\",{\"children\":\"Advanced Field Types - Formedible\"}],[\"$\",\"meta\",\"1\",{\"name\":\"description\",\"content\":\"Explore advanced field types in Formedible including location picker, duration picker, autocomplete, and masked input fields.\"}],[\"$\",\"link\",\"2\",{\"rel\":\"icon\",\"href\":\"/favicon.ico\",\"type\":\"image/x-icon\",\"sizes\":\"16x16\"}]],\"error\":null,\"digest\":\"$undefined\"}\nd:{\"metadata\":\"$13:metadata\",\"error\":null,\"digest\":\"$undefined\"}\n"])</script></body></html>
