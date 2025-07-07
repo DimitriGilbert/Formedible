@@ -160,20 +160,22 @@ update_registry() {
   log_info "Updating registry files..."
   
   # First, copy registry.json to public/r/use-formedible.json in the package
-  if [[ -f "packages/formedible/registry.json" ]]; then
-    mkdir -p "packages/formedible/public/r"
-    cp "packages/formedible/registry.json" "packages/formedible/public/r/use-formedible.json"
-    log_success "Registry copied to package public folder"
-  else
-    log_error "Registry file not found: packages/formedible/registry.json"
-    exit 1
-  fi
+  # MORONIC AI ! WE WANT THE BUILT REGISTRY YOU MUPPET !
+  # if [[ -f "packages/formedible/registry.json" ]]; then
+  #   mkdir -p "packages/formedible/public/r"
+  #   cp "packages/formedible/registry.json" "packages/formedible/public/r/use-formedible.json"
+  #   log_success "Registry copied to package public folder"
+  # else
+  #   log_error "Registry file not found: packages/formedible/registry.json"
+  #   exit 1
+  # fi
   
   # Then copy to web app (both locations for compatibility)
   if [[ -f "packages/formedible/public/r/use-formedible.json" ]]; then
     # Copy to web app root r directory (for Next.js static serving)
-    mkdir -p "apps/web/r"
-    cp "packages/formedible/public/r/use-formedible.json" "apps/web/r/use-formedible.json"
+    # THIS IS STUPID !
+    # mkdir -p "apps/web/r"
+    # cp "packages/formedible/public/r/use-formedible.json" "apps/web/r/use-formedible.json"
     
     # Also copy to public directory (for build output)
     mkdir -p "apps/web/public/r"
