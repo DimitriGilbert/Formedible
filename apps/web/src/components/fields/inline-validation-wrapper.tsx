@@ -114,11 +114,11 @@ export const InlineValidationWrapper: React.FC<InlineValidationWrapperProps> = (
     }
 
     if (showSuccess && validationState.isValid === true) {
-      return <Check className="h-4 w-4 text-accent" />;
+      return <Check className="h-4 w-4 text-green-500" />;
     }
 
     if (showSuccess && !hasErrors && isTouched && value) {
-      return <Check className="h-4 w-4 text-accent" />;
+      return <Check className="h-4 w-4 text-green-500" />;
     }
 
     return null;
