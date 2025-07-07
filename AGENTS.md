@@ -7,10 +7,6 @@
 - `npm run lint` - Run ESLint
 - `npm run lint:web` - Lint web app
 - `npm run lint:pkg` - Lint package only
-- `npm run test:e2e` - Run end-to-end tests with Puppeteer
-- `npm run test:e2e:watch` - Run E2E tests in watch mode
-- `npm run test:e2e:coverage` - Run E2E tests with coverage report
-- `./tests/run-tests.sh` - Interactive test runner script
 
 ## Code Style
 - Use TypeScript with strict mode enabled

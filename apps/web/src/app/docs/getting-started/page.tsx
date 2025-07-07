@@ -1,9 +1,10 @@
 "use client";
 
-import { ArrowLeft, CheckCircle, Copy, ExternalLink, Rocket, Zap } from "lucide-react";
+import { ArrowLeft, CheckCircle, ExternalLink, Rocket, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { CodeBlock } from "@/components/ui/code-block";
 import Link from "next/link";
 
 export default function GettingStartedPage() {
@@ -127,19 +128,12 @@ export function ContactForm() {
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Code */}
                     <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Code</h4>
-                        <Button variant="ghost" size="sm" className="h-8 px-2">
-                          <Copy className="w-3 h-3" />
-                        </Button>
-                      </div>
-                      <div className="bg-slate-900 dark:bg-slate-800 rounded-lg p-4 overflow-x-auto">
-                        <pre className="text-sm">
-                          <code className="text-slate-100 font-mono whitespace-pre">
-                            {step.code}
-                          </code>
-                        </pre>
-                      </div>
+                      <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-3">Code</h4>
+                      <CodeBlock 
+                        code={step.code}
+                        language={index === 0 ? "bash" : "tsx"}
+                        showPackageManagerTabs={index === 0}
+                      />
                     </div>
 
                     {/* Details */}

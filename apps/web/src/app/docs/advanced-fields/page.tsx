@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { CodeBlock } from "@/components/ui/code-block";
 
 export const metadata: Metadata = {
   title: "Advanced Field Types - Formedible",
@@ -25,10 +26,10 @@ export default function AdvancedFieldsPage() {
               geolocation, or manual coordinate entry.
             </p>
             
-            <div className="bg-muted p-4 rounded-lg">
-              <h3 className="font-semibold mb-2">Basic Usage</h3>
-              <pre className="text-sm overflow-x-auto">
-{`{
+            <div className="space-y-3">
+              <h3 className="font-semibold">Basic Usage</h3>
+              <CodeBlock 
+                code={`{
   name: 'location',
   type: 'location',
   label: 'Select Location',
@@ -42,7 +43,8 @@ export default function AdvancedFieldsPage() {
     mapProvider: 'google' // or 'openstreetmap'
   }
 }`}
-              </pre>
+                language="tsx"
+              />
             </div>
 
             <div className="bg-muted p-4 rounded-lg mt-4">
@@ -65,10 +67,10 @@ export default function AdvancedFieldsPage() {
               from hours and minutes to seconds.
             </p>
             
-            <div className="bg-muted p-4 rounded-lg">
-              <h3 className="font-semibold mb-2">Basic Usage</h3>
-              <pre className="text-sm overflow-x-auto">
-{`{
+            <div className="space-y-3">
+              <h3 className="font-semibold">Basic Usage</h3>
+              <CodeBlock 
+                code={`{
   name: 'duration',
   type: 'duration',
   label: 'Duration',
@@ -81,7 +83,8 @@ export default function AdvancedFieldsPage() {
     allowNegative: false
   }
 }`}
-              </pre>
+                language="tsx"
+              />
             </div>
 
             <div className="bg-muted p-4 rounded-lg mt-4">

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { CodeBlock } from "@/components/ui/code-block";
 import Link from "next/link";
 
 export const metadata: Metadata = {
@@ -61,9 +62,10 @@ export default function FieldsPage() {
                   <p className="text-sm text-muted-foreground mb-3">
                     Standard text input for single-line text entry.
                   </p>
-                  <div className="bg-muted p-3 rounded text-sm">
-                    <pre>{`{ name: 'firstName', type: 'text', label: 'First Name' }`}</pre>
-                  </div>
+                  <CodeBlock 
+                    code={`{ name: 'firstName', type: 'text', label: 'First Name' }`}
+                    language="tsx"
+                  />
                 </div>
 
                 <div className="border rounded-lg p-4">
@@ -71,9 +73,10 @@ export default function FieldsPage() {
                   <p className="text-sm text-muted-foreground mb-3">
                     Email input with built-in validation and appropriate keyboard on mobile.
                   </p>
-                  <div className="bg-muted p-3 rounded text-sm">
-                    <pre>{`{ name: 'email', type: 'email', label: 'Email Address' }`}</pre>
-                  </div>
+                  <CodeBlock 
+                    code={`{ name: 'email', type: 'email', label: 'Email Address' }`}
+                    language="tsx"
+                  />
                 </div>
 
                 <div className="border rounded-lg p-4">
@@ -81,8 +84,8 @@ export default function FieldsPage() {
                   <p className="text-sm text-muted-foreground mb-3">
                     Numeric input with step controls and validation.
                   </p>
-                  <div className="bg-muted p-3 rounded text-sm">
-                    <pre>{`{
+                  <CodeBlock 
+                    code={`{
   name: 'age',
   type: 'number',
   label: 'Age',
@@ -91,8 +94,9 @@ export default function FieldsPage() {
     max: 120,
     step: 1
   }
-}`}</pre>
-                  </div>
+}`}
+                    language="tsx"
+                  />
                 </div>
 
                 <div className="border rounded-lg p-4">
@@ -100,8 +104,8 @@ export default function FieldsPage() {
                   <p className="text-sm text-muted-foreground mb-3">
                     Multi-line text input with configurable rows and resize options.
                   </p>
-                  <div className="bg-muted p-3 rounded text-sm">
-                    <pre>{`{
+                  <CodeBlock 
+                    code={`{
   name: 'message',
   type: 'textarea',
   label: 'Message',
@@ -109,8 +113,9 @@ export default function FieldsPage() {
     rows: 4,
     resize: 'vertical'
   }
-}`}</pre>
-                  </div>
+}`}
+                    language="tsx"
+                  />
                 </div>
               </div>
             </section>
@@ -124,8 +129,8 @@ export default function FieldsPage() {
                   <p className="text-sm text-muted-foreground mb-3">
                     Dropdown select with single selection.
                   </p>
-                  <div className="bg-muted p-3 rounded text-sm">
-                    <pre>{`{
+                  <CodeBlock 
+                    code={`{
   name: 'country',
   type: 'select',
   label: 'Country',
@@ -137,8 +142,9 @@ export default function FieldsPage() {
     ],
     placeholder: 'Select a country'
   }
-}`}</pre>
-                  </div>
+}`}
+                    language="tsx"
+                  />
                 </div>
 
                 <div className="border rounded-lg p-4">
@@ -146,8 +152,8 @@ export default function FieldsPage() {
                   <p className="text-sm text-muted-foreground mb-3">
                     Radio button group for single selection.
                   </p>
-                  <div className="bg-muted p-3 rounded text-sm">
-                    <pre>{`{
+                  <CodeBlock 
+                    code={`{
   name: 'plan',
   type: 'radio',
   label: 'Subscription Plan',
@@ -159,8 +165,9 @@ export default function FieldsPage() {
     ],
     orientation: 'vertical'
   }
-}`}</pre>
-                  </div>
+}`}
+                    language="tsx"
+                  />
                 </div>
 
                 <div className="border rounded-lg p-4">
@@ -168,16 +175,17 @@ export default function FieldsPage() {
                   <p className="text-sm text-muted-foreground mb-3">
                     Single checkbox for boolean values.
                   </p>
-                  <div className="bg-muted p-3 rounded text-sm">
-                    <pre>{`{
+                  <CodeBlock 
+                    code={`{
   name: 'terms',
   type: 'checkbox',
   label: 'I agree to the terms and conditions',
   checkboxConfig: {
     required: true
   }
-}`}</pre>
-                  </div>
+}`}
+                    language="tsx"
+                  />
                 </div>
               </div>
             </section>
@@ -191,8 +199,8 @@ export default function FieldsPage() {
                   <p className="text-sm text-muted-foreground mb-3">
                     Date picker with calendar interface.
                   </p>
-                  <div className="bg-muted p-3 rounded text-sm">
-                    <pre>{`{
+                  <CodeBlock 
+                    code={`{
   name: 'birthDate',
   type: 'date',
   label: 'Birth Date',
@@ -200,8 +208,9 @@ export default function FieldsPage() {
     format: 'yyyy-MM-dd',
     placeholder: 'Select your birth date'
   }
-}`}</pre>
-                  </div>
+}`}
+                    language="tsx"
+                  />
                 </div>
 
                 <div className="border rounded-lg p-4">
@@ -209,8 +218,8 @@ export default function FieldsPage() {
                   <p className="text-sm text-muted-foreground mb-3">
                     File upload with drag-and-drop support and preview.
                   </p>
-                  <div className="bg-muted p-3 rounded text-sm">
-                    <pre>{`{
+                  <CodeBlock 
+                    code={`{
   name: 'avatar',
   type: 'file',
   label: 'Profile Picture',
@@ -220,8 +229,9 @@ export default function FieldsPage() {
     multiple: false,
     showPreview: true
   }
-}`}</pre>
-                  </div>
+}`}
+                    language="tsx"
+                  />
                 </div>
 
                 <div className="border rounded-lg p-4">
@@ -229,8 +239,8 @@ export default function FieldsPage() {
                   <p className="text-sm text-muted-foreground mb-3">
                     Range slider for numeric values with visual feedback.
                   </p>
-                  <div className="bg-muted p-3 rounded text-sm">
-                    <pre>{`{
+                  <CodeBlock 
+                    code={`{
   name: 'budget',
   type: 'slider',
   label: 'Budget Range',
@@ -240,8 +250,9 @@ export default function FieldsPage() {
     step: 100,
     formatValue: (value) => \`$\${value}\`
   }
-}`}</pre>
-                  </div>
+}`}
+                    language="tsx"
+                  />
                 </div>
               </div>
             </section>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { useFormedible } from "@/hooks/use-formedible";
 import {
   Card,
@@ -21,15 +21,13 @@ import {
   Shield,
   Users,
   Sparkles,
-  Copy,
-  Check,
-  CommandIcon,
 } from "lucide-react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { motion, AnimatePresence } from "motion/react";
 import Link from "next/link";
+import { CodeBlock } from "@/components/ui/code-block";
 
 // Components
 import { DemoCard } from "@/components/demo/demo-card";
@@ -41,7 +39,7 @@ import {
   profileFormCode,
   surveyFormCode,
 } from "@/data/code-examples";
-import { CodeBlock } from "@/components/demo/code-block";
+
 
 // Enhanced schemas with proper validation
 const contactSchema = z.object({
@@ -140,70 +138,9 @@ const EnhancedAnimatedWrapper: React.FC<{
   );
 };
 
-// Copy Button Component
-const CopyButton: React.FC<{ text: string; className?: string }> = ({
-  text,
-  className = "",
-}) => {
-  const [copied, setCopied] = useState(false);
 
-  const copyToClipboard = async () => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      toast.success("Copied to clipboard!");
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      toast.error("Failed to copy");
-    }
-  };
 
-  return (
-    <motion.button
-      onClick={copyToClipboard}
-      className={`relative inline-flex items-center justify-center p-2 rounded-md bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 hover:text-white backdrop-blur-sm transition-colors ${className}`}
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-    >
-      <AnimatePresence mode="wait">
-        {copied ? (
-          <motion.div
-            key="check"
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            exit={{ scale: 0 }}
-          >
-            <Check className="w-4 h-4 text-green-400" />
-          </motion.div>
-        ) : (
-          <motion.div
-            key="copy"
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            exit={{ scale: 0 }}
-          >
-            <Copy className="w-4 h-4" />
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.button>
-  );
-};
 
-// Enhanced Code Block with Copy Button
-const CodeBlockWithCopy: React.FC<{ code: string; language?: string }> = ({
-  code,
-  language = "bash",
-}) => (
-  <div className="relative group">
-    <pre className="bg-slate-900 text-slate-100 p-4 rounded-lg font-mono text-sm overflow-x-auto">
-      <code className={`language-${language}`}>{code}</code>
-    </pre>
-    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-      <CopyButton text={code} />
-    </div>
-  </div>
-);
 
 export default function Home() {
   const contactForm = useFormedible({
@@ -629,74 +566,6 @@ export default function Home() {
     <>
       <Toaster position="top-right" richColors />
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-        {/* Header */}
-        <motion.header
-          initial={{ y: -100 }}
-          animate={{ y: 0 }}
-          className="border-b bg-white/80 backdrop-blur-sm dark:bg-slate-950/80 sticky top-0 z-50"
-        >
-          <div className="container mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
-              <motion.div
-                className="flex items-center gap-3"
-                whileHover={{ scale: 1.02 }}
-              >
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                  <Blocks className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                    Formedible
-                  </h1>
-                  <p className="text-sm text-muted-foreground">
-                    shadcn/ui Registry Component
-                  </p>
-                </div>
-              </motion.div>
-              <div className="flex items-center gap-2">
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href="/builder">
-                      <Blocks className="w-4 h-4 mr-2" />
-                      Builder
-                    </Link>
-                  </Button>
-                </motion.div>
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href="/docs">
-                      <Code className="w-4 h-4 mr-2" />
-                      Docs
-                    </Link>
-                  </Button>
-                </motion.div>
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      navigator.clipboard.writeText(installCommand);
-                      toast.success("Install command copied!", {
-                        description: "Run this in your project terminal",
-                      });
-                    }}
-                  >
-                    <CommandIcon className="w-4 h-4 mr-2" />
-                    Install
-                  </Button>
-                </motion.div>
-              </div>
-            </div>
-          </div>
-        </motion.header>
 
         {/* Hero Section */}
         <section className="container mx-auto px-4 py-16 text-center">
@@ -778,25 +647,21 @@ export default function Home() {
 
             {/* Installation Command */}
             <motion.div
-              className="bg-slate-900 dark:bg-slate-800 rounded-lg p-4 max-w-2xl mx-auto relative group"
+              className="max-w-2xl mx-auto"
               initial={{ y: 30, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.6 }}
-              whileHover={{ scale: 1.02 }}
             >
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-slate-400 text-sm">
+              <div className="mb-2 text-center">
+                <span className="text-slate-600 dark:text-slate-400 text-sm">
                   Install via shadcn CLI
                 </span>
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                  <CopyButton text={installCommand} />
-                </div>
               </div>
-              <code className="text-green-400 font-mono text-sm block">
-                npx shadcn@latest add {origin || "https://formedible.dev"}
-                /r/use-formedible.json
-              </code>
-            </motion.div>
+                <CodeBlock 
+                  code={installCommand} 
+                  language="bash"
+                  showPackageManagerTabs={true} 
+                />            </motion.div>
           </motion.div>
         </section>
 
@@ -889,7 +754,7 @@ export default function Home() {
                 Installation & Setup
               </CardTitle>
               <CardDescription>
-                Get the use-formedible hook installed in your shadcn/ui project
+                Get the use-formedible hook installed in your project that uses shadcn/ui
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -897,8 +762,11 @@ export default function Home() {
                 <h4 className="font-semibold mb-2">
                   Install the component via shadcn CLI
                 </h4>
-                <CodeBlockWithCopy code={installCommand} />
-                <p className="text-sm text-muted-foreground mt-2">
+              <CodeBlock 
+                code={installCommand} 
+                language="bash"
+                showPackageManagerTabs={true} 
+              />                <p className="text-sm text-muted-foreground mt-2">
                   This installs the hook, all field components, and their
                   dependencies automatically.
                 </p>
@@ -906,35 +774,10 @@ export default function Home() {
 
               <div>
                 <h4 className="font-semibold mb-2">Basic usage example</h4>
-                <div className="relative group">
-                  <pre className="bg-slate-900 text-slate-100 p-4 rounded-lg font-mono text-sm overflow-x-auto">
-                    <code>{`import { useFormedible } from "@/hooks/use-formedible";
-import { z } from "zod";
-
-const schema = z.object({
-  email: z.string().email("Invalid email"),
-  message: z.string().min(10, "Message too short"),
-});
-
-export function MyForm() {
-  const { Form } = useFormedible({
-    schema,
-    fields: [
-      { name: "email", type: "email", label: "Email" },
-      { name: "message", type: "textarea", label: "Message" },
-    ],
-    formOptions: {
-      defaultValues: { email: "", message: "" },
-      onSubmit: async ({ value }) => console.log(value),
-    },
-  });
-
-  return <Form />;
-}`}</code>
-                  </pre>
-                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <CopyButton
-                      text={`import { useFormedible } from "@/hooks/use-formedible";
+                <CodeBlock 
+                  language="tsx"
+                  title="Basic Usage Example"
+                  code={`import { useFormedible } from "@/hooks/use-formedible";
 import { z } from "zod";
 
 const schema = z.object({
@@ -957,9 +800,7 @@ export function MyForm() {
 
   return <Form />;
 }`}
-                    />
-                  </div>
-                </div>
+                />
               </div>
 
               <motion.div
@@ -1235,8 +1076,8 @@ export function MyForm() {
                     <Blocks className="w-8 h-8 text-blue-500 mb-2" />
                     <CardTitle>Interactive Builder</CardTitle>
                     <CardDescription>
-                      Build forms visually with our drag-and-drop interface.
-                      Create, customize, and export your forms with ease.
+                      Build forms visually with our interface. Create,
+                      customize, and export your forms with ease.
                     </CardDescription>
                   </CardHeader>
                 </Card>
@@ -1286,7 +1127,7 @@ export function MyForm() {
                 </Badge>
               </motion.div>
               <p className="text-sm text-muted-foreground">
-                Built with shadcn/ui, TanStack Form, Zod, and Radix UI
+                Built with TanStack Form, shadcn/ui, and Zod
               </p>
             </div>
           </div>

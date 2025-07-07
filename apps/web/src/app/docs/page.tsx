@@ -2,69 +2,98 @@
 
 import React from "react";
 import { motion } from "motion/react";
-import { Book, Code, Zap, FileText, Sparkles, Rocket, Shield, Layers } from "lucide-react";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Book,
+  Code,
+  Zap,
+  FileText,
+  Sparkles,
+  Rocket,
+  Shield,
+  Layers,
+} from "lucide-react";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+import { CodeBlock } from "@/components/ui/code-block";
 
 export default function DocsPage() {
+  const [origin, setOrigin] = React.useState("");
+
+  React.useEffect(() => {
+    setOrigin(window.location.origin);
+  }, []);
+
+  const installCommand = `npx shadcn@latest add ${
+    origin || "https://formedible.dev"
+  }/r/use-formedible.json`;
+  
   const docSections = [
     {
       title: "Getting Started",
-      description: "Install Formedible and create your first form in under 5 minutes",
+      description:
+        "Install Formedible and create your first form in under 5 minutes",
       icon: Rocket,
       href: "/docs/getting-started",
       color: "text-green-500",
-      badge: "Start Here"
+      badge: "Start Here",
     },
     {
       title: "Field Types",
-      description: "Explore 15+ pre-built field components with validation and styling",
+      description:
+        "Explore 15+ pre-built field components with validation and styling",
       icon: Layers,
       href: "/docs/fields",
       color: "text-purple-500",
-      badge: "Popular"
+      badge: "Popular",
     },
     {
       title: "API Reference",
-      description: "Complete documentation of hooks, props, and configuration options",
+      description:
+        "Complete documentation of hooks, props, and configuration options",
       icon: Code,
       href: "/docs/api",
       color: "text-blue-500",
-      badge: null
+      badge: null,
     },
     {
       title: "Examples",
-      description: "Real-world form implementations from simple to complex use cases",
+      description:
+        "Real-world form implementations from simple to complex use cases",
       icon: Book,
       href: "/docs/examples",
       color: "text-orange-500",
-      badge: null
-    }
+      badge: null,
+    },
   ];
 
   const features = [
     {
       icon: Shield,
       title: "Type-Safe",
-      description: "Built with TypeScript and Zod for complete type safety"
+      description: "Built with TypeScript and Zod for complete type safety",
     },
     {
       icon: Zap,
       title: "Zero Config",
-      description: "Works out of the box with sensible defaults"
+      description: "Works out of the box with sensible defaults",
     },
     {
       icon: Sparkles,
       title: "Beautiful UI",
-      description: "Powered by shadcn/ui components"
-    }
+      description: "Powered by shadcn/ui components",
+    },
   ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
       <div className="container mx-auto px-4 py-16">
-        <motion.div 
+        <motion.div
           className="max-w-6xl mx-auto"
           initial={{ y: 30, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -81,33 +110,39 @@ export default function DocsPage() {
                 Documentation
               </Badge>
               <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-slate-900 via-blue-800 to-purple-800 dark:from-slate-100 dark:via-blue-200 dark:to-purple-200 bg-clip-text text-transparent">
-                Build Forms That Just Work
+                Forms cooked just "A Point" for you to use
               </h1>
               <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-                Formedible combines the power of TanStack Form with beautiful shadcn/ui components. 
-                Create schema-driven forms with validation, multi-step flows, and custom styling in minutes.
+                Formedible combines the power of TanStack Form with beautiful
+                shadcn/ui components. Create schema-driven forms with
+                validation, multi-step flows, and custom styling in minutes.
               </p>
             </motion.div>
 
             {/* Feature Pills */}
-            <motion.div 
+            <motion.div
               className="flex flex-wrap justify-center gap-4 mb-12"
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.2 }}
             >
               {features.map((feature, index) => (
-                <div key={feature.title} className="flex items-center gap-2 bg-white dark:bg-slate-800 px-4 py-2 rounded-full border shadow-sm">
+                <div
+                  key={feature.title}
+                  className="flex items-center gap-2 bg-white dark:bg-slate-800 px-4 py-2 rounded-full border shadow-sm"
+                >
                   <feature.icon className="w-4 h-4 text-blue-500" />
                   <span className="text-sm font-medium">{feature.title}</span>
                   <span className="text-xs text-muted-foreground">•</span>
-                  <span className="text-xs text-muted-foreground">{feature.description}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {feature.description}
+                  </span>
                 </div>
               ))}
             </motion.div>
 
             {/* Quick Install */}
-            <motion.div 
+            <motion.div
               className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 p-6 rounded-xl border border-blue-200 dark:border-blue-800 mb-16"
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -120,9 +155,11 @@ export default function DocsPage() {
                 </h3>
               </div>
               <div className="bg-slate-900 dark:bg-slate-800 rounded-lg p-4 max-w-2xl mx-auto">
-                <code className="text-green-400 font-mono text-sm block text-center">
-                  npx shadcn@latest add formedible.dev/r/use-formedible.json
-                </code>
+                <CodeBlock
+                  code={installCommand}
+                  language="bash"
+                  showPackageManagerTabs={true}
+                />
               </div>
               <p className="text-sm text-blue-700 dark:text-blue-300 mt-3">
                 One command installs everything you need to get started
@@ -150,8 +187,12 @@ export default function DocsPage() {
                     )}
                     <CardHeader className="pb-6">
                       <div className="flex items-center gap-3 mb-3">
-                        <div className={`p-2 rounded-lg bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-700 border`}>
-                          <section.icon className={`w-6 h-6 ${section.color}`} />
+                        <div
+                          className={`p-2 rounded-lg bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-700 border`}
+                        >
+                          <section.icon
+                            className={`w-6 h-6 ${section.color}`}
+                          />
                         </div>
                         <CardTitle className="text-xl group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                           {section.title}
@@ -168,7 +209,7 @@ export default function DocsPage() {
           </div>
 
           {/* Additional Resources */}
-          <motion.div 
+          <motion.div
             className="text-center"
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -179,19 +220,20 @@ export default function DocsPage() {
                 Ready to Build Amazing Forms?
               </h3>
               <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
-                Join developers who are already using Formedible to create beautiful, 
-                type-safe forms with minimal effort. Start with our getting started guide 
-                and have your first form running in minutes.
+                Join developers who are already using Formedible to create
+                beautiful, type-safe forms with minimal effort. Start with our
+                getting started guide and have your first form running in
+                minutes.
               </p>
               <div className="flex flex-wrap justify-center gap-4">
-                <Link 
+                <Link
                   href="/docs/getting-started"
                   className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
                 >
                   <Rocket className="w-4 h-4" />
                   Get Started
                 </Link>
-                <Link 
+                <Link
                   href="/docs/examples"
                   className="inline-flex items-center gap-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-900 dark:text-slate-100 px-6 py-3 rounded-lg font-medium border transition-colors"
                 >

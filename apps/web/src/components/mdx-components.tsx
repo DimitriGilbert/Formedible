@@ -1,5 +1,5 @@
 import type { MDXComponents } from 'mdx/types';
-import { CodeBlock } from './demo/code-block';
+import { CodeBlock } from '@/components/ui/code-block';
 
 export function useMDXComponents(components: MDXComponents): MDXComponents {
   return {
@@ -26,7 +26,7 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
     code: ({ children, className }) => {
       const language = className?.replace('language-', '') || 'tsx';
       if (typeof children === 'string' && children.includes('\n')) {
-        return <CodeBlock code={children} language={language} />;
+        return <CodeBlock code={children} language={language} showLineNumbers={true} />;
       }
       return (
         <code className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-sm font-mono">
