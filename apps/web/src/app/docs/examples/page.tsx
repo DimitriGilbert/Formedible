@@ -1,35 +1,16 @@
-import type { Metadata } from "next";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Examples - Formedible",
-  description: "Real-world examples and use cases for Formedible forms including contact forms, registration, surveys, and more.",
-};
-
-export default function ExamplesPage() {
-  return (
-    <div className="container mx-auto py-8 px-4 max-w-4xl">
-      <div className="space-y-8">
-        <div>
-          <h1 className="text-4xl font-bold mb-4">Examples</h1>
-          <p className="text-lg text-muted-foreground">
-            Real-world examples and use cases demonstrating Formedible's capabilities 
-            in various scenarios from simple contact forms to complex multi-step wizards.
-          </p>
-        </div>
-
-        <div className="space-y-6">
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">Contact Form</h2>
-            <p className="mb-4">
-              A simple contact form with validation, demonstrating basic field types and schema validation.
-            </p>
-            
-            <div className="bg-muted p-4 rounded-lg">
-              <h3 className="font-semibold mb-2">Complete Example</h3>
-              <pre className="text-sm overflow-x-auto">
-{`import { useFormedible } from "@/hooks/use-formedible";
+import React from "react";
+import { useFormedible } from "@/hooks/use-formedible";
 import { z } from "zod";
+import { toast } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { motion } from "motion/react";
 
+// Schemas
 const contactSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email"),
@@ -38,10 +19,56 @@ const contactSchema = z.object({
   urgent: z.boolean().default(false),
 });
 
-type ContactFormValues = z.infer<typeof contactSchema>;
+const registrationSchema = z.object({
+  firstName: z.string().min(1, "First name is required"),
+  lastName: z.string().min(1, "Last name is required"),
+  birthDate: z.date(),
+  email: z.string().email("Invalid email"),
+  phone: z.string().min(10, "Phone number required"),
+  address: z.string().min(5, "Address required"),
+  newsletter: z.boolean(),
+  notifications: z.boolean(),
+  plan: z.enum(["basic", "pro", "enterprise"]),
+});
 
-export function ContactForm() {
-  const { Form } = useFormedible<ContactFormValues>({
+const surveySchema = z.object({
+  satisfaction: z.number().min(1).max(5),
+  recommend: z.enum(["yes", "maybe", "no"]),
+  improvements: z.string().optional(),
+  referralSource: z.string().optional(),
+  otherSource: z.string().optional(),
+  features: z.array(z.string()),
+});
+
+const checkoutSchema = z.object({
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  email: z.string().email(),
+  address: z.string().min(5),
+  city: z.string().min(1),
+  zipCode: z.string().min(5),
+  paymentMethod: z.enum(["card", "paypal", "apple_pay"]),
+  cardNumber: z.string().optional(),
+  expiryDate: z.string().optional(),
+  shippingMethod: z.enum(["standard", "express", "overnight"]),
+  giftMessage: z.string().optional(),
+});
+
+const jobApplicationSchema = z.object({
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  email: z.string().email(),
+  phone: z.string().min(1),
+  skills: z.array(z.string()).min(1),
+  startDate: z.date(),
+  salaryExpectation: z.number().min(0),
+  whyInterested: z.string().min(10),
+  additionalInfo: z.string().optional(),
+});
+
+export default function ExamplesPage() {
+  // Contact Form
+  const contactForm = useFormedible({
     schema: contactSchema,
     fields: [
       { name: "name", type: "text", label: "Full Name", placeholder: "John Doe" },
@@ -50,13 +77,11 @@ export function ContactForm() {
         name: "subject", 
         type: "select", 
         label: "Subject",
-        selectConfig: {
-          options: [
-            { value: "general", label: "General Inquiry" },
-            { value: "support", label: "Technical Support" },
-            { value: "sales", label: "Sales Question" }
-          ]
-        }
+        options: [
+          { value: "general", label: "General Inquiry" },
+          { value: "support", label: "Technical Support" },
+          { value: "sales", label: "Sales Question" }
+        ]
       },
       { name: "message", type: "textarea", label: "Message", placeholder: "How can we help?" },
       { name: "urgent", type: "checkbox", label: "This is urgent" },
@@ -70,51 +95,16 @@ export function ContactForm() {
         urgent: false,
       },
       onSubmit: async ({ value }) => {
-        console.log("Form submitted:", value);
-        // Handle form submission
-        await fetch("/api/contact", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(value),
+        console.log("Contact form submitted:", value);
+        toast.success("Message sent successfully!", {
+          description: "We'll get back to you soon.",
         });
       },
     },
   });
 
-  return <Form />;
-}`}
-              </pre>
-            </div>
-          </section>
-
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">Multi-Step Registration</h2>
-            <p className="mb-4">
-              A multi-page registration form with progress tracking and conditional fields.
-            </p>
-            
-            <div className="bg-muted p-4 rounded-lg">
-              <h3 className="font-semibold mb-2">Registration Wizard</h3>
-              <pre className="text-sm overflow-x-auto">
-{`const registrationSchema = z.object({
-  // Page 1: Personal Info
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  birthDate: z.date(),
-  
-  // Page 2: Contact Details
-  email: z.string().email("Invalid email"),
-  phone: z.string().min(10, "Phone number required"),
-  address: z.string().min(5, "Address required"),
-  
-  // Page 3: Preferences
-  newsletter: z.boolean(),
-  notifications: z.boolean(),
-  plan: z.enum(["basic", "pro", "enterprise"]),
-});
-
-export function RegistrationForm() {
-  const { Form } = useFormedible({
+  // Registration Form
+  const registrationForm = useFormedible({
     schema: registrationSchema,
     fields: [
       // Page 1
@@ -135,13 +125,11 @@ export function RegistrationForm() {
         type: "radio", 
         label: "Choose Plan", 
         page: 3,
-        radioConfig: {
-          options: [
-            { value: "basic", label: "Basic - Free" },
-            { value: "pro", label: "Pro - $9/month" },
-            { value: "enterprise", label: "Enterprise - $29/month" }
-          ]
-        }
+        options: [
+          { value: "basic", label: "Basic - Free" },
+          { value: "pro", label: "Pro - $9/month" },
+          { value: "enterprise", label: "Enterprise - $29/month" }
+        ]
       },
     ],
     pages: [
@@ -163,28 +151,17 @@ export function RegistrationForm() {
         plan: "basic" as const,
       },
       onSubmit: async ({ value }) => {
-        await registerUser(value);
+        console.log("Registration completed:", value);
+        toast.success("Registration completed!", {
+          description: "Welcome to our platform!",
+        });
       },
     },
   });
 
-  return <Form />;
-}`}
-              </pre>
-            </div>
-          </section>
-
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">Dynamic Survey Form</h2>
-            <p className="mb-4">
-              A survey form with conditional questions and dynamic field generation.
-            </p>
-            
-            <div className="bg-muted p-4 rounded-lg">
-              <h3 className="font-semibold mb-2">Conditional Survey</h3>
-              <pre className="text-sm overflow-x-auto">
-{`export function SurveyForm() {
-  const { Form } = useFormedible({
+  // Survey Form
+  const surveyForm = useFormedible({
+    schema: surveySchema,
     fields: [
       { 
         name: "satisfaction", 
@@ -196,53 +173,49 @@ export function RegistrationForm() {
         name: "recommend", 
         type: "radio", 
         label: "Would you recommend us to others?",
-        radioConfig: {
-          options: [
-            { value: "yes", label: "Yes, definitely" },
-            { value: "maybe", label: "Maybe" },
-            { value: "no", label: "No" }
-          ]
-        }
+        options: [
+          { value: "yes", label: "Yes, definitely" },
+          { value: "maybe", label: "Maybe" },
+          { value: "no", label: "No" }
+        ]
       },
       {
         name: "improvements",
         type: "textarea",
         label: "What could we improve?",
-        conditional: (values) => values.satisfaction < 4, // Only show if rating < 4
+        conditional: (values: any) => values.satisfaction < 4,
       },
       {
         name: "referralSource",
         type: "select",
         label: "How did you hear about us?",
-        conditional: (values) => values.recommend === "yes",
-        selectConfig: {
-          options: [
-            { value: "friend", label: "Friend or colleague" },
-            { value: "social", label: "Social media" },
-            { value: "search", label: "Search engine" },
-            { value: "ad", label: "Advertisement" },
-            { value: "other", label: "Other" }
-          ]
-        }
+        conditional: (values: any) => values.recommend === "yes",
+        options: [
+          { value: "friend", label: "Friend or colleague" },
+          { value: "social", label: "Social media" },
+          { value: "search", label: "Search engine" },
+          { value: "ad", label: "Advertisement" },
+          { value: "other", label: "Other" }
+        ]
       },
       {
         name: "otherSource",
         type: "text",
         label: "Please specify",
-        conditional: (values) => values.referralSource === "other",
+        conditional: (values: any) => values.referralSource === "other",
       },
       {
         name: "features",
         type: "multiSelect",
         label: "Which features do you use most?",
+        options: [
+          { value: "forms", label: "Form Builder" },
+          { value: "validation", label: "Validation" },
+          { value: "analytics", label: "Analytics" },
+          { value: "integrations", label: "Integrations" },
+          { value: "api", label: "API Access" }
+        ],
         multiSelectConfig: {
-          options: [
-            { value: "forms", label: "Form Builder" },
-            { value: "validation", label: "Validation" },
-            { value: "analytics", label: "Analytics" },
-            { value: "integrations", label: "Integrations" },
-            { value: "api", label: "API Access" }
-          ],
           maxSelections: 3
         }
       }
@@ -250,328 +223,165 @@ export function RegistrationForm() {
     formOptions: {
       defaultValues: {
         satisfaction: 5,
-        recommend: "",
+        recommend: "yes" as const,
         improvements: "",
         referralSource: "",
         otherSource: "",
         features: [],
       },
       onSubmit: async ({ value }) => {
-        await submitSurvey(value);
+        console.log("Survey submitted:", value);
+        toast.success("Thank you for your feedback!", {
+          description: "Your response helps us improve.",
+        });
       },
     },
   });
 
-  return <Form />;
-}`}
-              </pre>
-            </div>
-          </section>
-
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">E-commerce Checkout</h2>
-            <p className="mb-4">
-              A complete checkout form with address validation, payment details, and order summary.
-            </p>
-            
-            <div className="bg-muted p-4 rounded-lg">
-              <h3 className="font-semibold mb-2">Checkout Form</h3>
-              <pre className="text-sm overflow-x-auto">
-{`const checkoutSchema = z.object({
-  // Shipping Information
-  shippingAddress: z.object({
-    firstName: z.string().min(1),
-    lastName: z.string().min(1),
-    address: z.string().min(5),
-    city: z.string().min(1),
-    state: z.string().min(1),
-    zipCode: z.string().min(5),
-    country: z.string().min(1),
-  }),
-  
-  // Billing Information
-  sameAsBilling: z.boolean(),
-  billingAddress: z.object({
-    firstName: z.string().min(1),
-    lastName: z.string().min(1),
-    address: z.string().min(5),
-    city: z.string().min(1),
-    state: z.string().min(1),
-    zipCode: z.string().min(5),
-    country: z.string().min(1),
-  }).optional(),
-  
-  // Payment
-  paymentMethod: z.enum(["card", "paypal", "apple_pay"]),
-  cardNumber: z.string().optional(),
-  expiryDate: z.string().optional(),
-  cvv: z.string().optional(),
-  
-  // Order Options
-  shippingMethod: z.enum(["standard", "express", "overnight"]),
-  giftMessage: z.string().optional(),
-});
-
-export function CheckoutForm() {
-  const { Form } = useFormedible({
+  // Checkout Form
+  const checkoutForm = useFormedible({
     schema: checkoutSchema,
     fields: [
-      // Shipping Address Section
-      { name: "shippingAddress.firstName", type: "text", label: "First Name", page: 1 },
-      { name: "shippingAddress.lastName", type: "text", label: "Last Name", page: 1 },
-      { name: "shippingAddress.address", type: "text", label: "Address", page: 1 },
-      { name: "shippingAddress.city", type: "text", label: "City", page: 1 },
-      { name: "shippingAddress.state", type: "text", label: "State", page: 1 },
-      { name: "shippingAddress.zipCode", type: "text", label: "ZIP Code", page: 1 },
-      { 
-        name: "shippingAddress.country", 
-        type: "select", 
-        label: "Country", 
-        page: 1,
-        selectConfig: {
-          options: [
-            { value: "US", label: "United States" },
-            { value: "CA", label: "Canada" },
-            { value: "UK", label: "United Kingdom" }
-          ]
-        }
-      },
+      // Page 1 - Shipping
+      { name: "firstName", type: "text", label: "First Name", page: 1 },
+      { name: "lastName", type: "text", label: "Last Name", page: 1 },
+      { name: "email", type: "email", label: "Email", page: 1 },
+      { name: "address", type: "text", label: "Address", page: 1 },
+      { name: "city", type: "text", label: "City", page: 1 },
+      { name: "zipCode", type: "text", label: "ZIP Code", page: 1 },
       
-      // Billing Address
-      { name: "sameAsBilling", type: "checkbox", label: "Billing address same as shipping", page: 2 },
-      { 
-        name: "billingAddress.firstName", 
-        type: "text", 
-        label: "Billing First Name", 
-        page: 2,
-        conditional: (values) => !values.sameAsBilling
-      },
-      // ... more billing fields with same conditional
-      
-      // Payment Method
+      // Page 2 - Payment
       { 
         name: "paymentMethod", 
         type: "radio", 
         label: "Payment Method", 
-        page: 3,
-        radioConfig: {
-          options: [
-            { value: "card", label: "Credit/Debit Card" },
-            { value: "paypal", label: "PayPal" },
-            { value: "apple_pay", label: "Apple Pay" }
-          ]
-        }
+        page: 2,
+        options: [
+          { value: "card", label: "Credit/Debit Card" },
+          { value: "paypal", label: "PayPal" },
+          { value: "apple_pay", label: "Apple Pay" }
+        ]
       },
       {
         name: "cardNumber",
-        type: "masked",
+        type: "text",
         label: "Card Number",
-        page: 3,
-        conditional: (values) => values.paymentMethod === "card",
-        maskedInputConfig: {
-          mask: "9999 9999 9999 9999",
-          placeholder: "1234 5678 9012 3456"
-        }
+        page: 2,
+        conditional: (values: any) => values.paymentMethod === "card",
+        placeholder: "1234 5678 9012 3456"
       },
       {
         name: "expiryDate",
-        type: "masked",
+        type: "text",
         label: "Expiry Date",
-        page: 3,
-        conditional: (values) => values.paymentMethod === "card",
-        maskedInputConfig: {
-          mask: "99/99",
-          placeholder: "MM/YY"
-        }
+        page: 2,
+        conditional: (values: any) => values.paymentMethod === "card",
+        placeholder: "MM/YY"
       },
       
-      // Shipping Options
+      // Page 3 - Shipping Options
       { 
         name: "shippingMethod", 
         type: "radio", 
         label: "Shipping Method", 
-        page: 4,
-        radioConfig: {
-          options: [
-            { value: "standard", label: "Standard (5-7 days) - Free" },
-            { value: "express", label: "Express (2-3 days) - $9.99" },
-            { value: "overnight", label: "Overnight - $24.99" }
-          ]
-        }
+        page: 3,
+        options: [
+          { value: "standard", label: "Standard (5-7 days) - Free" },
+          { value: "express", label: "Express (2-3 days) - $9.99" },
+          { value: "overnight", label: "Overnight - $24.99" }
+        ]
       },
-      { name: "giftMessage", type: "textarea", label: "Gift Message (Optional)", page: 4 },
+      { name: "giftMessage", type: "textarea", label: "Gift Message (Optional)", page: 3 },
     ],
     pages: [
       { page: 1, title: "Shipping Address", description: "Where should we send your order?" },
-      { page: 2, title: "Billing Address", description: "Billing information" },
-      { page: 3, title: "Payment", description: "How would you like to pay?" },
-      { page: 4, title: "Review & Submit", description: "Review your order" },
+      { page: 2, title: "Payment", description: "How would you like to pay?" },
+      { page: 3, title: "Review & Submit", description: "Review your order" },
     ],
     progress: { showSteps: true },
     formOptions: {
       defaultValues: {
-        shippingAddress: {
-          firstName: "",
-          lastName: "",
-          address: "",
-          city: "",
-          state: "",
-          zipCode: "",
-          country: "US",
-        },
-        sameAsBilling: true,
+        firstName: "",
+        lastName: "",
+        email: "",
+        address: "",
+        city: "",
+        zipCode: "",
         paymentMethod: "card" as const,
+        cardNumber: "",
+        expiryDate: "",
         shippingMethod: "standard" as const,
         giftMessage: "",
       },
       onSubmit: async ({ value }) => {
-        await processOrder(value);
+        console.log("Order submitted:", value);
+        toast.success("Order placed successfully!", {
+          description: "You'll receive a confirmation email shortly.",
+        });
       },
     },
   });
 
-  return <Form />;
-}`}
-              </pre>
-            </div>
-          </section>
-
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">Job Application Form</h2>
-            <p className="mb-4">
-              A comprehensive job application form with file uploads, work history, and references.
-            </p>
-            
-            <div className="bg-muted p-4 rounded-lg">
-              <h3 className="font-semibold mb-2">Application Form</h3>
-              <pre className="text-sm overflow-x-auto">
-{`export function JobApplicationForm() {
-  const { Form } = useFormedible({
+  // Job Application Form
+  const jobApplicationForm = useFormedible({
+    schema: jobApplicationSchema,
     fields: [
-      // Personal Information
+      // Page 1 - Personal Info
       { name: "firstName", type: "text", label: "First Name", page: 1 },
       { name: "lastName", type: "text", label: "Last Name", page: 1 },
       { name: "email", type: "email", label: "Email", page: 1 },
       { name: "phone", type: "phone", label: "Phone Number", page: 1 },
-      { name: "location", type: "location", label: "Current Location", page: 1 },
       
-      // Documents
-      { 
-        name: "resume", 
-        type: "file", 
-        label: "Resume", 
-        page: 2,
-        fileConfig: {
-          accept: ".pdf,.doc,.docx",
-          maxSize: 5 * 1024 * 1024, // 5MB
-          required: true
-        }
-      },
-      { 
-        name: "coverLetter", 
-        type: "file", 
-        label: "Cover Letter (Optional)", 
-        page: 2,
-        fileConfig: {
-          accept: ".pdf,.doc,.docx",
-          maxSize: 5 * 1024 * 1024
-        }
-      },
-      { 
-        name: "portfolio", 
-        type: "file", 
-        label: "Portfolio/Work Samples", 
-        page: 2,
-        fileConfig: {
-          accept: ".pdf,.zip,.jpg,.png",
-          maxSize: 10 * 1024 * 1024,
-          multiple: true
-        }
-      },
-      
-      // Work Experience (Array Field)
-      {
-        name: "workExperience",
-        type: "array",
-        label: "Work Experience",
-        page: 3,
-        arrayConfig: {
-          itemType: "object",
-          minItems: 1,
-          maxItems: 5,
-          addButtonLabel: "Add Work Experience",
-          fields: [
-            { name: "company", type: "text", label: "Company" },
-            { name: "position", type: "text", label: "Position" },
-            { name: "startDate", type: "date", label: "Start Date" },
-            { name: "endDate", type: "date", label: "End Date" },
-            { name: "current", type: "checkbox", label: "Current Position" },
-            { name: "description", type: "textarea", label: "Job Description" }
-          ]
-        }
-      },
-      
-      // Skills
+      // Page 2 - Skills & Experience
       {
         name: "skills",
         type: "multiSelect",
         label: "Technical Skills",
-        page: 4,
+        page: 2,
+        options: [
+          { value: "javascript", label: "JavaScript" },
+          { value: "typescript", label: "TypeScript" },
+          { value: "react", label: "React" },
+          { value: "node", label: "Node.js" },
+          { value: "python", label: "Python" },
+          { value: "java", label: "Java" },
+          { value: "sql", label: "SQL" },
+          { value: "aws", label: "AWS" },
+        ],
         multiSelectConfig: {
-          options: [
-            { value: "javascript", label: "JavaScript" },
-            { value: "typescript", label: "TypeScript" },
-            { value: "react", label: "React" },
-            { value: "node", label: "Node.js" },
-            { value: "python", label: "Python" },
-            { value: "java", label: "Java" },
-            { value: "sql", label: "SQL" },
-            { value: "aws", label: "AWS" },
-          ],
           searchable: true,
           creatable: true,
           maxSelections: 10
         }
       },
-      
-      // Availability
-      { 
-        name: "startDate", 
-        type: "date", 
-        label: "Available Start Date", 
-        page: 4 
-      },
+      { name: "startDate", type: "date", label: "Available Start Date", page: 2 },
       { 
         name: "salaryExpectation", 
         type: "number", 
         label: "Salary Expectation (USD)", 
-        page: 4,
-        numberConfig: {
-          min: 0,
-          step: 1000
-        }
+        page: 2,
+        min: 0,
+        step: 1000
       },
       
-      // Additional Questions
+      // Page 3 - Questions
       { 
         name: "whyInterested", 
         type: "textarea", 
         label: "Why are you interested in this position?", 
-        page: 5 
+        page: 3 
       },
       { 
         name: "additionalInfo", 
         type: "textarea", 
         label: "Additional Information", 
-        page: 5 
+        page: 3 
       },
     ],
     pages: [
       { page: 1, title: "Personal Information" },
-      { page: 2, title: "Documents" },
-      { page: 3, title: "Work Experience" },
-      { page: 4, title: "Skills & Availability" },
-      { page: 5, title: "Additional Questions" },
+      { page: 2, title: "Skills & Availability" },
+      { page: 3, title: "Additional Questions" },
     ],
     progress: { showSteps: true, showPercentage: true },
     formOptions: {
@@ -580,8 +390,6 @@ export function CheckoutForm() {
         lastName: "",
         email: "",
         phone: "",
-        location: null,
-        workExperience: [{}],
         skills: [],
         startDate: new Date(),
         salaryExpectation: 0,
@@ -589,20 +397,158 @@ export function CheckoutForm() {
         additionalInfo: "",
       },
       onSubmit: async ({ value }) => {
-        await submitApplication(value);
+        console.log("Application submitted:", value);
+        toast.success("Application submitted!", {
+          description: "We'll review your application and get back to you soon.",
+        });
       },
     },
   });
 
-  return <Form />;
-}`}
-              </pre>
-            </div>
-          </section>
+  return (
+    <>
+      <Toaster position="top-right" richColors />
+      <div className="container mx-auto py-8 px-4 max-w-6xl">
+        <div className="space-y-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <h1 className="text-4xl font-bold mb-4">Interactive Examples</h1>
+            <p className="text-lg text-muted-foreground">
+              Real-world examples demonstrating Formedible's capabilities with working forms.
+              Try them out to see the features in action!
+            </p>
+          </motion.div>
+
+          <Tabs defaultValue="contact" className="w-full">
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="contact">Contact Form</TabsTrigger>
+              <TabsTrigger value="registration">Registration</TabsTrigger>
+              <TabsTrigger value="survey">Survey</TabsTrigger>
+              <TabsTrigger value="checkout">Checkout</TabsTrigger>
+              <TabsTrigger value="job">Job Application</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="contact">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      Contact Form
+                      <Badge variant="secondary">Basic</Badge>
+                    </CardTitle>
+                    <CardDescription>
+                      A simple contact form with validation, demonstrating basic field types and schema validation.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <contactForm.Form className="space-y-4" />
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </TabsContent>
+
+            <TabsContent value="registration">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      Multi-Step Registration
+                      <Badge variant="secondary">Multi-Page</Badge>
+                    </CardTitle>
+                    <CardDescription>
+                      A multi-page registration form with progress tracking and various field types.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <registrationForm.Form className="space-y-4" />
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </TabsContent>
+
+            <TabsContent value="survey">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      Dynamic Survey Form
+                      <Badge variant="secondary">Conditional</Badge>
+                    </CardTitle>
+                    <CardDescription>
+                      A survey form with conditional questions that appear based on previous answers.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <surveyForm.Form className="space-y-4" />
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </TabsContent>
+
+            <TabsContent value="checkout">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      E-commerce Checkout
+                      <Badge variant="secondary">Complex</Badge>
+                    </CardTitle>
+                    <CardDescription>
+                      A complete checkout form with shipping, payment, and order options across multiple pages.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <checkoutForm.Form className="space-y-4" />
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </TabsContent>
+
+            <TabsContent value="job">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      Job Application Form
+                      <Badge variant="secondary">Advanced</Badge>
+                    </CardTitle>
+                    <CardDescription>
+                      A comprehensive job application form with skills selection, availability, and open-ended questions.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <jobApplicationForm.Form className="space-y-4" />
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </TabsContent>
+          </Tabs>
 
           <section>
             <h2 className="text-2xl font-semibold mb-4">Best Practices</h2>
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="border-l-4 border-blue-500 pl-4">
                 <h3 className="font-semibold">Form Structure</h3>
                 <p className="text-sm text-muted-foreground">
@@ -634,6 +580,6 @@ export function CheckoutForm() {
           </section>
         </div>
       </div>
-    </div>
+    </>
   );
 }

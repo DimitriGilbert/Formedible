@@ -14,7 +14,10 @@
     "lint:web": "turbo -F web lint",
     "lint:pkg": "turbo -F formedible lint",
     "test": "turbo test",
-    "test:pkg": "turbo -F formedible test"
+    "test:pkg": "turbo -F formedible test",
+    "test:e2e": "jest --config jest.config.js",
+    "test:e2e:watch": "jest --config jest.config.js --watch",
+    "test:e2e:coverage": "jest --config jest.config.js --coverage"
   },
   "keywords": [],
   "author": "",
@@ -26,6 +29,10 @@
     "apps/*"
   ],
   "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "jest": "^30.0.4",
+    "puppeteer": "^24.11.2",
+    "ts-jest": "^29.4.0",
     "turbo": "^2.5.3"
   }
 }
