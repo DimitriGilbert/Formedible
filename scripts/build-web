@@ -1,0 +1,105 @@
+#!/bin/bash
+
+# Build Web Application Script
+# Usage: scripts/build-web [--skip-build]
+
+set -e
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Configuration
+WEB_DIST_DIR="apps/web/out"
+
+# Parse command line arguments
+SKIP_BUILD=false
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --skip-build)
+      SKIP_BUILD=true
+      shift
+      ;;
+    -h|--help)
+      echo "Usage: $0 [options]"
+      echo ""
+      echo "Options:"
+      echo "  --skip-build    Skip the web build step"
+      echo "  -h, --help      Show this help message"
+      echo ""
+      echo "Examples:"
+      echo "  $0              # Build web application"
+      echo "  $0 --skip-build # Skip build (useful for testing)"
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1"
+      echo "Use --help for usage information"
+      exit 1
+      ;;
+  esac
+done
+
+# Functions
+log_info() {
+  echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+log_success() {
+  echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+log_warning() {
+  echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+log_error() {
+  echo -e "${RED}[ERROR]${NC} $1"
+}
+
+build_web() {
+  if [[ "$SKIP_BUILD" == true ]]; then
+    log_info "Skipping web build (--skip-build flag)"
+    return
+  fi
+  
+  log_info "Building web application..."
+  npm run build:web
+  
+  if [[ ! -d "$WEB_DIST_DIR" ]]; then
+    log_error "Web build failed - out directory not found"
+    exit 1
+  fi
+  
+  log_success "Web build completed"
+}
+
+# Main execution
+main() {
+  echo "🌐 Formedible Web Builder"
+  echo "========================"
+  
+  # Ensure we're in the right directory
+  if [[ ! -f "package.json" ]]; then
+    log_error "package.json not found. Please run this script from the project root."
+    exit 1
+  fi
+  
+  build_web
+  
+  # Show build size
+  if [[ -d "$WEB_DIST_DIR" ]]; then
+    echo ""
+    echo "💾 Build size:"
+    du -sh "$WEB_DIST_DIR" 2>/dev/null || true
+  fi
+  
+  log_success "Web build complete! 🎉"
+}
+
+# Run main function
+main "$@"

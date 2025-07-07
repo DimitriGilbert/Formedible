@@ -1,0 +1,275 @@
+#!/bin/bash
+
+# Create Release Script
+# Usage: scripts/create-release <release-name> [--no-publish] [--version-bump <level>]
+
+set -e
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Configuration
+BUILD_DIR="build"
+RELEASE_DIR="release"
+PKG_DIST_DIR="packages/formedible/dist"
+WEB_DIST_DIR="apps/web/out"
+
+# Parse command line arguments
+RELEASE_NAME=""
+NO_PUBLISH=false
+VERSION_BUMP_LEVEL=""
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --no-publish)
+      NO_PUBLISH=true
+      shift
+      ;;
+    --version-bump)
+      VERSION_BUMP_LEVEL="$2"
+      shift 2
+      ;;
+    -h|--help)
+      echo "Usage: $0 <release-name> [options]"
+      echo ""
+      echo "Arguments:"
+      echo "  release-name             Name for the release (e.g., v0.1.1)"
+      echo ""
+      echo "Options:"
+      echo "  --no-publish             Create release files but don't publish to GitHub"
+      echo "  --version-bump <level>   Automatically bump version (patch, minor, major) and use it as release name"
+      echo "  -h, --help               Show this help message"
+      echo ""
+      echo "Examples:"
+      echo "  $0 v0.1.1                        # Create GitHub release v0.1.1"
+      echo "  $0 v0.1.1 --no-publish           # Create release files locally only"
+      echo "  $0 --version-bump patch           # Bump patch version and create release"
+      exit 0
+      ;;
+    *)
+      if [[ -z "$RELEASE_NAME" ]]; then
+        RELEASE_NAME="$1"
+      else
+        echo "Unknown option: $1"
+        echo "Use --help for usage information"
+        exit 1
+      fi
+      shift
+      ;;
+  esac
+done
+
+# Functions
+log_info() {
+  echo -e "${BLUE}[INFO]${NC} $1"
+}
+
+log_success() {
+  echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+log_warning() {
+  echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+log_error() {
+  echo -e "${RED}[ERROR]${NC} $1"
+}
+
+handle_version_bump() {
+  if [[ -z "$VERSION_BUMP_LEVEL" ]]; then
+    return
+  fi
+
+  log_info "Performing version bump: $VERSION_BUMP_LEVEL"
+
+  # Check for a clean working directory
+  if ! git diff-index --quiet HEAD --; then
+    log_error "Git working directory is not clean. Please commit or stash changes before bumping the version."
+    exit 1
+  fi
+
+  # Check if the bump level is valid
+  if [[ ! "$VERSION_BUMP_LEVEL" =~ ^(patch|minor|major|prerelease)$ ]]; then
+    log_error "Invalid version bump level: '$VERSION_BUMP_LEVEL'. Use 'patch', 'minor', 'major', or 'prerelease'."
+    exit 1
+  fi
+
+  # Bump version in package
+  pushd packages/formedible > /dev/null
+  local new_version_tag
+  if ! new_version_tag=$(npm version "$VERSION_BUMP_LEVEL"); then
+    log_error "npm version bump failed."
+    exit 1
+  fi
+  popd > /dev/null
+  
+  # Strip the leading 'v' to get the release name
+  RELEASE_NAME=${new_version_tag#v}
+  
+  log_success "Version bumped to $RELEASE_NAME. Git commit and tag created."
+  log_info "Pushing new commit and tag to origin..."
+
+  if git push --follow-tags; then
+    log_success "Successfully pushed commit and tags."
+  else
+    log_error "Failed to push commit and tags to origin."
+    exit 1
+  fi
+}
+
+create_release_artifacts() {
+  log_info "Creating release artifacts..."
+  
+  # Clean and create directories
+  rm -rf "$BUILD_DIR" "$RELEASE_DIR"
+  mkdir -p "$BUILD_DIR" "$RELEASE_DIR"
+  
+  # Check if build outputs exist
+  if [[ ! -d "$PKG_DIST_DIR" ]]; then
+    log_error "Package build not found. Run 'scripts/build-package' first."
+    exit 1
+  fi
+  
+  if [[ ! -d "$WEB_DIST_DIR" ]]; then
+    log_error "Web build not found. Run 'scripts/build-web' first."
+    exit 1
+  fi
+  
+  # Copy package dist to build directory
+  mkdir -p "$BUILD_DIR/package"
+  cp -r "$PKG_DIST_DIR"/* "$BUILD_DIR/package/"
+  
+  # Copy web dist to build directory
+  mkdir -p "$BUILD_DIR/web"
+  cp -r "$WEB_DIST_DIR"/* "$BUILD_DIR/web/"
+  
+  # Create release zips
+  log_info "Creating release zip: $RELEASE_DIR/formedible-$RELEASE_NAME.zip"
+  (cd "$BUILD_DIR/package" && zip -r "../../$RELEASE_DIR/formedible-$RELEASE_NAME.zip" .)
+  
+  log_info "Creating web release zip: $RELEASE_DIR/formedible-web-$RELEASE_NAME.zip"
+  (cd "$BUILD_DIR/web" && zip -r "../../$RELEASE_DIR/formedible-web-$RELEASE_NAME.zip" .)
+  
+  log_success "Release artifacts created"
+}
+
+create_github_release() {
+  if [[ "$NO_PUBLISH" == true ]]; then
+    log_warning "Release files created but not published to GitHub (--no-publish flag used)"
+    log_info "Release files available in: $RELEASE_DIR/"
+    ls -la "$RELEASE_DIR/"
+    return
+  fi
+  
+  log_info "Creating GitHub release: $RELEASE_NAME"
+  
+  # Check if gh CLI is available
+  if ! command -v gh &> /dev/null; then
+    log_error "GitHub CLI (gh) is not installed. Please install it to create releases."
+    log_info "Release files are available in: $RELEASE_DIR/"
+    exit 1
+  fi
+  
+  # Check if we're in a git repository
+  if ! git rev-parse --git-dir > /dev/null 2>&1; then
+    log_error "Not in a git repository"
+    exit 1
+  fi
+  
+  # Prepare release assets
+  RELEASE_ASSETS=()
+  for file in "$RELEASE_DIR"/*.zip; do
+    if [[ -f "$file" ]]; then
+      RELEASE_ASSETS+=("$file")
+    fi
+  done
+  
+  if [[ ${#RELEASE_ASSETS[@]} -eq 0 ]]; then
+    log_error "No release assets found in $RELEASE_DIR/"
+    exit 1
+  fi
+  
+  # Create the release
+  log_info "Creating release with assets: ${RELEASE_ASSETS[*]}"
+  
+  # Check if release already exists and delete it if so
+  if gh release view "$RELEASE_NAME" >/dev/null 2>&1; then
+    log_info "Release $RELEASE_NAME already exists, deleting it first..."
+    gh release delete "$RELEASE_NAME" --yes
+  fi
+  
+  if gh release create "$RELEASE_NAME" \
+    "${RELEASE_ASSETS[@]}" \
+    --title "Formedible $RELEASE_NAME" \
+    --generate-notes; then
+    log_success "GitHub release created successfully!"
+    log_info "View the release at: $(gh browse --no-browser -p)/releases/tag/$RELEASE_NAME"
+  else
+    log_error "Failed to create GitHub release"
+    exit 1
+  fi
+}
+
+# Main execution
+main() {
+  echo "📦 Formedible Release Creator"
+  echo "============================"
+  
+  # Argument validation
+  if [[ -z "$RELEASE_NAME" && -z "$VERSION_BUMP_LEVEL" ]]; then
+    log_error "Please provide a release name or use --version-bump"
+    echo "Use --help for usage information"
+    exit 1
+  fi
+  
+  if [[ -n "$RELEASE_NAME" && -n "$VERSION_BUMP_LEVEL" ]]; then
+    log_error "Cannot use release name and --version-bump at the same time. Choose one."
+    exit 1
+  fi
+  
+  # Ensure we're in the right directory
+  if [[ ! -f "package.json" ]]; then
+    log_error "package.json not found. Please run this script from the project root."
+    exit 1
+  fi
+  
+  # Ensure zip is available
+  if ! command -v zip &> /dev/null; then
+    log_error "zip command is not available. Please install zip."
+    exit 1
+  fi
+  
+  handle_version_bump
+  
+  if [[ -z "$RELEASE_NAME" ]]; then
+    log_error "No release name determined"
+    exit 1
+  fi
+  
+  log_info "Creating release: $RELEASE_NAME"
+  if [[ "$NO_PUBLISH" == true ]]; then
+    log_info "Release will be created locally only (--no-publish)"
+  fi
+  
+  create_release_artifacts
+  create_github_release
+  
+  # Show summary
+  echo ""
+  log_success "Release creation complete!"
+  echo ""
+  echo "📦 Release files:"
+  if [[ -d "$RELEASE_DIR" ]]; then
+    du -sh "$RELEASE_DIR"/* 2>/dev/null || true
+  fi
+  
+  log_success "All done! 🎉"
+}
+
+# Run main function
+main "$@"
