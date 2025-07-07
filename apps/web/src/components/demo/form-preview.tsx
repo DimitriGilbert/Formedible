@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface FormField {
   id: string;
@@ -185,8 +186,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
   if (!formResult || !formResult.Form || config.fields.length === 0) {
     if (config.fields.length === 0) {
       return (
-        <Card className={className}>
-          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+    <Card className={cn("bg-muted/30", className)}>          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <div className="text-4xl mb-4">📝</div>
             <h3 className="text-lg font-medium mb-2">No Fields Added</h3>
             <p className="text-muted-foreground">
@@ -197,8 +197,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
       );
     }
     return (
-      <Card className={className}>
-        <CardContent className="py-6">
+        <Card className={cn("bg-muted/30", className)}>        <CardContent className="py-6">
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
@@ -213,8 +212,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
   const { Form } = formResult;
 
   return (
-    <Card className={className}>
-      <CardHeader>
+      <Card className={cn("bg-muted/30", className)}>      <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <div>
             <div>{config.title}</div>
@@ -233,7 +231,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
       <CardContent>
         <div className="space-y-6">
           {/* Form stats */}
-          <div className="grid grid-cols-3 gap-4 p-4 bg-muted/20 rounded-lg">
+          <div className="grid grid-cols-3 gap-4 p-4 bg-muted/50 border rounded-lg">
             <div className="text-center">
               <div className="text-2xl font-bold text-primary">{config.fields.length}</div>
               <div className="text-xs text-muted-foreground">Fields</div>
@@ -299,27 +297,27 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
               <h4 className="text-sm font-medium text-muted-foreground">Advanced Features</h4>
               <div className="flex flex-wrap gap-2">
                 {config.fields.some(f => f.section) && (
-                  <div className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
+                  <div className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded text-xs">
                     📑 Sections
                   </div>
                 )}
                 {config.fields.some(f => f.group) && (
-                  <div className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-800 rounded text-xs">
+                  <div className="inline-flex items-center gap-1 px-2 py-1 bg-accent/10 text-accent rounded text-xs">
                     🏷️ Field Groups
                   </div>
                 )}
                 {config.fields.some(f => f.help) && (
-                  <div className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">
+                  <div className="inline-flex items-center gap-1 px-2 py-1 bg-secondary/50 text-foreground rounded text-xs">
                     ❓ Help & Tooltips
                   </div>
                 )}
                 {config.fields.some(f => f.inlineValidation?.enabled) && (
-                  <div className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-800 rounded text-xs">
+                  <div className="inline-flex items-center gap-1 px-2 py-1 bg-muted text-muted-foreground rounded text-xs">
                     ⚡ Inline Validation
                   </div>
                 )}
                 {config.settings.showProgress && (
-                  <div className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-100 text-indigo-800 rounded text-xs">
+                  <div className="inline-flex items-center gap-1 px-2 py-1 bg-primary/20 text-primary rounded text-xs">
                     📊 Progress Indicator
                   </div>
                 )}

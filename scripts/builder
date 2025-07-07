@@ -471,6 +471,13 @@ show_summary() {
 main() {
   echo "🚀 Formedible Build & Release Script"
   echo "===================================="
+  echo "ℹ️  This script now uses modular components. You can also run:"
+  echo "   • scripts/build-package    - Build package only"
+  echo "   • scripts/sync-components  - Sync components to web app"
+  echo "   • scripts/build-web        - Build web app only"
+  echo "   • scripts/deploy-web       - Deploy web app only"
+  echo "   • scripts/create-release   - Create release only"
+  echo ""
   
   # Argument validation
   if [[ -n "$RELEASE_NAME" && -n "$VERSION_BUMP_LEVEL" ]]; then
@@ -508,22 +515,48 @@ main() {
     exit 1
   fi
   
-  # Ensure zip is available
-  if ! command -v zip &> /dev/null; then
-    log_error "zip command is not available. Please install zip."
-    exit 1
+  # Use modular scripts
+  log_info "Using modular build scripts..."
+  
+  # Build package
+  if [[ "$SKIP_BUILD" == true ]]; then
+    scripts/build-package --skip-build
+  else
+    scripts/build-package
   fi
   
+  # Sync components
+  scripts/sync-components
+  
+  # Build web
+  if [[ "$SKIP_BUILD" == true ]]; then
+    scripts/build-web --skip-build
+  else
+    scripts/build-web
+  fi
+  
+  # Deploy web (if not skipped)
+  if [[ "$SKIP_WEB_DEPLOY" != true ]]; then
+    if [[ "$NO_PUBLISH" == true ]]; then
+      scripts/deploy-web --dry-run
+    else
+      scripts/deploy-web
+    fi
+  fi
+  
+  # Create release (if requested)
+  if [[ -n "$RELEASE_NAME" ]]; then
+    if [[ "$NO_PUBLISH" == true ]]; then
+      scripts/create-release "$RELEASE_NAME" --no-publish
+    else
+      scripts/create-release "$RELEASE_NAME"
+    fi
+  fi
+  
+  # Legacy functions for compatibility
   cleanup_dirs
   create_directories
-  build_package
-  update_web_components
-  update_registry
-  build_web
-  deploy_web
-  create_release_artifacts
   commit_changes
-  create_github_release
   show_summary
   
   log_success "All done! 🎉"

@@ -49,7 +49,7 @@ const CopyButton: React.FC<{ text: string; className?: string }> = ({
   return (
     <motion.button
       onClick={copyToClipboard}
-      className={`relative inline-flex items-center justify-center p-2 rounded-md bg-slate-800/80 hover:bg-slate-700/80 text-slate-300 hover:text-white backdrop-blur-sm transition-colors shadow-lg ${className}`}
+      className={`relative inline-flex items-center justify-center p-2 rounded-md bg-muted/80 hover:bg-muted text-muted-foreground hover:text-foreground backdrop-blur-sm transition-colors shadow-lg ${className}`}
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
     >
@@ -61,7 +61,7 @@ const CopyButton: React.FC<{ text: string; className?: string }> = ({
             animate={{ scale: 1 }}
             exit={{ scale: 0 }}
           >
-            <Check className="w-4 h-4 text-green-400" />
+            <Check className="w-4 h-4 text-accent" />
           </motion.div>
         ) : (
           <motion.div
@@ -101,7 +101,7 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
   return (
     <div className={`relative ${className}`}>
       {title && (
-        <div className="bg-slate-800 text-slate-300 px-4 py-2 text-sm font-medium rounded-t-lg border-b border-slate-700">
+        <div className="bg-muted text-muted-foreground px-4 py-2 text-sm font-medium rounded-t-lg border-b">
           {title}
         </div>
       )}
@@ -114,8 +114,8 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
               onClick={() => setSelectedPM(pm)}
               className={`px-3 py-1 text-xs rounded-t-md transition-colors ${
                 selectedPM === pm
-                  ? "bg-slate-900 text-slate-100"
-                  : "bg-slate-200 text-slate-700 hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-300 dark:hover:bg-slate-600"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
               }`}
             >
               {pm}
@@ -140,8 +140,7 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
               {tokens.map((line, i) => (
                 <div key={i} {...getLineProps({ line })} className={showLineNumbers ? "table-row" : ""}>
                   {showLineNumbers && (
-                    <span className="table-cell text-right pr-4 text-slate-500 select-none text-xs">
-                      {i + 1}
+                     <span className="table-cell text-right pr-4 text-muted-foreground select-none text-xs">                      {i + 1}
                     </span>
                   )}
                   <span className={showLineNumbers ? "table-cell" : ""}>

@@ -70,7 +70,7 @@ export function ContactForm() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           {/* Header */}
@@ -89,7 +89,7 @@ export function ContactForm() {
                 <Rocket className="w-3 h-3 mr-1" />
                 Getting Started
               </Badge>
-              <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-slate-900 to-blue-800 dark:from-slate-100 dark:to-blue-200 bg-clip-text text-transparent">
+              <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                 Build Your First Form
               </h1>
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
@@ -98,12 +98,12 @@ export function ContactForm() {
               </p>
             </div>
 
-            <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-950/20 dark:to-blue-950/20 p-6 rounded-xl border border-green-200 dark:border-green-800">
+            <div className="bg-gradient-to-r from-secondary to-accent/20 p-6 rounded-xl border">
               <div className="flex items-center gap-2 mb-2">
-                <Zap className="w-5 h-5 text-green-600" />
-                <span className="font-semibold text-green-800 dark:text-green-200">Quick Start</span>
+                <Zap className="w-5 h-5 text-primary" />
+                <span className="font-semibold text-primary">Quick Start</span>
               </div>
-              <p className="text-green-700 dark:text-green-300 text-sm">
+              <p className="text-foreground text-sm">
                 Already familiar with React and Zod? Jump straight to step 1 and have your form running in 2 minutes.
               </p>
             </div>
@@ -113,9 +113,9 @@ export function ContactForm() {
           <div className="space-y-12">
             {steps.map((step, index) => (
               <Card key={index} className="overflow-hidden">
-                <CardHeader className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-700">
+                <CardHeader className="bg-gradient-to-r from-secondary to-muted">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold text-sm">
+                    <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold text-sm">
                       {index + 1}
                     </div>
                     <div>
@@ -142,7 +142,7 @@ export function ContactForm() {
                       <ul className="space-y-2">
                         {step.details.map((detail, detailIndex) => (
                           <li key={detailIndex} className="flex items-start gap-2">
-                            <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                            <CheckCircle className="w-4 h-4 text-accent mt-0.5 flex-shrink-0" />
                             <span className="text-sm">{detail}</span>
                           </li>
                         ))}
@@ -156,31 +156,31 @@ export function ContactForm() {
 
           {/* Next Steps */}
           <div className="mt-16">
-            <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border-blue-200 dark:border-blue-800">
+            <Card className="bg-gradient-to-r from-secondary to-accent/20 border">
               <CardHeader className="text-center">
-                <CardTitle className="text-2xl text-blue-800 dark:text-blue-200">
+                <CardTitle className="text-2xl text-primary">
                   🎉 Congratulations!
                 </CardTitle>
-                <CardDescription className="text-base text-blue-700 dark:text-blue-300">
+                <CardDescription className="text-base text-foreground">
                   You've created your first Formedible form. Here's what to explore next:
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <Link href="/docs/fields">
-                    <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border hover:shadow-md transition-shadow cursor-pointer">
+                    <div className="p-4 bg-card rounded-lg border hover:shadow-md transition-shadow cursor-pointer">
                       <h4 className="font-semibold mb-2">Field Types</h4>
                       <p className="text-sm text-muted-foreground">Explore 15+ field components</p>
                     </div>
                   </Link>
                   <Link href="/docs/examples">
-                    <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border hover:shadow-md transition-shadow cursor-pointer">
+                    <div className="p-4 bg-card rounded-lg border hover:shadow-md transition-shadow cursor-pointer">
                       <h4 className="font-semibold mb-2">Examples</h4>
                       <p className="text-sm text-muted-foreground">See real-world implementations</p>
                     </div>
                   </Link>
                   <Link href="/docs/api">
-                    <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border hover:shadow-md transition-shadow cursor-pointer">
+                    <div className="p-4 bg-card rounded-lg border hover:shadow-md transition-shadow cursor-pointer">
                       <h4 className="font-semibold mb-2">API Reference</h4>
                       <p className="text-sm text-muted-foreground">Complete documentation</p>
                     </div>

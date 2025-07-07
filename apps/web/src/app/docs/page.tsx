@@ -6,7 +6,6 @@ import {
   Book,
   Code,
   Zap,
-  FileText,
   Sparkles,
   Rocket,
   Shield,
@@ -40,7 +39,7 @@ export default function DocsPage() {
         "Install Formedible and create your first form in under 5 minutes",
       icon: Rocket,
       href: "/docs/getting-started",
-      color: "text-green-500",
+      color: "text-primary",
       badge: "Start Here",
     },
     {
@@ -49,7 +48,7 @@ export default function DocsPage() {
         "Explore 15+ pre-built field components with validation and styling",
       icon: Layers,
       href: "/docs/fields",
-      color: "text-purple-500",
+      color: "text-accent",
       badge: "Popular",
     },
     {
@@ -58,7 +57,7 @@ export default function DocsPage() {
         "Complete documentation of hooks, props, and configuration options",
       icon: Code,
       href: "/docs/api",
-      color: "text-blue-500",
+      color: "text-primary",
       badge: null,
     },
     {
@@ -67,7 +66,7 @@ export default function DocsPage() {
         "Real-world form implementations from simple to complex use cases",
       icon: Book,
       href: "/docs/examples",
-      color: "text-orange-500",
+      color: "text-accent",
       badge: null,
     },
   ];
@@ -91,7 +90,7 @@ export default function DocsPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-16">
         <motion.div
           className="max-w-6xl mx-auto"
@@ -109,7 +108,7 @@ export default function DocsPage() {
               <Badge variant="secondary" className="mb-4">
                 Documentation
               </Badge>
-              <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-slate-900 via-blue-800 to-purple-800 dark:from-slate-100 dark:via-blue-200 dark:to-purple-200 bg-clip-text text-transparent">
+              <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent">
                 Forms cooked just "A Point" for you to use
               </h1>
               <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
@@ -126,12 +125,12 @@ export default function DocsPage() {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.2 }}
             >
-              {features.map((feature, index) => (
+              {features.map((feature) => (
                 <div
                   key={feature.title}
-                  className="flex items-center gap-2 bg-white dark:bg-slate-800 px-4 py-2 rounded-full border shadow-sm"
+                  className="flex items-center gap-2 bg-card px-4 py-2 rounded-full border shadow-sm"
                 >
-                  <feature.icon className="w-4 h-4 text-blue-500" />
+                  <feature.icon className="w-4 h-4 text-primary" />
                   <span className="text-sm font-medium">{feature.title}</span>
                   <span className="text-xs text-muted-foreground">•</span>
                   <span className="text-xs text-muted-foreground">
@@ -143,25 +142,25 @@ export default function DocsPage() {
 
             {/* Quick Install */}
             <motion.div
-              className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 p-6 rounded-xl border border-blue-200 dark:border-blue-800 mb-16"
+              className="bg-gradient-to-r from-secondary to-accent/20 p-6 rounded-xl border mb-16"
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.3 }}
             >
               <div className="flex items-center justify-center gap-2 mb-3">
-                <Zap className="w-5 h-5 text-blue-600" />
-                <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-200">
+                <Zap className="w-5 h-5 text-primary" />
+                <h3 className="text-lg font-semibold text-primary">
                   Quick Install
                 </h3>
               </div>
-              <div className="bg-slate-900 dark:bg-slate-800 rounded-lg p-4 max-w-2xl mx-auto">
+              <div className="bg-muted rounded-lg p-4 max-w-2xl mx-auto">
                 <CodeBlock
                   code={installCommand}
                   language="bash"
                   showPackageManagerTabs={true}
                 />
               </div>
-              <p className="text-sm text-blue-700 dark:text-blue-300 mt-3">
+              <p className="text-sm text-foreground mt-3">
                 One command installs everything you need to get started
               </p>
             </motion.div>
@@ -179,22 +178,21 @@ export default function DocsPage() {
                 className="group"
               >
                 <Link href={section.href}>
-                  <Card className="h-full hover:shadow-xl transition-all duration-300 cursor-pointer border-2 hover:border-blue-200 dark:hover:border-blue-800 relative overflow-hidden">
-                    {section.badge && (
-                      <Badge className="absolute top-4 right-4 bg-blue-500 hover:bg-blue-600">
+                    <Card className="h-full hover:shadow-xl transition-all duration-300 cursor-pointer border-2 hover:border-primary/20 relative overflow-hidden">                    {section.badge && (
+                      <Badge className="absolute top-4 right-4 bg-primary hover:bg-primary/80">
                         {section.badge}
                       </Badge>
                     )}
                     <CardHeader className="pb-6">
                       <div className="flex items-center gap-3 mb-3">
                         <div
-                          className={`p-2 rounded-lg bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-700 border`}
+                          className={`p-2 rounded-lg bg-gradient-to-br from-card to-secondary border`}
                         >
                           <section.icon
                             className={`w-6 h-6 ${section.color}`}
                           />
                         </div>
-                        <CardTitle className="text-xl group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                        <CardTitle className="text-xl group-hover:text-primary transition-colors">
                           {section.title}
                         </CardTitle>
                       </div>
@@ -215,7 +213,7 @@ export default function DocsPage() {
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.8 }}
           >
-            <div className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-700 p-8 rounded-xl border">
+            <div className="bg-gradient-to-r from-secondary to-muted p-8 rounded-xl border">
               <h3 className="text-2xl font-bold mb-4">
                 Ready to Build Amazing Forms?
               </h3>
@@ -228,14 +226,14 @@ export default function DocsPage() {
               <div className="flex flex-wrap justify-center gap-4">
                 <Link
                   href="/docs/getting-started"
-                  className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                  className="inline-flex items-center gap-2 bg-primary hover:bg-primary/80 text-primary-foreground px-6 py-3 rounded-lg font-medium transition-colors"
                 >
                   <Rocket className="w-4 h-4" />
                   Get Started
                 </Link>
                 <Link
                   href="/docs/examples"
-                  className="inline-flex items-center gap-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-900 dark:text-slate-100 px-6 py-3 rounded-lg font-medium border transition-colors"
+                  className="inline-flex items-center gap-2 bg-card hover:bg-card/80 text-card-foreground px-6 py-3 rounded-lg font-medium border transition-colors"
                 >
                   <Book className="w-4 h-4" />
                   View Examples

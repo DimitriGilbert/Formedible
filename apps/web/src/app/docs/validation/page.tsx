@@ -168,28 +168,28 @@ console.log(asyncValidationStates);
           <section>
             <h2 className="text-2xl font-semibold mb-4">Best Practices</h2>
             <div className="space-y-4">
-              <div className="border-l-4 border-blue-500 pl-4">
+              <div className="border-l-4 border-primary pl-4">
                 <h3 className="font-semibold">Debouncing</h3>
                 <p className="text-sm text-muted-foreground">
                   Use appropriate debounce times for async validation (300-500ms) to avoid excessive API calls.
                 </p>
               </div>
               
-              <div className="border-l-4 border-green-500 pl-4">
+              <div className="border-l-4 border-accent pl-4">
                 <h3 className="font-semibold">Error Messages</h3>
                 <p className="text-sm text-muted-foreground">
                   Provide clear, actionable error messages that help users understand how to fix validation issues.
                 </p>
               </div>
               
-              <div className="border-l-4 border-yellow-500 pl-4">
+              <div className="border-l-4 border-secondary pl-4">
                 <h3 className="font-semibold">Performance</h3>
                 <p className="text-sm text-muted-foreground">
                   Cross-field validation runs on every form change, so keep validators lightweight and efficient.
                 </p>
               </div>
               
-              <div className="border-l-4 border-purple-500 pl-4">
+              <div className="border-l-4 border-muted pl-4">
                 <h3 className="font-semibold">Error Handling</h3>
                 <p className="text-sm text-muted-foreground">
                   Always handle async validation errors gracefully and provide fallback messages.

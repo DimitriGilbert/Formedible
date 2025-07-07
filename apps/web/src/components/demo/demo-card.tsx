@@ -26,7 +26,7 @@ export const DemoCard: React.FC<DemoCardProps> = ({
       <TabsTrigger value="code">Code</TabsTrigger>
     </TabsList>
     <TabsContent value="preview" className="mt-0">
-      <Card className="rounded-t-none border-t-0">
+      <Card className="rounded-t-none border-t-0 bg-muted/30">
         <CardHeader>
           <CardTitle>{title}</CardTitle>
           <CardDescription>{description}</CardDescription>

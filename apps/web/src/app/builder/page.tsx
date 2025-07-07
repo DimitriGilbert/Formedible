@@ -2,38 +2,11 @@
 
 import React from "react";
 import { motion } from "motion/react";
-import { ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
 import { FormBuilderDemo } from "@/components/demo/form-builder-demo";
 
 export default function BuilderPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-blue-950">
-      {/* Header */}
-      <motion.header
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-        className="border-b bg-white/80 backdrop-blur-sm dark:bg-slate-950/80 sticky top-0 z-50"
-      >
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Home
-              </Link>
-            </Button>
-            <div>
-              <h1 className="text-xl font-bold">Form Builder</h1>
-              <p className="text-sm text-muted-foreground">
-                Build forms visually with our interactive form builder
-              </p>
-            </div>
-          </div>
-        </div>
-      </motion.header>
-
+    <div className="min-h-screen bg-background">
       {/* Builder Content */}
       <motion.div 
         className="w-full"
@@ -41,9 +14,9 @@ export default function BuilderPage() {
         animate={{ y: 0, opacity: 1 }}
         transition={{ delay: 0.2 }}
       >
-        <div className="bg-white dark:bg-slate-900 border-t border-b min-h-[800px]">
-          <div className="flex items-center justify-center">
-            <div className="w-full">
+        <div className="min-h-[800px] p-2">
+          <div className="w-full p-2 mx-auto">
+            <div className="bg-card border rounded-lg shadow-sm">
               <FormBuilderDemo />
             </div>
           </div>

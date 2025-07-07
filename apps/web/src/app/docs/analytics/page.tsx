@@ -305,21 +305,21 @@ class FormMetrics {
           <section>
             <h2 className="text-2xl font-semibold mb-4">Privacy Considerations</h2>
             <div className="space-y-4">
-              <div className="border-l-4 border-blue-500 pl-4">
+              <div className="border-l-4 border-primary pl-4">
                 <h3 className="font-semibold">Data Sensitivity</h3>
                 <p className="text-sm text-muted-foreground">
                   Be careful not to track sensitive field values. Consider tracking field interactions without actual values.
                 </p>
               </div>
               
-              <div className="border-l-4 border-green-500 pl-4">
+              <div className="border-l-4 border-accent pl-4">
                 <h3 className="font-semibold">User Consent</h3>
                 <p className="text-sm text-muted-foreground">
                   Ensure you have proper user consent before tracking form interactions, especially in GDPR regions.
                 </p>
               </div>
               
-              <div className="border-l-4 border-yellow-500 pl-4">
+              <div className="border-l-4 border-secondary pl-4">
                 <h3 className="font-semibold">Data Anonymization</h3>
                 <p className="text-sm text-muted-foreground">
                   Consider anonymizing or hashing user data before sending to analytics services.
@@ -331,14 +331,14 @@ class FormMetrics {
           <section>
             <h2 className="text-2xl font-semibold mb-4">Best Practices</h2>
             <div className="space-y-4">
-              <div className="border-l-4 border-purple-500 pl-4">
+              <div className="border-l-4 border-muted pl-4">
                 <h3 className="font-semibold">Selective Tracking</h3>
                 <p className="text-sm text-muted-foreground">
                   Only implement the analytics events you actually need to avoid data overload.
                 </p>
               </div>
               
-              <div className="border-l-4 border-red-500 pl-4">
+              <div className="border-l-4 border-destructive pl-4">
                 <h3 className="font-semibold">Error Handling</h3>
                 <p className="text-sm text-muted-foreground">
                   Wrap analytics calls in try-catch blocks to prevent tracking errors from breaking your form.

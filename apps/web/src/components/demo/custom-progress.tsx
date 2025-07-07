@@ -35,7 +35,7 @@ export const CustomProgress: React.FC<{
       </div>
       <div className="w-full bg-muted rounded-full h-2">
         <motion.div
-          className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full"
+          className="bg-gradient-to-r from-primary to-accent h-2 rounded-full"
           initial={{ width: 0 }}
           animate={{ width: `${value}%` }}
           transition={{ duration: 0.5, ease: "easeInOut" }}

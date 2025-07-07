@@ -1,4 +1,9 @@
 import type { Metadata } from "next";
+import { CodeBlock } from "@/components/ui/code-block";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "API Reference - Formedible",
@@ -7,35 +12,57 @@ export const metadata: Metadata = {
 
 export default function ApiPage() {
   return (
-    <div className="container mx-auto py-8 px-4 max-w-4xl">
-      <div className="space-y-8">
-        <div>
-          <h1 className="text-4xl font-bold mb-4">API Reference</h1>
-          <p className="text-lg text-muted-foreground">
-            Complete API documentation for all Formedible hooks, components, and utilities.
-          </p>
-        </div>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto py-8 px-4 max-w-4xl">
+        <div className="space-y-8">
+          {/* Header */}
+          <div className="mb-12">
+            <div className="flex items-center gap-4 mb-6">
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/docs">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Docs
+                </Link>
+              </Button>
+            </div>
+            <div>
+              <h1 className="text-4xl font-bold mb-4">API Reference</h1>
+              <p className="text-lg text-muted-foreground">
+                Complete API documentation for all Formedible hooks, components, and utilities.
+              </p>
+            </div>
+          </div>
 
-        <div className="space-y-6">
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">useFormedible Hook</h2>
-            <p className="mb-4">
-              The main hook for creating forms with Formedible. Returns form components and utilities.
-            </p>
-            
-            <div className="bg-muted p-4 rounded-lg">
-              <h3 className="font-semibold mb-2">Signature</h3>
-              <pre className="text-sm overflow-x-auto">
-{`function useFormedible<TFormValues>(
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>useFormedible Hook</CardTitle>
+                <CardDescription>
+                  The main hook for creating forms with Formedible. Returns form components and utilities.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Signature</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CodeBlock
+                      code={`function useFormedible<TFormValues>(
   config: FormedibleConfig<TFormValues>
 ): FormedibleReturn<TFormValues>`}
-              </pre>
-            </div>
+                      language="typescript"
+                    />
+                  </CardContent>
+                </Card>
 
-            <div className="bg-muted p-4 rounded-lg mt-4">
-              <h3 className="font-semibold mb-2">Configuration</h3>
-              <pre className="text-sm overflow-x-auto">
-{`interface FormedibleConfig<TFormValues> {
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Configuration</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CodeBlock
+                      code={`interface FormedibleConfig<TFormValues> {
   // Required: Field definitions
   fields: FieldConfig[];
   
@@ -60,13 +87,18 @@ export default function ApiPage() {
   // Optional: Layout configuration
   layout?: LayoutConfig;
 }`}
-              </pre>
-            </div>
+                      language="typescript"
+                    />
+                  </CardContent>
+                </Card>
 
-            <div className="bg-muted p-4 rounded-lg mt-4">
-              <h3 className="font-semibold mb-2">Return Value</h3>
-              <pre className="text-sm overflow-x-auto">
-{`interface FormedibleReturn<TFormValues> {
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Return Value</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CodeBlock
+                      code={`interface FormedibleReturn<TFormValues> {
   // Main form component
   Form: React.ComponentType;
   
@@ -94,20 +126,28 @@ export default function ApiPage() {
   // Async validation utilities
   validateFieldAsync: (fieldName: string, value: any) => Promise<void>;
 }`}
-              </pre>
-            </div>
-          </section>
+                      language="typescript"
+                    />
+                  </CardContent>
+                </Card>
+              </CardContent>
+            </Card>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">Field Configuration</h2>
-            <p className="mb-4">
-              Each field in the fields array follows this configuration structure:
-            </p>
-            
-            <div className="bg-muted p-4 rounded-lg">
-              <h3 className="font-semibold mb-2">Base Field Config</h3>
-              <pre className="text-sm overflow-x-auto">
-{`interface BaseFieldConfig {
+            <Card>
+              <CardHeader>
+                <CardTitle>Field Configuration</CardTitle>
+                <CardDescription>
+                  Each field in the fields array follows this configuration structure.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Base Field Config</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CodeBlock
+                      code={`interface BaseFieldConfig {
   // Required
   name: string;
   type: FieldType;
@@ -136,109 +176,139 @@ export default function ApiPage() {
   // Validation
   validation?: ZodSchema;
 }`}
-              </pre>
-            </div>
+                      language="typescript"
+                    />
+                  </CardContent>
+                </Card>
 
-            <div className="bg-muted p-4 rounded-lg mt-4">
-              <h3 className="font-semibold mb-2">Field Types</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div>
-                  <h4 className="font-medium mb-2">Basic Fields</h4>
-                  <ul className="space-y-1 text-muted-foreground">
-                    <li>• <code>text</code> - Text input</li>
-                    <li>• <code>email</code> - Email input</li>
-                    <li>• <code>password</code> - Password input</li>
-                    <li>• <code>number</code> - Number input</li>
-                    <li>• <code>tel</code> - Phone input</li>
-                    <li>• <code>url</code> - URL input</li>
-                    <li>• <code>textarea</code> - Multi-line text</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-medium mb-2">Selection Fields</h4>
-                  <ul className="space-y-1 text-muted-foreground">
-                    <li>• <code>select</code> - Dropdown select</li>
-                    <li>• <code>multiSelect</code> - Multi-select</li>
-                    <li>• <code>radio</code> - Radio buttons</li>
-                    <li>• <code>checkbox</code> - Checkbox</li>
-                    <li>• <code>switch</code> - Toggle switch</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-medium mb-2">Advanced Fields</h4>
-                  <ul className="space-y-1 text-muted-foreground">
-                    <li>• <code>date</code> - Date picker</li>
-                    <li>• <code>file</code> - File upload</li>
-                    <li>• <code>slider</code> - Range slider</li>
-                    <li>• <code>rating</code> - Star rating</li>
-                    <li>• <code>color</code> - Color picker</li>
-                    <li>• <code>array</code> - Dynamic arrays</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-medium mb-2">Specialized Fields</h4>
-                  <ul className="space-y-1 text-muted-foreground">
-                    <li>• <code>location</code> - Location picker</li>
-                    <li>• <code>duration</code> - Duration input</li>
-                    <li>• <code>autocomplete</code> - Autocomplete</li>
-                    <li>• <code>masked</code> - Masked input</li>
-                    <li>• <code>phone</code> - Phone number</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </section>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Field Types</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <h4 className="font-medium mb-2">Basic Fields</h4>
+                        <ul className="space-y-1 text-muted-foreground">
+                          <li>• <code>text</code> - Text input</li>
+                          <li>• <code>email</code> - Email input</li>
+                          <li>• <code>password</code> - Password input</li>
+                          <li>• <code>number</code> - Number input</li>
+                          <li>• <code>tel</code> - Phone input</li>
+                          <li>• <code>url</code> - URL input</li>
+                          <li>• <code>textarea</code> - Multi-line text</li>
+                        </ul>
+                      </div>
+                      <div>
+                        <h4 className="font-medium mb-2">Selection Fields</h4>
+                        <ul className="space-y-1 text-muted-foreground">
+                          <li>• <code>select</code> - Dropdown select</li>
+                          <li>• <code>multiSelect</code> - Multi-select</li>
+                          <li>• <code>radio</code> - Radio buttons</li>
+                          <li>• <code>checkbox</code> - Checkbox</li>
+                          <li>• <code>switch</code> - Toggle switch</li>
+                        </ul>
+                      </div>
+                      <div>
+                        <h4 className="font-medium mb-2">Advanced Fields</h4>
+                        <ul className="space-y-1 text-muted-foreground">
+                          <li>• <code>date</code> - Date picker</li>
+                          <li>• <code>file</code> - File upload</li>
+                          <li>• <code>slider</code> - Range slider</li>
+                          <li>• <code>rating</code> - Star rating</li>
+                          <li>• <code>color</code> - Color picker</li>
+                          <li>• <code>array</code> - Dynamic arrays</li>
+                        </ul>
+                      </div>
+                      <div>
+                        <h4 className="font-medium mb-2">Specialized Fields</h4>
+                        <ul className="space-y-1 text-muted-foreground">
+                          <li>• <code>location</code> - Location picker</li>
+                          <li>• <code>duration</code> - Duration input</li>
+                          <li>• <code>autocomplete</code> - Autocomplete</li>
+                          <li>• <code>masked</code> - Masked input</li>
+                          <li>• <code>phone</code> - Phone number</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </CardContent>
+            </Card>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">Validation Configuration</h2>
-            
-            <div className="space-y-4">
-              <div className="bg-muted p-4 rounded-lg">
-                <h3 className="font-semibold mb-2">Cross-Field Validation</h3>
-                <pre className="text-sm overflow-x-auto">
-{`interface CrossFieldValidation {
+            <Card>
+              <CardHeader>
+                <CardTitle>Validation Configuration</CardTitle>
+                <CardDescription>
+                  Configure cross-field and async validation for complex form requirements.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Cross-Field Validation</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CodeBlock
+                      code={`interface CrossFieldValidation {
   fields: string[];
   validator: (values: Record<string, any>) => string | null;
   message: string;
 }`}
-                </pre>
-              </div>
+                      language="typescript"
+                    />
+                  </CardContent>
+                </Card>
 
-              <div className="bg-muted p-4 rounded-lg">
-                <h3 className="font-semibold mb-2">Async Validation</h3>
-                <pre className="text-sm overflow-x-auto">
-{`interface AsyncValidationConfig {
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Async Validation</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CodeBlock
+                      code={`interface AsyncValidationConfig {
   validator: (value: any) => Promise<string | null>;
   debounceMs?: number;
   loadingMessage?: string;
 }`}
-                </pre>
-              </div>
-            </div>
-          </section>
+                      language="typescript"
+                    />
+                  </CardContent>
+                </Card>
+              </CardContent>
+            </Card>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">Persistence Configuration</h2>
-            
-            <div className="bg-muted p-4 rounded-lg">
-              <pre className="text-sm overflow-x-auto">
-{`interface PersistenceConfig {
+            <Card>
+              <CardHeader>
+                <CardTitle>Persistence Configuration</CardTitle>
+                <CardDescription>
+                  Configure form data persistence to localStorage or sessionStorage.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CodeBlock
+                  code={`interface PersistenceConfig {
   key: string;
   storage: 'localStorage' | 'sessionStorage';
   debounceMs?: number;
   exclude?: string[];
   restoreOnMount?: boolean;
 }`}
-              </pre>
-            </div>
-          </section>
+                  language="typescript"
+                />
+              </CardContent>
+            </Card>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">Analytics Configuration</h2>
-            
-            <div className="bg-muted p-4 rounded-lg">
-              <pre className="text-sm overflow-x-auto">
-{`interface AnalyticsConfig {
+            <Card>
+              <CardHeader>
+                <CardTitle>Analytics Configuration</CardTitle>
+                <CardDescription>
+                  Track form interactions and user behavior for insights.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CodeBlock
+                  code={`interface AnalyticsConfig {
   onFormStart?: (timestamp: number) => void;
   onFormComplete?: (timeSpent: number, formData: any) => void;
   onFormAbandon?: (completionPercentage: number) => void;
@@ -247,17 +317,26 @@ export default function ApiPage() {
   onFieldChange?: (fieldName: string, value: any, timestamp: number) => void;
   onPageChange?: (fromPage: number, toPage: number, timeSpent: number) => void;
 }`}
-              </pre>
-            </div>
-          </section>
+                  language="typescript"
+                />
+              </CardContent>
+            </Card>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">Testing Utilities</h2>
-            
-            <div className="bg-muted p-4 rounded-lg">
-              <h3 className="font-semibold mb-2">createFormTester</h3>
-              <pre className="text-sm overflow-x-auto">
-{`function createFormTester<TFormValues>(
+            <Card>
+              <CardHeader>
+                <CardTitle>Testing Utilities</CardTitle>
+                <CardDescription>
+                  Utilities for testing forms in your test suites.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">createFormTester</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CodeBlock
+                      code={`function createFormTester<TFormValues>(
   config: FormedibleConfig<TFormValues>,
   container?: HTMLElement
 ): FormTester<TFormValues>
@@ -295,16 +374,23 @@ interface FormActions<TFormValues> {
   // Async validation
   waitForAsyncValidation(fieldName: string): Promise<void>;
 }`}
-              </pre>
-            </div>
-          </section>
+                      language="typescript"
+                    />
+                  </CardContent>
+                </Card>
+              </CardContent>
+            </Card>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">Type Definitions</h2>
-            
-            <div className="bg-muted p-4 rounded-lg">
-              <pre className="text-sm overflow-x-auto">
-{`// Main types exported by Formedible
+            <Card>
+              <CardHeader>
+                <CardTitle>Type Definitions</CardTitle>
+                <CardDescription>
+                  All TypeScript types exported by Formedible for type-safe development.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CodeBlock
+                  code={`// Main types exported by Formedible
 export type {
   FormedibleConfig,
   FormedibleReturn,
@@ -330,9 +416,11 @@ export type {
   AutocompleteFieldConfig,
   MaskedInputFieldConfig
 };`}
-              </pre>
-            </div>
-          </section>
+                  language="typescript"
+                />
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>

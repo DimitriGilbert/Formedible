@@ -206,28 +206,28 @@ const handleClear = () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">Best Practices</h2>
             <div className="space-y-4">
-              <div className="border-l-4 border-blue-500 pl-4">
+              <div className="border-l-4 border-primary pl-4">
                 <h3 className="font-semibold">Unique Keys</h3>
                 <p className="text-sm text-muted-foreground">
                   Use descriptive, unique keys for each form to avoid conflicts between different forms.
                 </p>
               </div>
               
-              <div className="border-l-4 border-green-500 pl-4">
+              <div className="border-l-4 border-accent pl-4">
                 <h3 className="font-semibold">Sensitive Data</h3>
                 <p className="text-sm text-muted-foreground">
                   Always exclude passwords, credit cards, and other sensitive information from persistence.
                 </p>
               </div>
               
-              <div className="border-l-4 border-yellow-500 pl-4">
+              <div className="border-l-4 border-secondary pl-4">
                 <h3 className="font-semibold">Storage Choice</h3>
                 <p className="text-sm text-muted-foreground">
                   Use localStorage for forms users might return to later, sessionStorage for temporary data.
                 </p>
               </div>
               
-              <div className="border-l-4 border-purple-500 pl-4">
+              <div className="border-l-4 border-muted pl-4">
                 <h3 className="font-semibold">Debouncing</h3>
                 <p className="text-sm text-muted-foreground">
                   Adjust debounce timing based on form complexity - longer for complex forms to reduce storage writes.

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CodeBlock } from "@/components/ui/code-block";
 import Link from "next/link";
 
@@ -12,7 +13,7 @@ export const metadata: Metadata = {
 
 export default function FieldsPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+    <div className="min-h-screen bg-background">
       <div className="container mx-auto py-8 px-4 max-w-6xl">
         <div className="space-y-8">
           {/* Header */}
@@ -31,7 +32,7 @@ export default function FieldsPage() {
                 <Layers className="w-3 h-3 mr-1" />
                 Field Types
               </Badge>
-              <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-slate-900 to-purple-800 dark:from-slate-100 dark:to-purple-200 bg-clip-text text-transparent">
+              <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                 15+ Beautiful Field Components
               </h1>
               <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
@@ -40,52 +41,69 @@ export default function FieldsPage() {
               </p>
             </div>
 
-            <div className="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-950/20 dark:to-blue-950/20 p-6 rounded-xl border border-purple-200 dark:border-purple-800">
-              <div className="text-center">
-                <h3 className="text-lg font-semibold text-purple-800 dark:text-purple-200 mb-2">
-                  🎨 Fully Customizable
-                </h3>
-                <p className="text-purple-700 dark:text-purple-300 text-sm">
-                  Every field supports custom styling, validation rules, and behavior modifications
-                </p>
-              </div>
-            </div>
+            <Card className="bg-gradient-to-r from-secondary to-accent/20">
+              <CardContent className="p-6">
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold text-primary mb-2">
+                    🎨 Fully Customizable
+                  </h3>
+                  <p className="text-foreground text-sm">
+                    Every field supports custom styling, validation rules, and behavior modifications
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
           <div className="space-y-6">
-            <section>
-              <h2 className="text-2xl font-semibold mb-4">Basic Input Fields</h2>
-              
-              <div className="space-y-4">
-                <div className="border rounded-lg p-4">
-                  <h3 className="font-semibold mb-2">Text Field</h3>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Standard text input for single-line text entry.
-                  </p>
-                  <CodeBlock 
-                    code={`{ name: 'firstName', type: 'text', label: 'First Name' }`}
-                    language="tsx"
-                  />
-                </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Basic Input Fields</CardTitle>
+                <CardDescription>
+                  Standard input components for text, email, numbers, and multi-line content.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Text Field</CardTitle>
+                    <CardDescription>
+                      Standard text input for single-line text entry.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <CodeBlock 
+                      code={`{ name: 'firstName', type: 'text', label: 'First Name' }`}
+                      language="tsx"
+                    />
+                  </CardContent>
+                </Card>
 
-                <div className="border rounded-lg p-4">
-                  <h3 className="font-semibold mb-2">Email Field</h3>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Email input with built-in validation and appropriate keyboard on mobile.
-                  </p>
-                  <CodeBlock 
-                    code={`{ name: 'email', type: 'email', label: 'Email Address' }`}
-                    language="tsx"
-                  />
-                </div>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Email Field</CardTitle>
+                    <CardDescription>
+                      Email input with built-in validation and appropriate keyboard on mobile.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <CodeBlock 
+                      code={`{ name: 'email', type: 'email', label: 'Email Address' }`}
+                      language="tsx"
+                    />
+                  </CardContent>
+                </Card>
 
-                <div className="border rounded-lg p-4">
-                  <h3 className="font-semibold mb-2">Number Field</h3>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Numeric input with step controls and validation.
-                  </p>
-                  <CodeBlock 
-                    code={`{
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Number Field</CardTitle>
+                    <CardDescription>
+                      Numeric input with step controls and validation.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <CodeBlock 
+                      code={`{
   name: 'age',
   type: 'number',
   label: 'Age',
@@ -95,17 +113,21 @@ export default function FieldsPage() {
     step: 1
   }
 }`}
-                    language="tsx"
-                  />
-                </div>
+                      language="tsx"
+                    />
+                  </CardContent>
+                </Card>
 
-                <div className="border rounded-lg p-4">
-                  <h3 className="font-semibold mb-2">Textarea Field</h3>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Multi-line text input with configurable rows and resize options.
-                  </p>
-                  <CodeBlock 
-                    code={`{
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Textarea Field</CardTitle>
+                    <CardDescription>
+                      Multi-line text input with configurable rows and resize options.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <CodeBlock 
+                      code={`{
   name: 'message',
   type: 'textarea',
   label: 'Message',
@@ -114,23 +136,31 @@ export default function FieldsPage() {
     resize: 'vertical'
   }
 }`}
-                    language="tsx"
-                  />
-                </div>
-              </div>
-            </section>
+                      language="tsx"
+                    />
+                  </CardContent>
+                </Card>
+              </CardContent>
+            </Card>
 
-            <section>
-              <h2 className="text-2xl font-semibold mb-4">Selection Fields</h2>
-              
-              <div className="space-y-4">
-                <div className="border rounded-lg p-4">
-                  <h3 className="font-semibold mb-2">Select Field</h3>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Dropdown select with single selection.
-                  </p>
-                  <CodeBlock 
-                    code={`{
+            <Card>
+              <CardHeader>
+                <CardTitle>Selection Fields</CardTitle>
+                <CardDescription>
+                  Components for single and multiple selections with various UI patterns.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Select Field</CardTitle>
+                    <CardDescription>
+                      Dropdown select with single selection.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <CodeBlock 
+                      code={`{
   name: 'country',
   type: 'select',
   label: 'Country',
@@ -143,17 +173,21 @@ export default function FieldsPage() {
     placeholder: 'Select a country'
   }
 }`}
-                    language="tsx"
-                  />
-                </div>
+                      language="tsx"
+                    />
+                  </CardContent>
+                </Card>
 
-                <div className="border rounded-lg p-4">
-                  <h3 className="font-semibold mb-2">Radio Field</h3>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Radio button group for single selection.
-                  </p>
-                  <CodeBlock 
-                    code={`{
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Radio Field</CardTitle>
+                    <CardDescription>
+                      Radio button group for single selection.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <CodeBlock 
+                      code={`{
   name: 'plan',
   type: 'radio',
   label: 'Subscription Plan',
@@ -166,17 +200,21 @@ export default function FieldsPage() {
     orientation: 'vertical'
   }
 }`}
-                    language="tsx"
-                  />
-                </div>
+                      language="tsx"
+                    />
+                  </CardContent>
+                </Card>
 
-                <div className="border rounded-lg p-4">
-                  <h3 className="font-semibold mb-2">Checkbox Field</h3>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Single checkbox for boolean values.
-                  </p>
-                  <CodeBlock 
-                    code={`{
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Checkbox Field</CardTitle>
+                    <CardDescription>
+                      Single checkbox for boolean values.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <CodeBlock 
+                      code={`{
   name: 'terms',
   type: 'checkbox',
   label: 'I agree to the terms and conditions',
@@ -184,23 +222,31 @@ export default function FieldsPage() {
     required: true
   }
 }`}
-                    language="tsx"
-                  />
-                </div>
-              </div>
-            </section>
+                      language="tsx"
+                    />
+                  </CardContent>
+                </Card>
+              </CardContent>
+            </Card>
 
-            <section>
-              <h2 className="text-2xl font-semibold mb-4">Advanced Fields</h2>
-              
-              <div className="space-y-4">
-                <div className="border rounded-lg p-4">
-                  <h3 className="font-semibold mb-2">Date Field</h3>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Date picker with calendar interface.
-                  </p>
-                  <CodeBlock 
-                    code={`{
+            <Card>
+              <CardHeader>
+                <CardTitle>Advanced Fields</CardTitle>
+                <CardDescription>
+                  Specialized components for dates, files, sliders, and more complex interactions.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Date Field</CardTitle>
+                    <CardDescription>
+                      Date picker with calendar interface.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <CodeBlock 
+                      code={`{
   name: 'birthDate',
   type: 'date',
   label: 'Birth Date',
@@ -209,17 +255,21 @@ export default function FieldsPage() {
     placeholder: 'Select your birth date'
   }
 }`}
-                    language="tsx"
-                  />
-                </div>
+                      language="tsx"
+                    />
+                  </CardContent>
+                </Card>
 
-                <div className="border rounded-lg p-4">
-                  <h3 className="font-semibold mb-2">File Upload Field</h3>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    File upload with drag-and-drop support and preview.
-                  </p>
-                  <CodeBlock 
-                    code={`{
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">File Upload Field</CardTitle>
+                    <CardDescription>
+                      File upload with drag-and-drop support and preview.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <CodeBlock 
+                      code={`{
   name: 'avatar',
   type: 'file',
   label: 'Profile Picture',
@@ -230,17 +280,21 @@ export default function FieldsPage() {
     showPreview: true
   }
 }`}
-                    language="tsx"
-                  />
-                </div>
+                      language="tsx"
+                    />
+                  </CardContent>
+                </Card>
 
-                <div className="border rounded-lg p-4">
-                  <h3 className="font-semibold mb-2">Slider Field</h3>
-                  <p className="text-sm text-muted-foreground mb-3">
-                    Range slider for numeric values with visual feedback.
-                  </p>
-                  <CodeBlock 
-                    code={`{
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Slider Field</CardTitle>
+                    <CardDescription>
+                      Range slider for numeric values with visual feedback.
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <CodeBlock 
+                      code={`{
   name: 'budget',
   type: 'slider',
   label: 'Budget Range',
@@ -251,44 +305,50 @@ export default function FieldsPage() {
     formatValue: (value) => \`$\${value}\`
   }
 }`}
-                    language="tsx"
-                  />
-                </div>
-              </div>
-            </section>
+                      language="tsx"
+                    />
+                  </CardContent>
+                </Card>
+              </CardContent>
+            </Card>
 
-            <section>
-              <h2 className="text-2xl font-semibold mb-4">Best Practices</h2>
-              <div className="space-y-4">
-                <div className="border-l-4 border-blue-500 pl-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Best Practices</CardTitle>
+                <CardDescription>
+                  Guidelines for effective form design and field selection.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="border-l-4 border-primary pl-4">
                   <h3 className="font-semibold">Field Selection</h3>
                   <p className="text-sm text-muted-foreground">
                     Choose the most appropriate field type for your data to improve user experience and validation.
                   </p>
                 </div>
                 
-                <div className="border-l-4 border-green-500 pl-4">
+                <div className="border-l-4 border-accent pl-4">
                   <h3 className="font-semibold">Labels & Placeholders</h3>
                   <p className="text-sm text-muted-foreground">
                     Use clear, descriptive labels and helpful placeholder text to guide users.
                   </p>
                 </div>
                 
-                <div className="border-l-4 border-yellow-500 pl-4">
+                <div className="border-l-4 border-secondary pl-4">
                   <h3 className="font-semibold">Validation</h3>
                   <p className="text-sm text-muted-foreground">
                     Combine field-level validation with form-level validation for comprehensive error handling.
                   </p>
                 </div>
                 
-                <div className="border-l-4 border-purple-500 pl-4">
+                <div className="border-l-4 border-muted pl-4">
                   <h3 className="font-semibold">Accessibility</h3>
                   <p className="text-sm text-muted-foreground">
                     All fields include proper ARIA attributes and keyboard navigation support.
                   </p>
                 </div>
-              </div>
-            </section>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>

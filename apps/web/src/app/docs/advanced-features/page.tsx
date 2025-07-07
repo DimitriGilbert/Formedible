@@ -261,28 +261,28 @@ const { Form } = useFormedible({
         <section className="space-y-4">
           <h2 className="text-2xl font-semibold">Best Practices</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="border-l-4 border-blue-500 pl-4">
+            <div className="border-l-4 border-primary pl-4">
               <h3 className="font-semibold">Performance</h3>
               <p className="text-sm text-muted-foreground">
                 Use debouncing for async operations and be mindful of validation frequency.
               </p>
             </div>
             
-            <div className="border-l-4 border-green-500 pl-4">
+            <div className="border-l-4 border-accent pl-4">
               <h3 className="font-semibold">Privacy</h3>
               <p className="text-sm text-muted-foreground">
                 Exclude sensitive fields from persistence and be careful with analytics data.
               </p>
             </div>
             
-            <div className="border-l-4 border-yellow-500 pl-4">
+            <div className="border-l-4 border-secondary pl-4">
               <h3 className="font-semibold">Testing</h3>
               <p className="text-sm text-muted-foreground">
                 Test both success and error scenarios, especially for async operations.
               </p>
             </div>
             
-            <div className="border-l-4 border-purple-500 pl-4">
+            <div className="border-l-4 border-muted pl-4">
               <h3 className="font-semibold">User Experience</h3>
               <p className="text-sm text-muted-foreground">
                 Provide clear feedback for loading states and validation errors.

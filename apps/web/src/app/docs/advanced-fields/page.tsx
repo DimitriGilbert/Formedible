@@ -350,28 +350,28 @@ export default function AdvancedFieldsPage() {
           <section>
             <h2 className="text-2xl font-semibold mb-4">Best Practices</h2>
             <div className="space-y-4">
-              <div className="border-l-4 border-blue-500 pl-4">
+              <div className="border-l-4 border-primary pl-4">
                 <h3 className="font-semibold">Location Picker</h3>
                 <p className="text-sm text-muted-foreground">
                   Always provide fallback options when GPS is unavailable and consider privacy implications.
                 </p>
               </div>
               
-              <div className="border-l-4 border-green-500 pl-4">
+              <div className="border-l-4 border-accent pl-4">
                 <h3 className="font-semibold">Duration Picker</h3>
                 <p className="text-sm text-muted-foreground">
                   Choose the appropriate format based on your use case - use 'hm' for meetings, 'hms' for precise timing.
                 </p>
               </div>
               
-              <div className="border-l-4 border-yellow-500 pl-4">
+              <div className="border-l-4 border-secondary pl-4">
                 <h3 className="font-semibold">Autocomplete</h3>
                 <p className="text-sm text-muted-foreground">
                   Implement proper debouncing for async options and provide clear loading states.
                 </p>
               </div>
               
-              <div className="border-l-4 border-purple-500 pl-4">
+              <div className="border-l-4 border-muted pl-4">
                 <h3 className="font-semibold">Masked Input</h3>
                 <p className="text-sm text-muted-foreground">
                   Test masks thoroughly with various input patterns and provide clear examples to users.

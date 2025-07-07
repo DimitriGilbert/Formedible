@@ -8,6 +8,9 @@ import { Toaster } from "@/components/ui/sonner";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 import { motion } from "motion/react";
 
 // Schemas
@@ -408,18 +411,30 @@ export default function ExamplesPage() {
   return (
     <>
       <Toaster position="top-right" richColors />
-      <div className="container mx-auto py-8 px-4 max-w-6xl">
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto py-8 px-4 max-w-6xl">
         <div className="space-y-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <h1 className="text-4xl font-bold mb-4">Interactive Examples</h1>
-            <p className="text-lg text-muted-foreground">
-              Real-world examples demonstrating Formedible's capabilities with working forms.
-              Try them out to see the features in action!
-            </p>
-          </motion.div>
+          {/* Header */}
+          <div className="mb-12">
+            <div className="flex items-center gap-4 mb-6">
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/docs">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Docs
+                </Link>
+              </Button>
+            </div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <h1 className="text-4xl font-bold mb-4">Interactive Examples</h1>
+              <p className="text-lg text-muted-foreground">
+                Real-world examples demonstrating Formedible's capabilities with working forms.
+                Try them out to see the features in action!
+              </p>
+            </motion.div>
+          </div>
 
           <Tabs defaultValue="contact" className="w-full">
             <TabsList className="grid w-full grid-cols-5">
@@ -436,7 +451,7 @@ export default function ExamplesPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <Card>
+                <Card className="bg-muted/30">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       Contact Form
@@ -459,7 +474,7 @@ export default function ExamplesPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <Card>
+                <Card className="bg-muted/30">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       Multi-Step Registration
@@ -482,7 +497,7 @@ export default function ExamplesPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <Card>
+                <Card className="bg-muted/30">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       Dynamic Survey Form
@@ -505,7 +520,7 @@ export default function ExamplesPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <Card>
+                <Card className="bg-muted/30">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       E-commerce Checkout
@@ -528,7 +543,7 @@ export default function ExamplesPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <Card>
+                <Card className="bg-muted/30">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       Job Application Form
@@ -549,28 +564,28 @@ export default function ExamplesPage() {
           <section>
             <h2 className="text-2xl font-semibold mb-4">Best Practices</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="border-l-4 border-blue-500 pl-4">
+              <div className="border-l-4 border-primary pl-4">
                 <h3 className="font-semibold">Form Structure</h3>
                 <p className="text-sm text-muted-foreground">
                   Break complex forms into logical sections or pages. Use clear labels and helpful descriptions.
                 </p>
               </div>
               
-              <div className="border-l-4 border-green-500 pl-4">
+              <div className="border-l-4 border-accent pl-4">
                 <h3 className="font-semibold">Validation Strategy</h3>
                 <p className="text-sm text-muted-foreground">
                   Combine client-side validation with server-side validation. Provide immediate feedback for better UX.
                 </p>
               </div>
               
-              <div className="border-l-4 border-yellow-500 pl-4">
+              <div className="border-l-4 border-secondary pl-4">
                 <h3 className="font-semibold">Progressive Enhancement</h3>
                 <p className="text-sm text-muted-foreground">
                   Use conditional fields to show relevant questions only. Implement auto-save for long forms.
                 </p>
               </div>
               
-              <div className="border-l-4 border-purple-500 pl-4">
+              <div className="border-l-4 border-muted pl-4">
                 <h3 className="font-semibold">Accessibility</h3>
                 <p className="text-sm text-muted-foreground">
                   Ensure proper labeling, keyboard navigation, and screen reader support for all form elements.
@@ -580,6 +595,7 @@ export default function ExamplesPage() {
           </section>
         </div>
       </div>
+    </div>
     </>
   );
 }

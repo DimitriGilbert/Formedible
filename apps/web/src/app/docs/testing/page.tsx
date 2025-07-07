@@ -356,28 +356,28 @@ test('form component integration', async () => {
           <section>
             <h2 className="text-2xl font-semibold mb-4">Best Practices</h2>
             <div className="space-y-4">
-              <div className="border-l-4 border-blue-500 pl-4">
+              <div className="border-l-4 border-primary pl-4">
                 <h3 className="font-semibold">Test User Flows</h3>
                 <p className="text-sm text-muted-foreground">
                   Test complete user journeys, not just individual field validation.
                 </p>
               </div>
               
-              <div className="border-l-4 border-green-500 pl-4">
+              <div className="border-l-4 border-accent pl-4">
                 <h3 className="font-semibold">Async Operations</h3>
                 <p className="text-sm text-muted-foreground">
                   Always wait for async validation to complete before making assertions.
                 </p>
               </div>
               
-              <div className="border-l-4 border-yellow-500 pl-4">
+              <div className="border-l-4 border-secondary pl-4">
                 <h3 className="font-semibold">Error Scenarios</h3>
                 <p className="text-sm text-muted-foreground">
                   Test both success and error scenarios to ensure robust error handling.
                 </p>
               </div>
               
-              <div className="border-l-4 border-purple-500 pl-4">
+              <div className="border-l-4 border-muted pl-4">
                 <h3 className="font-semibold">Isolation</h3>
                 <p className="text-sm text-muted-foreground">
                   Keep tests isolated and independent to avoid test interference.

@@ -565,8 +565,7 @@ export default function Home() {
   return (
     <>
       <Toaster position="top-right" richColors />
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-
+       <div className="min-h-screen bg-background">
         {/* Hero Section */}
         <section className="container mx-auto px-4 py-16 text-center">
           <motion.div
@@ -653,7 +652,7 @@ export default function Home() {
               transition={{ delay: 0.6 }}
             >
               <div className="mb-2 text-center">
-                <span className="text-slate-600 dark:text-slate-400 text-sm">
+                <span className="text-muted-foreground text-sm">
                   Install via shadcn CLI
                 </span>
               </div>
@@ -804,13 +803,13 @@ export function MyForm() {
               </div>
 
               <motion.div
-                className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800"
+                className="bg-gradient-to-r from-secondary to-accent/20 p-4 rounded-lg border"
                 whileHover={{ scale: 1.01 }}
               >
-                <h4 className="font-semibold mb-2 text-blue-800 dark:text-blue-200">
+                <h4 className="font-semibold mb-2 text-primary">
                   📦 What gets installed
                 </h4>
-                <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
+                <ul className="text-sm text-foreground space-y-1">
                   <li>
                     • <code>hooks/use-formedible.tsx</code> - Main form hook
                   </li>
@@ -1073,8 +1072,7 @@ export function MyForm() {
               <Link href="/builder">
                 <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer">
                   <CardHeader>
-                    <Blocks className="w-8 h-8 text-blue-500 mb-2" />
-                    <CardTitle>Interactive Builder</CardTitle>
+                     <Blocks className="w-8 h-8 text-primary mb-2" />                    <CardTitle>Interactive Builder</CardTitle>
                     <CardDescription>
                       Build forms visually with our interface. Create,
                       customize, and export your forms with ease.
@@ -1092,8 +1090,7 @@ export function MyForm() {
               <Link href="/docs">
                 <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer">
                   <CardHeader>
-                    <Code className="w-8 h-8 text-purple-500 mb-2" />
-                    <CardTitle>Documentation</CardTitle>
+                     <Code className="w-8 h-8 text-accent mb-2" />                    <CardTitle>Documentation</CardTitle>
                     <CardDescription>
                       Comprehensive guides, API reference, and examples to help
                       you master Formedible.
@@ -1107,7 +1104,7 @@ export function MyForm() {
 
         {/* Footer */}
         <motion.footer
-          className="border-t bg-white/50 dark:bg-slate-950/50 backdrop-blur-sm"
+          className="border-t bg-background/50 backdrop-blur-sm"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
@@ -1118,8 +1115,8 @@ export function MyForm() {
                 className="flex items-center gap-3"
                 whileHover={{ scale: 1.02 }}
               >
-                <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-md flex items-center justify-center">
-                  <Blocks className="w-4 h-4 text-white" />
+                <div className="w-6 h-6 bg-gradient-to-br from-primary to-accent rounded-md flex items-center justify-center">
+                  <Blocks className="w-4 h-4 text-primary-foreground" />
                 </div>
                 <span className="font-semibold">Formedible</span>
                 <Badge variant="secondary" className="text-xs">

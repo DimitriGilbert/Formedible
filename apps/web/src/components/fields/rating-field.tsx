@@ -139,10 +139,10 @@ export const RatingField: React.FC<RatingFieldSpecificProps> = ({
                   "transition-colors duration-150",
                   shouldShowFilled(index, false)
                     ? icon === 'star' 
-                      ? "fill-yellow-400 text-yellow-400" 
+                      ? "fill-accent text-accent" 
                       : icon === 'heart'
-                      ? "fill-red-500 text-red-500"
-                      : "fill-blue-500 text-blue-500"
+                      ? "fill-primary text-primary"
+                      : "fill-primary text-primary"
                     : "text-muted-foreground hover:text-muted-foreground/80"
                 )}
               />
@@ -153,12 +153,11 @@ export const RatingField: React.FC<RatingFieldSpecificProps> = ({
                   <IconComponent
                     className={cn(
                       iconSizeClass,
-                      icon === 'star' 
-                        ? "fill-yellow-400 text-yellow-400" 
-                        : icon === 'heart'
-                        ? "fill-red-500 text-red-500"
-                        : "fill-blue-500 text-blue-500"
-                    )}
+                       icon === 'star' 
+                         ? "fill-accent text-accent" 
+                         : icon === 'heart'
+                         ? "fill-primary text-primary"
+                         : "fill-primary text-primary"                    )}
                   />
                 </div>
               )}
