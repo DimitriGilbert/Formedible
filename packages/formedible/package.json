@@ -4,7 +4,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsup src/index.ts --format esm,cjs --dts --watch",
-    "build": "tsup src/index.ts --format esm,cjs --dts",
+    "build": "npx shadcn@latest build && tsup src/index.ts --format esm,cjs --dts",
     "lint": "eslint .",
     "test": "vitest"
   },
