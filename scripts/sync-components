@@ -35,25 +35,34 @@ log_error() {
 }
 
 update_web_components() {
-  log_info "Updating web app components from package..."
+  log_info "Installing formedible components using shadcn CLI..."
   
-  # Remove existing formedible components from web app
+  # Change to web app directory
+  cd apps/web
+  
+  # Remove existing formedible components
   log_info "Removing existing formedible components..."
-  rm -rf "$WEB_COMPONENTS_DIR/fields"
-  rm -rf "$WEB_HOOKS_DIR/use-formedible.tsx"
-  rm -rf "$WEB_LIB_DIR/formedible"
+  rm -rf "src/components/formedible"
+  rm -rf "src/hooks/use-formedible.tsx"
+  rm -rf "src/lib/formedible"
   
-  # Copy new components from package
-  log_info "Copying components from package..."
-  mkdir -p "$WEB_COMPONENTS_DIR"
-  mkdir -p "$WEB_HOOKS_DIR"
-  mkdir -p "$WEB_LIB_DIR"
+  # Install formedible using shadcn CLI with file path
+  log_info "Installing formedible from built registry..."
+  npx shadcn@latest add "../../packages/formedible/public/r/use-formedible.json" --overwrite
   
-  cp -r "packages/formedible/src/components/fields" "$WEB_COMPONENTS_DIR/"
-  cp "packages/formedible/src/hooks/use-formedible.tsx" "$WEB_HOOKS_DIR/"
-  cp -r "packages/formedible/src/lib/formedible" "$WEB_LIB_DIR/"
+  # Install builder components if registry exists
+  if [[ -f "../../packages/builder/public/r/form-builder.json" ]]; then
+    log_info "Installing form-builder from built registry..."
+    rm -rf "src/formedible/builder"
+    npx shadcn@latest add "../../packages/builder/public/r/form-builder.json" --overwrite
+  else
+    log_warning "Builder registry not found, skipping builder installation"
+  fi
   
-  log_success "Web app components updated"
+  # Return to project root
+  cd ../..
+  
+  log_success "Web app components updated using shadcn CLI"
 }
 
 update_registry() {

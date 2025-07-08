@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { Plus, Trash2, GripVertical } from 'lucide-react';
-import type { BaseFieldProps } from '../../lib/formedible/types';
+import type { BaseFieldProps } from '@/lib/formedible/types';
 import { TextField } from './text-field';
 import { NumberField } from './number-field';
 import { TextareaField } from './textarea-field';

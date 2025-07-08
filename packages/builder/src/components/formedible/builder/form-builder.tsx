@@ -363,7 +363,7 @@ export const FormBuilder: React.FC = () => {
   // Generate code preview
   const generateCode = useCallback(() => {
     const config = generateFormedibleConfig();
-    return `import { useFormedible } from '@/hooks/use-formedible';
+    return `import { useFormedible } from 'formedible';
 import { z } from 'zod';
 
 const formConfig = ${JSON.stringify(config, null, 2)};

@@ -2,7 +2,7 @@
 
 import React from "react";
 import { motion } from "motion/react";
-import { FormBuilderDemo } from "@/components/demo/form-builder-demo";
+import { FormBuilder } from "@/formedible/builder/form-builder";
 
 export default function BuilderPage() {
   return (
@@ -17,7 +17,7 @@ export default function BuilderPage() {
         <div className="min-h-[800px] p-2">
           <div className="w-full p-2 mx-auto">
             <div className="bg-card border rounded-lg shadow-sm">
-              <FormBuilderDemo />
+              <FormBuilder />
             </div>
           </div>
         </div>

@@ -1,6 +1,6 @@
 'use client';
 import React, { useCallback, useMemo } from 'react';
-import { useFormedible } from '@/hooks/use-formedible';
+import { useFormedible } from 'formedible';
 import { z } from 'zod';
 
 interface FormField {
@@ -630,4 +630,4 @@ export const FieldConfigurator: React.FC<FieldConfiguratorProps> = ({
       <Form />
     </div>
   );
-}; 
+};

@@ -1,6 +1,6 @@
 'use client';
 import React, { useMemo } from 'react';
-import { useFormedible } from '@/hooks/use-formedible';
+import { useFormedible } from 'formedible';
 import { z } from 'zod';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -186,7 +186,8 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
   if (!formResult || !formResult.Form || config.fields.length === 0) {
     if (config.fields.length === 0) {
       return (
-    <Card className={cn("bg-muted/30", className)}>          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+        <Card className={cn("bg-muted/30", className)}>
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <div className="text-4xl mb-4">📝</div>
             <h3 className="text-lg font-medium mb-2">No Fields Added</h3>
             <p className="text-muted-foreground">
@@ -197,7 +198,8 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
       );
     }
     return (
-        <Card className={cn("bg-muted/30", className)}>        <CardContent className="py-6">
+      <Card className={cn("bg-muted/30", className)}>
+        <CardContent className="py-6">
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
@@ -212,7 +214,8 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
   const { Form } = formResult;
 
   return (
-      <Card className={cn("bg-muted/30", className)}>      <CardHeader>
+    <Card className={cn("bg-muted/30", className)}>
+      <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <div>
             <div>{config.title}</div>

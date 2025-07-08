@@ -27,7 +27,6 @@
         "badge",
         "alert",
         "skeleton",
-        "code-block",
         "https://formedible.dev/r/use-formedible.json"
       ],
       "dependencies": [
@@ -51,22 +50,27 @@
         {
           "path": "src/components/form-builder.tsx",
           "type": "registry:component",
-          "target": "formedible/builder/form-builder.tsx"
+          "target": "components/formedible/builder/form-builder.tsx"
         },
         {
           "path": "src/components/field-configurator.tsx",
           "type": "registry:component",
-          "target": "formedible/builder/field-configurator.tsx"
+          "target": "components/formedible/builder/field-configurator.tsx"
         },
         {
           "path": "src/components/form-preview.tsx",
           "type": "registry:component",
-          "target": "formedible/builder/form-preview.tsx"
+          "target": "components/formedible/builder/form-preview.tsx"
         },
         {
           "path": "src/lib/utils.ts",
           "type": "registry:lib",
           "target": "lib/utils.ts"
+        },
+        {
+          "path": "src/components/ui/code-block.tsx",
+          "type": "registry:component",
+          "target": "components/ui/code-block.tsx"
         }
       ],
       "categories": ["form", "builder", "component"],

@@ -3,7 +3,7 @@ import React from 'react';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
-import type { BaseFieldProps } from '../../lib/formedible/types';
+import type { BaseFieldProps } from '@/lib/formedible/types';
 
 export interface RadioFieldSpecificProps extends BaseFieldProps {
   options: Array<{ value: string; label: string }> | string[];

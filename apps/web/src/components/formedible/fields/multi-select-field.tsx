@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 
 import { cn } from '@/lib/utils';
 import { X, ChevronDown, Check } from 'lucide-react';
-import type { BaseFieldProps } from '../../lib/formedible/types';
+import type { BaseFieldProps } from '@/lib/formedible/types';
 
 export interface MultiSelectFieldSpecificProps extends BaseFieldProps {
   options: Array<{ value: string; label: string }> | string[];
