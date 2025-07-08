@@ -59,15 +59,23 @@ update_web_components() {
 update_registry() {
   log_info "Updating registry files..."
   
-  # Copy registry to web app public directory (for build output)
+  # Copy formedible registry to web app public directory (for build output)
   if [[ -f "packages/formedible/public/r/use-formedible.json" ]]; then
     mkdir -p "apps/web/public/r"
     cp "packages/formedible/public/r/use-formedible.json" "apps/web/public/r/use-formedible.json"
-    
-    log_success "Registry updated in web app"
+    log_success "Formedible registry updated in web app"
   else
-    log_error "Registry file not found in packages/formedible/public/r/use-formedible.json"
+    log_error "Formedible registry file not found in packages/formedible/public/r/use-formedible.json"
     exit 1
+  fi
+  
+  # Copy builder registry to web app public directory (if it exists)
+  if [[ -f "packages/builder/public/r/form-builder.json" ]]; then
+    mkdir -p "apps/web/public/r"
+    cp "packages/builder/public/r/form-builder.json" "apps/web/public/r/form-builder.json"
+    log_success "Builder registry updated in web app"
+  else
+    log_warning "Builder registry file not found in packages/builder/public/r/form-builder.json (this is optional)"
   fi
 }
 

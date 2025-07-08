@@ -134,6 +134,23 @@ build_package() {
   log_success "Package build completed"
 }
 
+build_builder_package() {
+  if [[ "$SKIP_BUILD" == true ]]; then
+    log_info "Skipping builder package build (--skip-build flag)"
+    return
+  fi
+  
+  log_info "Building formedible-builder package..."
+  npm run build:builder
+  
+  if [[ ! -d "packages/builder/dist" ]]; then
+    log_error "Builder package build failed - dist directory not found"
+    exit 1
+  fi
+  
+  log_success "Builder package build completed"
+}
+
 update_web_components() {
   log_info "Updating web app components from package..."
   
@@ -159,31 +176,32 @@ update_web_components() {
 update_registry() {
   log_info "Updating registry files..."
   
-  # First, copy registry.json to public/r/use-formedible.json in the package
-  # MORONIC AI ! WE WANT THE BUILT REGISTRY YOU MUPPET !
-  # if [[ -f "packages/formedible/registry.json" ]]; then
-  #   mkdir -p "packages/formedible/public/r"
-  #   cp "packages/formedible/registry.json" "packages/formedible/public/r/use-formedible.json"
-  #   log_success "Registry copied to package public folder"
-  # else
-  #   log_error "Registry file not found: packages/formedible/registry.json"
-  #   exit 1
-  # fi
-  
-  # Then copy to web app (both locations for compatibility)
+  # Update formedible registry
   if [[ -f "packages/formedible/public/r/use-formedible.json" ]]; then
-    # Copy to web app root r directory (for Next.js static serving)
-    # THIS IS STUPID !
-    # mkdir -p "apps/web/r"
-    # cp "packages/formedible/public/r/use-formedible.json" "apps/web/r/use-formedible.json"
-    
-    # Also copy to public directory (for build output)
     mkdir -p "apps/web/public/r"
     cp "packages/formedible/public/r/use-formedible.json" "apps/web/public/r/use-formedible.json"
-    
-    log_success "Registry updated in web app"
+    log_success "Formedible registry updated in web app"
   else
-    log_error "Registry file not found in packages/formedible/public/r/use-formedible.json"
+    log_error "Formedible registry file not found in packages/formedible/public/r/use-formedible.json"
+    exit 1
+  fi
+}
+
+update_builder_registry() {
+  log_info "Updating builder registry files..."
+  
+  # Create builder registry in public/r directory
+  if [[ -f "packages/builder/registry.json" ]]; then
+    mkdir -p "packages/builder/public/r"
+    cp "packages/builder/registry.json" "packages/builder/public/r/form-builder.json"
+    log_success "Builder registry copied to package public folder"
+    
+    # Copy to web app public directory
+    mkdir -p "apps/web/public/r"
+    cp "packages/builder/public/r/form-builder.json" "apps/web/public/r/form-builder.json"
+    log_success "Builder registry updated in web app"
+  else
+    log_error "Builder registry file not found: packages/builder/registry.json"
     exit 1
   fi
 }
@@ -261,6 +279,12 @@ create_release_artifacts() {
   mkdir -p "$BUILD_DIR/package"
   cp -r "$PKG_DIST_DIR"/* "$BUILD_DIR/package/"
   
+  # Copy builder package dist to build directory
+  if [[ -d "packages/builder/dist" ]]; then
+    mkdir -p "$BUILD_DIR/builder"
+    cp -r "packages/builder/dist"/* "$BUILD_DIR/builder/"
+  fi
+  
   # Copy web dist to build directory
   mkdir -p "$BUILD_DIR/web"
   cp -r "$WEB_DIST_DIR"/* "$BUILD_DIR/web/"
@@ -268,6 +292,11 @@ create_release_artifacts() {
   # Create release zips
   log_info "Creating release zip: $RELEASE_DIR/formedible-$RELEASE_NAME.zip"
   (cd "$BUILD_DIR/package" && zip -r "../../$RELEASE_DIR/formedible-$RELEASE_NAME.zip" .)
+  
+  if [[ -d "$BUILD_DIR/builder" ]]; then
+    log_info "Creating builder release zip: $RELEASE_DIR/formedible-builder-$RELEASE_NAME.zip"
+    (cd "$BUILD_DIR/builder" && zip -r "../../$RELEASE_DIR/formedible-builder-$RELEASE_NAME.zip" .)
+  fi
   
   log_info "Creating web release zip: $RELEASE_DIR/formedible-web-$RELEASE_NAME.zip"
   (cd "$BUILD_DIR/web" && zip -r "../../$RELEASE_DIR/formedible-web-$RELEASE_NAME.zip" .)
@@ -333,6 +362,9 @@ commit_changes() {
   # Only add source code changes, not build artifacts
   # Add package source changes
   git add packages/formedible/src/ packages/formedible/package.json packages/formedible/registry.json packages/formedible/public/r/ || true
+  
+  # Add builder package source changes
+  git add packages/builder/src/ packages/builder/package.json packages/builder/registry.json packages/builder/public/r/ || true
   
   # Add web app source changes (components copied from package)
   git add apps/web/src/ apps/web/r/ apps/web/public/r/ || true
@@ -444,12 +476,18 @@ show_summary() {
   echo "📁 Build Structure:"
   echo "├── $BUILD_DIR/"
   echo "│   ├── package/ (formedible library)"
+  if [[ -d "$BUILD_DIR/builder" ]]; then
+    echo "│   ├── builder/ (formedible-builder library)"
+  fi
   echo "│   └── web/ (web application)"
   
   if [[ -n "$RELEASE_NAME" ]]; then
     echo "│"
     echo "├── $RELEASE_DIR/"
     echo "│   ├── formedible-$RELEASE_NAME.zip"
+    if [[ -f "$RELEASE_DIR/formedible-builder-$RELEASE_NAME.zip" ]]; then
+      echo "│   ├── formedible-builder-$RELEASE_NAME.zip"
+    fi
     echo "│   └── formedible-web-$RELEASE_NAME.zip"
   fi
   echo ""
@@ -471,8 +509,10 @@ show_summary() {
 main() {
   echo "🚀 Formedible Build & Release Script"
   echo "===================================="
-  echo "ℹ️  This script now uses modular components. You can also run:"
-  echo "   • scripts/build-package    - Build package only"
+  echo "ℹ️  This script builds both formedible and formedible-builder packages."
+  echo "   It also uses modular components. You can also run:"
+  echo "   • scripts/build-package    - Build formedible package only"
+  echo "   • npm run build:builder    - Build formedible-builder package only"
   echo "   • scripts/sync-components  - Sync components to web app"
   echo "   • scripts/build-web        - Build web app only"
   echo "   • scripts/deploy-web       - Deploy web app only"
@@ -524,6 +564,12 @@ main() {
   else
     scripts/build-package
   fi
+  
+  # Build builder package
+  build_builder_package
+  
+  # Update builder registry
+  update_builder_registry
   
   # Sync components
   scripts/sync-components

@@ -1,0 +1,76 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "formedible-builder",
+  "homepage": "https://github.com/DimitriGilbert/Formedible",
+  "items": [
+    {
+      "name": "form-builder",
+      "type": "registry:component",
+      "title": "Form Builder",
+      "description": "A visual form builder component for creating forms with drag-and-drop interface",
+      "registryDependencies": [
+        "button",
+        "input",
+        "textarea",
+        "select",
+        "checkbox",
+        "switch",
+        "label",
+        "card",
+        "tabs",
+        "accordion",
+        "dialog",
+        "popover",
+        "progress",
+        "radio-group",
+        "slider",
+        "badge",
+        "alert",
+        "skeleton",
+        "code-block"
+      ],
+      "dependencies": [
+        "@tanstack/react-form",
+        "@radix-ui/react-accordion",
+        "@radix-ui/react-checkbox",
+        "@radix-ui/react-dialog",
+        "@radix-ui/react-label",
+        "@radix-ui/react-popover",
+        "@radix-ui/react-progress",
+        "@radix-ui/react-radio-group",
+        "@radix-ui/react-select",
+        "@radix-ui/react-slider",
+        "@radix-ui/react-slot",
+        "@radix-ui/react-switch",
+        "@radix-ui/react-tabs",
+        "lucide-react",
+        "zod",
+        "formedible"
+      ],
+      "files": [
+        {
+          "path": "src/components/form-builder.tsx",
+          "type": "registry:component",
+          "target": "formedible/builder/form-builder.tsx"
+        },
+        {
+          "path": "src/components/field-configurator.tsx",
+          "type": "registry:component",
+          "target": "formedible/builder/field-configurator.tsx"
+        },
+        {
+          "path": "src/components/form-preview.tsx",
+          "type": "registry:component",
+          "target": "formedible/builder/form-preview.tsx"
+        },
+        {
+          "path": "src/lib/utils.ts",
+          "type": "registry:lib",
+          "target": "lib/utils.ts"
+        }
+      ],
+      "categories": ["form", "builder", "component"],
+      "docs": "Make sure to install formedible and configure your shadcn/ui components before using this builder. This component provides a visual interface for creating forms that can be used with the formedible library."
+    }
+  ]
+}
