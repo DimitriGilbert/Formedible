@@ -27,7 +27,8 @@
         "badge",
         "alert",
         "skeleton",
-        "code-block"
+        "code-block",
+        "https://formedible.dev/r/use-formedible.json"
       ],
       "dependencies": [
         "@tanstack/react-form",
@@ -44,8 +45,7 @@
         "@radix-ui/react-switch",
         "@radix-ui/react-tabs",
         "lucide-react",
-        "zod",
-        "formedible"
+        "zod"
       ],
       "files": [
         {
