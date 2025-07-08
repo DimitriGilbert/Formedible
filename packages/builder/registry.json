@@ -48,17 +48,17 @@
       ],
       "files": [
         {
-          "path": "src/components/form-builder.tsx",
+          "path": "src/components/formedible/builder/form-builder.tsx",
           "type": "registry:component",
           "target": "components/formedible/builder/form-builder.tsx"
         },
         {
-          "path": "src/components/field-configurator.tsx",
+          "path": "src/components/formedible/builder/field-configurator.tsx",
           "type": "registry:component",
           "target": "components/formedible/builder/field-configurator.tsx"
         },
         {
-          "path": "src/components/form-preview.tsx",
+          "path": "src/components/formedible/builder/form-preview.tsx",
           "type": "registry:component",
           "target": "components/formedible/builder/form-preview.tsx"
         },

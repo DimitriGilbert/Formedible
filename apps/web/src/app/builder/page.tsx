@@ -2,7 +2,7 @@
 
 import React from "react";
 import { motion } from "motion/react";
-import { FormBuilder } from "@/formedible/builder/form-builder";
+import { FormBuilder } from "@/components/formedible/builder/form-builder";
 
 export default function BuilderPage() {
   return (
