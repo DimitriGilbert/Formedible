@@ -149,11 +149,10 @@ create_release_artifacts() {
   cp -r "$WEB_DIST_DIR"/* "$BUILD_DIR/web/"
   
   # Create release zips
-  log_info "Creating release zip: $RELEASE_DIR/formedible-$RELEASE_NAME.zip"
-  (cd "$BUILD_DIR/package" && zip -r "../../$RELEASE_DIR/formedible-$RELEASE_NAME.zip" .)
+  (cd "$BUILD_DIR/package/formedible" && zip -rq "../../$RELEASE_DIR/formedible-$RELEASE_NAME.zip" .)
+  (cd "$BUILD_DIR/package/builder" && zip -rq "../../$RELEASE_DIR/formedible-builder-$RELEASE_NAME.zip" .)
   
-  log_info "Creating web release zip: $RELEASE_DIR/formedible-web-$RELEASE_NAME.zip"
-  (cd "$BUILD_DIR/web" && zip -r "../../$RELEASE_DIR/formedible-web-$RELEASE_NAME.zip" .)
+  (cd "$BUILD_DIR/web" && zip -rq "../../$RELEASE_DIR/formedible-web-$RELEASE_NAME.zip" .)
   
   log_success "Release artifacts created"
 }
