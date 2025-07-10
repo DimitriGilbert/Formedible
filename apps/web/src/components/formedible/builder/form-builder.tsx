@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useCallback } from "react";
+import { useFormedible } from "@/hooks/use-formedible";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -123,6 +124,87 @@ export const FormBuilder: React.FC = () => {
   const [previewMode, setPreviewMode] = useState<
     "desktop" | "tablet" | "mobile"
   >("desktop");
+
+  // Form configuration form using formedible
+  const configFormSchema = z.object({
+    title: z.string().min(1, "Title is required"),
+    description: z.string().optional(),
+  });
+
+  const { Form: ConfigForm } = useFormedible({
+    schema: configFormSchema,
+    fields: [
+      {
+        name: "title",
+        type: "text",
+        label: "Form Title",
+        placeholder: "Enter form title",
+      },
+      {
+        name: "description",
+        type: "textarea",
+        label: "Description",
+        placeholder: "Enter form description",
+      },
+    ],
+    formOptions: {
+      defaultValues: {
+        title: formConfig.title,
+        description: formConfig.description || "",
+      },
+      onChange: ({ value }) => {
+        setFormConfig(prev => ({
+          ...prev,
+          title: value.title,
+          description: value.description,
+        }));
+      },
+    },
+    showSubmitButton: false,
+  });
+
+  // Page editing form using formedible
+  const pageFormSchema = z.object({
+    title: z.string().min(1, "Page title is required"),
+    description: z.string().optional(),
+  });
+
+  const { Form: PageForm } = useFormedible({
+    schema: pageFormSchema,
+    fields: [
+      {
+        name: "title",
+        type: "text",
+        label: "Page Title",
+        placeholder: "Enter page title",
+      },
+      {
+        name: "description",
+        type: "textarea",
+        label: "Description (optional)",
+        placeholder: "Enter page description",
+      },
+    ],
+    formOptions: {
+      defaultValues: editingPageId ? {
+        title: formConfig.pages.find(p => p.page === editingPageId)?.title || "",
+        description: formConfig.pages.find(p => p.page === editingPageId)?.description || "",
+      } : { title: "", description: "" },
+      onChange: ({ value }) => {
+        if (editingPageId) {
+          setFormConfig(prev => ({
+            ...prev,
+            pages: prev.pages.map(p =>
+              p.page === editingPageId
+                ? { ...p, title: value.title, description: value.description }
+                : p
+            ),
+          }));
+        }
+      },
+    },
+    showSubmitButton: false,
+  });
 
   // Add a new field
   const addField = useCallback(
@@ -465,38 +547,7 @@ export const MyForm = () => {
                           <CardTitle className="text-xl">Form Configuration</CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-2 p-4">
-                          <div>
-                            <label className="text-sm font-medium block">
-                              Form Title
-                            </label>
-                            <input
-                              type="text"
-                              value={formConfig.title}
-                              onChange={(e) =>
-                                setFormConfig((prev) => ({
-                                  ...prev,
-                                  title: e.target.value,
-                                }))
-                              }
-                              className="w-full px-4 py-3 border border-input rounded-md bg-background"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-sm font-medium block">
-                              Description
-                            </label>
-                            <textarea
-                              value={formConfig.description || ""}
-                              onChange={(e) =>
-                                setFormConfig((prev) => ({
-                                  ...prev,
-                                  description: e.target.value,
-                                }))
-                              }
-                              className="w-full px-4 py-3 border border-input rounded-md bg-background"
-                              rows={3}
-                            />
-                          </div>
+                          <ConfigForm />
                         </CardContent>
                       </Card>
 
@@ -559,53 +610,7 @@ export const MyForm = () => {
                               >
                                 {editingPageId === page.page ? (
                                   <div className="p-8 space-y-6">
-                                    <div>
-                                      <label className="text-sm font-medium block">
-                                        Page Title
-                                      </label>
-                                      <input
-                                        type="text"
-                                        value={page.title}
-                                        onChange={(e) =>
-                                          setFormConfig((prev) => ({
-                                            ...prev,
-                                            pages: prev.pages.map((p) =>
-                                              p.page === page.page
-                                                ? {
-                                                    ...p,
-                                                    title: e.target.value,
-                                                  }
-                                                : p
-                                            ),
-                                          }))
-                                        }
-                                        className="w-full px-4 py-3 border border-input rounded-md bg-background"
-                                        autoFocus
-                                      />
-                                    </div>
-                                    <div>
-                                      <label className="text-sm font-medium block">
-                                        Description (optional)
-                                      </label>
-                                      <textarea
-                                        value={page.description || ""}
-                                        onChange={(e) =>
-                                          setFormConfig((prev) => ({
-                                            ...prev,
-                                            pages: prev.pages.map((p) =>
-                                              p.page === page.page
-                                                ? {
-                                                    ...p,
-                                                    description: e.target.value,
-                                                  }
-                                                : p
-                                            ),
-                                          }))
-                                        }
-                                        className="w-full px-4 py-3 border border-input rounded-md bg-background"
-                                        rows={2}
-                                      />
-                                    </div>
+                                    <PageForm />
                                     <div className="flex items-center gap-3">
                                       <Button
                                         onClick={() => setEditingPageId(null)}

@@ -17,7 +17,12 @@
         "switch",
         "label",
         "calendar",
-        "popover"
+        "popover",
+        "badge",
+        "slider",
+        "radio-group",
+        "progress",
+        "dialog"
       ],
       "dependencies": [
         "@tanstack/react-form",
