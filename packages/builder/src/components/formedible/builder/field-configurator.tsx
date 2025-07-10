@@ -51,9 +51,7 @@ export const FieldConfigurator: React.FC<FieldConfiguratorProps> = ({
   onUpdate,
   availablePages,
 }) => {
-  const updateField = useCallback((updates: Partial<FormField>) => {
-    onUpdate(field.id, updates);
-  }, [field.id, onUpdate]);
+
 
   // Base configuration fields
   const baseFields = useMemo(() => [
@@ -513,8 +511,11 @@ export const FieldConfigurator: React.FC<FieldConfiguratorProps> = ({
     return values;
   }, [field]);
 
-  // Convert flat form values back to nested object
-  const handleFormChange = useCallback(({ value }: any) => {
+
+
+  // Handle blur to commit changes
+  const handleFormBlur = useCallback(({ value }: any) => {
+    // Process the form values and commit changes
     const updates: Partial<FormField> = {
       name: value.name,
       label: value.label,
@@ -581,8 +582,9 @@ export const FieldConfigurator: React.FC<FieldConfiguratorProps> = ({
       }
     });
 
-    updateField(updates);
-  }, [updateField]);
+    // Commit the updates
+    onUpdate(field.id, updates);
+  }, [field.id, onUpdate]);
 
   const allFields = [
     ...baseFields,
@@ -595,7 +597,8 @@ export const FieldConfigurator: React.FC<FieldConfiguratorProps> = ({
     fields: allFields,
     formOptions: {
       defaultValues: getFormValues(),
-      onChange: handleFormChange,
+      // Remove onChange to prevent re-renders, use onBlur instead
+      onBlur: handleFormBlur,
     },
   });
 

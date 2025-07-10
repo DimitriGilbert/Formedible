@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useMemo, useRef } from "react";
 import { useFormedible } from "@/hooks/use-formedible";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +14,7 @@ import {
   Upload,
   Trash2,
   Copy,
-  Move,
+
   Edit,
   FileText,
 } from "lucide-react";
@@ -62,24 +62,7 @@ interface FormField {
   phoneConfig?: any;
 }
 
-interface FormConfiguration {
-  title: string;
-  description?: string;
-  fields: FormField[];
-  pages: Array<{
-    page: number;
-    title: string;
-    description?: string;
-  }>;
-  settings: {
-    submitLabel: string;
-    nextLabel: string;
-    previousLabel: string;
-    showProgress: boolean;
-    allowPageNavigation: boolean;
-    resetOnSubmit: boolean;
-  };
-}
+
 
 const FIELD_TYPES = [
   { value: "text", label: "Text Input", icon: "📝" },
@@ -102,19 +85,20 @@ const FIELD_TYPES = [
 ];
 
 export const FormBuilder: React.FC = () => {
-  const [formConfig, setFormConfig] = useState<FormConfiguration>({
-    title: "My Form",
-    description: "A form built with Formedible",
-    fields: [],
-    pages: [{ page: 1, title: "Page 1", description: "First page" }],
-    settings: {
-      submitLabel: "Submit",
-      nextLabel: "Next",
-      previousLabel: "Previous",
-      showProgress: true,
-      allowPageNavigation: false,
-      resetOnSubmit: false,
-    },
+  // Atomic state management - split monolithic formConfig
+  const [formTitle, setFormTitle] = useState<string>("My Form");
+  const [formDescription, setFormDescription] = useState<string>("A form built with Formedible");
+  const [fields, setFields] = useState<FormField[]>([]);
+  const [pages, setPages] = useState<Array<{ page: number; title: string; description?: string }>>([
+    { page: 1, title: "Page 1", description: "First page" }
+  ]);
+  const [settings, setSettings] = useState({
+    submitLabel: "Submit",
+    nextLabel: "Next",
+    previousLabel: "Previous",
+    showProgress: true,
+    allowPageNavigation: false,
+    resetOnSubmit: false,
   });
 
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
@@ -125,7 +109,9 @@ export const FormBuilder: React.FC = () => {
     "desktop" | "tablet" | "mobile"
   >("desktop");
 
-  // Form configuration form using formedible
+
+
+  // Form configuration form using formedible - NO onChange to prevent re-renders
   const configFormSchema = z.object({
     title: z.string().min(1, "Title is required"),
     description: z.string().optional(),
@@ -149,21 +135,23 @@ export const FormBuilder: React.FC = () => {
     ],
     formOptions: {
       defaultValues: {
-        title: formConfig.title,
-        description: formConfig.description || "",
+        title: formTitle,
+        description: formDescription || "",
       },
-      onChange: ({ value }) => {
-        setFormConfig(prev => ({
-          ...prev,
-          title: value.title,
-          description: value.description,
-        }));
+      // Remove onChange - use onBlur instead to prevent re-renders
+      onBlur: ({ value }) => {
+        if (value.title !== formTitle) {
+          setFormTitle(value.title);
+        }
+        if (value.description !== formDescription) {
+          setFormDescription(value.description || "");
+        }
       },
     },
     showSubmitButton: false,
   });
 
-  // Page editing form using formedible
+  // Page editing form using formedible - NO onChange to prevent re-renders
   const pageFormSchema = z.object({
     title: z.string().min(1, "Page title is required"),
     description: z.string().optional(),
@@ -187,31 +175,29 @@ export const FormBuilder: React.FC = () => {
     ],
     formOptions: {
       defaultValues: editingPageId ? {
-        title: formConfig.pages.find(p => p.page === editingPageId)?.title || "",
-        description: formConfig.pages.find(p => p.page === editingPageId)?.description || "",
+        title: pages.find(p => p.page === editingPageId)?.title || "",
+        description: pages.find(p => p.page === editingPageId)?.description || "",
       } : { title: "", description: "" },
-      onChange: ({ value }) => {
+      // Remove onChange - use onBlur instead to prevent re-renders
+      onBlur: ({ value }) => {
         if (editingPageId) {
-          setFormConfig(prev => ({
-            ...prev,
-            pages: prev.pages.map(p =>
-              p.page === editingPageId
-                ? { ...p, title: value.title, description: value.description }
-                : p
-            ),
-          }));
+          setPages(prev => prev.map(p =>
+            p.page === editingPageId
+              ? { ...p, title: value.title, description: value.description }
+              : p
+          ));
         }
       },
     },
     showSubmitButton: false,
   });
 
-  // Add a new field
+  // Add a new field - atomic update
   const addField = useCallback(
     (type: string) => {
       const newField: FormField = {
         id: `field_${Date.now()}`,
-        name: `field_${formConfig.fields.length + 1}`,
+        name: `field_${fields.length + 1}`,
         type,
         label: `${
           FIELD_TYPES.find((t) => t.value === type)?.label || type
@@ -220,42 +206,32 @@ export const FormBuilder: React.FC = () => {
         page: selectedPageId || 1,
       };
 
-      setFormConfig((prev) => ({
-        ...prev,
-        fields: [...prev.fields, newField],
-      }));
-
+      setFields(prev => [...prev, newField]);
       setSelectedFieldId(newField.id);
     },
-    [formConfig.fields.length, selectedPageId]
+    [fields.length, selectedPageId]
   );
 
-  // Update a field
+  // Update a field - atomic update
   const updateField = useCallback(
     (fieldId: string, updates: Partial<FormField>) => {
-      setFormConfig((prev) => ({
-        ...prev,
-        fields: prev.fields.map((field) =>
-          field.id === fieldId ? { ...field, ...updates } : field
-        ),
-      }));
+      setFields(prev => prev.map(field =>
+        field.id === fieldId ? { ...field, ...updates } : field
+      ));
     },
     []
   );
 
-  // Delete a field
+  // Delete a field - atomic update
   const deleteField = useCallback((fieldId: string) => {
-    setFormConfig((prev) => ({
-      ...prev,
-      fields: prev.fields.filter((field) => field.id !== fieldId),
-    }));
+    setFields(prev => prev.filter(field => field.id !== fieldId));
     setSelectedFieldId(null);
   }, []);
 
-  // Duplicate a field
+  // Duplicate a field - atomic update
   const duplicateField = useCallback(
     (fieldId: string) => {
-      const field = formConfig.fields.find((f) => f.id === fieldId);
+      const field = fields.find((f) => f.id === fieldId);
       if (field) {
         const newField: FormField = {
           ...field,
@@ -263,21 +239,27 @@ export const FormBuilder: React.FC = () => {
           name: `${field.name}_copy`,
           label: `${field.label} (Copy)`,
         };
-        setFormConfig((prev) => ({
-          ...prev,
-          fields: [...prev.fields, newField],
-        }));
+        setFields(prev => [...prev, newField]);
         setSelectedFieldId(newField.id);
       }
     },
-    [formConfig.fields]
+    [fields]
   );
 
-  // Generate formedible configuration
-  const generateFormedibleConfig = useCallback(() => {
+  // Memoize the complete form configuration to avoid recalculation
+  const formConfig = useMemo(() => ({
+    title: formTitle,
+    description: formDescription,
+    fields,
+    pages,
+    settings,
+  }), [formTitle, formDescription, fields, pages, settings]);
+
+  // Generate formedible configuration - memoized
+  const generateFormedibleConfig = useMemo(() => {
     const schemaFields: Record<string, any> = {};
 
-    formConfig.fields.forEach((field) => {
+    fields.forEach((field) => {
       let fieldSchema: any;
 
       // Create appropriate schema based on field type
@@ -325,7 +307,7 @@ export const FormBuilder: React.FC = () => {
     });
     return {
       schema: z.object(schemaFields),
-      fields: formConfig.fields.map((field) => ({
+      fields: fields.map((field) => ({
         name: field.name,
         type: field.type,
         label: field.label,
@@ -346,11 +328,11 @@ export const FormBuilder: React.FC = () => {
         ...(field.ratingConfig && { ratingConfig: field.ratingConfig }),
         ...(field.phoneConfig && { phoneConfig: field.phoneConfig }),
       })),
-      pages: formConfig.pages,
-      submitLabel: formConfig.settings.submitLabel,
-      nextLabel: formConfig.settings.nextLabel,
-      previousLabel: formConfig.settings.previousLabel,
-      progress: formConfig.settings.showProgress
+      pages: pages,
+      submitLabel: settings.submitLabel,
+      nextLabel: settings.nextLabel,
+      previousLabel: settings.previousLabel,
+      progress: settings.showProgress
         ? { showSteps: true, showPercentage: true }
         : undefined,
       formOptions: {
@@ -360,23 +342,23 @@ export const FormBuilder: React.FC = () => {
         },
       },
     };
-  }, [formConfig]);
+  }, [fields, pages, settings]);
 
   // Export configuration as JSON
   const exportConfig = useCallback(() => {
-    const config = generateFormedibleConfig();
+    const config = generateFormedibleConfig;
     const blob = new Blob([JSON.stringify(config, null, 2)], {
       type: "application/json",
     });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${formConfig.title
+    a.download = `${formTitle
       .toLowerCase()
       .replace(/\s+/g, "-")}-form.json`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [formConfig, generateFormedibleConfig]);
+  }, [formTitle, generateFormedibleConfig]);
 
   // Import configuration from JSON
   const importConfig = useCallback(() => {
@@ -394,8 +376,8 @@ export const FormBuilder: React.FC = () => {
 
           // Convert imported config back to form configuration
           const importedFields: FormField[] = (config.fields || []).map(
-            (field: any, index: number) => ({
-              id: `field_${Date.now()}_${index}`,
+            (field: any, idx: number) => ({
+              id: `field_${Date.now()}_${idx}`,
               name: field.name,
               type: field.type,
               label: field.label,
@@ -417,21 +399,20 @@ export const FormBuilder: React.FC = () => {
             })
           );
 
-          setFormConfig({
-            title: "Imported Form",
-            description: "Imported from JSON",
-            fields: importedFields,
-            pages: config.pages || [
-              { page: 1, title: "Page 1", description: "" },
-            ],
-            settings: {
-              submitLabel: config.submitLabel || "Submit",
-              nextLabel: config.nextLabel || "Next",
-              previousLabel: config.previousLabel || "Previous",
-              showProgress: !!config.progress,
-              allowPageNavigation: false,
-              resetOnSubmit: false,
-            },
+          // Update atomic states instead of monolithic formConfig
+          setFormTitle("Imported Form");
+          setFormDescription("Imported from JSON");
+          setFields(importedFields);
+          setPages(config.pages || [
+            { page: 1, title: "Page 1", description: "" },
+          ]);
+          setSettings({
+            submitLabel: config.submitLabel || "Submit",
+            nextLabel: config.nextLabel || "Next",
+            previousLabel: config.previousLabel || "Previous",
+            showProgress: !!config.progress,
+            allowPageNavigation: false,
+            resetOnSubmit: false,
           });
         } catch (error) {
           alert("Error importing configuration. Please check the file format.");
@@ -442,9 +423,9 @@ export const FormBuilder: React.FC = () => {
     input.click();
   }, []);
 
-  // Generate code preview
-  const generateCode = useCallback(() => {
-    const config = generateFormedibleConfig();
+  // Generate code preview - memoized
+  const generateCode = useMemo(() => {
+    const config = generateFormedibleConfig;
     return `import { useFormedible } from 'formedible';
 import { z } from 'zod';
 
@@ -457,7 +438,10 @@ export const MyForm = () => {
 };`;
   }, [generateFormedibleConfig]);
 
-  const selectedField = formConfig.fields.find((f) => f.id === selectedFieldId);
+  const selectedField = fields.find((f) => f.id === selectedFieldId);
+
+  // Memoize FormPreview to prevent unnecessary re-renders
+  const MemoizedFormPreview = React.memo(FormPreview);
 
   return (
     <div className="w-full min-h-[800px] flex flex-col bg-background">
@@ -555,7 +539,7 @@ export const MyForm = () => {
                       <Card className="hover:shadow-lg transition-shadow gap-2">
                         <CardHeader>
                           <CardTitle className="flex items-center justify-between text-xl">
-                            Pages ({formConfig.pages.length})
+                            Pages ({pages.length})
                             {selectedPageId && (
                               <span className="text-sm font-normal text-primary">
                                 Page {selectedPageId} selected
@@ -565,19 +549,16 @@ export const MyForm = () => {
                               onClick={() => {
                                 const newPageNumber =
                                   Math.max(
-                                    ...formConfig.pages.map((p) => p.page)
+                                    ...pages.map((p) => p.page)
                                   ) + 1;
-                                setFormConfig((prev) => ({
+                                setPages(prev => [
                                   ...prev,
-                                  pages: [
-                                    ...prev.pages,
-                                    {
-                                      page: newPageNumber,
-                                      title: `Page ${newPageNumber}`,
-                                      description: "",
-                                    },
-                                  ],
-                                }));
+                                  {
+                                    page: newPageNumber,
+                                    title: `Page ${newPageNumber}`,
+                                    description: "",
+                                  },
+                                ]);
                                 setEditingPageId(newPageNumber);
                               }}
                             >
@@ -588,7 +569,7 @@ export const MyForm = () => {
                         </CardHeader>
                         <CardContent className="space-y-2 p-4">
                           <div className="space-y-2">
-                            {formConfig.pages.map((page, index) => (
+                            {pages.map((page) => (
                               <div
                                 key={page.page}
                                 className={cn(
@@ -653,7 +634,7 @@ export const MyForm = () => {
                                         )}
                                         <div className="text-sm text-muted-foreground">
                                           {
-                                            formConfig.fields.filter(
+                                            fields.filter(
                                               (f) => (f.page || 1) === page.page
                                             ).length
                                           }{" "}
@@ -671,7 +652,7 @@ export const MyForm = () => {
                                       >
                                         <Edit className="h-4 w-4" />
                                       </Button>
-                                      {formConfig.pages.length > 1 && (
+                                      {pages.length > 1 && (
                                         <Button
                                           variant="ghost"
                                           onClick={(e) => {
@@ -681,45 +662,32 @@ export const MyForm = () => {
                                                 `Delete ${page.title}? Fields on this page will be moved to Page 1.`
                                               )
                                             ) {
-                                              setFormConfig((prev) => {
-                                                const filteredPages =
-                                                  prev.pages.filter(
-                                                    (p) => p.page !== page.page
-                                                  );
-                                                const renumberedPages =
-                                                  filteredPages.map(
-                                                    (p, index) => ({
-                                                      ...p,
-                                                      page: index + 1,
-                                                    })
-                                                  );
+                                            // Update pages atomically
+                                            const filteredPages = pages.filter(
+                                              (p) => p.page !== page.page
+                                            );
+                                            const renumberedPages = filteredPages.map(
+                                              (p, idx) => ({
+                                                ...p,
+                                                page: idx + 1,
+                                              })
+                                            );
+                                            setPages(renumberedPages);
 
-                                                const updatedFields =
-                                                  prev.fields.map((f) => {
-                                                    if (
-                                                      (f.page || 1) ===
-                                                      page.page
-                                                    ) {
-                                                      return { ...f, page: 1 };
-                                                    }
-                                                    if (
-                                                      (f.page || 1) > page.page
-                                                    ) {
-                                                      return {
-                                                        ...f,
-                                                        page: (f.page || 1) - 1,
-                                                      };
-                                                    }
-                                                    return f;
-                                                  });
-
+                                            // Update fields atomically
+                                            const updatedFields = fields.map((f) => {
+                                              if ((f.page || 1) === page.page) {
+                                                return { ...f, page: 1 };
+                                              }
+                                              if ((f.page || 1) > page.page) {
                                                 return {
-                                                  ...prev,
-                                                  pages: renumberedPages,
-                                                  fields: updatedFields,
+                                                  ...f,
+                                                  page: (f.page || 1) - 1,
                                                 };
-                                              });
-                                              if (
+                                              }
+                                              return f;
+                                            });
+                                            setFields(updatedFields);                                              if (
                                                 selectedPageId === page.page
                                               ) {
                                                 setSelectedPageId(null);
@@ -746,7 +714,7 @@ export const MyForm = () => {
                             {selectedPageId ? (
                               <>
                                 {
-                                  formConfig.pages.find(
+                                  pages.find(
                                     (p) => p.page === selectedPageId
                                   )?.title
                                 }{" "}
@@ -754,7 +722,7 @@ export const MyForm = () => {
                                 <span className="text-sm font-normal text-muted-foreground">
                                   (
                                   {
-                                    formConfig.fields.filter(
+                                    fields.filter(
                                       (f) => (f.page || 1) === selectedPageId
                                     ).length
                                   }{" "}
@@ -763,8 +731,8 @@ export const MyForm = () => {
                               </>
                             ) : (
                               <>
-                                All Fields ({formConfig.fields.length})
-                                {formConfig.fields.length === 0 && (
+                                All Fields ({fields.length})
+                                {fields.length === 0 && (
                                   <span className="text-sm font-normal text-muted-foreground">
                                     Add fields from the sidebar →
                                   </span>
@@ -782,10 +750,10 @@ export const MyForm = () => {
                         <CardContent className="space-y-2 p-4">
                           {(() => {
                             const fieldsToShow = selectedPageId
-                              ? formConfig.fields.filter(
+                              ? fields.filter(
                                   (f) => (f.page || 1) === selectedPageId
                                 )
-                              : formConfig.fields;
+                              : fields;
 
                             if (fieldsToShow.length === 0) {
                               return (
@@ -803,9 +771,8 @@ export const MyForm = () => {
                             if (selectedPageId) {
                               // Show only selected page fields in a simple list
                               return (
-                                <div className="space-y-4">
-                                  {fieldsToShow.map((field, index) => (
-                                    <div
+                                        <div className="space-y-4">
+                                          {fieldsToShow.map((field) => (                                    <div
                                       key={field.id}
                                       className={cn(
                                         "flex items-center justify-between p-6 border rounded-lg cursor-pointer transition-colors hover:shadow-md",
@@ -860,8 +827,8 @@ export const MyForm = () => {
                               // Show all fields grouped by page
                               return (
                                 <div className="space-y-8">
-                                  {formConfig.pages.map((page) => {
-                                    const pageFields = formConfig.fields.filter(
+                                  {pages.map((page) => {
+                                    const pageFields = fields.filter(
                                       (f) => (f.page || 1) === page.page
                                     );
                                     return (
@@ -881,7 +848,7 @@ export const MyForm = () => {
                                               No fields on this page
                                             </div>
                                           ) : (
-                                            pageFields.map((field, index) => (
+                                            pageFields.map((field) => (
                                               <div
                                                 key={field.id}
                                                 className={cn(
@@ -955,7 +922,7 @@ export const MyForm = () => {
                         <FieldConfigurator
                           field={selectedField}
                           onUpdate={updateField}
-                          availablePages={formConfig.pages.map((p) => p.page)}
+                          availablePages={pages.map((p) => p.page)}
                         />
                       </div>
                     </div>
@@ -999,7 +966,7 @@ export const MyForm = () => {
                         : "max-w-4xl"
                     )}
                   >
-                    <FormPreview config={formConfig} />
+                    <MemoizedFormPreview config={formConfig} />
                   </div>
                 </div>
               </TabsContent>
@@ -1016,7 +983,7 @@ export const MyForm = () => {
                     </p>
                   </div>
                   <CodeBlock
-                    code={generateCode()}
+                    code={generateCode}
                     language="tsx"
                     title="MyForm.tsx"
                     showCopyButton={true}
