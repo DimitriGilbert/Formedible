@@ -190,18 +190,13 @@ update_registry() {
 update_builder_registry() {
   log_info "Updating builder registry files..."
   
-  # Create builder registry in public/r directory
-  if [[ -f "packages/builder/registry.json" ]]; then
-    mkdir -p "packages/builder/public/r"
-    cp "packages/builder/registry.json" "packages/builder/public/r/form-builder.json"
-    log_success "Builder registry copied to package public folder"
-    
-    # Copy to web app public directory
+  # Update builder registry (same pattern as formedible)
+  if [[ -f "packages/builder/public/r/form-builder.json" ]]; then
     mkdir -p "apps/web/public/r"
     cp "packages/builder/public/r/form-builder.json" "apps/web/public/r/form-builder.json"
     log_success "Builder registry updated in web app"
   else
-    log_error "Builder registry file not found: packages/builder/registry.json"
+    log_error "Builder registry file not found in packages/builder/public/r/form-builder.json"
     exit 1
   fi
 }

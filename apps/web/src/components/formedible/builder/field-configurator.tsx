@@ -1,6 +1,6 @@
 'use client';
 import React, { useCallback, useMemo } from 'react';
-import { useFormedible } from 'formedible';
+import { useFormedible } from '@/hooks/use-formedible';
 import { z } from 'zod';
 
 interface FormField {
