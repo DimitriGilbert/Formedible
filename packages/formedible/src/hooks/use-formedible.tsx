@@ -1388,60 +1388,70 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
       );
     }, [form, fieldComponents, globalWrapper, disabled, loading, crossFieldErrors, asyncValidationStates, fieldClassName]);
 
-    const renderTabContent = React.useCallback((tabFields: FieldConfig[]) => {
-      const currentValues = form.state.values;
-      
-      // Filter fields based on conditional sections
-      const visibleFields = tabFields.filter(field => {
-        // Check if field is part of any conditional section
-        const conditionalSection = conditionalSections.find(section => 
-          section.fields.includes(field.name)
-        );
-        
-        if (conditionalSection) {
-          return conditionalSection.condition(currentValues as TFormValues);
-        }
-        
-        return true;
-      });
-      
-      // Group fields by section and group
-      const groupedFields = visibleFields.reduce((acc, field) => {
-        const sectionKey = field.section?.title || 'default';
-        const groupKey = field.group || 'default';
-        
-        if (!acc[sectionKey]) {
-          acc[sectionKey] = {
-            section: field.section,
-            groups: {}
-          };
-        }
-        
-        if (!acc[sectionKey].groups[groupKey]) {
-          acc[sectionKey].groups[groupKey] = [];
-        }
-        
-        acc[sectionKey].groups[groupKey].push(field);
-        return acc;
-      }, {} as Record<string, { section?: { title: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean }; groups: Record<string, FieldConfig[]> }>);
+    // Tab content renderer with subscription-based conditional rendering
+    const TabContentRenderer: React.FC<{ tabFields: FieldConfig[] }> = React.memo(({ tabFields }) => {
+      return (
+        <form.Subscribe
+          selector={(state) => state.values}
+          children={(currentValues) => {
+            // Filter fields based on conditional sections
+            const visibleFields = tabFields.filter(field => {
+              // Check if field is part of any conditional section
+              const conditionalSection = conditionalSections.find(section => 
+                section.fields.includes(field.name)
+              );
+              
+              if (conditionalSection) {
+                return conditionalSection.condition(currentValues as TFormValues);
+              }
+              
+              return true;
+            });
+            
+            // Group fields by section and group
+            const groupedFields = visibleFields.reduce((acc, field) => {
+              const sectionKey = field.section?.title || 'default';
+              const groupKey = field.group || 'default';
+              
+              if (!acc[sectionKey]) {
+                acc[sectionKey] = {
+                  section: field.section,
+                  groups: {}
+                };
+              }
+              
+              if (!acc[sectionKey].groups[groupKey]) {
+                acc[sectionKey].groups[groupKey] = [];
+              }
+              
+              acc[sectionKey].groups[groupKey].push(field);
+              return acc;
+            }, {} as Record<string, { section?: { title: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean }; groups: Record<string, FieldConfig[]> }>);
 
-      const renderSection = (sectionKey: string, sectionData: { section?: { title: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean }; groups: Record<string, FieldConfig[]> }) => (
-        <SectionRenderer
-          key={sectionKey}
-          sectionKey={sectionKey}
-          sectionData={sectionData}
-          renderField={renderField}
+            const renderSection = (sectionKey: string, sectionData: { section?: { title: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean }; groups: Record<string, FieldConfig[]> }) => (
+              <SectionRenderer
+                key={sectionKey}
+                sectionKey={sectionKey}
+                sectionData={sectionData}
+                renderField={renderField}
+              />
+            );
+
+            const sectionsToRender = Object.entries(groupedFields);
+            
+            return sectionsToRender.length === 1 && sectionsToRender[0][0] === 'default' 
+              ? sectionsToRender[0][1].groups.default?.map((field: FieldConfig) => renderField(field))
+              : sectionsToRender.map(([sectionKey, sectionData]) => 
+                  renderSection(sectionKey, sectionData)
+                );
+          }}
         />
       );
+    });
 
-      const sectionsToRender = Object.entries(groupedFields);
-      
-      return sectionsToRender.length === 1 && sectionsToRender[0][0] === 'default' 
-        ? sectionsToRender[0][1].groups.default?.map((field: FieldConfig) => renderField(field))
-        : sectionsToRender.map(([sectionKey, sectionData]) => 
-            renderSection(sectionKey, sectionData)
-          );
-    }, [form.state.values, conditionalSections, renderField]);
+    const renderTabContent = React.useCallback((tabFields: FieldConfig[]) => {
+      return <TabContentRenderer tabFields={tabFields} />;
+    }, [conditionalSections, renderField]);
 
     // Memoize tabs structure separately to prevent recreation
     const memoizedTabs = React.useMemo(() => {
@@ -1454,6 +1464,82 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
       }));
     }, [hasTabs, tabs, fieldsByTab, renderTabContent]);
 
+    // Page content renderer with subscription-based conditional rendering
+    const PageContentRenderer: React.FC = React.memo(() => {
+      const currentFields = getCurrentPageFields();
+      const pageConfig = getCurrentPageConfig();
+      
+      return (
+        <form.Subscribe
+          selector={(state) => state.values}
+          children={(currentValues) => {
+            // Filter fields based on conditional sections
+            const visibleFields = currentFields.filter(field => {
+              // Check if field is part of any conditional section
+              const conditionalSection = conditionalSections.find(section => 
+                section.fields.includes(field.name)
+              );
+              
+              if (conditionalSection) {
+                return conditionalSection.condition(currentValues as TFormValues);
+              }
+              
+              return true;
+            });
+            
+            // Group fields by section and group
+            const groupedFields = visibleFields.reduce((acc, field) => {
+              const sectionKey = field.section?.title || 'default';
+              const groupKey = field.group || 'default';
+              
+              if (!acc[sectionKey]) {
+                acc[sectionKey] = {
+                  section: field.section,
+                  groups: {}
+                };
+              }
+              
+              if (!acc[sectionKey].groups[groupKey]) {
+                acc[sectionKey].groups[groupKey] = [];
+              }
+              
+              acc[sectionKey].groups[groupKey].push(field);
+              return acc;
+            }, {} as Record<string, { section?: { title: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean }; groups: Record<string, FieldConfig[]> }>);
+
+            const renderSection = (sectionKey: string, sectionData: { section?: { title: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean }; groups: Record<string, FieldConfig[]> }) => (
+              <SectionRenderer
+                key={sectionKey}
+                sectionKey={sectionKey}
+                sectionData={sectionData}
+                renderField={renderField}
+              />
+            );
+
+            const sectionsToRender = Object.entries(groupedFields);
+            
+            const PageComponent = pageConfig?.component || DefaultPageComponent;
+
+            return (
+              <PageComponent
+                title={pageConfig?.title}
+                description={pageConfig?.description}
+                page={currentPage}
+                totalPages={totalPages}
+              >
+                {sectionsToRender.length === 1 && sectionsToRender[0][0] === 'default' 
+                               ? sectionsToRender[0][1].groups.default?.map((field: FieldConfig) => renderField(field))
+                  : sectionsToRender.map(([sectionKey, sectionData]) => 
+                      renderSection(sectionKey, sectionData)
+                    )
+                }
+              </PageComponent>
+            );
+          }}
+        />
+      );
+    });
+
     const renderPageContent = React.useCallback(() => {
       if (hasTabs) {
         return (
@@ -1465,74 +1551,8 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
         );
       }
 
-      // Original page rendering logic
-      const currentFields = getCurrentPageFields();
-      const pageConfig = getCurrentPageConfig();
-      const currentValues = form.state.values;
-      
-      // Filter fields based on conditional sections
-      const visibleFields = currentFields.filter(field => {
-        // Check if field is part of any conditional section
-        const conditionalSection = conditionalSections.find(section => 
-          section.fields.includes(field.name)
-        );
-        
-        if (conditionalSection) {
-          return conditionalSection.condition(currentValues as TFormValues);
-        }
-        
-        return true;
-      });
-      
-      // Group fields by section and group
-      const groupedFields = visibleFields.reduce((acc, field) => {
-        const sectionKey = field.section?.title || 'default';
-        const groupKey = field.group || 'default';
-        
-        if (!acc[sectionKey]) {
-          acc[sectionKey] = {
-            section: field.section,
-            groups: {}
-          };
-        }
-        
-        if (!acc[sectionKey].groups[groupKey]) {
-          acc[sectionKey].groups[groupKey] = [];
-        }
-        
-        acc[sectionKey].groups[groupKey].push(field);
-        return acc;
-      }, {} as Record<string, { section?: { title: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean }; groups: Record<string, FieldConfig[]> }>);
-
-      const renderSection = (sectionKey: string, sectionData: { section?: { title: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean }; groups: Record<string, FieldConfig[]> }) => (
-        <SectionRenderer
-          key={sectionKey}
-          sectionKey={sectionKey}
-          sectionData={sectionData}
-          renderField={renderField}
-        />
-      );
-
-      const sectionsToRender = Object.entries(groupedFields);
-      
-      const PageComponent = pageConfig?.component || DefaultPageComponent;
-
-      return (
-        <PageComponent
-          title={pageConfig?.title}
-          description={pageConfig?.description}
-          page={currentPage}
-          totalPages={totalPages}
-        >
-          {sectionsToRender.length === 1 && sectionsToRender[0][0] === 'default' 
-                         ? sectionsToRender[0][1].groups.default?.map((field: FieldConfig) => renderField(field))
-            : sectionsToRender.map(([sectionKey, sectionData]) => 
-                renderSection(sectionKey, sectionData)
-              )
-          }
-        </PageComponent>
-      );
-    }, [hasTabs, tabs, fieldsByTab, renderTabContent, getCurrentPageFields, getCurrentPageConfig, form.state.values, conditionalSections, renderField, currentPage, totalPages]);
+      return <PageContentRenderer />;
+    }, [hasTabs, memoizedTabs, activeTab, setActiveTab, getCurrentPageFields, getCurrentPageConfig, conditionalSections, renderField, currentPage, totalPages]);
 
     const renderProgress = () => {
       if (!hasPages || !progress) return null;
