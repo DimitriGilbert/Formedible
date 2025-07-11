@@ -48,6 +48,10 @@ rm -rf "src/lib/formedible"
 log_info "Installing formedible from built registry..."
 npx shadcn@latest add "../../packages/formedible/public/r/use-formedible.json" --overwrite
 
+# Install formedible builder using shadcn CLI with file path
+log_info "Installing formedible builder from built registry..."
+npx shadcn@latest add "../../packages/builder/public/r/form-builder.json" --overwrite
+
 # Return to project root
 cd ../..
 

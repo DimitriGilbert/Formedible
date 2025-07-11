@@ -1,5 +1,5 @@
 'use client';
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { useFormedible } from '@/hooks/use-formedible';
 import { z } from 'zod';
 
@@ -40,18 +40,61 @@ interface FormField {
   phoneConfig?: any;
 }
 
+// STABLE PROPS - NEVER CHANGE!
 interface FieldConfiguratorProps {
-  field: FormField;
-  onUpdate: (fieldId: string, updates: Partial<FormField>) => void;
-  availablePages: number[];
+  fieldId: string; // Only the ID - NEVER the full object
+  getField: (id: string) => FormField | undefined; // Stable function reference
+  onUpdate: (fieldId: string, updates: Partial<FormField>) => void; // Stable function reference
+  availablePages: number[]; // This can change but rarely
 }
 
-export const FieldConfigurator: React.FC<FieldConfiguratorProps> = ({
-  field,
+const FIELD_TYPES = [
+  { value: "text", label: "Text Input", icon: "📝" },
+  { value: "email", label: "Email", icon: "📧" },
+  { value: "password", label: "Password", icon: "🔒" },
+  { value: "textarea", label: "Textarea", icon: "📄" },
+  { value: "number", label: "Number", icon: "🔢" },
+  { value: "select", label: "Select", icon: "📋" },
+  { value: "radio", label: "Radio Group", icon: "⚪" },
+  { value: "multiSelect", label: "Multi-Select", icon: "☑️" },
+  { value: "checkbox", label: "Checkbox", icon: "✅" },
+  { value: "switch", label: "Switch", icon: "🔘" },
+  { value: "date", label: "Date Picker", icon: "📅" },
+  { value: "slider", label: "Slider", icon: "🎚️" },
+  { value: "rating", label: "Rating", icon: "⭐" },
+  { value: "colorPicker", label: "Color Picker", icon: "🎨" },
+  { value: "phone", label: "Phone Number", icon: "📞" },
+  { value: "file", label: "File Upload", icon: "📎" },
+  { value: "array", label: "Array Field", icon: "📚" },
+];
+
+// INTERNAL COMPONENT - NEVER RE-RENDERS UNLESS fieldId CHANGES
+const FieldConfiguratorInternal: React.FC<FieldConfiguratorProps> = ({
+  fieldId,
+  getField,
   onUpdate,
   availablePages,
 }) => {
+  // Get initial field data ONCE
+  const initialField = getField(fieldId);
+  
+  // LOCAL STATE - completely independent from parent
+  const [localField, setLocalField] = useState<FormField>(() => 
+    initialField || {
+      id: fieldId,
+      name: '',
+      type: 'text',
+      label: '',
+    } as FormField
+  );
 
+  // Only sync when fieldId changes (new field selected)
+  useEffect(() => {
+    const field = getField(fieldId);
+    if (field) {
+      setLocalField(field);
+    }
+  }, [fieldId, getField]);
 
   // Base configuration fields
   const baseFields = useMemo(() => [
@@ -100,114 +143,9 @@ export const FieldConfigurator: React.FC<FieldConfiguratorProps> = ({
     },
   ], [availablePages]);
 
-  // Advanced configuration fields
-  const advancedFields = useMemo(() => [
-    {
-      name: 'group',
-      type: 'text',
-      label: 'Group',
-      placeholder: 'e.g., personal, contact, preferences',
-      description: 'Group related fields together',
-      help: {
-        text: 'Fields with the same group will be visually grouped',
-        tooltip: 'Use groups to organize related fields'
-      }
-    },
-    {
-      name: 'section.title',
-      type: 'text',
-      label: 'Section Title',
-      placeholder: 'e.g., Personal Information',
-      description: 'Create a new section with this title',
-    },
-    {
-      name: 'section.description',
-      type: 'text',
-      label: 'Section Description',
-      placeholder: 'Brief description of this section',
-    },
-    {
-      name: 'section.collapsible',
-      type: 'switch',
-      label: 'Collapsible Section',
-      description: 'Allow users to collapse/expand this section',
-    },
-    {
-      name: 'section.defaultExpanded',
-      type: 'switch',
-      label: 'Default Expanded',
-      description: 'Section starts expanded',
-      conditional: (values: any) => values['section.collapsible'],
-    },
-  ], []);
-
-  // Help & validation fields
-  const helpFields = useMemo(() => [
-    {
-      name: 'help.text',
-      type: 'text',
-      label: 'Help Text',
-      placeholder: 'Additional help information',
-      description: 'Shown below the field',
-    },
-    {
-      name: 'help.tooltip',
-      type: 'text',
-      label: 'Tooltip',
-      placeholder: 'Tooltip text on hover',
-      description: 'Shows on hover/focus',
-    },
-    {
-      name: 'help.position',
-      type: 'select',
-      label: 'Tooltip Position',
-      options: [
-        { value: 'top', label: 'Top' },
-        { value: 'bottom', label: 'Bottom' },
-        { value: 'left', label: 'Left' },
-        { value: 'right', label: 'Right' },
-      ],
-      conditional: (values: any) => values['help.tooltip'],
-    },
-    {
-      name: 'help.link.text',
-      type: 'text',
-      label: 'Help Link Text',
-      placeholder: 'e.g., Learn more',
-    },
-    {
-      name: 'help.link.url',
-      type: 'text',
-      label: 'Help Link URL',
-      placeholder: 'https://example.com/help',
-      conditional: (values: any) => values['help.link.text'],
-    },
-    {
-      name: 'inlineValidation.enabled',
-      type: 'switch',
-      label: 'Enable Inline Validation',
-      description: 'Show validation feedback as user types',
-    },
-    {
-      name: 'inlineValidation.showSuccess',
-      type: 'switch',
-      label: 'Show Success State',
-      description: 'Show checkmark when valid',
-      conditional: (values: any) => values['inlineValidation.enabled'],
-    },
-    {
-      name: 'inlineValidation.debounceMs',
-      type: 'number',
-      label: 'Validation Delay (ms)',
-      placeholder: '300',
-      description: 'Delay before validating',
-      conditional: (values: any) => values['inlineValidation.enabled'],
-    },
-  ], []);
-
   // Field-specific configuration
   const getFieldSpecificConfig = useCallback(() => {
-    switch (field.type) {
+    switch (localField.type) {
       case 'select':
       case 'radio':
         return [
@@ -254,12 +192,6 @@ export const FieldConfigurator: React.FC<FieldConfiguratorProps> = ({
             label: 'Searchable',
             description: 'Allow users to search options',
           },
-          {
-            name: 'multiSelectConfig.creatable',
-            type: 'switch',
-            label: 'Allow Creating New Options',
-            description: 'Users can add custom options',
-          },
         ];
 
       case 'rating':
@@ -276,154 +208,6 @@ export const FieldConfigurator: React.FC<FieldConfiguratorProps> = ({
             type: 'switch',
             label: 'Allow Half Ratings',
             description: 'Enable half-star ratings',
-          },
-          {
-            name: 'ratingConfig.icon',
-            type: 'select',
-            label: 'Icon Type',
-            options: [
-              { value: 'star', label: 'Star' },
-              { value: 'heart', label: 'Heart' },
-              { value: 'thumbs', label: 'Thumbs Up' },
-            ],
-          },
-          {
-            name: 'ratingConfig.size',
-            type: 'select',
-            label: 'Icon Size',
-            options: [
-              { value: 'sm', label: 'Small' },
-              { value: 'md', label: 'Medium' },
-              { value: 'lg', label: 'Large' },
-            ],
-          },
-          {
-            name: 'ratingConfig.showValue',
-            type: 'switch',
-            label: 'Show Numeric Value',
-            description: 'Display the rating number',
-          },
-        ];
-
-      case 'colorPicker':
-        return [
-          {
-            name: 'colorConfig.format',
-            type: 'select',
-            label: 'Color Format',
-            options: [
-              { value: 'hex', label: 'HEX (#FF0000)' },
-              { value: 'rgb', label: 'RGB (rgb(255, 0, 0))' },
-              { value: 'hsl', label: 'HSL (hsl(0, 100%, 50%))' },
-            ],
-          },
-          {
-            name: 'colorConfig.showPreview',
-            type: 'switch',
-            label: 'Show Color Preview',
-            description: 'Display selected color preview',
-          },
-          {
-            name: 'colorConfig.allowCustom',
-            type: 'switch',
-            label: 'Allow Custom Colors',
-            description: 'Users can enter custom color values',
-          },
-          {
-            name: 'colorConfig.presetColors',
-            type: 'array',
-            label: 'Preset Colors',
-            arrayConfig: {
-              itemType: 'text',
-              itemLabel: 'Color',
-              itemPlaceholder: '#FF0000',
-              addButtonLabel: 'Add Color',
-            },
-            description: 'Predefined color options',
-          },
-        ];
-
-      case 'phone':
-        return [
-          {
-            name: 'phoneConfig.defaultCountry',
-            type: 'select',
-            label: 'Default Country',
-            options: [
-              { value: 'US', label: 'United States' },
-              { value: 'CA', label: 'Canada' },
-              { value: 'GB', label: 'United Kingdom' },
-              { value: 'FR', label: 'France' },
-              { value: 'DE', label: 'Germany' },
-              { value: 'AU', label: 'Australia' },
-              { value: 'JP', label: 'Japan' },
-            ],
-          },
-          {
-            name: 'phoneConfig.format',
-            type: 'select',
-            label: 'Phone Format',
-            options: [
-              { value: 'national', label: 'National ((555) 123-4567)' },
-              { value: 'international', label: 'International (+1 555 123 4567)' },
-            ],
-          },
-        ];
-
-      case 'array':
-        return [
-          {
-            name: 'arrayConfig.itemType',
-            type: 'select',
-            label: 'Item Type',
-            options: [
-              { value: 'text', label: 'Text' },
-              { value: 'email', label: 'Email' },
-              { value: 'number', label: 'Number' },
-              { value: 'phone', label: 'Phone' },
-              { value: 'url', label: 'URL' },
-            ],
-          },
-          {
-            name: 'arrayConfig.itemLabel',
-            type: 'text',
-            label: 'Item Label',
-            placeholder: 'e.g., Email Address',
-          },
-          {
-            name: 'arrayConfig.minItems',
-            type: 'number',
-            label: 'Minimum Items',
-            placeholder: '0',
-          },
-          {
-            name: 'arrayConfig.maxItems',
-            type: 'number',
-            label: 'Maximum Items',
-            placeholder: '10',
-          },
-          {
-            name: 'arrayConfig.addButtonLabel',
-            type: 'text',
-            label: 'Add Button Text',
-            placeholder: 'Add Item',
-          },
-        ];
-
-      case 'text':
-      case 'email':
-      case 'url':
-        return [
-          {
-            name: 'datalist.options',
-            type: 'array',
-            label: 'Autocomplete Options',
-            arrayConfig: {
-              itemType: 'text',
-              itemLabel: 'Option',
-              addButtonLabel: 'Add Option',
-            },
-            description: 'Static autocomplete suggestions',
           },
         ];
 
@@ -454,53 +238,28 @@ export const FieldConfigurator: React.FC<FieldConfiguratorProps> = ({
       default:
         return [];
     }
-  }, [field.type]);
+  }, [localField.type]);
 
-  // Convert nested object paths to flat form values
+  // Convert field to form values
   const getFormValues = useCallback(() => {
     const values: any = {
-      name: field.name,
-      label: field.label,
-      placeholder: field.placeholder || '',
-      description: field.description || '',
-      required: field.required || false,
-      page: field.page?.toString() || '1',
-      group: field.group || '',
+      name: localField.name,
+      label: localField.label,
+      placeholder: localField.placeholder || '',
+      description: localField.description || '',
+      required: localField.required || false,
+      page: localField.page?.toString() || '1',
     };
 
-    // Handle nested objects
-    if (field.section) {
-      values['section.title'] = field.section.title || '';
-      values['section.description'] = field.section.description || '';
-      values['section.collapsible'] = field.section.collapsible || false;
-      values['section.defaultExpanded'] = field.section.defaultExpanded || false;
-    }
-
-    if (field.help) {
-      values['help.text'] = field.help.text || '';
-      values['help.tooltip'] = field.help.tooltip || '';
-      values['help.position'] = field.help.position || 'top';
-      if (field.help.link) {
-        values['help.link.text'] = field.help.link.text || '';
-        values['help.link.url'] = field.help.link.url || '';
-      }
-    }
-
-    if (field.inlineValidation) {
-      values['inlineValidation.enabled'] = field.inlineValidation.enabled || false;
-      values['inlineValidation.showSuccess'] = field.inlineValidation.showSuccess || false;
-      values['inlineValidation.debounceMs'] = field.inlineValidation.debounceMs || 300;
-    }
-
     // Handle field-specific configs
-    if (field.options) {
-      values.options = field.options.map(opt => typeof opt === 'string' ? opt : opt.value);
+    if (localField.options) {
+      values.options = localField.options.map((opt: any) => typeof opt === 'string' ? opt : opt.value);
     }
 
     // Add field-specific config values
-    const configs = ['arrayConfig', 'multiSelectConfig', 'colorConfig', 'ratingConfig', 'phoneConfig', 'datalist'];
+    const configs = ['multiSelectConfig', 'ratingConfig'];
     configs.forEach(configKey => {
-      const config = (field as any)[configKey];
+      const config = (localField as any)[configKey];
       if (config) {
         Object.keys(config).forEach(key => {
           values[`${configKey}.${key}`] = config[key];
@@ -509,13 +268,10 @@ export const FieldConfigurator: React.FC<FieldConfiguratorProps> = ({
     });
 
     return values;
-  }, [field]);
+  }, [localField]);
 
-
-
-  // Handle blur to commit changes
-  const handleFormBlur = useCallback(({ value }: any) => {
-    // Process the form values and commit changes
+  // Handle form changes - update local state AND parent
+  const handleFormChange = useCallback(({ value }: any) => {
     const updates: Partial<FormField> = {
       name: value.name,
       label: value.label,
@@ -523,40 +279,7 @@ export const FieldConfigurator: React.FC<FieldConfiguratorProps> = ({
       description: value.description || undefined,
       required: value.required,
       page: parseInt(value.page) || 1,
-      group: value.group || undefined,
     };
-
-    // Handle section
-    if (value['section.title']) {
-      updates.section = {
-        title: value['section.title'],
-        description: value['section.description'] || undefined,
-        collapsible: value['section.collapsible'] || false,
-        defaultExpanded: value['section.defaultExpanded'] || false,
-      };
-    }
-
-    // Handle help
-    if (value['help.text'] || value['help.tooltip'] || value['help.link.text']) {
-      updates.help = {
-        text: value['help.text'] || undefined,
-        tooltip: value['help.tooltip'] || undefined,
-        position: value['help.position'] || 'top',
-        link: value['help.link.text'] ? {
-          text: value['help.link.text'],
-          url: value['help.link.url'] || '',
-        } : undefined,
-      };
-    }
-
-    // Handle inline validation
-    if (value['inlineValidation.enabled']) {
-      updates.inlineValidation = {
-        enabled: value['inlineValidation.enabled'],
-        showSuccess: value['inlineValidation.showSuccess'],
-        debounceMs: value['inlineValidation.debounceMs'] || 300,
-      };
-    }
 
     // Handle options
     if (value.options) {
@@ -564,7 +287,7 @@ export const FieldConfigurator: React.FC<FieldConfiguratorProps> = ({
     }
 
     // Handle field-specific configs
-    const configKeys = ['arrayConfig', 'multiSelectConfig', 'colorConfig', 'ratingConfig', 'phoneConfig', 'datalist'];
+    const configKeys = ['multiSelectConfig', 'ratingConfig'];
     configKeys.forEach(configKey => {
       const configValues: any = {};
       let hasValues = false;
@@ -582,23 +305,23 @@ export const FieldConfigurator: React.FC<FieldConfiguratorProps> = ({
       }
     });
 
-    // Commit the updates
-    onUpdate(field.id, updates);
-  }, [field.id, onUpdate]);
+    // Update local state immediately
+    setLocalField(prev => ({ ...prev, ...updates }));
+    
+    // Update parent
+    onUpdate(fieldId, updates);
+  }, [fieldId, onUpdate]);
 
   const allFields = [
     ...baseFields,
     ...getFieldSpecificConfig(),
-    ...advancedFields,
-    ...helpFields,
   ];
 
   const { Form } = useFormedible({
     fields: allFields,
     formOptions: {
       defaultValues: getFormValues(),
-      // Remove onChange to prevent re-renders, use onBlur instead
-      onBlur: handleFormBlur,
+      onChange: handleFormChange,
     },
   });
 
@@ -606,27 +329,11 @@ export const FieldConfigurator: React.FC<FieldConfiguratorProps> = ({
     <div className="space-y-6">
       <div className="flex items-center space-x-2 pb-4 border-b">
         <div className="text-lg">
-          {field.type === 'text' && '📝'}
-          {field.type === 'email' && '📧'}
-          {field.type === 'password' && '🔒'}
-          {field.type === 'textarea' && '📄'}
-          {field.type === 'number' && '🔢'}
-          {field.type === 'select' && '📋'}
-          {field.type === 'radio' && '⚪'}
-          {field.type === 'multiSelect' && '☑️'}
-          {field.type === 'checkbox' && '✅'}
-          {field.type === 'switch' && '🔘'}
-          {field.type === 'date' && '📅'}
-          {field.type === 'slider' && '🎚️'}
-          {field.type === 'rating' && '⭐'}
-          {field.type === 'colorPicker' && '🎨'}
-          {field.type === 'phone' && '📞'}
-          {field.type === 'file' && '📎'}
-          {field.type === 'array' && '📚'}
+          {FIELD_TYPES.find(t => t.value === localField.type)?.icon || '📝'}
         </div>
         <div>
-          <div className="font-medium">{field.label}</div>
-          <div className="text-sm text-muted-foreground">{field.type}</div>
+          <div className="font-medium">{localField.label}</div>
+          <div className="text-sm text-muted-foreground">{localField.type}</div>
         </div>
       </div>
       
@@ -634,3 +341,9 @@ export const FieldConfigurator: React.FC<FieldConfiguratorProps> = ({
     </div>
   );
 };
+
+// MEMOIZED COMPONENT - ONLY RE-RENDERS WHEN fieldId CHANGES
+export const FieldConfigurator = React.memo(FieldConfiguratorInternal, (prevProps, nextProps) => {
+  // ONLY re-render if fieldId changes
+  return prevProps.fieldId === nextProps.fieldId;
+});

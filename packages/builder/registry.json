@@ -53,9 +53,9 @@
           "target": "components/formedible/builder/form-builder.tsx"
         },
         {
-          "path": "src/components/formedible/builder/field-configurator.tsx",
+          "path": "src/components/formedible/builder/simple-field-configurator.tsx",
           "type": "registry:component",
-          "target": "components/formedible/builder/field-configurator.tsx"
+          "target": "components/formedible/builder/simple-field-configurator.tsx"
         },
         {
           "path": "src/components/formedible/builder/form-preview.tsx",
