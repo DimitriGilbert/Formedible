@@ -44,10 +44,22 @@ interface FormField {
   options?: Array<{ value: string; label: string }>;
   arrayConfig?: any;
   datalist?: any;
-  multiSelectConfig?: any;
+  multiSelectConfig?: {
+    placeholder?: string;
+    searchable?: boolean;
+    maxSelections?: number;
+    creatable?: boolean;
+  };
   colorConfig?: any;
   ratingConfig?: any;
   phoneConfig?: any;
+  sliderConfig?: any;
+  numberConfig?: any;
+  dateConfig?: any;
+  fileConfig?: any;
+  textareaConfig?: any;
+  passwordConfig?: any;
+  emailConfig?: any;
   validation?: {
     min?: number;
     max?: number;
@@ -55,6 +67,15 @@ interface FormField {
     maxLength?: number;
     pattern?: string;
     custom?: string;
+    includes?: string;
+    startsWith?: string;
+    endsWith?: string;
+    email?: boolean;
+    url?: boolean;
+    uuid?: boolean;
+    transform?: string;
+    refine?: string;
+    customMessages?: Record<string, string>;
   };
 }
 
@@ -379,9 +400,9 @@ export const FormBuilder: React.FC = () => {
           
           // Import fields
           (config.fields || []).forEach((field: any, idx: number) => {
-            const id = `field_${Date.now()}_${idx}`;
+            const newFieldId = fieldStore.addField(field.type, field.page || 1);
             const newField: FormField = {
-              id,
+              id: newFieldId,
               name: field.name,
               type: field.type,
               label: field.label,
@@ -400,8 +421,16 @@ export const FormBuilder: React.FC = () => {
               colorConfig: field.colorConfig,
               ratingConfig: field.ratingConfig,
               phoneConfig: field.phoneConfig,
+              sliderConfig: field.sliderConfig,
+              numberConfig: field.numberConfig,
+              dateConfig: field.dateConfig,
+              fileConfig: field.fileConfig,
+              textareaConfig: field.textareaConfig,
+              passwordConfig: field.passwordConfig,
+              emailConfig: field.emailConfig,
+              validation: field.validation,
             };
-            fieldStore.updateField(id, newField);
+            fieldStore.updateField(newFieldId, newField);
           });
 
           // Update form config
@@ -464,10 +493,10 @@ export const FormBuilder: React.FC = () => {
           // For numbers, required means not null/undefined
         } else if (field.type === "checkbox" || field.type === "switch") {
           fieldSchema = fieldSchema.refine((val: boolean) => val === true, {
-            message: `${field.label} is required`,
+            message: field.validation?.customMessages?.required || `${field.label} is required`,
           });
         } else if (typeof fieldSchema.min === "function") {
-          fieldSchema = fieldSchema.min(1, `${field.label} is required`);
+          fieldSchema = fieldSchema.min(1, field.validation?.customMessages?.required || `${field.label} is required`);
         }
       } else {
         fieldSchema = fieldSchema.optional();

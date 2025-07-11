@@ -52,7 +52,11 @@
           "type": "registry:component",
           "target": "components/formedible/builder/form-builder.tsx"
         },
-
+        {
+          "path": "src/components/formedible/builder/field-configurator.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/builder/field-configurator.tsx"
+        },
         {
           "path": "src/components/formedible/builder/form-preview.tsx",
           "type": "registry:component",
