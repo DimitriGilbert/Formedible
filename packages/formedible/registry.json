@@ -51,117 +51,117 @@
           "target": "lib/formedible/types.ts"
         },
         {
-          "path": "src/components/fields/array-field.tsx",
+          "path": "src/components/formedible/fields/array-field.tsx",
           "type": "registry:component",
           "target": "components/formedible/fields/array-field.tsx"
         },
         {
-          "path": "src/components/fields/autocomplete-field.tsx",
+          "path": "src/components/formedible/fields/autocomplete-field.tsx",
           "type": "registry:component",
           "target": "components/formedible/fields/autocomplete-field.tsx"
         },
         {
-          "path": "src/components/fields/checkbox-field.tsx",
+          "path": "src/components/formedible/fields/checkbox-field.tsx",
           "type": "registry:component",
           "target": "components/formedible/fields/checkbox-field.tsx"
         },
         {
-          "path": "src/components/fields/color-picker-field.tsx",
+          "path": "src/components/formedible/fields/color-picker-field.tsx",
           "type": "registry:component",
           "target": "components/formedible/fields/color-picker-field.tsx"
         },
         {
-          "path": "src/components/fields/date-field.tsx",
+          "path": "src/components/formedible/fields/date-field.tsx",
           "type": "registry:component",
           "target": "components/formedible/fields/date-field.tsx"
         },
         {
-          "path": "src/components/fields/duration-picker-field.tsx",
+          "path": "src/components/formedible/fields/duration-picker-field.tsx",
           "type": "registry:component",
           "target": "components/formedible/fields/duration-picker-field.tsx"
         },
         {
-          "path": "src/components/fields/field-help.tsx",
+          "path": "src/components/formedible/fields/field-help.tsx",
           "type": "registry:component",
           "target": "components/formedible/fields/field-help.tsx"
         },
         {
-          "path": "src/components/fields/file-upload-field.tsx",
+          "path": "src/components/formedible/fields/file-upload-field.tsx",
           "type": "registry:component",
           "target": "components/formedible/fields/file-upload-field.tsx"
         },
         {
-          "path": "src/components/fields/inline-validation-wrapper.tsx",
+          "path": "src/components/formedible/fields/inline-validation-wrapper.tsx",
           "type": "registry:component",
           "target": "components/formedible/fields/inline-validation-wrapper.tsx"
         },
         {
-          "path": "src/components/fields/location-picker-field.tsx",
+          "path": "src/components/formedible/fields/location-picker-field.tsx",
           "type": "registry:component",
           "target": "components/formedible/fields/location-picker-field.tsx"
         },
         {
-          "path": "src/components/fields/masked-input-field.tsx",
+          "path": "src/components/formedible/fields/masked-input-field.tsx",
           "type": "registry:component",
           "target": "components/formedible/fields/masked-input-field.tsx"
         },
         {
-          "path": "src/components/fields/multi-select-field.tsx",
+          "path": "src/components/formedible/fields/multi-select-field.tsx",
           "type": "registry:component",
           "target": "components/formedible/fields/multi-select-field.tsx"
         },
         {
-          "path": "src/components/fields/number-field.tsx",
+          "path": "src/components/formedible/fields/number-field.tsx",
           "type": "registry:component",
           "target": "components/formedible/fields/number-field.tsx"
         },
         {
-          "path": "src/components/fields/object-field.tsx",
+          "path": "src/components/formedible/fields/object-field.tsx",
           "type": "registry:component",
           "target": "components/formedible/fields/object-field.tsx"
         },
         {
-          "path": "src/components/fields/phone-field.tsx",
+          "path": "src/components/formedible/fields/phone-field.tsx",
           "type": "registry:component",
           "target": "components/formedible/fields/phone-field.tsx"
         },
         {
-          "path": "src/components/fields/radio-field.tsx",
+          "path": "src/components/formedible/fields/radio-field.tsx",
           "type": "registry:component",
           "target": "components/formedible/fields/radio-field.tsx"
         },
         {
-          "path": "src/components/fields/rating-field.tsx",
+          "path": "src/components/formedible/fields/rating-field.tsx",
           "type": "registry:component",
           "target": "components/formedible/fields/rating-field.tsx"
         },
         {
-          "path": "src/components/fields/select-field.tsx",
+          "path": "src/components/formedible/fields/select-field.tsx",
           "type": "registry:component",
           "target": "components/formedible/fields/select-field.tsx"
         },
         {
-          "path": "src/components/fields/slider-field.tsx",
+          "path": "src/components/formedible/fields/slider-field.tsx",
           "type": "registry:component",
           "target": "components/formedible/fields/slider-field.tsx"
         },
         {
-          "path": "src/components/fields/switch-field.tsx",
+          "path": "src/components/formedible/fields/switch-field.tsx",
           "type": "registry:component",
           "target": "components/formedible/fields/switch-field.tsx"
         },
         {
-          "path": "src/components/fields/text-field.tsx",
+          "path": "src/components/formedible/fields/text-field.tsx",
           "type": "registry:component",
           "target": "components/formedible/fields/text-field.tsx"
         },
         {
-          "path": "src/components/fields/textarea-field.tsx",
+          "path": "src/components/formedible/fields/textarea-field.tsx",
           "type": "registry:component",
           "target": "components/formedible/fields/textarea-field.tsx"
         },
         {
-          "path": "src/components/layout/form-tabs.tsx",
+          "path": "src/components/formedible/layout/form-tabs.tsx",
           "type": "registry:component",
           "target": "components/formedible/layout/form-tabs.tsx"
         }
