@@ -95,7 +95,7 @@ main() {
   fi
   
   # Check if package components exist
-  if [[ ! -d "packages/formedible/src/components/fields" ]]; then
+  if [[ ! -d "packages/formedible/src/components/formedible/fields" ]]; then
     log_error "Package components not found. Please build the package first."
     exit 1
   fi
