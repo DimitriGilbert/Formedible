@@ -1519,7 +1519,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
           }}
         </ConditionalFieldsSubscription>
       );
-    }, [renderField, form]);
+    }, [renderField]);
 
     const renderPageContent = React.useCallback(() => {
       if (hasTabs) {
@@ -1616,7 +1616,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
           }}
         </form.Subscribe>
       );
-    }, [renderTabContent, renderField, activeTab, hasTabs, tabs, fieldsByTab, setActiveTab]);
+    }, [renderTabContent, renderField, activeTab, hasTabs, tabs, setActiveTab]);
 
     const renderProgress = () => {
       if (!hasPages || !progress) return null;
