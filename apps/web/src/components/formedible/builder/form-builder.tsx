@@ -484,6 +484,9 @@ export const FormBuilder: React.FC = () => {
         case "array":
           fieldSchema = z.array(z.string());
           break;
+        case "object":
+          fieldSchema = z.object({});
+          break;
         default:
           fieldSchema = z.string();
       }
