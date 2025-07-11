@@ -2,9 +2,9 @@
 import React from "react";
 import { useFormedible } from "formedible";
 import { z } from "zod";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, Palette, Star, Phone, Upload, List, Sliders, Hash, Calendar, FileText, Eye, Mail, Type, CopyCheck, HelpCircle } from "lucide-react";
+// import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+// import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+// import { Settings, Palette, Star, Phone, Upload, List, Sliders, Hash, Calendar, FileText, Eye, Mail, Type, CopyCheck, HelpCircle } from "lucide-react";
 
 interface FormField {
   id: string;
