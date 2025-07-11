@@ -59,7 +59,7 @@ interface FormProps {
   tabIndex?: number;
 }
 
-interface FieldConfig {
+export interface FieldConfig {
   name: string;
   type: string;
   label?: string;
@@ -1180,6 +1180,12 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
       }
     };
 
+    // Tab state for controlled FormTabs component
+    const [activeTab, setActiveTab] = useState(() => {
+      if (tabs && tabs.length > 0) return tabs[0].id;
+      return '';
+    });
+
 
 
     const handleFocus = (e: React.FocusEvent) => {
@@ -1202,7 +1208,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
 
     const formClass = cn("space-y-6", formClassName, className);
 
-    const renderField = (fieldConfig: FieldConfig) => {
+    const renderField = React.useCallback((fieldConfig: FieldConfig) => {
       const { 
         name, 
         type, 
@@ -1380,9 +1386,9 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
           }}
         </form.Field>
       );
-    };
+    }, [form, fieldComponents, globalWrapper, disabled, loading, crossFieldErrors, asyncValidationStates, fieldClassName]);
 
-    const renderTabContent = (tabFields: FieldConfig[]) => {
+    const renderTabContent = React.useCallback((tabFields: FieldConfig[]) => {
       const currentValues = form.state.values;
       
       // Filter fields based on conditional sections
@@ -1435,11 +1441,11 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
         : sectionsToRender.map(([sectionKey, sectionData]) => 
             renderSection(sectionKey, sectionData)
           );
-    };
+    }, [form.state.values, conditionalSections, renderField]);
 
-    const renderPageContent = () => {
+    const renderPageContent = React.useCallback(() => {
       if (hasTabs) {
-        // Render tabs
+        // Render tabs - memoize tab content to prevent rerenders
         const tabsToRender = tabs!.map(tab => ({
           id: tab.id,
           label: tab.label,
@@ -1449,7 +1455,8 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
         return (
           <FormTabs
             tabs={tabsToRender}
-            defaultTab={tabs![0]?.id}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
           />
         );
       }
@@ -1521,7 +1528,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
           }
         </PageComponent>
       );
-    };
+    }, [hasTabs, tabs, fieldsByTab, renderTabContent, getCurrentPageFields, getCurrentPageConfig, form.state.values, conditionalSections, renderField, currentPage, totalPages]);
 
     const renderProgress = () => {
       if (!hasPages || !progress) return null;

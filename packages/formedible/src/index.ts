@@ -34,7 +34,7 @@ export * from '@/components/fields/field-help';
 
 // Core types and hook
 export type { BaseFieldProps } from '@/lib/formedible/types';
-export { useFormedible } from '@/hooks/use-formedible';
+export { useFormedible, type FieldConfig } from '@/hooks/use-formedible';
 
 // Testing utilities
 export * from './testing';

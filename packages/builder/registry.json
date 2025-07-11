@@ -7,7 +7,7 @@
       "name": "form-builder",
       "type": "registry:component",
       "title": "Form Builder",
-      "description": "A visual form builder component for creating forms with drag-and-drop interface",
+      "description": "A visual form builder component for creating forms",
       "registryDependencies": [
         "button",
         "input",
@@ -26,25 +26,7 @@
         "slider",
         "badge",
         "alert",
-        "skeleton",
-        "https://formedible.dev/r/use-formedible.json"
-      ],
-      "dependencies": [
-        "@tanstack/react-form",
-        "@radix-ui/react-accordion",
-        "@radix-ui/react-checkbox",
-        "@radix-ui/react-dialog",
-        "@radix-ui/react-label",
-        "@radix-ui/react-popover",
-        "@radix-ui/react-progress",
-        "@radix-ui/react-radio-group",
-        "@radix-ui/react-select",
-        "@radix-ui/react-slider",
-        "@radix-ui/react-slot",
-        "@radix-ui/react-switch",
-        "@radix-ui/react-tabs",
-        "lucide-react",
-        "zod"
+        "skeleton"
       ],
       "files": [
         {
@@ -61,6 +43,11 @@
           "path": "src/components/formedible/builder/form-preview.tsx",
           "type": "registry:component",
           "target": "components/formedible/builder/form-preview.tsx"
+        },
+        {
+          "path": "src/components/formedible/builder/field-store.ts",
+          "type": "registry:lib",
+          "target": "components/formedible/builder/field-store.ts"
         },
         {
           "path": "src/lib/utils.ts",

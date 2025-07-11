@@ -1,8 +1,8 @@
 import React from 'react';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
-import { cn } from '@/lib/utils';
-import type { BaseFieldProps } from '@/lib/formedible/types';
+import { Checkbox } from '/components/ui/checkbox';
+import { Label } from '/components/ui/label';
+import { cn } from '/lib/utils';
+import type { BaseFieldProps } from '/lib/formedible/types';
 
 export const CheckboxField: React.FC<BaseFieldProps> = ({
   fieldApi,

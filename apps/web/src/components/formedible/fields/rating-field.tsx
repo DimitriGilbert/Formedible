@@ -1,9 +1,9 @@
 'use client';
 import React, { useState } from 'react';
-import { Label } from '@/components/ui/label';
-import { cn } from '@/lib/utils';
+import { Label } from '/components/ui/label';
+import { cn } from '/lib/utils';
 import { Star, Heart, ThumbsUp } from 'lucide-react';
-import type { BaseFieldProps } from '@/lib/formedible/types';
+import type { BaseFieldProps } from '/lib/formedible/types';
 
 export interface RatingFieldSpecificProps extends BaseFieldProps {
   ratingConfig?: {

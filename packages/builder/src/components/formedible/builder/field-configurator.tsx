@@ -1,153 +1,20 @@
 "use client";
-import React, { useRef, useCallback } from "react";
+import React, { useRef } from "react";
 import { useFormedible } from "formedible";
 import { z } from "zod";
+import { globalFieldStore, type FormField } from "./field-store";
 
-interface FormField {
-  id: string;
-  name: string;
-  type: string;
-  label: string;
-  placeholder?: string;
-  description?: string;
-  required?: boolean;
-  page?: number;
-  tab?: string;
-  group?: string;
-  section?: {
-    title: string;
-    description?: string;
-    collapsible?: boolean;
-    defaultExpanded?: boolean;
-  };
-  help?: {
-    text?: string;
-    tooltip?: string;
-    position?: "top" | "bottom" | "left" | "right";
-    link?: { url: string; text: string };
-  };
-  inlineValidation?: {
-    enabled?: boolean;
-    debounceMs?: number;
-    showSuccess?: boolean;
-  };
-  options?: Array<{ value: string; label: string }>;
-  arrayConfig?: {
-    minItems?: number;
-    maxItems?: number;
-    addLabel?: string;
-    removeLabel?: string;
-  };
-  datalist?: string[];
-  multiSelectConfig?: {
-    placeholder?: string;
-    searchable?: boolean;
-    maxSelections?: number;
-    creatable?: boolean;
-  };
-  colorConfig?: {
-    format?: "hex" | "rgb" | "hsl";
-    presets?: string[];
-  };
-  ratingConfig?: {
-    max?: number;
-    allowHalf?: boolean;
-    icon?: string;
-    showValue?: boolean;
-  };
-  phoneConfig?: {
-    defaultCountry?: string;
-    format?: "national" | "international";
-    placeholder?: string;
-  };
-  sliderConfig?: {
-    min?: number;
-    max?: number;
-    step?: number;
-    marks?: Array<{ value: number; label: string }>;
-    showTooltip?: boolean;
-    showValue?: boolean;
-    orientation?: "horizontal" | "vertical";
-  };
-  numberConfig?: {
-    min?: number;
-    max?: number;
-    step?: number;
-    precision?: number;
-    allowNegative?: boolean;
-    showSpinButtons?: boolean;
-  };
-  dateConfig?: {
-    minDate?: string;
-    maxDate?: string;
-    format?: string;
-    disablePast?: boolean;
-    disableFuture?: boolean;
-    disableWeekends?: boolean;
-    disabledDates?: string[];
-  };
-  fileConfig?: {
-    accept?: string;
-    multiple?: boolean;
-    maxSize?: number;
-    maxFiles?: number;
-    allowedTypes?: string[];
-  };
-  textareaConfig?: {
-    rows?: number;
-    cols?: number;
-    resize?: "none" | "vertical" | "horizontal" | "both";
-    maxLength?: number;
-    showWordCount?: boolean;
-  };
-  passwordConfig?: {
-    showToggle?: boolean;
-    strengthMeter?: boolean;
-    minStrength?: number;
-    requirements?: {
-      minLength?: number;
-      requireUppercase?: boolean;
-      requireLowercase?: boolean;
-      requireNumbers?: boolean;
-      requireSymbols?: boolean;
-    };
-  };
-  emailConfig?: {
-    allowedDomains?: string[];
-    blockedDomains?: string[];
-    suggestions?: string[];
-    validateMX?: boolean;
-  };
-  validation?: {
-    min?: number;
-    max?: number;
-    minLength?: number;
-    maxLength?: number;
-    pattern?: string;
-    custom?: string;
-    includes?: string;
-    startsWith?: string;
-    endsWith?: string;
-    email?: boolean;
-    url?: boolean;
-    uuid?: boolean;
-    transform?: string;
-    refine?: string;
-    customMessages?: Record<string, string>;
-  };
-}
+
 
 interface FieldConfiguratorProps {
   fieldId: string;
   initialField: FormField;
-  fieldStoreUpdateField: (fieldId: string, field: FormField) => void; // DIRECT STORE UPDATE
   availablePages?: number[];
 }
 
 export const FieldConfigurator: React.FC<FieldConfiguratorProps> = ({
   fieldId,
   initialField,
-  fieldStoreUpdateField, // DIRECT STORE UPDATE - NO PARENT RE-RENDER
   availablePages = [1],
 }) => {
   // Track the current field state without causing re-renders
@@ -599,7 +466,7 @@ export const FieldConfigurator: React.FC<FieldConfiguratorProps> = ({
         
         // UPDATE FIELD STORE DIRECTLY - NO PARENT RE-RENDER!
         currentFieldRef.current = updatedField;
-        fieldStoreUpdateField(fieldId, updatedField);
+        globalFieldStore.updateField(fieldId, updatedField);
       },
     },
     

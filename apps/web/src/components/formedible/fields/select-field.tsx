@@ -5,10 +5,10 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import { cn } from '@/lib/utils';
-import type { BaseFieldProps } from '@/lib/formedible/types';
+} from '/components/ui/select';
+import { Label } from '/components/ui/label';
+import { cn } from '/lib/utils';
+import type { BaseFieldProps } from '/lib/formedible/types';
 
 interface SelectFieldSpecificProps extends BaseFieldProps {
   options: Array<{ value: string; label: string }> | string[];

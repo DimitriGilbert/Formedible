@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,72 +13,7 @@ import { Plus, Trash2, Copy, Edit, FileText, Eye, Code, Settings, Download, Uplo
 import { FieldConfigurator } from "./field-configurator";
 import { FormPreview } from "./form-preview";
 import { CodeBlock } from "@/components/ui/code-block";
-
-interface FormField {
-  id: string;
-  name: string;
-  type: string;
-  label: string;
-  placeholder?: string;
-  description?: string;
-  required?: boolean;
-  page?: number;
-  tab?: string;
-  group?: string;
-  section?: {
-    title: string;
-    description?: string;
-    collapsible?: boolean;
-    defaultExpanded?: boolean;
-  };
-  help?: {
-    text?: string;
-    tooltip?: string;
-    position?: "top" | "bottom" | "left" | "right";
-    link?: { url: string; text: string };
-  };
-  inlineValidation?: {
-    enabled?: boolean;
-    debounceMs?: number;
-    showSuccess?: boolean;
-  };
-  options?: Array<{ value: string; label: string }>;
-  arrayConfig?: any;
-  datalist?: any;
-  multiSelectConfig?: {
-    placeholder?: string;
-    searchable?: boolean;
-    maxSelections?: number;
-    creatable?: boolean;
-  };
-  colorConfig?: any;
-  ratingConfig?: any;
-  phoneConfig?: any;
-  sliderConfig?: any;
-  numberConfig?: any;
-  dateConfig?: any;
-  fileConfig?: any;
-  textareaConfig?: any;
-  passwordConfig?: any;
-  emailConfig?: any;
-  validation?: {
-    min?: number;
-    max?: number;
-    minLength?: number;
-    maxLength?: number;
-    pattern?: string;
-    custom?: string;
-    includes?: string;
-    startsWith?: string;
-    endsWith?: string;
-    email?: boolean;
-    url?: boolean;
-    uuid?: boolean;
-    transform?: string;
-    refine?: string;
-    customMessages?: Record<string, string>;
-  };
-}
+import { globalFieldStore, type FormField } from "./field-store";
 
 const FIELD_TYPES = [
   { value: "text", label: "Text Input", icon: "📝" },
@@ -100,230 +35,142 @@ const FIELD_TYPES = [
   { value: "array", label: "Array Field", icon: "📚" },
 ];
 
-// Isolated field store - NO PARENT RE-RENDERS
-const useFieldStore = () => {
-  const [fields, setFields] = useState<Record<string, FormField>>({});
-  const [fieldOrder, setFieldOrder] = useState<string[]>([]);
+// PURE DISPLAY COMPONENTS - NO STATE, NO RERENDERS
 
-  const addField = useCallback((type: string, selectedPage?: number) => {
-    const id = `field_${Date.now()}`;
-    const newField: FormField = {
-      id,
-      name: `field_${Object.keys(fields).length + 1}`,
-      type,
-      label: `${FIELD_TYPES.find((t) => t.value === type)?.label || type} Field`,
-      required: false,
-      page: selectedPage || 1,
-    };
-    
-    setFields(prev => ({ ...prev, [id]: newField }));
-    setFieldOrder(prev => [...prev, id]);
-    return id;
-  }, [fields]);
-
-  const updateField = useCallback((fieldId: string, updatedField: FormField) => {
-    setFields(prev => ({ ...prev, [fieldId]: updatedField }));
-  }, []);
-
-  const deleteField = useCallback((fieldId: string) => {
-    setFields(prev => {
-      const newFields = { ...prev };
-      delete newFields[fieldId];
-      return newFields;
-    });
-    setFieldOrder(prev => prev.filter(id => id !== fieldId));
-  }, []);
-
-  const duplicateField = useCallback((fieldId: string) => {
-    const field = fields[fieldId];
-    if (field) {
-      const id = `field_${Date.now()}`;
-      const newField: FormField = {
-        ...field,
-        id,
-        name: `${field.name}_copy`,
-        label: `${field.label} (Copy)`,
-      };
-      setFields(prev => ({ ...prev, [id]: newField }));
-      setFieldOrder(prev => [...prev, id]);
-      return id;
-    }
-    return null;
-  }, [fields]);
-
-  const getField = useCallback((fieldId: string) => fields[fieldId], [fields]);
-  
-  const getAllFields = useCallback(() => fieldOrder.map(id => fields[id]).filter(Boolean), [fields, fieldOrder]);
-
-  const getFieldsByPage = useCallback((page: number) => 
-    fieldOrder.map(id => fields[id]).filter(field => field && (field.page || 1) === page), 
-    [fields, fieldOrder]
-  );
-
-  return {
-    addField,
-    updateField,
-    deleteField,
-    duplicateField,
-    getField,
-    getAllFields,
-    getFieldsByPage,
-    fieldOrder
-  };
-};
-
-// Stable field list component - NEVER RE-RENDERS PARENT
 const FieldList: React.FC<{
   fields: FormField[];
   selectedFieldId: string | null;
   onSelectField: (id: string | null) => void;
   onDeleteField: (id: string) => void;
   onDuplicateField: (id: string) => void;
-}> = React.memo(({ fields, selectedFieldId, onSelectField, onDeleteField, onDuplicateField }) => {
-  return (
-    <div className="space-y-4">
-      {fields.map((field) => (
-        <div
-          key={field.id}
-          className={cn(
-            "flex items-center justify-between p-6 border rounded-lg cursor-pointer transition-colors hover:shadow-md",
-            selectedFieldId === field.id
-              ? "border-primary bg-primary/5"
-              : "border-border hover:border-primary/50"
-          )}
-          onClick={() => onSelectField(field.id)}
-        >
-          <div className="flex items-center space-x-4">
-            <span className="text-2xl">
-              {FIELD_TYPES.find((t) => t.value === field.type)?.icon || "📝"}
-            </span>
-            <div>
-              <div className="font-medium text-lg">{field.label}</div>
-              <div className="text-muted-foreground">
-                {field.type} • {field.name} • {field.tab ? `Tab ${field.tab}` : `Page ${field.page || 1}`}
-              </div>
+}> = ({ fields, selectedFieldId, onSelectField, onDeleteField, onDuplicateField }) => (
+  <div className="space-y-4">
+    {fields.map((field) => (
+      <div
+        key={field.id}
+        className={cn(
+          "flex items-center justify-between p-6 border rounded-lg cursor-pointer transition-colors hover:shadow-md",
+          selectedFieldId === field.id
+            ? "border-primary bg-primary/5"
+            : "border-border hover:border-primary/50"
+        )}
+        onClick={() => onSelectField(field.id)}
+      >
+        <div className="flex items-center space-x-4">
+          <span className="text-2xl">
+            {FIELD_TYPES.find((t) => t.value === field.type)?.icon || "📝"}
+          </span>
+          <div>
+            <div className="font-medium text-lg">{field.label}</div>
+            <div className="text-muted-foreground">
+              {field.type} • {field.name} • {field.tab ? `Tab ${field.tab}` : `Page ${field.page || 1}`}
             </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="ghost"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDuplicateField(field.id);
-              }}
-            >
-              <Copy className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDeleteField(field.id);
-              }}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
         </div>
-      ))}
-    </div>
-  );
-});
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="ghost"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDuplicateField(field.id);
+            }}
+          >
+            <Copy className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDeleteField(field.id);
+            }}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    ))}
+  </div>
+);
 
-FieldList.displayName = "FieldList";
-
-// Stable sidebar component - NEVER RE-RENDERS PARENT
 const FieldTypeSidebar: React.FC<{
   onAddField: (type: string) => void;
   selectedPage: number | null;
   selectedTab: string | null;
   layoutType: "pages" | "tabs";
-}> = React.memo(({ onAddField, selectedPage, selectedTab, layoutType }) => {
-  return (
-    <div className="w-72 border-r bg-card overflow-y-auto">
-      <div className="p-6">
-        <h3 className="font-semibold text-lg mb-6">Field Types</h3>
-        {layoutType === "pages" && selectedPage && (
-          <div className="mb-4 p-3 bg-primary/10 rounded-lg">
-            <p className="text-sm text-primary font-medium">
-              Adding to Page {selectedPage}
-            </p>
-          </div>
-        )}
-        {layoutType === "tabs" && selectedTab && (
-          <div className="mb-4 p-3 bg-primary/10 rounded-lg">
-            <p className="text-sm text-primary font-medium">
-              Adding to Tab {selectedTab}
-            </p>
-          </div>
-        )}
-        <div className="grid grid-cols-1 gap-3">
-          {FIELD_TYPES.map((fieldType) => (
-            <Button
-              key={fieldType.value}
-              variant="outline"
-              size="default"
-              className="justify-start h-auto p-4"
-              onClick={() => onAddField(fieldType.value)}
-            >
-              <span className="mr-3 text-lg">{fieldType.icon}</span>
-              <span>{fieldType.label}</span>
-            </Button>
-          ))}
+}> = ({ onAddField, selectedPage, selectedTab, layoutType }) => (
+  <div className="w-72 border-r bg-card overflow-y-auto">
+    <div className="p-6">
+      <h3 className="font-semibold text-lg mb-6">Field Types</h3>
+      {layoutType === "pages" && selectedPage && (
+        <div className="mb-4 p-3 bg-primary/10 rounded-lg">
+          <p className="text-sm text-primary font-medium">
+            Adding to Page {selectedPage}
+          </p>
         </div>
+      )}
+      {layoutType === "tabs" && selectedTab && (
+        <div className="mb-4 p-3 bg-primary/10 rounded-lg">
+          <p className="text-sm text-primary font-medium">
+            Adding to Tab {selectedTab}
+          </p>
+        </div>
+      )}
+      <div className="grid grid-cols-1 gap-3">
+        {FIELD_TYPES.map((fieldType) => (
+          <Button
+            key={fieldType.value}
+            variant="outline"
+            size="default"
+            className="justify-start h-auto p-4"
+            onClick={() => onAddField(fieldType.value)}
+          >
+            <span className="mr-3 text-lg">{fieldType.icon}</span>
+            <span>{fieldType.label}</span>
+          </Button>
+        ))}
       </div>
     </div>
-  );
-});
+  </div>
+);
 
-FieldTypeSidebar.displayName = "FieldTypeSidebar";
-
-// Stable configurator panel - ONLY RE-RENDERS WHEN FIELD ID CHANGES
 const ConfiguratorPanel: React.FC<{
   selectedFieldId: string | null;
-  getField: (id: string) => FormField | undefined;
-  fieldStoreUpdateField: (fieldId: string, field: FormField) => void; // DIRECT STORE UPDATE
   availablePages: number[];
-}> = React.memo(({ selectedFieldId, getField, fieldStoreUpdateField, availablePages }) => {
+}> = ({ selectedFieldId, availablePages }) => {
   if (!selectedFieldId) return null;
 
-  const field = getField(selectedFieldId);
+  const field = globalFieldStore.getField(selectedFieldId);
   if (!field) return null;
 
   return (
     <div className="w-96 border-l bg-card overflow-y-auto min-h-0">
       <FieldConfigurator
-        key={selectedFieldId} // Force new instance when field changes
+        key={selectedFieldId}
         fieldId={selectedFieldId}
         initialField={field}
-        fieldStoreUpdateField={fieldStoreUpdateField} // DIRECT STORE UPDATE
         availablePages={availablePages}
       />
     </div>
   );
-});
-
-ConfiguratorPanel.displayName = "ConfiguratorPanel";
+};
 
 export const FormBuilder: React.FC = () => {
-  // Form state
-  const [formTitle, setFormTitle] = useState<string>("My Form");
-  const [formDescription, setFormDescription] = useState<string>("A form built with Formedible");
-  const [pages, setPages] = useState<Array<{ page: number; title: string; description?: string }>>([
-    { page: 1, title: "Page 1", description: "First page" }
-  ]);
-  const [tabs, setTabs] = useState<Array<{ id: string; label: string; description?: string }>>([
-    { id: "general", label: "General", description: "General information" }
-  ]);
-  const [layoutType, setLayoutType] = useState<"pages" | "tabs">("pages");
-  const [settings, setSettings] = useState({
-    submitLabel: "Submit",
-    nextLabel: "Next",
-    previousLabel: "Previous",
-    showProgress: true,
+  // Form metadata state (minimal, non-rerendering)
+  const formMetaRef = useRef({
+    title: "My Form",
+    description: "A form built with Formedible",
+    pages: [{ page: 1, title: "Page 1", description: "First page" }] as Array<{ page: number; title: string; description?: string }>,
+    tabs: [{ id: "general", label: "General", description: "General information" }] as Array<{ id: string; label: string; description?: string }>,
+    layoutType: "pages" as "pages" | "tabs",
+    settings: {
+      submitLabel: "Submit",
+      nextLabel: "Next",
+      previousLabel: "Previous",
+      showProgress: true,
+    }
   });
 
-  // UI state
+  // UI state (minimal, only for display)
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
   const [selectedPageId, setSelectedPageId] = useState<number | null>(null);
   const [selectedTabId, setSelectedTabId] = useState<string | null>(null);
@@ -331,42 +178,50 @@ export const FormBuilder: React.FC = () => {
   const [editingTabId, setEditingTabId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>("builder");
   const [previewMode, setPreviewMode] = useState<"desktop" | "tablet" | "mobile">("desktop");
+  
+  // Force rerender only for field list changes
+  const [, forceUpdate] = useState({});
+  const forceRerender = () => forceUpdate({});
 
-  const fieldStore = useFieldStore();
-
-  const handleAddField = useCallback((type: string) => {
-    const newFieldId = fieldStore.addField(type, selectedPageId || 1);
-    const field = fieldStore.getField(newFieldId);
-    if (field && layoutType === "tabs" && selectedTabId) {
-      fieldStore.updateField(newFieldId, { ...field, tab: selectedTabId });
-    }
-    setSelectedFieldId(newFieldId);
-  }, [fieldStore, selectedPageId, selectedTabId, layoutType]);
-
-  const handleSelectField = useCallback((fieldId: string | null) => {
-    setSelectedFieldId(fieldId);
+  // Subscribe to field store changes (only for field list updates)
+  React.useEffect(() => {
+    const unsubscribe = globalFieldStore.subscribe(forceRerender);
+    return unsubscribe;
   }, []);
 
-  const handleDeleteField = useCallback((fieldId: string) => {
-    fieldStore.deleteField(fieldId);
+  const handleAddField = (type: string) => {
+    const newFieldId = globalFieldStore.addField(type, selectedPageId || 1);
+    const field = globalFieldStore.getField(newFieldId);
+    if (field && formMetaRef.current.layoutType === "tabs" && selectedTabId) {
+      globalFieldStore.updateField(newFieldId, { ...field, tab: selectedTabId });
+    }
+    setSelectedFieldId(newFieldId);
+  };
+
+  const handleSelectField = (fieldId: string | null) => {
+    setSelectedFieldId(fieldId);
+  };
+
+  const handleDeleteField = (fieldId: string) => {
+    globalFieldStore.deleteField(fieldId);
     if (selectedFieldId === fieldId) {
       setSelectedFieldId(null);
     }
-  }, [fieldStore, selectedFieldId]);
+  };
 
-  const handleDuplicateField = useCallback((fieldId: string) => {
-    const newFieldId = fieldStore.duplicateField(fieldId);
+  const handleDuplicateField = (fieldId: string) => {
+    const newFieldId = globalFieldStore.duplicateField(fieldId);
     if (newFieldId) {
       setSelectedFieldId(newFieldId);
     }
-  }, [fieldStore]);
+  };
 
-  // Export configuration
-  const exportConfig = useCallback(() => {
+  // Export configuration - grab data directly
+  const exportConfig = () => {
     const formConfig = {
-      title: formTitle,
-      description: formDescription,
-      fields: fieldStore.getAllFields().map((field) => ({
+      title: formMetaRef.current.title,
+      description: formMetaRef.current.description,
+      fields: globalFieldStore.getAllFields().map((field) => ({
         name: field.name,
         type: field.type,
         label: field.label,
@@ -387,10 +242,10 @@ export const FormBuilder: React.FC = () => {
         ratingConfig: field.ratingConfig,
         phoneConfig: field.phoneConfig,
       })),
-      pages: pages,
-      tabs: tabs,
-      layoutType: layoutType,
-      settings: settings,
+      pages: formMetaRef.current.pages,
+      tabs: formMetaRef.current.tabs,
+      layoutType: formMetaRef.current.layoutType,
+      settings: formMetaRef.current.settings,
     };
 
     const blob = new Blob([JSON.stringify(formConfig, null, 2)], {
@@ -399,13 +254,13 @@ export const FormBuilder: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${formTitle.toLowerCase().replace(/\s+/g, "-")}-form.json`;
+    a.download = `${formMetaRef.current.title.toLowerCase().replace(/\s+/g, "-")}-form.json`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [formTitle, formDescription, fieldStore, pages, settings]);
+  };
 
   // Import configuration
-  const importConfig = useCallback(() => {
+  const importConfig = () => {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = ".json";
@@ -418,58 +273,26 @@ export const FormBuilder: React.FC = () => {
         try {
           const config = JSON.parse(e.target?.result as string);
           
-          // Clear existing fields
-          fieldStore.fieldOrder.forEach(id => fieldStore.deleteField(id));
-          
           // Import fields
-          (config.fields || []).forEach((field: any, idx: number) => {
-            const newFieldId = fieldStore.addField(field.type, field.page || 1);
-            const newField: FormField = {
-              id: newFieldId,
-              name: field.name,
-              type: field.type,
-              label: field.label,
-              placeholder: field.placeholder,
-              description: field.description,
-              required: field.required || false,
-              page: field.page || 1,
-              group: field.group,
-              section: field.section,
-              help: field.help,
-              inlineValidation: field.inlineValidation,
-              options: field.options,
-              arrayConfig: field.arrayConfig,
-              datalist: field.datalist,
-              multiSelectConfig: field.multiSelectConfig,
-              colorConfig: field.colorConfig,
-              ratingConfig: field.ratingConfig,
-              phoneConfig: field.phoneConfig,
-              sliderConfig: field.sliderConfig,
-              numberConfig: field.numberConfig,
-              dateConfig: field.dateConfig,
-              fileConfig: field.fileConfig,
-              textareaConfig: field.textareaConfig,
-              passwordConfig: field.passwordConfig,
-              emailConfig: field.emailConfig,
-              validation: field.validation,
-            };
-            fieldStore.updateField(newFieldId, newField);
-          });
+          globalFieldStore.importFields(config.fields || []);
 
           // Update form config
-          setFormTitle(config.title || "Imported Form");
-          setFormDescription(config.description || "Imported from JSON");
-          setPages(config.pages || [{ page: 1, title: "Page 1", description: "" }]);
-          setTabs(config.tabs || [{ id: "general", label: "General", description: "General information" }]);
-          setLayoutType(config.layoutType || "pages");
-          setSettings({
-            submitLabel: config.settings?.submitLabel || config.submitLabel || "Submit",
-            nextLabel: config.settings?.nextLabel || config.nextLabel || "Next",
-            previousLabel: config.settings?.previousLabel || config.previousLabel || "Previous",
-            showProgress: config.settings?.showProgress ?? (!!config.progress),
-          });
+          formMetaRef.current = {
+            title: config.title || "Imported Form",
+            description: config.description || "Imported from JSON",
+            pages: config.pages || [{ page: 1, title: "Page 1", description: "" }],
+            tabs: config.tabs || [{ id: "general", label: "General", description: "General information" }],
+            layoutType: config.layoutType || "pages",
+            settings: {
+              submitLabel: config.settings?.submitLabel || config.submitLabel || "Submit",
+              nextLabel: config.settings?.nextLabel || config.nextLabel || "Next",
+              previousLabel: config.settings?.previousLabel || config.previousLabel || "Previous",
+              showProgress: config.settings?.showProgress ?? (!!config.progress),
+            }
+          };
           
           setSelectedFieldId(null);
+          forceRerender(); // Force UI update
         } catch (error) {
           alert("Error importing configuration. Please check the file format.");
           console.error("Import error:", error);
@@ -478,21 +301,22 @@ export const FormBuilder: React.FC = () => {
       reader.readAsText(file);
     };
     input.click();
-  }, [fieldStore, setFormTitle, setFormDescription, setPages, setSettings]);
+  };
 
-  const allFields = fieldStore.getAllFields();
-  const fieldsToShow = layoutType === "pages" 
-    ? (selectedPageId ? fieldStore.getFieldsByPage(selectedPageId) : allFields)
-    : (selectedTabId ? allFields.filter(f => f.tab === selectedTabId) : allFields);
+  // Get current data directly from store/refs - NO MEMOIZATION
+  const allFields = globalFieldStore.getAllFields();
+  const fieldsToShow = formMetaRef.current.layoutType === "pages" 
+    ? (selectedPageId ? globalFieldStore.getFieldsByPage(selectedPageId) : allFields)
+    : (selectedTabId ? globalFieldStore.getFieldsByTab(selectedTabId) : allFields);
 
-  // Memoize availablePages to prevent unnecessary re-renders
-  const availablePages = useMemo(() => pages.map(p => p.page), [pages]);
+  const availablePages = formMetaRef.current.pages.map(p => p.page);
 
-  // Generate form configuration - EXACTLY like original
-  const formConfig = useMemo(() => {
+  // Generate form configuration - ON DEMAND for preview/code tabs
+  const getFormConfig = () => {
+    const currentFields = globalFieldStore.getAllFields();
     const schemaFields: Record<string, any> = {};
 
-    allFields.forEach((field) => {
+    currentFields.forEach((field) => {
       let fieldSchema: any;
 
       switch (field.type) {
@@ -537,11 +361,11 @@ export const FormBuilder: React.FC = () => {
     });
 
     return {
-      title: formTitle,
-      description: formDescription,
+      title: formMetaRef.current.title,
+      description: formMetaRef.current.description,
       schema: z.object(schemaFields),
-      settings,
-      fields: allFields.map((field) => ({
+      settings: formMetaRef.current.settings,
+      fields: currentFields.map((field) => ({
         name: field.name,
         type: field.type,
         label: field.label,
@@ -561,12 +385,12 @@ export const FormBuilder: React.FC = () => {
         ...(field.ratingConfig && { ratingConfig: field.ratingConfig }),
         ...(field.phoneConfig && { phoneConfig: field.phoneConfig }),
       })),
-      pages: layoutType === "pages" && pages.length > 1 ? pages : [],
-      tabs: layoutType === "tabs" ? tabs : undefined,
-      submitLabel: settings.submitLabel,
-      nextLabel: settings.nextLabel,
-      previousLabel: settings.previousLabel,
-      progress: settings.showProgress
+      pages: formMetaRef.current.layoutType === "pages" && formMetaRef.current.pages.length > 1 ? formMetaRef.current.pages : [],
+      tabs: formMetaRef.current.layoutType === "tabs" ? formMetaRef.current.tabs : undefined,
+      submitLabel: formMetaRef.current.settings.submitLabel,
+      nextLabel: formMetaRef.current.settings.nextLabel,
+      previousLabel: formMetaRef.current.settings.previousLabel,
+      progress: formMetaRef.current.settings.showProgress
         ? { showSteps: true, showPercentage: true }
         : undefined,
       formOptions: {
@@ -576,10 +400,11 @@ export const FormBuilder: React.FC = () => {
         },
       },
     };
-  }, [formTitle, formDescription, allFields, pages, settings]);
+  };
 
-  // Generate code - EXACTLY like original
-  const generateCode = useMemo(() => {
+  // Generate code - ON DEMAND
+  const getGeneratedCode = () => {
+    const formConfig = getFormConfig();
     return `import { useFormedible } from 'formedible';
 import { z } from 'zod';
 
@@ -590,7 +415,7 @@ export const MyForm = () => {
   
   return <Form />;
 };`;
-  }, [formConfig]);
+  };
 
   return (
     <div className="w-full min-h-[800px] flex flex-col bg-background">
@@ -619,7 +444,7 @@ export const MyForm = () => {
           onAddField={handleAddField} 
           selectedPage={selectedPageId} 
           selectedTab={selectedTabId}
-          layoutType={layoutType}
+          layoutType={formMetaRef.current.layoutType}
         />
 
         {/* Main Content */}
@@ -656,8 +481,8 @@ export const MyForm = () => {
                             <Label htmlFor="form-title">Form Title</Label>
                             <Input
                               id="form-title"
-                              value={formTitle}
-                              onChange={(e) => setFormTitle(e.target.value)}
+                              defaultValue={formMetaRef.current.title}
+                              onChange={(e) => { formMetaRef.current.title = e.target.value; }}
                               placeholder="Enter form title"
                             />
                           </div>
@@ -665,8 +490,8 @@ export const MyForm = () => {
                             <Label htmlFor="form-description">Description</Label>
                             <Textarea
                               id="form-description"
-                              value={formDescription}
-                              onChange={(e) => setFormDescription(e.target.value)}
+                              defaultValue={formMetaRef.current.description}
+                              onChange={(e) => { formMetaRef.current.description = e.target.value; }}
                               placeholder="Enter form description"
                             />
                           </div>
@@ -674,8 +499,8 @@ export const MyForm = () => {
                             <Label htmlFor="layout-type">Layout Type</Label>
                             <select
                               id="layout-type"
-                              value={layoutType}
-                              onChange={(e) => setLayoutType(e.target.value as "pages" | "tabs")}
+                              defaultValue={formMetaRef.current.layoutType}
+                              onChange={(e) => { formMetaRef.current.layoutType = e.target.value as "pages" | "tabs"; }}
                               className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               <option value="pages">Multi-Page Form</option>
@@ -695,8 +520,8 @@ export const MyForm = () => {
                             <Label htmlFor="submit-label">Submit Button Label</Label>
                             <Input
                               id="submit-label"
-                              value={settings.submitLabel}
-                              onChange={(e) => setSettings(prev => ({ ...prev, submitLabel: e.target.value }))}
+                              defaultValue={formMetaRef.current.settings.submitLabel}
+                              onChange={(e) => { formMetaRef.current.settings.submitLabel = e.target.value; }}
                               placeholder="Submit"
                             />
                           </div>
@@ -704,8 +529,8 @@ export const MyForm = () => {
                             <Label htmlFor="next-label">Next Button Label</Label>
                             <Input
                               id="next-label"
-                              value={settings.nextLabel}
-                              onChange={(e) => setSettings(prev => ({ ...prev, nextLabel: e.target.value }))}
+                              defaultValue={formMetaRef.current.settings.nextLabel}
+                              onChange={(e) => { formMetaRef.current.settings.nextLabel = e.target.value; }}
                               placeholder="Next"
                             />
                           </div>
@@ -713,16 +538,16 @@ export const MyForm = () => {
                             <Label htmlFor="previous-label">Previous Button Label</Label>
                             <Input
                               id="previous-label"
-                              value={settings.previousLabel}
-                              onChange={(e) => setSettings(prev => ({ ...prev, previousLabel: e.target.value }))}
+                              defaultValue={formMetaRef.current.settings.previousLabel}
+                              onChange={(e) => { formMetaRef.current.settings.previousLabel = e.target.value; }}
                               placeholder="Previous"
                             />
                           </div>
                           <div className="flex items-center space-x-2">
                             <Checkbox
                               id="show-progress"
-                              checked={settings.showProgress}
-                              onCheckedChange={(checked) => setSettings(prev => ({ ...prev, showProgress: !!checked }))}
+                              defaultChecked={formMetaRef.current.settings.showProgress}
+                              onCheckedChange={(checked) => { formMetaRef.current.settings.showProgress = !!checked; }}
                             />
                             <Label htmlFor="show-progress">Show progress indicator</Label>
                           </div>
@@ -730,11 +555,11 @@ export const MyForm = () => {
                       </Card>
 
                       {/* Page Management */}
-                      {layoutType === "pages" && (
+                      {formMetaRef.current.layoutType === "pages" && (
                         <Card className="hover:shadow-lg transition-shadow gap-2">
                         <CardHeader>
                           <CardTitle className="flex items-center justify-between text-xl">
-                            Pages ({pages.length})
+                            Pages ({formMetaRef.current.pages.length})
                             {selectedPageId && (
                               <span className="text-sm font-normal text-primary">
                                 Page {selectedPageId} selected
@@ -742,16 +567,14 @@ export const MyForm = () => {
                             )}
                             <Button
                               onClick={() => {
-                                const newPageNumber = Math.max(...pages.map((p) => p.page)) + 1;
-                                setPages(prev => [
-                                  ...prev,
-                                  {
-                                    page: newPageNumber,
-                                    title: `Page ${newPageNumber}`,
-                                    description: "",
-                                  },
-                                ]);
+                                const newPageNumber = Math.max(...formMetaRef.current.pages.map((p) => p.page)) + 1;
+                                formMetaRef.current.pages.push({
+                                  page: newPageNumber,
+                                  title: `Page ${newPageNumber}`,
+                                  description: "",
+                                });
                                 setEditingPageId(newPageNumber);
+                                forceRerender();
                               }}
                             >
                               <Plus className="h-4 w-4 mr-2" />
@@ -761,7 +584,7 @@ export const MyForm = () => {
                         </CardHeader>
                         <CardContent className="space-y-2 p-4">
                           <div className="space-y-2">
-                            {pages.map((page) => (
+                            {formMetaRef.current.pages.map((page) => (
                               <div
                                 key={page.page}
                                 className={cn(
@@ -781,26 +604,24 @@ export const MyForm = () => {
                                     <div>
                                       <Label>Page Title</Label>
                                       <Input
-                                        value={page.title}
+                                        defaultValue={page.title}
                                         onChange={(e) => {
-                                          setPages(prev => prev.map(p =>
-                                            p.page === page.page
-                                              ? { ...p, title: e.target.value }
-                                              : p
-                                          ));
+                                          const pageIndex = formMetaRef.current.pages.findIndex(p => p.page === page.page);
+                                          if (pageIndex !== -1) {
+                                            formMetaRef.current.pages[pageIndex].title = e.target.value;
+                                          }
                                         }}
                                       />
                                     </div>
                                     <div>
                                       <Label>Description</Label>
                                       <Textarea
-                                        value={page.description || ""}
+                                        defaultValue={page.description || ""}
                                         onChange={(e) => {
-                                          setPages(prev => prev.map(p =>
-                                            p.page === page.page
-                                              ? { ...p, description: e.target.value }
-                                              : p
-                                          ));
+                                          const pageIndex = formMetaRef.current.pages.findIndex(p => p.page === page.page);
+                                          if (pageIndex !== -1) {
+                                            formMetaRef.current.pages[pageIndex].description = e.target.value;
+                                          }
                                         }}
                                       />
                                     </div>
@@ -835,7 +656,7 @@ export const MyForm = () => {
                                           <div className="text-muted-foreground">{page.description}</div>
                                         )}
                                         <div className="text-sm text-muted-foreground">
-                                          {fieldStore.getFieldsByPage(page.page).length} fields
+                                          {globalFieldStore.getFieldsByPage(page.page).length} fields
                                         </div>
                                       </div>
                                     </div>
@@ -849,7 +670,7 @@ export const MyForm = () => {
                                       >
                                         <Edit className="h-4 w-4" />
                                       </Button>
-                                      {pages.length > 1 && (
+                                      {formMetaRef.current.pages.length > 1 && (
                                         <Button
                                           variant="ghost"
                                           onClick={(e) => {
@@ -859,15 +680,12 @@ export const MyForm = () => {
                                                 `Delete ${page.title}? Fields on this page will be moved to Page 1.`
                                               )
                                             ) {
-                                              const filteredPages = pages.filter((p) => p.page !== page.page);
-                                              const renumberedPages = filteredPages.map((p, idx) => ({
-                                                ...p,
-                                                page: idx + 1,
-                                              }));
-                                              setPages(renumberedPages);
-                                              if (selectedPageId === page.page) {
+                                                formMetaRef.current.pages = formMetaRef.current.pages
+                                                .filter((p) => p.page !== page.page)
+                                                .map((p, index) => ({ ...p, page: index + 1 }));                                              if (selectedPageId === page.page) {
                                                 setSelectedPageId(null);
                                               }
+                                              forceRerender();
                                             }
                                           }}
                                         >
@@ -885,11 +703,11 @@ export const MyForm = () => {
                       )}
 
                       {/* Tab Management */}
-                      {layoutType === "tabs" && (
+                      {formMetaRef.current.layoutType === "tabs" && (
                         <Card className="hover:shadow-lg transition-shadow gap-2">
                           <CardHeader>
                             <CardTitle className="flex items-center justify-between text-xl">
-                              Tabs ({tabs.length})
+                              Tabs ({formMetaRef.current.tabs.length})
                               {selectedTabId && (
                                 <span className="text-sm font-normal text-primary">
                                   Tab {selectedTabId} selected
@@ -898,15 +716,13 @@ export const MyForm = () => {
                               <Button
                                 onClick={() => {
                                   const newTabId = `tab_${Date.now()}`;
-                                  setTabs(prev => [
-                                    ...prev,
-                                    {
-                                      id: newTabId,
-                                      label: `Tab ${tabs.length + 1}`,
-                                      description: "",
-                                    },
-                                  ]);
+                                  formMetaRef.current.tabs.push({
+                                    id: newTabId,
+                                    label: `Tab ${formMetaRef.current.tabs.length + 1}`,
+                                    description: "",
+                                  });
                                   setEditingTabId(newTabId);
+                                  forceRerender();
                                 }}
                               >
                                 <Plus className="h-4 w-4 mr-2" />
@@ -916,7 +732,7 @@ export const MyForm = () => {
                           </CardHeader>
                           <CardContent className="space-y-2 p-4">
                             <div className="space-y-2">
-                              {tabs.map((tab) => (
+                              {formMetaRef.current.tabs.map((tab) => (
                                 <div
                                   key={tab.id}
                                   className={cn(
@@ -936,26 +752,24 @@ export const MyForm = () => {
                                       <div>
                                         <Label>Tab Label</Label>
                                         <Input
-                                          value={tab.label}
+                                          defaultValue={tab.label}
                                           onChange={(e) => {
-                                            setTabs(prev => prev.map(t =>
-                                              t.id === tab.id
-                                                ? { ...t, label: e.target.value }
-                                                : t
-                                            ));
+                                            const tabIndex = formMetaRef.current.tabs.findIndex(t => t.id === tab.id);
+                                            if (tabIndex !== -1) {
+                                              formMetaRef.current.tabs[tabIndex].label = e.target.value;
+                                            }
                                           }}
                                         />
                                       </div>
                                       <div>
                                         <Label>Description</Label>
                                         <Textarea
-                                          value={tab.description || ""}
+                                          defaultValue={tab.description || ""}
                                           onChange={(e) => {
-                                            setTabs(prev => prev.map(t =>
-                                              t.id === tab.id
-                                                ? { ...t, description: e.target.value }
-                                                : t
-                                            ));
+                                            const tabIndex = formMetaRef.current.tabs.findIndex(t => t.id === tab.id);
+                                            if (tabIndex !== -1) {
+                                              formMetaRef.current.tabs[tabIndex].description = e.target.value;
+                                            }
                                           }}
                                         />
                                       </div>
@@ -990,7 +804,7 @@ export const MyForm = () => {
                                             <div className="text-muted-foreground">{tab.description}</div>
                                           )}
                                           <div className="text-sm text-muted-foreground">
-                                            {allFields.filter(f => f.tab === tab.id).length} fields
+                                            {globalFieldStore.getFieldsByTab(tab.id).length} fields
                                           </div>
                                         </div>
                                       </div>
@@ -1004,7 +818,7 @@ export const MyForm = () => {
                                         >
                                           <Edit className="h-4 w-4" />
                                         </Button>
-                                        {tabs.length > 1 && (
+                                        {formMetaRef.current.tabs.length > 1 && (
                                           <Button
                                             variant="ghost"
                                             onClick={(e) => {
@@ -1014,10 +828,11 @@ export const MyForm = () => {
                                                   `Delete ${tab.label}? Fields in this tab will be moved to the first tab.`
                                                 )
                                               ) {
-                                                setTabs(prev => prev.filter(t => t.id !== tab.id));
+                                                formMetaRef.current.tabs = formMetaRef.current.tabs.filter(t => t.id !== tab.id);
                                                 if (selectedTabId === tab.id) {
                                                   setSelectedTabId(null);
                                                 }
+                                                forceRerender();
                                               }
                                             }}
                                           >
@@ -1038,16 +853,16 @@ export const MyForm = () => {
                       <Card className="hover:shadow-lg transition-shadow gap-2">
                         <CardHeader>
                           <CardTitle className="flex items-center justify-between text-xl">
-                            {layoutType === "pages" && selectedPageId ? (
+                            {formMetaRef.current.layoutType === "pages" && selectedPageId ? (
                               <>
-                                {pages.find((p) => p.page === selectedPageId)?.title} Fields
+                                {formMetaRef.current.pages.find((p) => p.page === selectedPageId)?.title} Fields
                                 <span className="text-sm font-normal text-muted-foreground">
                                   ({fieldsToShow.length} fields)
                                 </span>
                               </>
-                            ) : layoutType === "tabs" && selectedTabId ? (
+                            ) : formMetaRef.current.layoutType === "tabs" && selectedTabId ? (
                               <>
-                                {tabs.find((t) => t.id === selectedTabId)?.label} Fields
+                                {formMetaRef.current.tabs.find((t) => t.id === selectedTabId)?.label} Fields
                                 <span className="text-sm font-normal text-muted-foreground">
                                   ({fieldsToShow.length} fields)
                                 </span>
@@ -1065,7 +880,7 @@ export const MyForm = () => {
                           </CardTitle>
                           {(selectedPageId || selectedTabId) && (
                             <p className="text-muted-foreground">
-                              {layoutType === "pages" 
+                              {formMetaRef.current.layoutType === "pages" 
                                 ? "New fields will be added to this page. Click the page again to deselect."
                                 : "New fields will be added to this tab. Click the tab again to deselect."}
                             </p>
@@ -1100,8 +915,6 @@ export const MyForm = () => {
                   {/* Field Configuration Panel */}
                   <ConfiguratorPanel
                     selectedFieldId={selectedFieldId}
-                    getField={fieldStore.getField}
-                    fieldStoreUpdateField={fieldStore.updateField}
                     availablePages={availablePages}
                   />
                 </div>
@@ -1139,7 +952,7 @@ export const MyForm = () => {
                         : "max-w-4xl"
                     )}
                   >
-                  <FormPreview config={formConfig} />                  </div>
+                  <FormPreview config={getFormConfig()} />                  </div>
                 </div>
               </TabsContent>
 
@@ -1152,7 +965,7 @@ export const MyForm = () => {
                     </p>
                   </div>
                   <CodeBlock
-                    code={generateCode}
+                    code={getGeneratedCode()}
                     language="tsx"
                     title="MyForm.tsx"
                     showCopyButton={true}

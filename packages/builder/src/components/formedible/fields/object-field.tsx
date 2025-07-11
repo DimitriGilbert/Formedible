@@ -1,8 +1,8 @@
 "use client";
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "/components/ui/card";
-import { cn } from "/lib/utils";
-import type { BaseFieldProps } from "/lib/formedible/types";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
+import type { BaseFieldProps } from "@/lib/formedible/types";
 import { TextField } from "./text-field";
 import { TextareaField } from "./textarea-field";
 import { NumberField } from "./number-field";

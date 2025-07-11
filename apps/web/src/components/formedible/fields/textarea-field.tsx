@@ -1,8 +1,8 @@
 import React from 'react';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { cn } from '@/lib/utils';
-import type { BaseFieldProps } from '@/lib/formedible/types';
+import { Textarea } from '/components/ui/textarea';
+import { Label } from '/components/ui/label';
+import { cn } from '/lib/utils';
+import type { BaseFieldProps } from '/lib/formedible/types';
 
 export interface TextareaFieldSpecificProps extends BaseFieldProps {
   rows?: number;

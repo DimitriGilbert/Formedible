@@ -23,7 +23,10 @@
         "radio-group",
         "progress",
         "dialog",
-        "tabs"
+        "tabs",
+        "accordion",
+        "progress",
+        "sonner"
       ],
       "dependencies": [
         "@tanstack/react-form",

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useFormedible } from "@/hooks/use-formedible";
+import { useFormedible, type FieldConfig } from "formedible";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";

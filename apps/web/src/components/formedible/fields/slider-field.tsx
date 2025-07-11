@@ -1,8 +1,8 @@
 import React from 'react';
-import { Slider } from '@/components/ui/slider';
-import { Label } from '@/components/ui/label';
-import { cn } from '@/lib/utils';
-import type { BaseFieldProps } from '@/lib/formedible/types';
+import { Slider } from '/components/ui/slider';
+import { Label } from '/components/ui/label';
+import { cn } from '/lib/utils';
+import type { BaseFieldProps } from '/lib/formedible/types';
 
 export interface SliderFieldSpecificProps extends BaseFieldProps {
   min?: number;

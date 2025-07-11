@@ -1,11 +1,11 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
-import type { BaseFieldProps } from "@/lib/formedible/types";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import type { BaseFieldProps } from "/lib/formedible/types";
+import { Label } from "/components/ui/label";
+import { Input } from "/components/ui/input";
+import { Button } from "/components/ui/button";
+import { Card } from "/components/ui/card";
+import { cn } from "/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
+} from "/components/ui/dialog"
 
 interface LocationValue {
   lat: number;

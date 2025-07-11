@@ -1,10 +1,10 @@
 import React from "react";
 import type { AnyFieldApi } from "@tanstack/react-form";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
+import { Input } from "/components/ui/input";
+import { Label } from "/components/ui/label";
+import { cn } from "/lib/utils";
 import { PaperclipIcon, XIcon, UploadCloudIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "/components/ui/button";
 
 interface FileUploadFieldProps {
   fieldApi: AnyFieldApi;

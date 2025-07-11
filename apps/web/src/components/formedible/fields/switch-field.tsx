@@ -1,8 +1,8 @@
 import React from 'react';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { cn } from '@/lib/utils';
-import type { BaseFieldProps } from '@/lib/formedible/types';
+import { Switch } from '/components/ui/switch';
+import { Label } from '/components/ui/label';
+import { cn } from '/lib/utils';
+import type { BaseFieldProps } from '/lib/formedible/types';
 
 export const SwitchField: React.FC<BaseFieldProps> = ({
   fieldApi,
