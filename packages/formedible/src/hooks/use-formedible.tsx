@@ -25,6 +25,7 @@ import { LocationPickerField } from "@/components/fields/location-picker-field";
 import { DurationPickerField } from "@/components/fields/duration-picker-field";
 import { AutocompleteField } from "@/components/fields/autocomplete-field";
 import { MaskedInputField } from "@/components/fields/masked-input-field";
+import { ObjectField } from "@/components/fields/object-field";
 import { InlineValidationWrapper } from "@/components/fields/inline-validation-wrapper";
 import { FieldHelp } from "@/components/fields/field-help";
 
@@ -190,6 +191,28 @@ interface FieldConfig {
     keepCharPositions?: boolean;
     pipe?: (conformedValue: string, config: unknown) => false | string | { value: string; indexesOfPipedChars: number[] };
   };
+  // Object field specific
+  objectConfig?: {
+    title?: string;
+    description?: string;
+    fields: Array<{
+      name: string;
+      type: string;
+      label?: string;
+      placeholder?: string;
+      description?: string;
+      options?: Array<{ value: string; label: string }>;
+      min?: number;
+      max?: number;
+      step?: number;
+      [key: string]: any;
+    }>;
+    collapsible?: boolean;
+    defaultExpanded?: boolean;
+    showCard?: boolean;
+    layout?: "vertical" | "horizontal" | "grid";
+    columns?: number;
+  };
 }
 
 interface PageConfig {
@@ -336,6 +359,7 @@ const defaultFieldComponents: Record<string, React.ComponentType<any>> = {
   duration: DurationPickerField,
   autocomplete: AutocompleteField,
   masked: MaskedInputField,
+  object: ObjectField,
 };
 
 const DefaultProgressComponent: React.FC<{
@@ -1095,7 +1119,8 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
         locationConfig,
         durationConfig,
         autocompleteConfig,
-        maskedInputConfig
+        maskedInputConfig,
+        objectConfig
       } = fieldConfig;
 
       return (
@@ -1186,6 +1211,8 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
               props = { ...props, autocompleteConfig };
             } else if (type === 'masked') {
               props = { ...props, maskedInputConfig };
+            } else if (type === 'object') {
+              props = { ...props, objectConfig };
             }
 
             // Render the field component

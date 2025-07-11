@@ -112,6 +112,11 @@
           "target": "components/formedible/fields/number-field.tsx"
         },
         {
+          "path": "src/components/fields/object-field.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/fields/object-field.tsx"
+        },
+        {
           "path": "src/components/fields/phone-field.tsx",
           "type": "registry:component",
           "target": "components/formedible/fields/phone-field.tsx"
