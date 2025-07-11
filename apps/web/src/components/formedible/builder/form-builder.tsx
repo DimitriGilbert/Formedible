@@ -925,6 +925,7 @@ export const MyForm = () => {
                             </div>
                           ) : (
                             <FieldList
+                              key={`${selectedPageId}-${selectedTabId}-${fieldsToShow.length}`}
                               fields={fieldsToShow}
                               selectedFieldId={selectedFieldId}
                               onSelectField={handleSelectField}
