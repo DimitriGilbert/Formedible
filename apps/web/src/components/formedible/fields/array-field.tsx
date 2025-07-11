@@ -73,10 +73,10 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
     sortable = false,
     defaultValue = '',
     itemProps = {},
-  } = arrayConfig;
+  } = arrayConfig || {};
 
   // Get the component for rendering items
-  const ItemComponent = CustomItemComponent || fieldTypeComponents[itemType] || TextField;
+  const ItemComponent = CustomItemComponent || fieldTypeComponents[itemType || 'text'] || TextField;
 
   const addItem = useCallback(() => {
     if (value.length >= maxItems) return;

@@ -25,6 +25,7 @@ import { LocationPickerField } from "@/components/formedible/fields/location-pic
 import { DurationPickerField } from "@/components/formedible/fields/duration-picker-field";
 import { AutocompleteField } from "@/components/formedible/fields/autocomplete-field";
 import { MaskedInputField } from "@/components/formedible/fields/masked-input-field";
+import { ObjectField } from "@/components/formedible/fields/object-field";
 import { InlineValidationWrapper } from "@/components/formedible/fields/inline-validation-wrapper";
 import { FieldHelp } from "@/components/formedible/fields/field-help";
 
@@ -85,6 +86,8 @@ interface FieldConfig {
     maxItems?: number; // Maximum number of items
     addButtonLabel?: string; // Label for add button
     removeButtonLabel?: string; // Label for remove button
+    addLabel?: string; // Alternative name for add button label
+    removeLabel?: string; // Alternative name for remove button label
     itemComponent?: React.ComponentType<FieldComponentProps>; // Custom component for each item
     sortable?: boolean; // Whether items can be reordered
     defaultValue?: unknown; // Default value for new items
@@ -189,6 +192,110 @@ interface FieldConfig {
     guide?: boolean;
     keepCharPositions?: boolean;
     pipe?: (conformedValue: string, config: unknown) => false | string | { value: string; indexesOfPipedChars: number[] };
+  };
+  // Object field specific
+  objectConfig?: {
+    title?: string;
+    description?: string;
+    fields: Array<{
+      name: string;
+      type: string;
+      label?: string;
+      placeholder?: string;
+      description?: string;
+      options?: Array<{ value: string; label: string }>;
+      min?: number;
+      max?: number;
+      step?: number;
+      [key: string]: any;
+    }>;
+    collapsible?: boolean;
+    defaultExpanded?: boolean;
+    showCard?: boolean;
+    layout?: "vertical" | "horizontal" | "grid";
+    columns?: number;
+  };
+  // Slider field specific
+  sliderConfig?: {
+    min?: number;
+    max?: number;
+    step?: number;
+    marks?: Array<{ value: number; label: string }>;
+    showTooltip?: boolean;
+    showValue?: boolean;
+    orientation?: "horizontal" | "vertical";
+  };
+  // Number field specific
+  numberConfig?: {
+    min?: number;
+    max?: number;
+    step?: number;
+    precision?: number;
+    allowNegative?: boolean;
+    showSpinButtons?: boolean;
+  };
+  // Date field specific
+  dateConfig?: {
+    format?: string;
+    minDate?: Date;
+    maxDate?: Date;
+    disabledDates?: Date[];
+    showTime?: boolean;
+    timeFormat?: string;
+  };
+  // File upload specific
+  fileConfig?: {
+    accept?: string;
+    multiple?: boolean;
+    maxSize?: number;
+    maxFiles?: number;
+    allowedTypes?: string[];
+  };
+  // Textarea specific
+  textareaConfig?: {
+    rows?: number;
+    cols?: number;
+    resize?: "none" | "vertical" | "horizontal" | "both";
+    maxLength?: number;
+    showWordCount?: boolean;
+  };
+  // Password field specific
+  passwordConfig?: {
+    showToggle?: boolean;
+    strengthMeter?: boolean;
+    minStrength?: number;
+    requirements?: {
+      minLength?: number;
+      requireUppercase?: boolean;
+      requireLowercase?: boolean;
+      requireNumbers?: boolean;
+      requireSymbols?: boolean;
+    };
+  };
+  // Email field specific
+  emailConfig?: {
+    allowedDomains?: string | string[];
+    blockedDomains?: string | string[];
+    suggestions?: string | string[];
+    validateMX?: boolean;
+  };
+  // Simplified validation configuration for builder
+  validationConfig?: {
+    min?: number;
+    max?: number;
+    minLength?: number;
+    maxLength?: number;
+    pattern?: string;
+    custom?: string;
+    includes?: string;
+    startsWith?: string;
+    endsWith?: string;
+    email?: boolean;
+    url?: boolean;
+    uuid?: boolean;
+    transform?: string;
+    refine?: string;
+    customMessages?: Record<string, string>;
   };
 }
 
@@ -336,6 +443,7 @@ const defaultFieldComponents: Record<string, React.ComponentType<any>> = {
   duration: DurationPickerField,
   autocomplete: AutocompleteField,
   masked: MaskedInputField,
+  object: ObjectField,
 };
 
 const DefaultProgressComponent: React.FC<{
@@ -1095,7 +1203,15 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
         locationConfig,
         durationConfig,
         autocompleteConfig,
-        maskedInputConfig
+        maskedInputConfig,
+        objectConfig,
+        sliderConfig,
+        numberConfig,
+        dateConfig,
+        fileConfig,
+        textareaConfig,
+        passwordConfig,
+        emailConfig
       } = fieldConfig;
 
       return (
@@ -1186,6 +1302,22 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
               props = { ...props, autocompleteConfig };
             } else if (type === 'masked') {
               props = { ...props, maskedInputConfig };
+            } else if (type === 'object') {
+              props = { ...props, objectConfig };
+            } else if (type === 'slider') {
+              props = { ...props, sliderConfig };
+            } else if (type === 'number') {
+              props = { ...props, numberConfig };
+            } else if (type === 'date') {
+              props = { ...props, dateConfig };
+            } else if (type === 'file') {
+              props = { ...props, fileConfig };
+            } else if (type === 'textarea') {
+              props = { ...props, textareaConfig };
+            } else if (type === 'password') {
+              props = { ...props, passwordConfig };
+            } else if (type === 'email') {
+              props = { ...props, emailConfig };
             }
 
             // Render the field component
