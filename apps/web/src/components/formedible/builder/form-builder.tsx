@@ -35,7 +35,7 @@ const FIELD_TYPES = [
   { value: "array", label: "Array Field", icon: "📚" },
 ];
 
-// FIELD LIST WITH FRESH DATA ON RENDER - NO SUBSCRIPTIONS!
+// FIELD LIST THAT SUBSCRIBES TO REAL-TIME FIELD UPDATES!
 const FieldList: React.FC<{
   fields: FormField[];
   selectedFieldId: string | null;
@@ -43,12 +43,33 @@ const FieldList: React.FC<{
   onDeleteField: (id: string) => void;
   onDuplicateField: (id: string) => void;
 }> = ({ fields, selectedFieldId, onSelectField, onDeleteField, onDuplicateField }) => {
-  // Get fresh field data on every render - this is fast and ensures sync
-  const freshFields = fields.map(field => globalFieldStore.getField(field.id)).filter(Boolean) as FormField[];
+  const [displayFields, setDisplayFields] = useState(fields);
+
+  // Subscribe to field updates for all visible fields
+  React.useEffect(() => {
+    const unsubscribers: (() => void)[] = [];
+
+    // Subscribe to each field's updates
+    fields.forEach(field => {
+      const unsubscribe = globalFieldStore.subscribeToFieldUpdates(field.id, (updatedField) => {
+        setDisplayFields(prevFields => 
+          prevFields.map(f => f.id === updatedField.id ? updatedField : f)
+        );
+      });
+      unsubscribers.push(unsubscribe);
+    });
+
+    // Update display fields when fields prop changes
+    setDisplayFields(fields);
+
+    return () => {
+      unsubscribers.forEach(unsub => unsub());
+    };
+  }, [fields]);
 
   return (
     <div className="space-y-4">
-      {freshFields.map((field) => (
+      {displayFields.map((field) => (
       <div
         key={field.id}
         className={cn(

@@ -89,7 +89,7 @@ class FieldStore {
   private fields: Record<string, FormField> = {};
   private fieldOrder: string[] = [];
   private structureListeners: Set<() => void> = new Set(); // For add/delete/reorder
-  private fieldUpdateCallbacks: Set<() => void> = new Set(); // For field property updates
+  private fieldUpdateCallbacks: Map<string, Set<(field: FormField) => void>> = new Map(); // Field-specific subscribers
 
   addField(type: string, selectedPage?: number): string {
     const id = `field_${Date.now()}`;
@@ -111,7 +111,14 @@ class FieldStore {
   updateField(fieldId: string, updatedField: FormField): void {
     this.fields[fieldId] = updatedField;
     // DO NOT notify structure listeners - field updates should not cause parent re-renders!
-    this.notifyFieldUpdateCallbacks();
+  }
+
+  // Notify specific field subscribers
+  notifyFieldUpdate(fieldId: string, field: FormField): void {
+    const subscribers = this.fieldUpdateCallbacks.get(fieldId);
+    if (subscribers) {
+      subscribers.forEach(callback => callback(field));
+    }
   }
 
   deleteField(fieldId: string): void {
@@ -160,18 +167,26 @@ class FieldStore {
     return () => this.structureListeners.delete(listener);
   }
 
-  // Subscribe to field updates (for components that need fresh field data)
-  subscribeToFieldUpdates(callback: () => void): () => void {
-    this.fieldUpdateCallbacks.add(callback);
-    return () => this.fieldUpdateCallbacks.delete(callback);
+  // Subscribe to specific field updates
+  subscribeToFieldUpdates(fieldId: string, callback: (field: FormField) => void): () => void {
+    if (!this.fieldUpdateCallbacks.has(fieldId)) {
+      this.fieldUpdateCallbacks.set(fieldId, new Set());
+    }
+    this.fieldUpdateCallbacks.get(fieldId)!.add(callback);
+    
+    return () => {
+      const subscribers = this.fieldUpdateCallbacks.get(fieldId);
+      if (subscribers) {
+        subscribers.delete(callback);
+        if (subscribers.size === 0) {
+          this.fieldUpdateCallbacks.delete(fieldId);
+        }
+      }
+    };
   }
 
   private notifyStructureListeners(): void {
     this.structureListeners.forEach(listener => listener());
-  }
-
-  private notifyFieldUpdateCallbacks(): void {
-    this.fieldUpdateCallbacks.forEach(callback => callback());
   }
 
   // Import/Export methods
