@@ -1,6 +1,7 @@
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
 import { CodeBlock } from "@/components/ui/code-block";
 
 interface DemoCardProps {
@@ -10,6 +11,7 @@ interface DemoCardProps {
   code: string;
   codeTitle?: string;
   codeDescription?: string;
+  badges?: Array<{ text: string; variant?: "default" | "secondary" | "destructive" | "outline" }>;
 }
 
 export const DemoCard: React.FC<DemoCardProps> = ({
@@ -19,6 +21,7 @@ export const DemoCard: React.FC<DemoCardProps> = ({
   code,
   codeTitle,
   codeDescription,
+  badges,
 }) => (
   <Tabs defaultValue="preview" className="w-full">
     <TabsList className="grid w-full grid-cols-2 mb-0">
@@ -28,7 +31,14 @@ export const DemoCard: React.FC<DemoCardProps> = ({
     <TabsContent value="preview" className="mt-0">
       <Card className="rounded-t-none border-t-0 bg-muted/30">
         <CardHeader>
-          <CardTitle>{title}</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            {title}
+            {badges?.map((badge, index) => (
+              <Badge key={index} variant={badge.variant || "secondary"}>
+                {badge.text}
+              </Badge>
+            ))}
+          </CardTitle>
           <CardDescription>{description}</CardDescription>
         </CardHeader>
         <CardContent>
