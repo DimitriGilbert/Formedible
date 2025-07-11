@@ -173,7 +173,6 @@ const ConfiguratorPanel: React.FC<{
   return (
     <div className="w-96 border-l bg-card overflow-y-auto min-h-0">
       <FieldConfigurator
-        key={selectedFieldId}
         fieldId={selectedFieldId}
         initialField={field}
         availablePages={availablePages}

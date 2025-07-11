@@ -1443,18 +1443,22 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
           );
     }, [form.state.values, conditionalSections, renderField]);
 
+    // Memoize tabs structure separately to prevent recreation
+    const memoizedTabs = React.useMemo(() => {
+      if (!hasTabs || !tabs) return [];
+      
+      return tabs.map(tab => ({
+        id: tab.id,
+        label: tab.label,
+        content: renderTabContent(fieldsByTab[tab.id] || [])
+      }));
+    }, [hasTabs, tabs, fieldsByTab, renderTabContent]);
+
     const renderPageContent = React.useCallback(() => {
       if (hasTabs) {
-        // Render tabs - memoize tab content to prevent rerenders
-        const tabsToRender = tabs!.map(tab => ({
-          id: tab.id,
-          label: tab.label,
-          content: renderTabContent(fieldsByTab[tab.id] || [])
-        }));
-
         return (
           <FormTabs
-            tabs={tabsToRender}
+            tabs={memoizedTabs}
             activeTab={activeTab}
             onTabChange={setActiveTab}
           />
