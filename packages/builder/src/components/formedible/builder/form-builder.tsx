@@ -35,17 +35,41 @@ const FIELD_TYPES = [
   { value: "array", label: "Array Field", icon: "📚" },
 ];
 
-// PURE DISPLAY COMPONENTS - NO STATE, NO RERENDERS
-
+// FIELD LIST THAT SUBSCRIBES TO REAL-TIME FIELD UPDATES!
 const FieldList: React.FC<{
   fields: FormField[];
   selectedFieldId: string | null;
   onSelectField: (id: string | null) => void;
   onDeleteField: (id: string) => void;
   onDuplicateField: (id: string) => void;
-}> = ({ fields, selectedFieldId, onSelectField, onDeleteField, onDuplicateField }) => (
-  <div className="space-y-4">
-    {fields.map((field) => (
+}> = ({ fields, selectedFieldId, onSelectField, onDeleteField, onDuplicateField }) => {
+  const [displayFields, setDisplayFields] = useState(fields);
+
+  // Subscribe to field updates for all visible fields
+  React.useEffect(() => {
+    const unsubscribers: (() => void)[] = [];
+
+    // Subscribe to each field's updates
+    fields.forEach(field => {
+      const unsubscribe = globalFieldStore.subscribeToFieldUpdates(field.id, (updatedField) => {
+        setDisplayFields(prevFields => 
+          prevFields.map(f => f.id === updatedField.id ? updatedField : f)
+        );
+      });
+      unsubscribers.push(unsubscribe);
+    });
+
+    // Update display fields when fields prop changes
+    setDisplayFields(fields);
+
+    return () => {
+      unsubscribers.forEach(unsub => unsub());
+    };
+  }, [fields]);
+
+  return (
+    <div className="space-y-4">
+      {displayFields.map((field) => (
       <div
         key={field.id}
         className={cn(
@@ -90,7 +114,10 @@ const FieldList: React.FC<{
       </div>
     ))}
   </div>
-);
+  );
+};
+
+FieldList.displayName = 'FieldList';
 
 const FieldTypeSidebar: React.FC<{
   onAddField: (type: string) => void;
@@ -139,13 +166,13 @@ const ConfiguratorPanel: React.FC<{
 }> = ({ selectedFieldId, availablePages }) => {
   if (!selectedFieldId) return null;
 
+  // Direct store access - NO PARENT STATE
   const field = globalFieldStore.getField(selectedFieldId);
   if (!field) return null;
 
   return (
     <div className="w-96 border-l bg-card overflow-y-auto min-h-0">
       <FieldConfigurator
-        key={selectedFieldId}
         fieldId={selectedFieldId}
         initialField={field}
         availablePages={availablePages}
@@ -179,13 +206,12 @@ export const FormBuilder: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>("builder");
   const [previewMode, setPreviewMode] = useState<"desktop" | "tablet" | "mobile">("desktop");
   
-  // Force rerender only for field list changes
+  // ONLY SUBSCRIBE TO STRUCTURE CHANGES (add/delete) - NOT FIELD UPDATES!
   const [, forceUpdate] = useState({});
   const forceRerender = () => forceUpdate({});
 
-  // Subscribe to field store changes (only for field list updates)
   React.useEffect(() => {
-    const unsubscribe = globalFieldStore.subscribe(forceRerender);
+    const unsubscribe = globalFieldStore.subscribe(forceRerender); // Only structure changes
     return unsubscribe;
   }, []);
 
@@ -292,7 +318,7 @@ export const FormBuilder: React.FC = () => {
           };
           
           setSelectedFieldId(null);
-          forceRerender(); // Force UI update
+          // Field data will update automatically via subscription
         } catch (error) {
           alert("Error importing configuration. Please check the file format.");
           console.error("Import error:", error);
@@ -303,7 +329,7 @@ export const FormBuilder: React.FC = () => {
     input.click();
   };
 
-  // Get current data directly from store/refs - NO MEMOIZATION
+  // Direct store access - NO PARENT STATE FOR FIELD DATA
   const allFields = globalFieldStore.getAllFields();
   const fieldsToShow = formMetaRef.current.layoutType === "pages" 
     ? (selectedPageId ? globalFieldStore.getFieldsByPage(selectedPageId) : allFields)
@@ -573,9 +599,9 @@ export const MyForm = () => {
                                   title: `Page ${newPageNumber}`,
                                   description: "",
                                 });
-                                setEditingPageId(newPageNumber);
-                                forceRerender();
-                              }}
+                                 setEditingPageId(newPageNumber);
+                                 // Field data will update automatically via subscription
+                               }}
                             >
                               <Plus className="h-4 w-4 mr-2" />
                               Add Page
@@ -655,10 +681,9 @@ export const MyForm = () => {
                                         {page.description && (
                                           <div className="text-muted-foreground">{page.description}</div>
                                         )}
-                                        <div className="text-sm text-muted-foreground">
-                                          {globalFieldStore.getFieldsByPage(page.page).length} fields
-                                        </div>
-                                      </div>
+                                         <div className="text-sm text-muted-foreground">
+                                           {globalFieldStore.getFieldsByPage(page.page).length} fields
+                                         </div>                                      </div>
                                     </div>
                                     <div className="flex items-center space-x-2">
                                       <Button
@@ -682,10 +707,11 @@ export const MyForm = () => {
                                             ) {
                                                 formMetaRef.current.pages = formMetaRef.current.pages
                                                 .filter((p) => p.page !== page.page)
-                                                .map((p, index) => ({ ...p, page: index + 1 }));                                              if (selectedPageId === page.page) {
+                                                .map((p, index) => ({ ...p, page: index + 1 }));
+                                              if (selectedPageId === page.page) {
                                                 setSelectedPageId(null);
                                               }
-                                              forceRerender();
+                                              // Field data will update automatically via subscription
                                             }
                                           }}
                                         >
@@ -721,9 +747,9 @@ export const MyForm = () => {
                                     label: `Tab ${formMetaRef.current.tabs.length + 1}`,
                                     description: "",
                                   });
-                                  setEditingTabId(newTabId);
-                                  forceRerender();
-                                }}
+                                   setEditingTabId(newTabId);
+                                   // Field data will update automatically via subscription
+                                 }}
                               >
                                 <Plus className="h-4 w-4 mr-2" />
                                 Add Tab
@@ -803,10 +829,9 @@ export const MyForm = () => {
                                           {tab.description && (
                                             <div className="text-muted-foreground">{tab.description}</div>
                                           )}
-                                          <div className="text-sm text-muted-foreground">
-                                            {globalFieldStore.getFieldsByTab(tab.id).length} fields
-                                          </div>
-                                        </div>
+                                           <div className="text-sm text-muted-foreground">
+                                             {globalFieldStore.getFieldsByTab(tab.id).length} fields
+                                           </div>                                        </div>
                                       </div>
                                       <div className="flex items-center space-x-2">
                                         <Button
@@ -832,7 +857,7 @@ export const MyForm = () => {
                                                 if (selectedTabId === tab.id) {
                                                   setSelectedTabId(null);
                                                 }
-                                                forceRerender();
+                                                // Field data will update automatically via subscription
                                               }
                                             }}
                                           >
@@ -900,6 +925,7 @@ export const MyForm = () => {
                             </div>
                           ) : (
                             <FieldList
+                              key={`${selectedPageId}-${selectedTabId}-${fieldsToShow.length}`}
                               fields={fieldsToShow}
                               selectedFieldId={selectedFieldId}
                               onSelectField={handleSelectField}

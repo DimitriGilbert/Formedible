@@ -6,29 +6,29 @@ import { cn } from "@/lib/utils";
 import type { FormedibleFormApi, FieldComponentProps, BaseFieldProps } from "@/lib/formedible/types";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { TextField } from "@/components/fields/text-field";
-import { TextareaField } from "@/components/fields/textarea-field";
-import { SelectField } from "@/components/fields/select-field";
-import { CheckboxField } from "@/components/fields/checkbox-field";
-import { SwitchField } from "@/components/fields/switch-field";
-import { NumberField } from "@/components/fields/number-field";
-import { DateField } from "@/components/fields/date-field";
-import { SliderField } from "@/components/fields/slider-field";
-import { FileUploadField } from "@/components/fields/file-upload-field";
-import { ArrayField } from "@/components/fields/array-field";
-import { RadioField } from "@/components/fields/radio-field";
-import { FormTabs } from "@/components/layout/form-tabs";
-import { MultiSelectField } from "@/components/fields/multi-select-field";
-import { ColorPickerField } from "@/components/fields/color-picker-field";
-import { RatingField } from "@/components/fields/rating-field";
-import { PhoneField } from "@/components/fields/phone-field";
-import { LocationPickerField } from "@/components/fields/location-picker-field";
-import { DurationPickerField } from "@/components/fields/duration-picker-field";
-import { AutocompleteField } from "@/components/fields/autocomplete-field";
-import { MaskedInputField } from "@/components/fields/masked-input-field";
-import { ObjectField } from "@/components/fields/object-field";
-import { InlineValidationWrapper } from "@/components/fields/inline-validation-wrapper";
-import { FieldHelp } from "@/components/fields/field-help";
+import { TextField } from "@/components/formedible/fields/text-field";
+import { TextareaField } from "@/components/formedible/fields/textarea-field";
+import { SelectField } from "@/components/formedible/fields/select-field";
+import { CheckboxField } from "@/components/formedible/fields/checkbox-field";
+import { SwitchField } from "@/components/formedible/fields/switch-field";
+import { NumberField } from "@/components/formedible/fields/number-field";
+import { DateField } from "@/components/formedible/fields/date-field";
+import { SliderField } from "@/components/formedible/fields/slider-field";
+import { FileUploadField } from "@/components/formedible/fields/file-upload-field";
+import { ArrayField } from "@/components/formedible/fields/array-field";
+import { RadioField } from "@/components/formedible/fields/radio-field";
+import { FormTabs } from "@/components/formedible/layout/form-tabs";
+import { MultiSelectField } from "@/components/formedible/fields/multi-select-field";
+import { ColorPickerField } from "@/components/formedible/fields/color-picker-field";
+import { RatingField } from "@/components/formedible/fields/rating-field";
+import { PhoneField } from "@/components/formedible/fields/phone-field";
+import { LocationPickerField } from "@/components/formedible/fields/location-picker-field";
+import { DurationPickerField } from "@/components/formedible/fields/duration-picker-field";
+import { AutocompleteField } from "@/components/formedible/fields/autocomplete-field";
+import { MaskedInputField } from "@/components/formedible/fields/masked-input-field";
+import { ObjectField } from "@/components/formedible/fields/object-field";
+import { InlineValidationWrapper } from "@/components/formedible/fields/inline-validation-wrapper";
+import { FieldHelp } from "@/components/formedible/fields/field-help";
 
 interface FormProps {
   className?: string;
@@ -58,6 +58,71 @@ interface FormProps {
   'aria-describedby'?: string;
   tabIndex?: number;
 }
+
+// TanStack Form Best Practice: Reusable subscription component for conditional fields
+interface ConditionalFieldsSubscriptionProps<TFormValues extends Record<string, unknown> = Record<string, unknown>> {
+  form: any; // Form instance passed from parent
+  fields: FieldConfig[];
+  conditionalSections: Array<{
+    condition: (values: TFormValues) => boolean;
+    fields: string[];
+    layout?: {
+      type: 'grid' | 'flex' | 'tabs' | 'accordion' | 'stepper';
+      columns?: number;
+      gap?: string;
+      responsive?: boolean;
+      className?: string;
+    };
+  }>;
+  children: (currentValues: Record<string, unknown>) => React.ReactNode;
+}
+
+const ConditionalFieldsSubscription = <TFormValues extends Record<string, unknown> = Record<string, unknown>>({
+  form,
+  fields,
+  conditionalSections,
+  children
+}: ConditionalFieldsSubscriptionProps<TFormValues>) => {
+  // For now, subscribe to all form values since we don't have explicit dependencies
+  // This could be optimized further by analyzing the condition functions
+  return (
+    <form.Subscribe
+      selector={(state: any) => state.values}
+    >
+      {children}
+    </form.Subscribe>
+  );
+};
+
+// TanStack Form Best Practice: Individual field conditional renderer
+interface FieldConditionalRendererProps {
+  form: any;
+  fieldConfig: FieldConfig;
+  children: (shouldRender: boolean) => React.ReactNode;
+}
+
+const FieldConditionalRenderer: React.FC<FieldConditionalRendererProps> = ({
+  form,
+  fieldConfig,
+  children
+}) => {
+  const { conditional } = fieldConfig;
+  
+  // If no conditional logic, always render
+  if (!conditional) {
+    return <>{children(true)}</>;
+  }
+
+  // TanStack Form Best Practice: Use subscription with minimal selector
+  // This prevents parent re-renders by only subscribing to form state changes
+  return (
+    <form.Subscribe
+      selector={(state: any) => state.values}
+    >
+      {(values: any) => children(conditional(values))}
+    </form.Subscribe>
+  );
+};
 
 export interface FieldConfig {
   name: string;
@@ -1223,7 +1288,6 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
         multiple,
         component: CustomComponent,
         wrapper: CustomWrapper,
-        conditional,
         validation,
         arrayConfig,
         datalist,
@@ -1260,143 +1324,151 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
           } : undefined}
         >
           {(field) => {
-            // Get current form values directly from the field
-            const currentValues = field.form.state.values;
+            // TanStack Form Best Practice: Use FieldConditionalRenderer to prevent parent re-renders
+            return (
+              <FieldConditionalRenderer
+                form={form}
+                fieldConfig={fieldConfig}
+              >
+                {(shouldRender) => {
+                  if (!shouldRender) {
+                    return null;
+                  }
+
+                  // Check for cross-field validation errors
+                  const crossFieldError = crossFieldErrors[name];
+                  const asyncValidationState = asyncValidationStates[name];
             
-            // Check conditional rendering with current form values
-            if (conditional && !conditional(currentValues)) {
-              return null;
-            }
+                  const baseProps = {
+                    fieldApi: field,
+                    label,
+                    placeholder,
+                    description,
+                    wrapperClassName: fieldClassName,
+                    min,
+                    max,
+                    step,
+                    accept,
+                    multiple,
+                    disabled: disabled || loading || field.form.state.isSubmitting,
+                    crossFieldError,
+                    asyncValidationState,
+                  };
 
-            // Check for cross-field validation errors
-            const crossFieldError = crossFieldErrors[name];
-            const asyncValidationState = asyncValidationStates[name];
-            
-            const baseProps = {
-              fieldApi: field,
-              label,
-              placeholder,
-              description,
-              wrapperClassName: fieldClassName,
-              min,
-              max,
-              step,
-              accept,
-              multiple,
-              disabled: disabled || loading || field.form.state.isSubmitting,
-              crossFieldError,
-              asyncValidationState,
-            };
+                  // Select the component to use
+                  const FieldComponent = CustomComponent || fieldComponents[type] || TextField;
 
-            // Select the component to use
-            const FieldComponent = CustomComponent || fieldComponents[type] || TextField;
+                  // Add type-specific props
+                  let props: FieldComponentProps = { ...baseProps };
+                  
+                  // Normalize options to the expected format
+                  const normalizedOptions = options ? options.map(opt => 
+                    typeof opt === 'string' ? { value: opt, label: opt } : opt
+                  ) : [];
 
-            // Add type-specific props
-            let props: FieldComponentProps = { ...baseProps };
-            
-            // Normalize options to the expected format
-            const normalizedOptions = options ? options.map(opt => 
-              typeof opt === 'string' ? { value: opt, label: opt } : opt
-            ) : [];
+                  if (type === 'select') {
+                    props = { ...props, options: normalizedOptions };
+                  } else if (type === 'array') {
+                    const mappedArrayConfig = arrayConfig ? {
+                      itemType: arrayConfig.itemType || 'text',
+                      itemLabel: arrayConfig.itemLabel,
+                      itemPlaceholder: arrayConfig.itemPlaceholder,
+                      minItems: arrayConfig.minItems,
+                      maxItems: arrayConfig.maxItems,
+                      itemValidation: arrayConfig.itemValidation,
+                      itemComponent: arrayConfig.itemComponent as React.ComponentType<BaseFieldProps>,
+                      addButtonLabel: arrayConfig.addButtonLabel,
+                      removeButtonLabel: arrayConfig.removeButtonLabel,
+                      sortable: arrayConfig.sortable,
+                      defaultValue: arrayConfig.defaultValue
+                    } : undefined;
+                    props = { ...props, arrayConfig: mappedArrayConfig };
+                  } else if (['text', 'email', 'password', 'url', 'tel'].includes(type)) {
+                    props = { ...props, type: type as 'text' | 'email' | 'password' | 'url' | 'tel', datalist: datalist?.options };
+                  } else if (type === 'radio') {
+                    props = { ...props, options: normalizedOptions };
+                  } else if (type === 'multiSelect') {
+                    props = { ...props, options: normalizedOptions, multiSelectConfig };
+                  } else if (type === 'colorPicker') {
+                    props = { ...props, colorConfig };
+                  } else if (type === 'rating') {
+                    props = { ...props, ratingConfig };
+                  } else if (type === 'phone') {
+                    props = { ...props, phoneConfig };
+                  } else if (type === 'location') {
+                    props = { ...props, locationConfig };
+                  } else if (type === 'duration') {
+                    props = { ...props, durationConfig };
+                  } else if (type === 'autocomplete') {
+                    props = { ...props, autocompleteConfig };
+                  } else if (type === 'masked') {
+                    props = { ...props, maskedInputConfig };
+                  } else if (type === 'object') {
+                    props = { ...props, objectConfig };
+                  } else if (type === 'slider') {
+                    props = { ...props, sliderConfig };
+                  } else if (type === 'number') {
+                    props = { ...props, numberConfig };
+                  } else if (type === 'date') {
+                    props = { ...props, dateConfig };
+                  } else if (type === 'file') {
+                    props = { ...props, fileConfig };
+                  } else if (type === 'textarea') {
+                    props = { ...props, textareaConfig };
+                  } else if (type === 'password') {
+                    props = { ...props, passwordConfig };
+                  } else if (type === 'email') {
+                    props = { ...props, emailConfig };
+                  }
 
-            if (type === 'select') {
-              props = { ...props, options: normalizedOptions };
-            } else if (type === 'array') {
-              const mappedArrayConfig = arrayConfig ? {
-                itemType: arrayConfig.itemType || 'text',
-                itemLabel: arrayConfig.itemLabel,
-                itemPlaceholder: arrayConfig.itemPlaceholder,
-                minItems: arrayConfig.minItems,
-                maxItems: arrayConfig.maxItems,
-                itemValidation: arrayConfig.itemValidation,
-                itemComponent: arrayConfig.itemComponent as React.ComponentType<BaseFieldProps>,
-                addButtonLabel: arrayConfig.addButtonLabel,
-                removeButtonLabel: arrayConfig.removeButtonLabel,
-                sortable: arrayConfig.sortable,
-                defaultValue: arrayConfig.defaultValue
-              } : undefined;
-              props = { ...props, arrayConfig: mappedArrayConfig };
-            } else if (['text', 'email', 'password', 'url', 'tel'].includes(type)) {
-              props = { ...props, type: type as 'text' | 'email' | 'password' | 'url' | 'tel', datalist: datalist?.options };
-            } else if (type === 'radio') {
-              props = { ...props, options: normalizedOptions };
-            } else if (type === 'multiSelect') {
-              props = { ...props, options: normalizedOptions, multiSelectConfig };
-            } else if (type === 'colorPicker') {
-              props = { ...props, colorConfig };
-            } else if (type === 'rating') {
-              props = { ...props, ratingConfig };
-            } else if (type === 'phone') {
-              props = { ...props, phoneConfig };
-            } else if (type === 'location') {
-              props = { ...props, locationConfig };
-            } else if (type === 'duration') {
-              props = { ...props, durationConfig };
-            } else if (type === 'autocomplete') {
-              props = { ...props, autocompleteConfig };
-            } else if (type === 'masked') {
-              props = { ...props, maskedInputConfig };
-            } else if (type === 'object') {
-              props = { ...props, objectConfig };
-            } else if (type === 'slider') {
-              props = { ...props, sliderConfig };
-            } else if (type === 'number') {
-              props = { ...props, numberConfig };
-            } else if (type === 'date') {
-              props = { ...props, dateConfig };
-            } else if (type === 'file') {
-              props = { ...props, fileConfig };
-            } else if (type === 'textarea') {
-              props = { ...props, textareaConfig };
-            } else if (type === 'password') {
-              props = { ...props, passwordConfig };
-            } else if (type === 'email') {
-              props = { ...props, emailConfig };
-            }
+                  // Render the field component
+                  const fieldElement = <FieldComponent {...props} />;
 
-            // Render the field component
-            const fieldElement = <FieldComponent {...props} />;
+                  // Apply inline validation wrapper if enabled
+                  const wrappedFieldElement = inlineValidation?.enabled 
+                    ? (
+                        <InlineValidationWrapper
+                          fieldApi={field}
+                          inlineValidation={inlineValidation}
+                        >
+                          {fieldElement}
+                        </InlineValidationWrapper>
+                      )
+                    : fieldElement;
 
-            // Apply inline validation wrapper if enabled
-            const wrappedFieldElement = inlineValidation?.enabled 
-              ? (
-                  <InlineValidationWrapper
-                    fieldApi={field}
-                    inlineValidation={inlineValidation}
-                  >
-                    {fieldElement}
-                  </InlineValidationWrapper>
-                )
-              : fieldElement;
+                  // Add field help if provided
+                  const fieldWithHelp = help ? (
+                    <div className="space-y-2">
+                      {wrappedFieldElement}
+                      <FieldHelp help={help} />
+                    </div>
+                  ) : wrappedFieldElement;
 
-            // Add field help if provided
-            const fieldWithHelp = help ? (
-              <div className="space-y-2">
-                {wrappedFieldElement}
-                <FieldHelp help={help} />
-              </div>
-            ) : wrappedFieldElement;
-
-            // Apply custom wrapper or global wrapper
-            const Wrapper = CustomWrapper || globalWrapper;
-            
-            return Wrapper 
-              ? <Wrapper field={fieldConfig}>{fieldWithHelp}</Wrapper>
-              : fieldWithHelp;
+                  // Apply custom wrapper or global wrapper
+                  const Wrapper = CustomWrapper || globalWrapper;
+                  
+                  return Wrapper 
+                    ? <Wrapper field={fieldConfig}>{fieldWithHelp}</Wrapper>
+                    : fieldWithHelp;
+                }}
+              </FieldConditionalRenderer>
+            );
           }}
         </form.Field>
       );
-    }, [form, fieldComponents, globalWrapper, disabled, loading, crossFieldErrors, asyncValidationStates, fieldClassName]);
+    }, []);
 
-    // Tab content renderer with subscription-based conditional rendering
-    const TabContentRenderer: React.FC<{ tabFields: FieldConfig[] }> = React.memo(({ tabFields }) => {
+    const renderTabContent = React.useCallback((tabFields: FieldConfig[]) => {
+      // TanStack Form Best Practice: Use reusable subscription component
       return (
-        <form.Subscribe
-          selector={(state) => state.values}
-          children={(currentValues) => {
-            // Filter fields based on conditional sections
+        <ConditionalFieldsSubscription
+          form={form}
+          fields={tabFields}
+          conditionalSections={conditionalSections}
+        >
+          {(currentValues) => {
+            // Filter fields based on conditional sections using subscribed values
             const visibleFields = tabFields.filter(field => {
-              // Check if field is part of any conditional section
               const conditionalSection = conditionalSections.find(section => 
                 section.fields.includes(field.name)
               );
@@ -1445,37 +1517,43 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
                   renderSection(sectionKey, sectionData)
                 );
           }}
-        />
+        </ConditionalFieldsSubscription>
       );
-    });
+    }, [renderField, form]);
 
-    const renderTabContent = React.useCallback((tabFields: FieldConfig[]) => {
-      return <TabContentRenderer tabFields={tabFields} />;
-    }, [conditionalSections, renderField]);
+    const renderPageContent = React.useCallback(() => {
+      if (hasTabs) {
+        // Render tabs - memoize tab content to prevent rerenders
+        const tabsToRender = tabs!.map(tab => ({
+          id: tab.id,
+          label: tab.label,
+          content: renderTabContent(fieldsByTab[tab.id] || [])
+        }));
 
-    // Memoize tabs structure separately to prevent recreation
-    const memoizedTabs = React.useMemo(() => {
-      if (!hasTabs || !tabs) return [];
-      
-      return tabs.map(tab => ({
-        id: tab.id,
-        label: tab.label,
-        content: renderTabContent(fieldsByTab[tab.id] || [])
-      }));
-    }, [hasTabs, tabs, fieldsByTab, renderTabContent]);
+        return (
+          <FormTabs
+            tabs={tabsToRender}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+          />
+        );
+      }
 
-    // Page content renderer with subscription-based conditional rendering
-    const PageContentRenderer: React.FC = React.memo(() => {
+      // Original page rendering logic with TanStack Form best practices
       const currentFields = getCurrentPageFields();
       const pageConfig = getCurrentPageConfig();
       
+      // For now, subscribe to all form values since we don't have explicit dependencies
+      // This could be optimized further by analyzing the condition functions
+
+      // TanStack Form Best Practice: Use targeted selector for minimal re-renders
       return (
         <form.Subscribe
-          selector={(state) => state.values}
-          children={(currentValues) => {
-            // Filter fields based on conditional sections
+          selector={(state: any) => state.values}
+        >
+          {(currentValues) => {
+            // Filter fields based on conditional sections using subscribed values
             const visibleFields = currentFields.filter(field => {
-              // Check if field is part of any conditional section
               const conditionalSection = conditionalSections.find(section => 
                 section.fields.includes(field.name)
               );
@@ -1536,23 +1614,9 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
               </PageComponent>
             );
           }}
-        />
+        </form.Subscribe>
       );
-    });
-
-    const renderPageContent = React.useCallback(() => {
-      if (hasTabs) {
-        return (
-          <FormTabs
-            tabs={memoizedTabs}
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-          />
-        );
-      }
-
-      return <PageContentRenderer />;
-    }, [hasTabs, memoizedTabs, activeTab, setActiveTab, getCurrentPageFields, getCurrentPageConfig, conditionalSections, renderField, currentPage, totalPages]);
+    }, [renderTabContent, renderField, activeTab, hasTabs, tabs, fieldsByTab, setActiveTab]);
 
     const renderProgress = () => {
       if (!hasPages || !progress) return null;

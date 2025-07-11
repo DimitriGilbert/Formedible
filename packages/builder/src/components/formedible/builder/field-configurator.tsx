@@ -20,20 +20,27 @@ export const FieldConfigurator: React.FC<FieldConfiguratorProps> = ({
   // Track the current field state without causing re-renders
   const currentFieldRef = useRef<FormField>(initialField);
   
-  const needsOptions = ['select', 'radio', 'multiSelect'].includes(initialField.type);
-  const needsSliderConfig = initialField.type === 'slider';
-  const needsNumberConfig = initialField.type === 'number';
-  const needsDateConfig = initialField.type === 'date';
-  const needsFileConfig = initialField.type === 'file';
-  const needsTextareaConfig = initialField.type === 'textarea';
-  const needsPasswordConfig = initialField.type === 'password';
-  const needsEmailConfig = initialField.type === 'email';
-  const needsRatingConfig = initialField.type === 'rating';
-  const needsPhoneConfig = initialField.type === 'phone';
-  const needsColorConfig = initialField.type === 'colorPicker';
-  const needsMultiSelectConfig = initialField.type === 'multiSelect';
+  // Update current field when props change
+  React.useEffect(() => {
+    currentFieldRef.current = initialField;
+  }, [fieldId, initialField]);
+  
+  // Use current field for configuration (this will update when field changes)
+  const currentField = currentFieldRef.current;
+  const needsOptions = ['select', 'radio', 'multiSelect'].includes(currentField.type);
+  const needsSliderConfig = currentField.type === 'slider';
+  const needsNumberConfig = currentField.type === 'number';
+  const needsDateConfig = currentField.type === 'date';
+  const needsFileConfig = currentField.type === 'file';
+  const needsTextareaConfig = currentField.type === 'textarea';
+  const needsPasswordConfig = currentField.type === 'password';
+  const needsEmailConfig = currentField.type === 'email';
+  const needsRatingConfig = currentField.type === 'rating';
+  const needsPhoneConfig = currentField.type === 'phone';
+  const needsColorConfig = currentField.type === 'colorPicker';
+  const needsMultiSelectConfig = currentField.type === 'multiSelect';
 
-  // SINGLE FORM WITH TABS CONFIGURATION
+  // SINGLE FORM WITH TABS CONFIGURATION - TanStack Form Best Practice Implementation
   const configForm = useFormedible({
     schema: z.object({
       // Basic fields
@@ -403,13 +410,22 @@ export const FieldConfigurator: React.FC<FieldConfiguratorProps> = ({
       
       // DIRECT STORE UPDATE - NO PARENT RE-RENDERS!
       onChange: ({ value }: { value: any }) => {
+        // console.log('=== FIELD CONFIGURATOR CHANGE ===');
+        // console.log('Field ID:', fieldId);
+        // console.log('Current field page:', currentFieldRef.current.page);
+        // console.log('Form value page:', value.page);
+        
+        // Preserve original page if form value is empty/undefined
+        const finalPage = value.page || currentFieldRef.current.page || 1;
+        // console.log('Will update to page:', finalPage);
+        
         const updatedField: FormField = {
           ...currentFieldRef.current,
           label: value.label,
           name: value.name,
           placeholder: value.placeholder,
           description: value.description,
-          page: value.page,
+          page: finalPage,
           group: value.group,
           required: value.required,
           options: value.options,
@@ -464,15 +480,23 @@ export const FieldConfigurator: React.FC<FieldConfiguratorProps> = ({
           } : undefined,
         };
         
-        // UPDATE FIELD STORE DIRECTLY - NO PARENT RE-RENDER!
+        // UPDATE FIELD STORE AND NOTIFY SUBSCRIBERS
         currentFieldRef.current = updatedField;
         globalFieldStore.updateField(fieldId, updatedField);
+        
+        // Notify field update subscribers immediately
+        globalFieldStore.notifyFieldUpdate(fieldId, updatedField);
       },
     },
     
     // NO SUBMIT BUTTON!
     showSubmitButton: false,
   });
+
+  // Reset form values when field changes
+  React.useEffect(() => {
+    configForm.form.reset();
+  }, [fieldId, configForm.form]);
 
   return (
     <div className="space-y-6 p-6">

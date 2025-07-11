@@ -84,11 +84,12 @@ const FIELD_TYPES = [
   { value: "array", label: "Array Field", icon: "📚" },
 ];
 
-// ISOLATED FIELD STORE - NEVER TRIGGERS PARENT RERENDERS
+// ISOLATED FIELD STORE - SEPARATE NOTIFICATIONS FOR STRUCTURE VS FIELD UPDATES
 class FieldStore {
   private fields: Record<string, FormField> = {};
   private fieldOrder: string[] = [];
-  private listeners: Set<() => void> = new Set();
+  private structureListeners: Set<() => void> = new Set(); // For add/delete/reorder
+  private fieldUpdateCallbacks: Map<string, Set<(field: FormField) => void>> = new Map(); // Field-specific subscribers
 
   addField(type: string, selectedPage?: number): string {
     const id = `field_${Date.now()}`;
@@ -103,19 +104,27 @@ class FieldStore {
     
     this.fields[id] = newField;
     this.fieldOrder.push(id);
-    this.notifyListeners();
+    this.notifyStructureListeners(); // Structure change
     return id;
   }
 
   updateField(fieldId: string, updatedField: FormField): void {
     this.fields[fieldId] = updatedField;
-    // DO NOT notify listeners - this prevents parent rerenders
+    // DO NOT notify structure listeners - field updates should not cause parent re-renders!
+  }
+
+  // Notify specific field subscribers
+  notifyFieldUpdate(fieldId: string, field: FormField): void {
+    const subscribers = this.fieldUpdateCallbacks.get(fieldId);
+    if (subscribers) {
+      subscribers.forEach(callback => callback(field));
+    }
   }
 
   deleteField(fieldId: string): void {
     delete this.fields[fieldId];
     this.fieldOrder = this.fieldOrder.filter(id => id !== fieldId);
-    this.notifyListeners();
+    this.notifyStructureListeners(); // Structure change
   }
 
   duplicateField(fieldId: string): string | null {
@@ -130,7 +139,7 @@ class FieldStore {
       };
       this.fields[id] = newField;
       this.fieldOrder.push(id);
-      this.notifyListeners();
+      this.notifyStructureListeners(); // Structure change
       return id;
     }
     return null;
@@ -152,20 +161,39 @@ class FieldStore {
     return this.fieldOrder.map(id => this.fields[id]).filter(field => field && field.tab === tabId);
   }
 
+  // Subscribe to structure changes only (add/delete/reorder)
   subscribe(listener: () => void): () => void {
-    this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
+    this.structureListeners.add(listener);
+    return () => this.structureListeners.delete(listener);
   }
 
-  private notifyListeners(): void {
-    this.listeners.forEach(listener => listener());
+  // Subscribe to specific field updates
+  subscribeToFieldUpdates(fieldId: string, callback: (field: FormField) => void): () => void {
+    if (!this.fieldUpdateCallbacks.has(fieldId)) {
+      this.fieldUpdateCallbacks.set(fieldId, new Set());
+    }
+    this.fieldUpdateCallbacks.get(fieldId)!.add(callback);
+    
+    return () => {
+      const subscribers = this.fieldUpdateCallbacks.get(fieldId);
+      if (subscribers) {
+        subscribers.delete(callback);
+        if (subscribers.size === 0) {
+          this.fieldUpdateCallbacks.delete(fieldId);
+        }
+      }
+    };
+  }
+
+  private notifyStructureListeners(): void {
+    this.structureListeners.forEach(listener => listener());
   }
 
   // Import/Export methods
   clear(): void {
     this.fields = {};
     this.fieldOrder = [];
-    this.notifyListeners();
+    this.notifyStructureListeners();
   }
 
   importFields(fields: any[]): void {
