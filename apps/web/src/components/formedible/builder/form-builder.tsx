@@ -164,17 +164,25 @@ const ConfiguratorPanel: React.FC<{
   selectedFieldId: string | null;
   availablePages: number[];
 }> = ({ selectedFieldId, availablePages }) => {
-  if (!selectedFieldId) return null;
+  const [currentField, setCurrentField] = useState<FormField | null>(null);
 
-  // Direct store access - NO PARENT STATE
-  const field = globalFieldStore.getField(selectedFieldId);
-  if (!field) return null;
+  // Update field data when selectedFieldId changes
+  React.useEffect(() => {
+    if (selectedFieldId) {
+      const field = globalFieldStore.getField(selectedFieldId);
+      setCurrentField(field || null);
+    } else {
+      setCurrentField(null);
+    }
+  }, [selectedFieldId]);
+
+  if (!selectedFieldId || !currentField) return null;
 
   return (
     <div className="w-96 border-l bg-card overflow-y-auto min-h-0">
       <FieldConfigurator
         fieldId={selectedFieldId}
-        initialField={field}
+        initialField={currentField}
         availablePages={availablePages}
       />
     </div>

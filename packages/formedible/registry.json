@@ -164,6 +164,21 @@
           "path": "src/components/formedible/layout/form-tabs.tsx",
           "type": "registry:component",
           "target": "components/formedible/layout/form-tabs.tsx"
+        },
+        {
+          "path": "src/components/formedible/layout/form-stepper.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/layout/form-stepper.tsx"
+        },
+        {
+          "path": "src/components/formedible/layout/form-grid.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/layout/form-grid.tsx"
+        },
+        {
+          "path": "src/components/formedible/layout/form-accordion.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/layout/form-accordion.tsx"
         }
       ],
       "categories": ["form", "hook"],
