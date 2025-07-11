@@ -13,6 +13,18 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { motion } from "motion/react";
 
+// Components
+import { DemoCard } from "@/components/demo/demo-card";
+
+// Code examples
+import {
+  exampleContactFormCode,
+  exampleRegistrationFormCode,
+  exampleSurveyFormCode,
+  exampleCheckoutFormCode,
+  exampleJobApplicationFormCode,
+} from "@/data/code-examples";
+
 // Schemas
 const contactSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -451,20 +463,15 @@ export default function ExamplesPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <Card className="bg-muted/30">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      Contact Form
-                      <Badge variant="secondary">Basic</Badge>
-                    </CardTitle>
-                    <CardDescription>
-                      A simple contact form with validation, demonstrating basic field types and schema validation.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <contactForm.Form className="space-y-4" />
-                  </CardContent>
-                </Card>
+                <DemoCard
+                  title="Contact Form"
+                  description="A simple contact form with validation, demonstrating basic field types and schema validation."
+                  badges={[{ text: "Basic", variant: "secondary" }]}
+                  preview={<contactForm.Form className="space-y-4" />}
+                  code={exampleContactFormCode}
+                  codeTitle="Contact Form Implementation"
+                  codeDescription="Simple form setup with subject selection, message validation, and urgency flag"
+                />
               </motion.div>
             </TabsContent>
 
@@ -474,20 +481,15 @@ export default function ExamplesPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <Card className="bg-muted/30">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      Multi-Step Registration
-                      <Badge variant="secondary">Multi-Page</Badge>
-                    </CardTitle>
-                    <CardDescription>
-                      A multi-page registration form with progress tracking and various field types.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <registrationForm.Form className="space-y-4" />
-                  </CardContent>
-                </Card>
+                <DemoCard
+                  title="Multi-Step Registration"
+                  description="A multi-page registration form with progress tracking and various field types."
+                  badges={[{ text: "Multi-Page", variant: "secondary" }]}
+                  preview={<registrationForm.Form className="space-y-4" />}
+                  code={exampleRegistrationFormCode}
+                  codeTitle="Multi-Step Registration Form"
+                  codeDescription="Complete registration flow with personal info, contact details, and preferences across 3 pages"
+                />
               </motion.div>
             </TabsContent>
 
@@ -497,20 +499,15 @@ export default function ExamplesPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <Card className="bg-muted/30">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      Dynamic Survey Form
-                      <Badge variant="secondary">Conditional</Badge>
-                    </CardTitle>
-                    <CardDescription>
-                      A survey form with conditional questions that appear based on previous answers.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <surveyForm.Form className="space-y-4" />
-                  </CardContent>
-                </Card>
+                <DemoCard
+                  title="Dynamic Survey Form"
+                  description="A survey form with conditional questions that appear based on previous answers."
+                  badges={[{ text: "Conditional", variant: "secondary" }]}
+                  preview={<surveyForm.Form className="space-y-4" />}
+                  code={exampleSurveyFormCode}
+                  codeTitle="Dynamic Survey with Conditional Logic"
+                  codeDescription="Advanced survey featuring rating fields, conditional improvements section, and multi-select features"
+                />
               </motion.div>
             </TabsContent>
 
@@ -520,20 +517,15 @@ export default function ExamplesPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <Card className="bg-muted/30">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      E-commerce Checkout
-                      <Badge variant="secondary">Complex</Badge>
-                    </CardTitle>
-                    <CardDescription>
-                      A complete checkout form with shipping, payment, and order options across multiple pages.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <checkoutForm.Form className="space-y-4" />
-                  </CardContent>
-                </Card>
+                <DemoCard
+                  title="E-commerce Checkout"
+                  description="A complete checkout form with shipping, payment, and order options across multiple pages."
+                  badges={[{ text: "Complex", variant: "secondary" }]}
+                  preview={<checkoutForm.Form className="space-y-4" />}
+                  code={exampleCheckoutFormCode}
+                  codeTitle="E-commerce Checkout Flow"
+                  codeDescription="Complete checkout process with shipping address, payment methods, and conditional card fields"
+                />
               </motion.div>
             </TabsContent>
 
@@ -543,20 +535,15 @@ export default function ExamplesPage() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3 }}
               >
-                <Card className="bg-muted/30">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      Job Application Form
-                      <Badge variant="secondary">Advanced</Badge>
-                    </CardTitle>
-                    <CardDescription>
-                      A comprehensive job application form with skills selection, availability, and open-ended questions.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <jobApplicationForm.Form className="space-y-4" />
-                  </CardContent>
-                </Card>
+                <DemoCard
+                  title="Job Application Form"
+                  description="A comprehensive job application form with skills selection, availability, and open-ended questions."
+                  badges={[{ text: "Advanced", variant: "secondary" }]}
+                  preview={<jobApplicationForm.Form className="space-y-4" />}
+                  code={exampleJobApplicationFormCode}
+                  codeTitle="Advanced Job Application Form"
+                  codeDescription="Multi-page application with searchable skills selection, salary expectations, and detailed questions"
+                />
               </motion.div>
             </TabsContent>
           </Tabs>
