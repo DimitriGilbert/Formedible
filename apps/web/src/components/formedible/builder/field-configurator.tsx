@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useMemo } from "react";
 import { useFormedible } from "formedible";
 import { z } from "zod";
 
@@ -517,13 +517,95 @@ export const FieldConfigurator: React.FC<FieldConfiguratorProps> = ({
   };
 
   // Single unified form
+  // Define tabs based on field type
+  const availableTabs = useMemo(() => {
+    const tabs = [
+      { id: "basic", label: "Basic" },
+    ];
+
+    if (needsOptions) {
+      tabs.push({ id: "options", label: "Options" });
+    }
+
+    if (needsSliderConfig) {
+      tabs.push({ id: "slider", label: "Slider" });
+    }
+
+    if (needsNumberConfig) {
+      tabs.push({ id: "number", label: "Number" });
+    }
+
+    if (needsDateConfig) {
+      tabs.push({ id: "date", label: "Date" });
+    }
+
+    if (needsFileConfig) {
+      tabs.push({ id: "file", label: "File" });
+    }
+
+    if (needsTextareaConfig) {
+      tabs.push({ id: "textarea", label: "Textarea" });
+    }
+
+    if (needsPasswordConfig) {
+      tabs.push({ id: "password", label: "Password" });
+    }
+
+    if (needsEmailConfig) {
+      tabs.push({ id: "email", label: "Email" });
+    }
+
+    if (needsRatingConfig) {
+      tabs.push({ id: "rating", label: "Rating" });
+    }
+
+    if (needsPhoneConfig) {
+      tabs.push({ id: "phone", label: "Phone" });
+    }
+
+    if (needsColorConfig) {
+      tabs.push({ id: "color", label: "Color" });
+    }
+
+    if (needsMultiSelectConfig) {
+      tabs.push({ id: "multiselect", label: "Multi-Select" });
+    }
+
+    tabs.push(
+      { id: "help", label: "Help" },
+      { id: "section", label: "Section" },
+      { id: "validation", label: "Validation" }
+    );
+
+    return tabs;
+  }, [needsOptions, needsSliderConfig, needsNumberConfig, needsDateConfig, needsFileConfig, needsTextareaConfig, needsPasswordConfig, needsEmailConfig, needsRatingConfig, needsPhoneConfig, needsColorConfig, needsMultiSelectConfig]);
+
   const configForm = useFormedible({
-    schema: fieldConfigurationSchema,
-    fields: buildFields(),
+    fields: buildFields().map(field => ({
+      ...field,
+      tab: field.section?.title === "Basic Configuration" ? "basic" :
+           field.section?.title === "Options Configuration" ? "options" :
+           field.section?.title === "Slider Configuration" ? "slider" :
+           field.section?.title === "Number Configuration" ? "number" :
+           field.section?.title === "Date Configuration" ? "date" :
+           field.section?.title === "File Configuration" ? "file" :
+           field.section?.title === "Textarea Configuration" ? "textarea" :
+           field.section?.title === "Password Configuration" ? "password" :
+           field.section?.title === "Email Configuration" ? "email" :
+           field.section?.title === "Rating Configuration" ? "rating" :
+           field.section?.title === "Phone Configuration" ? "phone" :
+           field.section?.title === "Color Configuration" ? "color" :
+           field.section?.title === "Multi-Select Configuration" ? "multiselect" :
+           field.section?.title === "Help Configuration" ? "help" :
+           field.section?.title === "Section Configuration" ? "section" :
+           field.section?.title === "Validation Configuration" ? "validation" :
+           "basic"
+    })),
+    tabs: availableTabs,
     formOptions: {
       defaultValues: {
-        label: initialField.label,
-        name: initialField.name,
+        label: initialField.label || "",
+        name: initialField.name || "",
         placeholder: initialField.placeholder || "",
         description: initialField.description || "",
         page: initialField.page || 1,

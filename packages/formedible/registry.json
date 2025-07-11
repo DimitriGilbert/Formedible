@@ -22,7 +22,8 @@
         "slider",
         "radio-group",
         "progress",
-        "dialog"
+        "dialog",
+        "tabs"
       ],
       "dependencies": [
         "@tanstack/react-form",
@@ -155,6 +156,11 @@
           "path": "src/components/fields/textarea-field.tsx",
           "type": "registry:component",
           "target": "components/formedible/fields/textarea-field.tsx"
+        },
+        {
+          "path": "src/components/layout/form-tabs.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/layout/form-tabs.tsx"
         }
       ],
       "categories": ["form", "hook"],

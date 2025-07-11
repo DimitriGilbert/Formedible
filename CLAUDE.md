@@ -4,7 +4,7 @@
 - `npm run build` - Build all packages (uses turbo)
 - `npm run build:web` - Build web app
 - `npm run build:pkg` - Build package only
-- `npm run lint` - Run eslin
+- `npm run lint` - Run ESLint
 - `npm run lint:web` - Lint web app
 - `npm run lint:pkg` - Lint package only
 
@@ -25,3 +25,4 @@
 
 ## formedible work
 - Always work on the package first then unse `scripts/sync-formedible` to sync the changes to the web app.
+- work on package first, build package and then use `scripts/sync-formedible` to sync the changes to the web app.
