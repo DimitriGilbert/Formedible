@@ -1,7 +1,14 @@
-'use client';
-import React, { useCallback, useMemo, useState, useEffect } from 'react';
-import { useFormedible } from '@/hooks/use-formedible';
-import { z } from 'zod';
+"use client";
+import React, { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, Trash2, HelpCircle, Settings, Palette, Star, Phone, Upload, List } from "lucide-react";
 
 interface FormField {
   id: string;
@@ -11,8 +18,6 @@ interface FormField {
   placeholder?: string;
   description?: string;
   required?: boolean;
-  options?: Array<{ value: string; label: string }>;
-  validation?: any;
   page?: number;
   group?: string;
   section?: {
@@ -24,7 +29,7 @@ interface FormField {
   help?: {
     text?: string;
     tooltip?: string;
-    position?: 'top' | 'bottom' | 'left' | 'right';
+    position?: "top" | "bottom" | "left" | "right";
     link?: { url: string; text: string };
   };
   inlineValidation?: {
@@ -32,318 +37,778 @@ interface FormField {
     debounceMs?: number;
     showSuccess?: boolean;
   };
-  arrayConfig?: any;
-  datalist?: any;
-  multiSelectConfig?: any;
-  colorConfig?: any;
-  ratingConfig?: any;
-  phoneConfig?: any;
+  options?: Array<{ value: string; label: string }>;
+  arrayConfig?: {
+    minItems?: number;
+    maxItems?: number;
+    addLabel?: string;
+    removeLabel?: string;
+  };
+  datalist?: string[];
+  multiSelectConfig?: {
+    placeholder?: string;
+    searchable?: boolean;
+    maxSelections?: number;
+  };
+  colorConfig?: {
+    format?: "hex" | "rgb" | "hsl";
+    presets?: string[];
+  };
+  ratingConfig?: {
+    max?: number;
+    allowHalf?: boolean;
+    icon?: string;
+  };
+  phoneConfig?: {
+    defaultCountry?: string;
+    format?: "national" | "international";
+  };
+  validation?: {
+    min?: number;
+    max?: number;
+    minLength?: number;
+    maxLength?: number;
+    pattern?: string;
+    custom?: string;
+  };
 }
 
-// STABLE PROPS - NEVER CHANGE!
 interface FieldConfiguratorProps {
-  fieldId: string; // Only the ID - NEVER the full object
-  getField: (id: string) => FormField | undefined; // Stable function reference
-  onUpdate: (fieldId: string, updates: Partial<FormField>) => void; // Stable function reference
-  availablePages: number[]; // This can change but rarely
+  fieldId: string;
+  initialField: FormField;
+  onFieldChange: (fieldId: string, field: FormField) => void;
+  availablePages?: number[];
 }
 
-const FIELD_TYPES = [
-  { value: "text", label: "Text Input", icon: "📝" },
-  { value: "email", label: "Email", icon: "📧" },
-  { value: "password", label: "Password", icon: "🔒" },
-  { value: "textarea", label: "Textarea", icon: "📄" },
-  { value: "number", label: "Number", icon: "🔢" },
-  { value: "select", label: "Select", icon: "📋" },
-  { value: "radio", label: "Radio Group", icon: "⚪" },
-  { value: "multiSelect", label: "Multi-Select", icon: "☑️" },
-  { value: "checkbox", label: "Checkbox", icon: "✅" },
-  { value: "switch", label: "Switch", icon: "🔘" },
-  { value: "date", label: "Date Picker", icon: "📅" },
-  { value: "slider", label: "Slider", icon: "🎚️" },
-  { value: "rating", label: "Rating", icon: "⭐" },
-  { value: "colorPicker", label: "Color Picker", icon: "🎨" },
-  { value: "phone", label: "Phone Number", icon: "📞" },
-  { value: "file", label: "File Upload", icon: "📎" },
-  { value: "array", label: "Array Field", icon: "📚" },
-];
-
-// INTERNAL COMPONENT - NEVER RE-RENDERS UNLESS fieldId CHANGES
-const FieldConfiguratorInternal: React.FC<FieldConfiguratorProps> = ({
+export const FieldConfigurator: React.FC<FieldConfiguratorProps> = ({
   fieldId,
-  getField,
-  onUpdate,
-  availablePages,
+  initialField,
+  onFieldChange,
+  availablePages = [1],
 }) => {
-  // Get initial field data ONCE
-  const initialField = getField(fieldId);
-  
-  // LOCAL STATE - completely independent from parent
-  const [localField, setLocalField] = useState<FormField>(() => 
-    initialField || {
-      id: fieldId,
-      name: '',
-      type: 'text',
-      label: '',
-    } as FormField
-  );
+  const [field, setField] = useState<FormField>(initialField);
 
-  // Only sync when fieldId changes (new field selected)
-  useEffect(() => {
-    const field = getField(fieldId);
-    if (field) {
-      setLocalField(field);
-    }
-  }, [fieldId, getField]);
+  const updateField = (updates: Partial<FormField>) => {
+    const updatedField = { ...field, ...updates };
+    setField(updatedField);
+    onFieldChange(fieldId, updatedField);
+  };
 
-  // Base configuration fields
-  const baseFields = useMemo(() => [
-    {
-      name: 'name',
-      type: 'text',
-      label: 'Field Name',
-      placeholder: 'e.g., firstName, email',
-      validation: z.string().min(1, 'Field name is required'),
-      help: {
-        text: 'Unique identifier for this field',
-        tooltip: 'Used as the key in form data'
-      }
-    },
-    {
-      name: 'label',
-      type: 'text',
-      label: 'Label',
-      placeholder: 'e.g., First Name, Email Address',
-      validation: z.string().min(1, 'Label is required'),
-    },
-    {
-      name: 'placeholder',
-      type: 'text',
-      label: 'Placeholder',
-      placeholder: 'e.g., Enter your name...',
-    },
-    {
-      name: 'description',
-      type: 'textarea',
-      label: 'Description',
-      placeholder: 'Optional description or help text',
-    },
-    {
-      name: 'required',
-      type: 'switch',
-      label: 'Required Field',
-      description: 'Make this field mandatory',
-    },
-    {
-      name: 'page',
-      type: 'select',
-      label: 'Page',
-      options: availablePages.map(p => ({ value: p.toString(), label: `Page ${p}` })),
-      description: 'Which page should this field appear on?',
-    },
-  ], [availablePages]);
+  const needsOptions = ['select', 'radio', 'multiSelect'].includes(field.type);
+  const needsArrayConfig = field.type === 'array';
+  const needsColorConfig = field.type === 'colorPicker';
+  const needsRatingConfig = field.type === 'rating';
+  const needsPhoneConfig = field.type === 'phone';
+  const needsMultiSelectConfig = field.type === 'multiSelect';
 
-  // Field-specific configuration
-  const getFieldSpecificConfig = useCallback(() => {
-    switch (localField.type) {
-      case 'select':
-      case 'radio':
-        return [
-          {
-            name: 'options',
-            type: 'array',
-            label: 'Options',
-            arrayConfig: {
-              itemType: 'text',
-              itemLabel: 'Option',
-              itemPlaceholder: 'Option value',
-              minItems: 1,
-              addButtonLabel: 'Add Option',
-              removeButtonLabel: 'Remove',
-            },
-            validation: z.array(z.string()).min(1, 'At least one option is required'),
-          },
-        ];
-
-      case 'multiSelect':
-        return [
-          {
-            name: 'options',
-            type: 'array',
-            label: 'Options',
-            arrayConfig: {
-              itemType: 'text',
-              itemLabel: 'Option',
-              minItems: 1,
-              addButtonLabel: 'Add Option',
-            },
-            validation: z.array(z.string()).min(1, 'At least one option is required'),
-          },
-          {
-            name: 'multiSelectConfig.maxSelections',
-            type: 'number',
-            label: 'Max Selections',
-            placeholder: '5',
-            description: 'Maximum number of selections allowed',
-          },
-          {
-            name: 'multiSelectConfig.searchable',
-            type: 'switch',
-            label: 'Searchable',
-            description: 'Allow users to search options',
-          },
-        ];
-
-      case 'rating':
-        return [
-          {
-            name: 'ratingConfig.max',
-            type: 'number',
-            label: 'Maximum Rating',
-            placeholder: '5',
-            description: 'Highest rating value',
-          },
-          {
-            name: 'ratingConfig.allowHalf',
-            type: 'switch',
-            label: 'Allow Half Ratings',
-            description: 'Enable half-star ratings',
-          },
-        ];
-
-      case 'number':
-      case 'slider':
-        return [
-          {
-            name: 'min',
-            type: 'number',
-            label: 'Minimum Value',
-            placeholder: '0',
-          },
-          {
-            name: 'max',
-            type: 'number',
-            label: 'Maximum Value',
-            placeholder: '100',
-          },
-          {
-            name: 'step',
-            type: 'number',
-            label: 'Step',
-            placeholder: '1',
-            description: 'Increment/decrement step',
-          },
-        ];
-
-      default:
-        return [];
-    }
-  }, [localField.type]);
-
-  // Convert field to form values
-  const getFormValues = useCallback(() => {
-    const values: any = {
-      name: localField.name,
-      label: localField.label,
-      placeholder: localField.placeholder || '',
-      description: localField.description || '',
-      required: localField.required || false,
-      page: localField.page?.toString() || '1',
-    };
-
-    // Handle field-specific configs
-    if (localField.options) {
-      values.options = localField.options.map((opt: any) => typeof opt === 'string' ? opt : opt.value);
-    }
-
-    // Add field-specific config values
-    const configs = ['multiSelectConfig', 'ratingConfig'];
-    configs.forEach(configKey => {
-      const config = (localField as any)[configKey];
-      if (config) {
-        Object.keys(config).forEach(key => {
-          values[`${configKey}.${key}`] = config[key];
-        });
-      }
+  // Options management
+  const addOption = () => {
+    const currentOptions = field.options || [];
+    updateField({
+      options: [...currentOptions, { value: `option_${currentOptions.length + 1}`, label: `Option ${currentOptions.length + 1}` }]
     });
+  };
 
-    return values;
-  }, [localField]);
+  const updateOption = (index: number, updates: { value?: string; label?: string }) => {
+    const currentOptions = field.options || [];
+    const newOptions = currentOptions.map((option, i) => 
+      i === index ? { ...option, ...updates } : option
+    );
+    updateField({ options: newOptions });
+  };
 
-  // Handle form changes - update local state AND parent
-  const handleFormChange = useCallback(({ value }: any) => {
-    const updates: Partial<FormField> = {
-      name: value.name,
-      label: value.label,
-      placeholder: value.placeholder || undefined,
-      description: value.description || undefined,
-      required: value.required,
-      page: parseInt(value.page) || 1,
-    };
+  const removeOption = (index: number) => {
+    const currentOptions = field.options || [];
+    updateField({ options: currentOptions.filter((_, i) => i !== index) });
+  };
 
-    // Handle options
-    if (value.options) {
-      updates.options = value.options.map((opt: string) => ({ value: opt, label: opt }));
-    }
-
-    // Handle field-specific configs
-    const configKeys = ['multiSelectConfig', 'ratingConfig'];
-    configKeys.forEach(configKey => {
-      const configValues: any = {};
-      let hasValues = false;
-
-      Object.keys(value).forEach(key => {
-        if (key.startsWith(`${configKey}.`)) {
-          const subKey = key.replace(`${configKey}.`, '');
-          configValues[subKey] = value[key];
-          hasValues = true;
-        }
-      });
-
-      if (hasValues) {
-        (updates as any)[configKey] = configValues;
-      }
+  // Datalist management
+  const addDatalistItem = () => {
+    const currentDatalist = field.datalist || [];
+    updateField({
+      datalist: [...currentDatalist, `Item ${currentDatalist.length + 1}`]
     });
+  };
 
-    // Update local state immediately
-    setLocalField(prev => ({ ...prev, ...updates }));
-    
-    // Update parent
-    onUpdate(fieldId, updates);
-  }, [fieldId, onUpdate]);
+  const updateDatalistItem = (index: number, value: string) => {
+    const currentDatalist = field.datalist || [];
+    const newDatalist = currentDatalist.map((item, i) => 
+      i === index ? value : item
+    );
+    updateField({ datalist: newDatalist });
+  };
 
-  const allFields = [
-    ...baseFields,
-    ...getFieldSpecificConfig(),
-  ];
-
-  const { Form } = useFormedible({
-    fields: allFields,
-    formOptions: {
-      defaultValues: getFormValues(),
-      onChange: handleFormChange,
-    },
-  });
+  const removeDatalistItem = (index: number) => {
+    const currentDatalist = field.datalist || [];
+    updateField({ datalist: currentDatalist.filter((_, i) => i !== index) });
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center space-x-2 pb-4 border-b">
-        <div className="text-lg">
-          {FIELD_TYPES.find(t => t.value === localField.type)?.icon || '📝'}
-        </div>
-        <div>
-          <div className="font-medium">{localField.label}</div>
-          <div className="text-sm text-muted-foreground">{localField.type}</div>
-        </div>
+    <div className="space-y-6 p-6">
+      <div className="border-b pb-4">
+        <h3 className="font-semibold text-lg">Configure Field</h3>
+        <p className="text-sm text-muted-foreground">
+          Configure the properties for this {field.type} field
+        </p>
       </div>
-      
-      <Form />
+
+      <Tabs defaultValue="basic" className="w-full">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="basic">Basic</TabsTrigger>
+          <TabsTrigger value="options">Options</TabsTrigger>
+          <TabsTrigger value="validation">Validation</TabsTrigger>
+          <TabsTrigger value="help">Help</TabsTrigger>
+          <TabsTrigger value="advanced">Advanced</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="basic" className="space-y-4">
+          <div>
+            <Label htmlFor="field-label">Field Label</Label>
+            <Input
+              id="field-label"
+              value={field.label}
+              onChange={(e) => updateField({ label: e.target.value })}
+              placeholder="Enter field label"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="field-name">Field Name</Label>
+            <Input
+              id="field-name"
+              value={field.name}
+              onChange={(e) => updateField({ name: e.target.value })}
+              placeholder="Enter field name"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="field-placeholder">Placeholder</Label>
+            <Input
+              id="field-placeholder"
+              value={field.placeholder || ""}
+              onChange={(e) => updateField({ placeholder: e.target.value })}
+              placeholder="Enter placeholder text"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="field-description">Description</Label>
+            <Textarea
+              id="field-description"
+              value={field.description || ""}
+              onChange={(e) => updateField({ description: e.target.value })}
+              placeholder="Enter field description"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="field-page">Page</Label>
+            <Select
+              value={String(field.page || 1)}
+              onValueChange={(value) => updateField({ page: parseInt(value) })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {availablePages.map((page) => (
+                  <SelectItem key={page} value={String(page)}>
+                    Page {page}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div>
+            <Label htmlFor="field-group">Group (Optional)</Label>
+            <Input
+              id="field-group"
+              value={field.group || ""}
+              onChange={(e) => updateField({ group: e.target.value })}
+              placeholder="Group name for organizing fields"
+            />
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="field-required"
+              checked={field.required || false}
+              onCheckedChange={(checked) => updateField({ required: !!checked })}
+            />
+            <Label htmlFor="field-required">Required field</Label>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="options" className="space-y-4">
+          {needsOptions && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <List className="h-4 w-4" />
+                  Field Options
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label>Options</Label>
+                  <Button onClick={addOption} size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Option
+                  </Button>
+                </div>
+                <div className="space-y-3">
+                  {(field.options || []).map((option, index) => (
+                    <div key={index} className="flex items-center space-x-2">
+                      <Input
+                        value={option.value}
+                        onChange={(e) => updateOption(index, { value: e.target.value })}
+                        placeholder="Value"
+                        className="flex-1"
+                      />
+                      <Input
+                        value={option.label}
+                        onChange={(e) => updateOption(index, { label: e.target.value })}
+                        placeholder="Label"
+                        className="flex-1"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeOption(index)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  {(!field.options || field.options.length === 0) && (
+                    <p className="text-sm text-muted-foreground">No options added yet</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {field.type === 'text' && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Datalist (Autocomplete)</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Label>Suggestions</Label>
+                  <Button onClick={addDatalistItem} size="sm">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Item
+                  </Button>
+                </div>
+                <div className="space-y-2">
+                  {(field.datalist || []).map((item, index) => (
+                    <div key={index} className="flex items-center space-x-2">
+                      <Input
+                        value={item}
+                        onChange={(e) => updateDatalistItem(index, e.target.value)}
+                        placeholder="Suggestion text"
+                        className="flex-1"
+                      />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeDatalistItem(index)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {needsMultiSelectConfig && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  Multi-Select Configuration
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label>Placeholder</Label>
+                  <Input
+                    value={field.multiSelectConfig?.placeholder || ""}
+                    onChange={(e) => updateField({
+                      multiSelectConfig: { ...field.multiSelectConfig, placeholder: e.target.value }
+                    })}
+                    placeholder="Select options..."
+                  />
+                </div>
+                <div>
+                  <Label>Max Selections</Label>
+                  <Input
+                    type="number"
+                    value={field.multiSelectConfig?.maxSelections || ""}
+                    onChange={(e) => updateField({
+                      multiSelectConfig: { ...field.multiSelectConfig, maxSelections: parseInt(e.target.value) || undefined }
+                    })}
+                    placeholder="Unlimited"
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    checked={field.multiSelectConfig?.searchable || false}
+                    onCheckedChange={(checked) => updateField({
+                      multiSelectConfig: { ...field.multiSelectConfig, searchable: !!checked }
+                    })}
+                  />
+                  <Label>Searchable</Label>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {needsColorConfig && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Palette className="h-4 w-4" />
+                  Color Picker Configuration
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label>Format</Label>
+                  <Select
+                    value={field.colorConfig?.format || "hex"}
+                    onValueChange={(value) => updateField({
+                      colorConfig: { ...field.colorConfig, format: value as "hex" | "rgb" | "hsl" }
+                    })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="hex">HEX (#ffffff)</SelectItem>
+                      <SelectItem value="rgb">RGB (255, 255, 255)</SelectItem>
+                      <SelectItem value="hsl">HSL (0, 0%, 100%)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {needsRatingConfig && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Star className="h-4 w-4" />
+                  Rating Configuration
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label>Maximum Rating</Label>
+                  <Input
+                    type="number"
+                    value={field.ratingConfig?.max || 5}
+                    onChange={(e) => updateField({
+                      ratingConfig: { ...field.ratingConfig, max: parseInt(e.target.value) || 5 }
+                    })}
+                    min="1"
+                    max="10"
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    checked={field.ratingConfig?.allowHalf || false}
+                    onCheckedChange={(checked) => updateField({
+                      ratingConfig: { ...field.ratingConfig, allowHalf: !!checked }
+                    })}
+                  />
+                  <Label>Allow half ratings</Label>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {needsPhoneConfig && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Phone className="h-4 w-4" />
+                  Phone Configuration
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label>Default Country</Label>
+                  <Input
+                    value={field.phoneConfig?.defaultCountry || "US"}
+                    onChange={(e) => updateField({
+                      phoneConfig: { ...field.phoneConfig, defaultCountry: e.target.value }
+                    })}
+                    placeholder="US"
+                  />
+                </div>
+                <div>
+                  <Label>Format</Label>
+                  <Select
+                    value={field.phoneConfig?.format || "national"}
+                    onValueChange={(value) => updateField({
+                      phoneConfig: { ...field.phoneConfig, format: value as "national" | "international" }
+                    })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="national">National</SelectItem>
+                      <SelectItem value="international">International</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {needsArrayConfig && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Upload className="h-4 w-4" />
+                  Array Configuration
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label>Minimum Items</Label>
+                  <Input
+                    type="number"
+                    value={field.arrayConfig?.minItems || ""}
+                    onChange={(e) => updateField({
+                      arrayConfig: { ...field.arrayConfig, minItems: parseInt(e.target.value) || undefined }
+                    })}
+                    min="0"
+                  />
+                </div>
+                <div>
+                  <Label>Maximum Items</Label>
+                  <Input
+                    type="number"
+                    value={field.arrayConfig?.maxItems || ""}
+                    onChange={(e) => updateField({
+                      arrayConfig: { ...field.arrayConfig, maxItems: parseInt(e.target.value) || undefined }
+                    })}
+                    min="1"
+                  />
+                </div>
+                <div>
+                  <Label>Add Button Label</Label>
+                  <Input
+                    value={field.arrayConfig?.addLabel || "Add Item"}
+                    onChange={(e) => updateField({
+                      arrayConfig: { ...field.arrayConfig, addLabel: e.target.value }
+                    })}
+                  />
+                </div>
+                <div>
+                  <Label>Remove Button Label</Label>
+                  <Input
+                    value={field.arrayConfig?.removeLabel || "Remove"}
+                    onChange={(e) => updateField({
+                      arrayConfig: { ...field.arrayConfig, removeLabel: e.target.value }
+                    })}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="validation" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Field Validation</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {(field.type === 'text' || field.type === 'textarea' || field.type === 'email' || field.type === 'password') && (
+                <>
+                  <div>
+                    <Label>Minimum Length</Label>
+                    <Input
+                      type="number"
+                      value={field.validation?.minLength || ""}
+                      onChange={(e) => updateField({
+                        validation: { ...field.validation, minLength: parseInt(e.target.value) || undefined }
+                      })}
+                      placeholder="No minimum"
+                      min="0"
+                    />
+                  </div>
+                  <div>
+                    <Label>Maximum Length</Label>
+                    <Input
+                      type="number"
+                      value={field.validation?.maxLength || ""}
+                      onChange={(e) => updateField({
+                        validation: { ...field.validation, maxLength: parseInt(e.target.value) || undefined }
+                      })}
+                      placeholder="No maximum"
+                      min="1"
+                    />
+                  </div>
+                </>
+              )}
+              
+              {(field.type === 'number' || field.type === 'slider') && (
+                <>
+                  <div>
+                    <Label>Minimum Value</Label>
+                    <Input
+                      type="number"
+                      value={field.validation?.min || ""}
+                      onChange={(e) => updateField({
+                        validation: { ...field.validation, min: parseInt(e.target.value) || undefined }
+                      })}
+                      placeholder="No minimum"
+                    />
+                  </div>
+                  <div>
+                    <Label>Maximum Value</Label>
+                    <Input
+                      type="number"
+                      value={field.validation?.max || ""}
+                      onChange={(e) => updateField({
+                        validation: { ...field.validation, max: parseInt(e.target.value) || undefined }
+                      })}
+                      placeholder="No maximum"
+                    />
+                  </div>
+                </>
+              )}
+
+              {field.type === 'text' && (
+                <div>
+                  <Label>Pattern (Regex)</Label>
+                  <Input
+                    value={field.validation?.pattern || ""}
+                    onChange={(e) => updateField({
+                      validation: { ...field.validation, pattern: e.target.value }
+                    })}
+                    placeholder="e.g., ^[A-Za-z]+$"
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Regular expression pattern for validation
+                  </p>
+                </div>
+              )}
+
+              <div>
+                <Label>Custom Validation Message</Label>
+                <Textarea
+                  value={field.validation?.custom || ""}
+                  onChange={(e) => updateField({
+                    validation: { ...field.validation, custom: e.target.value }
+                  })}
+                  placeholder="Custom error message"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="help" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <HelpCircle className="h-4 w-4" />
+                Help Configuration
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label>Help Text</Label>
+                <Textarea
+                  value={field.help?.text || ""}
+                  onChange={(e) => updateField({
+                    help: { ...field.help, text: e.target.value }
+                  })}
+                  placeholder="Additional help text for users"
+                />
+              </div>
+              <div>
+                <Label>Tooltip</Label>
+                <Input
+                  value={field.help?.tooltip || ""}
+                  onChange={(e) => updateField({
+                    help: { ...field.help, tooltip: e.target.value }
+                  })}
+                  placeholder="Short tooltip text"
+                />
+              </div>
+              <div>
+                <Label>Help Position</Label>
+                <Select
+                  value={field.help?.position || "bottom"}
+                  onValueChange={(value) => updateField({
+                    help: { ...field.help, position: value as "top" | "bottom" | "left" | "right" }
+                  })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="top">Top</SelectItem>
+                    <SelectItem value="bottom">Bottom</SelectItem>
+                    <SelectItem value="left">Left</SelectItem>
+                    <SelectItem value="right">Right</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Help Link URL</Label>
+                <Input
+                  value={field.help?.link?.url || ""}
+                  onChange={(e) => updateField({
+                    help: { 
+                      ...field.help, 
+                      link: { 
+                        ...field.help?.link, 
+                        url: e.target.value,
+                        text: field.help?.link?.text || "Learn more"
+                      }
+                    }
+                  })}
+                  placeholder="https://example.com/help"
+                />
+              </div>
+              <div>
+                <Label>Help Link Text</Label>
+                <Input
+                  value={field.help?.link?.text || ""}
+                  onChange={(e) => updateField({
+                    help: { 
+                      ...field.help, 
+                      link: { 
+                        ...field.help?.link, 
+                        text: e.target.value,
+                        url: field.help?.link?.url || ""
+                      }
+                    }
+                  })}
+                  placeholder="Learn more"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="advanced" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Section Configuration</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label>Section Title</Label>
+                <Input
+                  value={field.section?.title || ""}
+                  onChange={(e) => updateField({
+                    section: { ...field.section, title: e.target.value }
+                  })}
+                  placeholder="Section title"
+                />
+              </div>
+                <div>
+                  <Label>Section Description</Label>
+                  <Textarea
+                    value={field.section?.description || ""}
+                    onChange={(e) => updateField({
+                      section: { 
+                        title: field.section?.title || "",
+                        description: e.target.value,
+                        collapsible: field.section?.collapsible,
+                        defaultExpanded: field.section?.defaultExpanded
+                      }
+                    })}
+                    placeholder="Section description"
+                  />
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    checked={field.section?.collapsible || false}
+                    onCheckedChange={(checked) => updateField({
+                      section: { 
+                        title: field.section?.title || "",
+                        description: field.section?.description,
+                        collapsible: !!checked,
+                        defaultExpanded: field.section?.defaultExpanded
+                      }
+                    })}
+                  />
+                  <Label>Collapsible section</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    checked={field.section?.defaultExpanded !== false}
+                    onCheckedChange={(checked) => updateField({
+                      section: { 
+                        title: field.section?.title || "",
+                        description: field.section?.description,
+                        collapsible: field.section?.collapsible,
+                        defaultExpanded: !!checked
+                      }
+                    })}
+                  />
+                  <Label>Expanded by default</Label>
+                </div>            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Inline Validation</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  checked={field.inlineValidation?.enabled || false}
+                  onCheckedChange={(checked) => updateField({
+                    inlineValidation: { ...field.inlineValidation, enabled: !!checked }
+                  })}
+                />
+                <Label>Enable inline validation</Label>
+              </div>
+              <div>
+                <Label>Debounce (ms)</Label>
+                <Input
+                  type="number"
+                  value={field.inlineValidation?.debounceMs || 300}
+                  onChange={(e) => updateField({
+                    inlineValidation: { ...field.inlineValidation, debounceMs: parseInt(e.target.value) || 300 }
+                  })}
+                  min="0"
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  checked={field.inlineValidation?.showSuccess || false}
+                  onCheckedChange={(checked) => updateField({
+                    inlineValidation: { ...field.inlineValidation, showSuccess: !!checked }
+                  })}
+                />
+                <Label>Show success indicator</Label>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="pt-4 border-t">
+            <Label className="text-sm font-mono">Field Type: {field.type}</Label>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
-
-// MEMOIZED COMPONENT - ONLY RE-RENDERS WHEN fieldId CHANGES
-export const FieldConfigurator = React.memo(FieldConfiguratorInternal, (prevProps, nextProps) => {
-  // ONLY re-render if fieldId changes
-  return prevProps.fieldId === nextProps.fieldId;
-});

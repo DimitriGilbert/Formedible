@@ -1,6 +1,6 @@
 'use client';
 import React, { useMemo } from 'react';
-import { useFormedible } from 'formedible';
+import { useFormedible } from '@/hooks/use-formedible';
 import { z } from 'zod';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -58,8 +58,8 @@ interface FormConfiguration {
     nextLabel: string;
     previousLabel: string;
     showProgress: boolean;
-    allowPageNavigation: boolean;
-    resetOnSubmit: boolean;
+    allowPageNavigation?: boolean;
+    resetOnSubmit?: boolean;
   };
 }
 
@@ -82,87 +82,77 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
     }
 
     try {
+      const schemaFields: Record<string, any> = {};
+
+      config.fields.forEach((field) => {
+        let fieldSchema: any;
+
+        switch (field.type) {
+          case "number":
+          case "slider":
+          case "rating":
+            fieldSchema = z.number();
+            break;
+          case "checkbox":
+          case "switch":
+            fieldSchema = z.boolean();
+            break;
+          case "date":
+            fieldSchema = z.string();
+            break;
+          case "multiSelect":
+          case "array":
+            fieldSchema = z.array(z.string());
+            break;
+          default:
+            fieldSchema = z.string();
+        }
+
+        if (field.required) {
+          if (field.type === "number" || field.type === "slider" || field.type === "rating") {
+            // For numbers, required means not null/undefined
+          } else if (field.type === "checkbox" || field.type === "switch") {
+            fieldSchema = fieldSchema.refine((val: boolean) => val === true, {
+              message: `${field.label} is required`,
+            });
+          } else if (typeof fieldSchema.min === "function") {
+            fieldSchema = fieldSchema.min(1, `${field.label} is required`);
+          }
+        } else {
+          fieldSchema = fieldSchema.optional();
+        }
+
+        schemaFields[field.name] = fieldSchema;
+      });
+
       return {
-        fields: config.fields.map(field => {
-          const fieldConfig: any = {
-            name: field.name,
-            type: field.type,
-            label: field.label,
-            placeholder: field.placeholder,
-            description: field.description,
-            page: field.page || 1,
-            group: field.group,
-            section: field.section,
-            help: field.help,
-            inlineValidation: field.inlineValidation,
-          };
-
-          // Add validation if field is required
-          if (field.required) {
-            switch (field.type) {
-              case 'text':
-              case 'email':
-              case 'password':
-              case 'textarea':
-                fieldConfig.validation = z.string().min(1, `${field.label} is required`);
-                break;
-              case 'number':
-              case 'slider':
-              case 'rating':
-                fieldConfig.validation = z.number().min(0, `${field.label} is required`);
-                break;
-              case 'select':
-              case 'radio':
-                fieldConfig.validation = z.string().min(1, `Please select ${field.label}`);
-                break;
-              case 'multiSelect':
-                fieldConfig.validation = z.array(z.string()).min(1, `Please select at least one ${field.label}`);
-                break;
-              case 'checkbox':
-              case 'switch':
-                fieldConfig.validation = z.boolean().refine(val => val === true, `${field.label} is required`);
-                break;
-              case 'date':
-                fieldConfig.validation = z.date();
-                break;
-              case 'array':
-                fieldConfig.validation = z.array(z.string()).min(1, `At least one ${field.label} is required`);
-                break;
-              case 'colorPicker':
-                fieldConfig.validation = z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Please select a color');
-                break;
-              case 'phone':
-                fieldConfig.validation = z.string().min(10, 'Please enter a valid phone number');
-                break;
-              case 'file':
-                fieldConfig.validation = z.any().refine(val => val && val.length > 0, `${field.label} is required`);
-                break;
-            }
-          }
-
-          // Add options for select/radio/multiSelect fields
-          if (['select', 'radio', 'multiSelect'].includes(field.type) && field.options) {
-            fieldConfig.options = field.options;
-          }
-
-          // Add field-specific configurations
-          if (field.arrayConfig) fieldConfig.arrayConfig = field.arrayConfig;
-          if (field.datalist) fieldConfig.datalist = field.datalist;
-          if (field.multiSelectConfig) fieldConfig.multiSelectConfig = field.multiSelectConfig;
-          if (field.colorConfig) fieldConfig.colorConfig = field.colorConfig;
-          if (field.ratingConfig) fieldConfig.ratingConfig = field.ratingConfig;
-          if (field.phoneConfig) fieldConfig.phoneConfig = field.phoneConfig;
-
-          return fieldConfig;
-        }),
-        pages: config.pages.length > 1 ? config.pages : undefined,
+        schema: z.object(schemaFields),
+        fields: config.fields.map((field) => ({
+          name: field.name,
+          type: field.type,
+          label: field.label,
+          placeholder: field.placeholder,
+          description: field.description,
+          page: field.page || 1,
+          group: field.group,
+          section: field.section,
+          help: field.help,
+          inlineValidation: field.inlineValidation,
+          ...(field.options && { options: field.options }),
+          ...(field.arrayConfig && { arrayConfig: field.arrayConfig }),
+          ...(field.datalist && { datalist: field.datalist }),
+          ...(field.multiSelectConfig && { multiSelectConfig: field.multiSelectConfig }),
+          ...(field.colorConfig && { colorConfig: field.colorConfig }),
+          ...(field.ratingConfig && { ratingConfig: field.ratingConfig }),
+          ...(field.phoneConfig && { phoneConfig: field.phoneConfig }),
+        })),
+        pages: config.pages && config.pages.length > 1 ? config.pages : [],
         submitLabel: config.settings.submitLabel,
         nextLabel: config.settings.nextLabel,
         previousLabel: config.settings.previousLabel,
-        progress: config.settings.showProgress ? { 
-          showSteps: true, 
-          showPercentage: true 
-        } : undefined,
+        progress: config.settings.showProgress
+          ? { showSteps: true, showPercentage: true }
+          : undefined,
         formOptions: {
           onSubmit: async ({ value }: any) => {
             console.log('Preview form submitted:', value);
@@ -234,15 +224,17 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
       <CardContent>
         <div className="space-y-6">
           {/* Form stats */}
-          <div className="grid grid-cols-3 gap-4 p-4 bg-muted/50 border rounded-lg">
+          <div className={`grid gap-4 p-4 bg-muted/50 border rounded-lg ${config.pages.length > 1 ? 'grid-cols-3' : 'grid-cols-2'}`}>
             <div className="text-center">
               <div className="text-2xl font-bold text-primary">{config.fields.length}</div>
               <div className="text-xs text-muted-foreground">Fields</div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-primary">{config.pages.length}</div>
-              <div className="text-xs text-muted-foreground">Pages</div>
-            </div>
+            {config.pages.length > 1 && (
+              <div className="text-center">
+                <div className="text-2xl font-bold text-primary">{config.pages.length}</div>
+                <div className="text-xs text-muted-foreground">Pages</div>
+              </div>
+            )}
             <div className="text-center">
               <div className="text-2xl font-bold text-primary">
                 {config.fields.filter(f => f.required).length}
