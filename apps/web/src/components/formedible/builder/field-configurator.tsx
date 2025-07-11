@@ -410,14 +410,14 @@ export const FieldConfigurator: React.FC<FieldConfiguratorProps> = ({
       
       // DIRECT STORE UPDATE - NO PARENT RE-RENDERS!
       onChange: ({ value }: { value: any }) => {
-        console.log('=== FIELD CONFIGURATOR CHANGE ===');
-        console.log('Field ID:', fieldId);
-        console.log('Current field page:', currentFieldRef.current.page);
-        console.log('Form value page:', value.page);
+        // console.log('=== FIELD CONFIGURATOR CHANGE ===');
+        // console.log('Field ID:', fieldId);
+        // console.log('Current field page:', currentFieldRef.current.page);
+        // console.log('Form value page:', value.page);
         
         // Preserve original page if form value is empty/undefined
         const finalPage = value.page || currentFieldRef.current.page || 1;
-        console.log('Will update to page:', finalPage);
+        // console.log('Will update to page:', finalPage);
         
         const updatedField: FormField = {
           ...currentFieldRef.current,
