@@ -109,7 +109,7 @@ class FieldStore {
 
   updateField(fieldId: string, updatedField: FormField): void {
     this.fields[fieldId] = updatedField;
-    // DO NOT notify listeners - this prevents parent rerenders
+    this.notifyListeners(); // FIXED: Notify listeners for field updates
   }
 
   deleteField(fieldId: string): void {

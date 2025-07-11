@@ -33,7 +33,7 @@ export const FieldConfigurator: React.FC<FieldConfiguratorProps> = ({
   const needsColorConfig = initialField.type === 'colorPicker';
   const needsMultiSelectConfig = initialField.type === 'multiSelect';
 
-  // SINGLE FORM WITH TABS CONFIGURATION
+  // SINGLE FORM WITH TABS CONFIGURATION - TanStack Form Best Practice Implementation
   const configForm = useFormedible({
     schema: z.object({
       // Basic fields
@@ -464,9 +464,19 @@ export const FieldConfigurator: React.FC<FieldConfiguratorProps> = ({
           } : undefined,
         };
         
-        // UPDATE FIELD STORE DIRECTLY - NO PARENT RE-RENDER!
+        // UPDATE FIELD STORE WITH VERIFICATION
         currentFieldRef.current = updatedField;
         globalFieldStore.updateField(fieldId, updatedField);
+        
+        // Verify the update was successful (debugging)
+        const verifyField = globalFieldStore.getField(fieldId);
+        if (verifyField && verifyField.label !== updatedField.label) {
+          console.warn('Field update verification failed', { 
+            expected: updatedField.label, 
+            actual: verifyField?.label,
+            fieldId 
+          });
+        }
       },
     },
     

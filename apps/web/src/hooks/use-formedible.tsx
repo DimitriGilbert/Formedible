@@ -59,6 +59,71 @@ interface FormProps {
   tabIndex?: number;
 }
 
+// TanStack Form Best Practice: Reusable subscription component for conditional fields
+interface ConditionalFieldsSubscriptionProps<TFormValues extends Record<string, unknown> = Record<string, unknown>> {
+  form: any; // Form instance passed from parent
+  fields: FieldConfig[];
+  conditionalSections: Array<{
+    condition: (values: TFormValues) => boolean;
+    fields: string[];
+    layout?: {
+      type: 'grid' | 'flex' | 'tabs' | 'accordion' | 'stepper';
+      columns?: number;
+      gap?: string;
+      responsive?: boolean;
+      className?: string;
+    };
+  }>;
+  children: (currentValues: Record<string, unknown>) => React.ReactNode;
+}
+
+const ConditionalFieldsSubscription = <TFormValues extends Record<string, unknown> = Record<string, unknown>>({
+  form,
+  fields,
+  conditionalSections,
+  children
+}: ConditionalFieldsSubscriptionProps<TFormValues>) => {
+  // For now, subscribe to all form values since we don't have explicit dependencies
+  // This could be optimized further by analyzing the condition functions
+  return (
+    <form.Subscribe
+      selector={(state: any) => state.values}
+    >
+      {children}
+    </form.Subscribe>
+  );
+};
+
+// TanStack Form Best Practice: Individual field conditional renderer
+interface FieldConditionalRendererProps {
+  form: any;
+  fieldConfig: FieldConfig;
+  children: (shouldRender: boolean) => React.ReactNode;
+}
+
+const FieldConditionalRenderer: React.FC<FieldConditionalRendererProps> = ({
+  form,
+  fieldConfig,
+  children
+}) => {
+  const { conditional } = fieldConfig;
+  
+  // If no conditional logic, always render
+  if (!conditional) {
+    return <>{children(true)}</>;
+  }
+
+  // TanStack Form Best Practice: Use subscription with minimal selector
+  // This prevents parent re-renders by only subscribing to form state changes
+  return (
+    <form.Subscribe
+      selector={(state: any) => state.values}
+    >
+      {(values: any) => children(conditional(values))}
+    </form.Subscribe>
+  );
+};
+
 export interface FieldConfig {
   name: string;
   type: string;
@@ -1223,7 +1288,6 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
         multiple,
         component: CustomComponent,
         wrapper: CustomWrapper,
-        conditional,
         validation,
         arrayConfig,
         datalist,
@@ -1260,188 +1324,202 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
           } : undefined}
         >
           {(field) => {
-            // Get current form values directly from the field
-            const currentValues = field.form.state.values;
+            // TanStack Form Best Practice: Use FieldConditionalRenderer to prevent parent re-renders
+            return (
+              <FieldConditionalRenderer
+                form={form}
+                fieldConfig={fieldConfig}
+              >
+                {(shouldRender) => {
+                  if (!shouldRender) {
+                    return null;
+                  }
+
+                  // Check for cross-field validation errors
+                  const crossFieldError = crossFieldErrors[name];
+                  const asyncValidationState = asyncValidationStates[name];
             
-            // Check conditional rendering with current form values
-            if (conditional && !conditional(currentValues)) {
-              return null;
-            }
+                  const baseProps = {
+                    fieldApi: field,
+                    label,
+                    placeholder,
+                    description,
+                    wrapperClassName: fieldClassName,
+                    min,
+                    max,
+                    step,
+                    accept,
+                    multiple,
+                    disabled: disabled || loading || field.form.state.isSubmitting,
+                    crossFieldError,
+                    asyncValidationState,
+                  };
 
-            // Check for cross-field validation errors
-            const crossFieldError = crossFieldErrors[name];
-            const asyncValidationState = asyncValidationStates[name];
-            
-            const baseProps = {
-              fieldApi: field,
-              label,
-              placeholder,
-              description,
-              wrapperClassName: fieldClassName,
-              min,
-              max,
-              step,
-              accept,
-              multiple,
-              disabled: disabled || loading || field.form.state.isSubmitting,
-              crossFieldError,
-              asyncValidationState,
-            };
+                  // Select the component to use
+                  const FieldComponent = CustomComponent || fieldComponents[type] || TextField;
 
-            // Select the component to use
-            const FieldComponent = CustomComponent || fieldComponents[type] || TextField;
+                  // Add type-specific props
+                  let props: FieldComponentProps = { ...baseProps };
+                  
+                  // Normalize options to the expected format
+                  const normalizedOptions = options ? options.map(opt => 
+                    typeof opt === 'string' ? { value: opt, label: opt } : opt
+                  ) : [];
 
-            // Add type-specific props
-            let props: FieldComponentProps = { ...baseProps };
-            
-            // Normalize options to the expected format
-            const normalizedOptions = options ? options.map(opt => 
-              typeof opt === 'string' ? { value: opt, label: opt } : opt
-            ) : [];
+                  if (type === 'select') {
+                    props = { ...props, options: normalizedOptions };
+                  } else if (type === 'array') {
+                    const mappedArrayConfig = arrayConfig ? {
+                      itemType: arrayConfig.itemType || 'text',
+                      itemLabel: arrayConfig.itemLabel,
+                      itemPlaceholder: arrayConfig.itemPlaceholder,
+                      minItems: arrayConfig.minItems,
+                      maxItems: arrayConfig.maxItems,
+                      itemValidation: arrayConfig.itemValidation,
+                      itemComponent: arrayConfig.itemComponent as React.ComponentType<BaseFieldProps>,
+                      addButtonLabel: arrayConfig.addButtonLabel,
+                      removeButtonLabel: arrayConfig.removeButtonLabel,
+                      sortable: arrayConfig.sortable,
+                      defaultValue: arrayConfig.defaultValue
+                    } : undefined;
+                    props = { ...props, arrayConfig: mappedArrayConfig };
+                  } else if (['text', 'email', 'password', 'url', 'tel'].includes(type)) {
+                    props = { ...props, type: type as 'text' | 'email' | 'password' | 'url' | 'tel', datalist: datalist?.options };
+                  } else if (type === 'radio') {
+                    props = { ...props, options: normalizedOptions };
+                  } else if (type === 'multiSelect') {
+                    props = { ...props, options: normalizedOptions, multiSelectConfig };
+                  } else if (type === 'colorPicker') {
+                    props = { ...props, colorConfig };
+                  } else if (type === 'rating') {
+                    props = { ...props, ratingConfig };
+                  } else if (type === 'phone') {
+                    props = { ...props, phoneConfig };
+                  } else if (type === 'location') {
+                    props = { ...props, locationConfig };
+                  } else if (type === 'duration') {
+                    props = { ...props, durationConfig };
+                  } else if (type === 'autocomplete') {
+                    props = { ...props, autocompleteConfig };
+                  } else if (type === 'masked') {
+                    props = { ...props, maskedInputConfig };
+                  } else if (type === 'object') {
+                    props = { ...props, objectConfig };
+                  } else if (type === 'slider') {
+                    props = { ...props, sliderConfig };
+                  } else if (type === 'number') {
+                    props = { ...props, numberConfig };
+                  } else if (type === 'date') {
+                    props = { ...props, dateConfig };
+                  } else if (type === 'file') {
+                    props = { ...props, fileConfig };
+                  } else if (type === 'textarea') {
+                    props = { ...props, textareaConfig };
+                  } else if (type === 'password') {
+                    props = { ...props, passwordConfig };
+                  } else if (type === 'email') {
+                    props = { ...props, emailConfig };
+                  }
 
-            if (type === 'select') {
-              props = { ...props, options: normalizedOptions };
-            } else if (type === 'array') {
-              const mappedArrayConfig = arrayConfig ? {
-                itemType: arrayConfig.itemType || 'text',
-                itemLabel: arrayConfig.itemLabel,
-                itemPlaceholder: arrayConfig.itemPlaceholder,
-                minItems: arrayConfig.minItems,
-                maxItems: arrayConfig.maxItems,
-                itemValidation: arrayConfig.itemValidation,
-                itemComponent: arrayConfig.itemComponent as React.ComponentType<BaseFieldProps>,
-                addButtonLabel: arrayConfig.addButtonLabel,
-                removeButtonLabel: arrayConfig.removeButtonLabel,
-                sortable: arrayConfig.sortable,
-                defaultValue: arrayConfig.defaultValue
-              } : undefined;
-              props = { ...props, arrayConfig: mappedArrayConfig };
-            } else if (['text', 'email', 'password', 'url', 'tel'].includes(type)) {
-              props = { ...props, type: type as 'text' | 'email' | 'password' | 'url' | 'tel', datalist: datalist?.options };
-            } else if (type === 'radio') {
-              props = { ...props, options: normalizedOptions };
-            } else if (type === 'multiSelect') {
-              props = { ...props, options: normalizedOptions, multiSelectConfig };
-            } else if (type === 'colorPicker') {
-              props = { ...props, colorConfig };
-            } else if (type === 'rating') {
-              props = { ...props, ratingConfig };
-            } else if (type === 'phone') {
-              props = { ...props, phoneConfig };
-            } else if (type === 'location') {
-              props = { ...props, locationConfig };
-            } else if (type === 'duration') {
-              props = { ...props, durationConfig };
-            } else if (type === 'autocomplete') {
-              props = { ...props, autocompleteConfig };
-            } else if (type === 'masked') {
-              props = { ...props, maskedInputConfig };
-            } else if (type === 'object') {
-              props = { ...props, objectConfig };
-            } else if (type === 'slider') {
-              props = { ...props, sliderConfig };
-            } else if (type === 'number') {
-              props = { ...props, numberConfig };
-            } else if (type === 'date') {
-              props = { ...props, dateConfig };
-            } else if (type === 'file') {
-              props = { ...props, fileConfig };
-            } else if (type === 'textarea') {
-              props = { ...props, textareaConfig };
-            } else if (type === 'password') {
-              props = { ...props, passwordConfig };
-            } else if (type === 'email') {
-              props = { ...props, emailConfig };
-            }
+                  // Render the field component
+                  const fieldElement = <FieldComponent {...props} />;
 
-            // Render the field component
-            const fieldElement = <FieldComponent {...props} />;
+                  // Apply inline validation wrapper if enabled
+                  const wrappedFieldElement = inlineValidation?.enabled 
+                    ? (
+                        <InlineValidationWrapper
+                          fieldApi={field}
+                          inlineValidation={inlineValidation}
+                        >
+                          {fieldElement}
+                        </InlineValidationWrapper>
+                      )
+                    : fieldElement;
 
-            // Apply inline validation wrapper if enabled
-            const wrappedFieldElement = inlineValidation?.enabled 
-              ? (
-                  <InlineValidationWrapper
-                    fieldApi={field}
-                    inlineValidation={inlineValidation}
-                  >
-                    {fieldElement}
-                  </InlineValidationWrapper>
-                )
-              : fieldElement;
+                  // Add field help if provided
+                  const fieldWithHelp = help ? (
+                    <div className="space-y-2">
+                      {wrappedFieldElement}
+                      <FieldHelp help={help} />
+                    </div>
+                  ) : wrappedFieldElement;
 
-            // Add field help if provided
-            const fieldWithHelp = help ? (
-              <div className="space-y-2">
-                {wrappedFieldElement}
-                <FieldHelp help={help} />
-              </div>
-            ) : wrappedFieldElement;
-
-            // Apply custom wrapper or global wrapper
-            const Wrapper = CustomWrapper || globalWrapper;
-            
-            return Wrapper 
-              ? <Wrapper field={fieldConfig}>{fieldWithHelp}</Wrapper>
-              : fieldWithHelp;
+                  // Apply custom wrapper or global wrapper
+                  const Wrapper = CustomWrapper || globalWrapper;
+                  
+                  return Wrapper 
+                    ? <Wrapper field={fieldConfig}>{fieldWithHelp}</Wrapper>
+                    : fieldWithHelp;
+                }}
+              </FieldConditionalRenderer>
+            );
           }}
         </form.Field>
       );
     }, []);
 
     const renderTabContent = React.useCallback((tabFields: FieldConfig[]) => {
-      const currentValues = form.state.values;
-      
-      // Filter fields based on conditional sections
-      const visibleFields = tabFields.filter(field => {
-        // Check if field is part of any conditional section
-        const conditionalSection = conditionalSections.find(section => 
-          section.fields.includes(field.name)
-        );
-        
-        if (conditionalSection) {
-          return conditionalSection.condition(currentValues as TFormValues);
-        }
-        
-        return true;
-      });
-      
-      // Group fields by section and group
-      const groupedFields = visibleFields.reduce((acc, field) => {
-        const sectionKey = field.section?.title || 'default';
-        const groupKey = field.group || 'default';
-        
-        if (!acc[sectionKey]) {
-          acc[sectionKey] = {
-            section: field.section,
-            groups: {}
-          };
-        }
-        
-        if (!acc[sectionKey].groups[groupKey]) {
-          acc[sectionKey].groups[groupKey] = [];
-        }
-        
-        acc[sectionKey].groups[groupKey].push(field);
-        return acc;
-      }, {} as Record<string, { section?: { title: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean }; groups: Record<string, FieldConfig[]> }>);
+      // TanStack Form Best Practice: Use reusable subscription component
+      return (
+        <ConditionalFieldsSubscription
+          form={form}
+          fields={tabFields}
+          conditionalSections={conditionalSections}
+        >
+          {(currentValues) => {
+            // Filter fields based on conditional sections using subscribed values
+            const visibleFields = tabFields.filter(field => {
+              const conditionalSection = conditionalSections.find(section => 
+                section.fields.includes(field.name)
+              );
+              
+              if (conditionalSection) {
+                return conditionalSection.condition(currentValues as TFormValues);
+              }
+              
+              return true;
+            });
+            
+            // Group fields by section and group
+            const groupedFields = visibleFields.reduce((acc, field) => {
+              const sectionKey = field.section?.title || 'default';
+              const groupKey = field.group || 'default';
+              
+              if (!acc[sectionKey]) {
+                acc[sectionKey] = {
+                  section: field.section,
+                  groups: {}
+                };
+              }
+              
+              if (!acc[sectionKey].groups[groupKey]) {
+                acc[sectionKey].groups[groupKey] = [];
+              }
+              
+              acc[sectionKey].groups[groupKey].push(field);
+              return acc;
+            }, {} as Record<string, { section?: { title: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean }; groups: Record<string, FieldConfig[]> }>);
 
-      const renderSection = (sectionKey: string, sectionData: { section?: { title: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean }; groups: Record<string, FieldConfig[]> }) => (
-        <SectionRenderer
-          key={sectionKey}
-          sectionKey={sectionKey}
-          sectionData={sectionData}
-          renderField={renderField}
-        />
+            const renderSection = (sectionKey: string, sectionData: { section?: { title: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean }; groups: Record<string, FieldConfig[]> }) => (
+              <SectionRenderer
+                key={sectionKey}
+                sectionKey={sectionKey}
+                sectionData={sectionData}
+                renderField={renderField}
+              />
+            );
+
+            const sectionsToRender = Object.entries(groupedFields);
+            
+            return sectionsToRender.length === 1 && sectionsToRender[0][0] === 'default' 
+              ? sectionsToRender[0][1].groups.default?.map((field: FieldConfig) => renderField(field))
+              : sectionsToRender.map(([sectionKey, sectionData]) => 
+                  renderSection(sectionKey, sectionData)
+                );
+          }}
+        </ConditionalFieldsSubscription>
       );
-
-      const sectionsToRender = Object.entries(groupedFields);
-      
-      return sectionsToRender.length === 1 && sectionsToRender[0][0] === 'default' 
-        ? sectionsToRender[0][1].groups.default?.map((field: FieldConfig) => renderField(field))
-        : sectionsToRender.map(([sectionKey, sectionData]) => 
-            renderSection(sectionKey, sectionData)
-          );
-    }, [renderField]);
+    }, [renderField, form]);
 
     const renderPageContent = React.useCallback(() => {
       if (hasTabs) {
@@ -1461,74 +1539,84 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
         );
       }
 
-      // Original page rendering logic
+      // Original page rendering logic with TanStack Form best practices
       const currentFields = getCurrentPageFields();
       const pageConfig = getCurrentPageConfig();
-      const currentValues = form.state.values;
       
-      // Filter fields based on conditional sections
-      const visibleFields = currentFields.filter(field => {
-        // Check if field is part of any conditional section
-        const conditionalSection = conditionalSections.find(section => 
-          section.fields.includes(field.name)
-        );
-        
-        if (conditionalSection) {
-          return conditionalSection.condition(currentValues as TFormValues);
-        }
-        
-        return true;
-      });
-      
-      // Group fields by section and group
-      const groupedFields = visibleFields.reduce((acc, field) => {
-        const sectionKey = field.section?.title || 'default';
-        const groupKey = field.group || 'default';
-        
-        if (!acc[sectionKey]) {
-          acc[sectionKey] = {
-            section: field.section,
-            groups: {}
-          };
-        }
-        
-        if (!acc[sectionKey].groups[groupKey]) {
-          acc[sectionKey].groups[groupKey] = [];
-        }
-        
-        acc[sectionKey].groups[groupKey].push(field);
-        return acc;
-      }, {} as Record<string, { section?: { title: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean }; groups: Record<string, FieldConfig[]> }>);
+      // For now, subscribe to all form values since we don't have explicit dependencies
+      // This could be optimized further by analyzing the condition functions
 
-      const renderSection = (sectionKey: string, sectionData: { section?: { title: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean }; groups: Record<string, FieldConfig[]> }) => (
-        <SectionRenderer
-          key={sectionKey}
-          sectionKey={sectionKey}
-          sectionData={sectionData}
-          renderField={renderField}
-        />
-      );
-
-      const sectionsToRender = Object.entries(groupedFields);
-      
-      const PageComponent = pageConfig?.component || DefaultPageComponent;
-
+      // TanStack Form Best Practice: Use targeted selector for minimal re-renders
       return (
-        <PageComponent
-          title={pageConfig?.title}
-          description={pageConfig?.description}
-          page={currentPage}
-          totalPages={totalPages}
+        <form.Subscribe
+          selector={(state: any) => state.values}
         >
-          {sectionsToRender.length === 1 && sectionsToRender[0][0] === 'default' 
-                         ? sectionsToRender[0][1].groups.default?.map((field: FieldConfig) => renderField(field))
-            : sectionsToRender.map(([sectionKey, sectionData]) => 
-                renderSection(sectionKey, sectionData)
-              )
-          }
-        </PageComponent>
+          {(currentValues) => {
+            // Filter fields based on conditional sections using subscribed values
+            const visibleFields = currentFields.filter(field => {
+              const conditionalSection = conditionalSections.find(section => 
+                section.fields.includes(field.name)
+              );
+              
+              if (conditionalSection) {
+                return conditionalSection.condition(currentValues as TFormValues);
+              }
+              
+              return true;
+            });
+            
+            // Group fields by section and group
+            const groupedFields = visibleFields.reduce((acc, field) => {
+              const sectionKey = field.section?.title || 'default';
+              const groupKey = field.group || 'default';
+              
+              if (!acc[sectionKey]) {
+                acc[sectionKey] = {
+                  section: field.section,
+                  groups: {}
+                };
+              }
+              
+              if (!acc[sectionKey].groups[groupKey]) {
+                acc[sectionKey].groups[groupKey] = [];
+              }
+              
+              acc[sectionKey].groups[groupKey].push(field);
+              return acc;
+            }, {} as Record<string, { section?: { title: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean }; groups: Record<string, FieldConfig[]> }>);
+
+            const renderSection = (sectionKey: string, sectionData: { section?: { title: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean }; groups: Record<string, FieldConfig[]> }) => (
+              <SectionRenderer
+                key={sectionKey}
+                sectionKey={sectionKey}
+                sectionData={sectionData}
+                renderField={renderField}
+              />
+            );
+
+            const sectionsToRender = Object.entries(groupedFields);
+            
+            const PageComponent = pageConfig?.component || DefaultPageComponent;
+
+            return (
+              <PageComponent
+                title={pageConfig?.title}
+                description={pageConfig?.description}
+                page={currentPage}
+                totalPages={totalPages}
+              >
+                {sectionsToRender.length === 1 && sectionsToRender[0][0] === 'default' 
+                               ? sectionsToRender[0][1].groups.default?.map((field: FieldConfig) => renderField(field))
+                  : sectionsToRender.map(([sectionKey, sectionData]) => 
+                      renderSection(sectionKey, sectionData)
+                    )
+                }
+              </PageComponent>
+            );
+          }}
+        </form.Subscribe>
       );
-    }, [renderTabContent, renderField, activeTab]);
+    }, [renderTabContent, renderField, activeTab, hasTabs, tabs, fieldsByTab, setActiveTab]);
 
     const renderProgress = () => {
       if (!hasPages || !progress) return null;

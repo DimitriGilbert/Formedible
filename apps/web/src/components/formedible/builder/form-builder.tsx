@@ -35,15 +35,14 @@ const FIELD_TYPES = [
   { value: "array", label: "Array Field", icon: "📚" },
 ];
 
-// PURE DISPLAY COMPONENTS - NO STATE, NO RERENDERS
-
-const FieldList: React.FC<{
+// REACTIVE FIELD LIST - SUBSCRIBES TO FIELD CHANGES WITH MEMOIZATION
+const FieldList = React.memo<{
   fields: FormField[];
   selectedFieldId: string | null;
   onSelectField: (id: string | null) => void;
   onDeleteField: (id: string) => void;
   onDuplicateField: (id: string) => void;
-}> = ({ fields, selectedFieldId, onSelectField, onDeleteField, onDuplicateField }) => (
+}>(({ fields, selectedFieldId, onSelectField, onDeleteField, onDuplicateField }) => (
   <div className="space-y-4">
     {fields.map((field) => (
       <div
@@ -90,7 +89,21 @@ const FieldList: React.FC<{
       </div>
     ))}
   </div>
-);
+), (prevProps, nextProps) => {
+  // Custom comparison to detect actual field changes
+  return (
+    prevProps.selectedFieldId === nextProps.selectedFieldId &&
+    prevProps.fields.length === nextProps.fields.length &&
+    prevProps.fields.every((field, index) => 
+      field.id === nextProps.fields[index]?.id &&
+      field.label === nextProps.fields[index]?.label &&
+      field.name === nextProps.fields[index]?.name &&
+      field.type === nextProps.fields[index]?.type
+    )
+  );
+});
+
+FieldList.displayName = 'FieldList';
 
 const FieldTypeSidebar: React.FC<{
   onAddField: (type: string) => void;
@@ -136,10 +149,12 @@ const FieldTypeSidebar: React.FC<{
 const ConfiguratorPanel: React.FC<{
   selectedFieldId: string | null;
   availablePages: number[];
-}> = ({ selectedFieldId, availablePages }) => {
+  fieldData: FormField[];
+}> = ({ selectedFieldId, availablePages, fieldData }) => {
   if (!selectedFieldId) return null;
 
-  const field = globalFieldStore.getField(selectedFieldId);
+  // Use reactive field data instead of direct store access
+  const field = fieldData.find(f => f.id === selectedFieldId);
   if (!field) return null;
 
   return (
@@ -179,13 +194,16 @@ export const FormBuilder: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>("builder");
   const [previewMode, setPreviewMode] = useState<"desktop" | "tablet" | "mobile">("desktop");
   
-  // Force rerender only for field list changes
-  const [, forceUpdate] = useState({});
-  const forceRerender = () => forceUpdate({});
+  // REACTIVE FIELD DATA - FRESH DATA AFTER STORE UPDATES
+  const [fieldData, setFieldData] = useState(() => globalFieldStore.getAllFields());
 
-  // Subscribe to field store changes (only for field list updates)
+  // Subscribe to field store changes with fresh data fetching
   React.useEffect(() => {
-    const unsubscribe = globalFieldStore.subscribe(forceRerender);
+    const unsubscribe = globalFieldStore.subscribe(() => {
+      // Fetch fresh data after store update
+      const freshFields = globalFieldStore.getAllFields();
+      setFieldData(freshFields);
+    });
     return unsubscribe;
   }, []);
 
@@ -221,7 +239,7 @@ export const FormBuilder: React.FC = () => {
     const formConfig = {
       title: formMetaRef.current.title,
       description: formMetaRef.current.description,
-      fields: globalFieldStore.getAllFields().map((field) => ({
+      fields: fieldData.map((field) => ({
         name: field.name,
         type: field.type,
         label: field.label,
@@ -292,7 +310,7 @@ export const FormBuilder: React.FC = () => {
           };
           
           setSelectedFieldId(null);
-          forceRerender(); // Force UI update
+          // Field data will update automatically via subscription
         } catch (error) {
           alert("Error importing configuration. Please check the file format.");
           console.error("Import error:", error);
@@ -303,17 +321,17 @@ export const FormBuilder: React.FC = () => {
     input.click();
   };
 
-  // Get current data directly from store/refs - NO MEMOIZATION
-  const allFields = globalFieldStore.getAllFields();
+  // Use reactive field data instead of direct store access
+  const allFields = fieldData;
   const fieldsToShow = formMetaRef.current.layoutType === "pages" 
-    ? (selectedPageId ? globalFieldStore.getFieldsByPage(selectedPageId) : allFields)
-    : (selectedTabId ? globalFieldStore.getFieldsByTab(selectedTabId) : allFields);
+    ? (selectedPageId ? fieldData.filter(f => (f.page || 1) === selectedPageId) : fieldData)
+    : (selectedTabId ? fieldData.filter(f => f.tab === selectedTabId) : fieldData);
 
   const availablePages = formMetaRef.current.pages.map(p => p.page);
 
   // Generate form configuration - ON DEMAND for preview/code tabs
   const getFormConfig = () => {
-    const currentFields = globalFieldStore.getAllFields();
+    const currentFields = fieldData;
     const schemaFields: Record<string, any> = {};
 
     currentFields.forEach((field) => {
@@ -573,9 +591,9 @@ export const MyForm = () => {
                                   title: `Page ${newPageNumber}`,
                                   description: "",
                                 });
-                                setEditingPageId(newPageNumber);
-                                forceRerender();
-                              }}
+                                 setEditingPageId(newPageNumber);
+                                 // Field data will update automatically via subscription
+                               }}
                             >
                               <Plus className="h-4 w-4 mr-2" />
                               Add Page
@@ -655,10 +673,9 @@ export const MyForm = () => {
                                         {page.description && (
                                           <div className="text-muted-foreground">{page.description}</div>
                                         )}
-                                        <div className="text-sm text-muted-foreground">
-                                          {globalFieldStore.getFieldsByPage(page.page).length} fields
-                                        </div>
-                                      </div>
+                                         <div className="text-sm text-muted-foreground">
+                                           {fieldData.filter(f => (f.page || 1) === page.page).length} fields
+                                         </div>                                      </div>
                                     </div>
                                     <div className="flex items-center space-x-2">
                                       <Button
@@ -682,10 +699,11 @@ export const MyForm = () => {
                                             ) {
                                                 formMetaRef.current.pages = formMetaRef.current.pages
                                                 .filter((p) => p.page !== page.page)
-                                                .map((p, index) => ({ ...p, page: index + 1 }));                                              if (selectedPageId === page.page) {
+                                                .map((p, index) => ({ ...p, page: index + 1 }));
+                                              if (selectedPageId === page.page) {
                                                 setSelectedPageId(null);
                                               }
-                                              forceRerender();
+                                              // Field data will update automatically via subscription
                                             }
                                           }}
                                         >
@@ -721,9 +739,9 @@ export const MyForm = () => {
                                     label: `Tab ${formMetaRef.current.tabs.length + 1}`,
                                     description: "",
                                   });
-                                  setEditingTabId(newTabId);
-                                  forceRerender();
-                                }}
+                                   setEditingTabId(newTabId);
+                                   // Field data will update automatically via subscription
+                                 }}
                               >
                                 <Plus className="h-4 w-4 mr-2" />
                                 Add Tab
@@ -803,10 +821,9 @@ export const MyForm = () => {
                                           {tab.description && (
                                             <div className="text-muted-foreground">{tab.description}</div>
                                           )}
-                                          <div className="text-sm text-muted-foreground">
-                                            {globalFieldStore.getFieldsByTab(tab.id).length} fields
-                                          </div>
-                                        </div>
+                                           <div className="text-sm text-muted-foreground">
+                                             {fieldData.filter(f => f.tab === tab.id).length} fields
+                                           </div>                                        </div>
                                       </div>
                                       <div className="flex items-center space-x-2">
                                         <Button
@@ -832,7 +849,7 @@ export const MyForm = () => {
                                                 if (selectedTabId === tab.id) {
                                                   setSelectedTabId(null);
                                                 }
-                                                forceRerender();
+                                                // Field data will update automatically via subscription
                                               }
                                             }}
                                           >
@@ -916,6 +933,7 @@ export const MyForm = () => {
                   <ConfiguratorPanel
                     selectedFieldId={selectedFieldId}
                     availablePages={availablePages}
+                    fieldData={fieldData}
                   />
                 </div>
               </TabsContent>
