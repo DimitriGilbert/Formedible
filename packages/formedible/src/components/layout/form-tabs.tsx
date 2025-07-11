@@ -1,10 +1,10 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 interface FormTabsProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   tabs: {
     id: string;
     label: string;
@@ -27,6 +27,18 @@ export const FormTabs: React.FC<FormTabsProps> = ({
     if (tabs.length > 0) return tabs[0].id;
     return '';
   });
+
+  // Sync activeTab with props when they change
+  useEffect(() => {
+    const newDefaultTab = defaultTab || (tabs.length > 0 ? tabs[0].id : '');
+    if (newDefaultTab && newDefaultTab !== activeTab) {
+      // Only update if the current activeTab is not in the new tabs list
+      const isCurrentTabValid = tabs.some(tab => tab.id === activeTab);
+      if (!isCurrentTabValid) {
+        setActiveTab(newDefaultTab);
+      }
+    }
+  }, [defaultTab, tabs, activeTab]);
 
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId);

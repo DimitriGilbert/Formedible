@@ -17,6 +17,7 @@ import { SliderField } from "@/components/formedible/fields/slider-field";
 import { FileUploadField } from "@/components/formedible/fields/file-upload-field";
 import { ArrayField } from "@/components/formedible/fields/array-field";
 import { RadioField } from "@/components/formedible/fields/radio-field";
+import { FormTabs } from "@/components/formedible/layout/form-tabs";
 import { MultiSelectField } from "@/components/formedible/fields/multi-select-field";
 import { ColorPickerField } from "@/components/formedible/fields/color-picker-field";
 import { RatingField } from "@/components/formedible/fields/rating-field";
@@ -25,6 +26,7 @@ import { LocationPickerField } from "@/components/formedible/fields/location-pic
 import { DurationPickerField } from "@/components/formedible/fields/duration-picker-field";
 import { AutocompleteField } from "@/components/formedible/fields/autocomplete-field";
 import { MaskedInputField } from "@/components/formedible/fields/masked-input-field";
+import { ObjectField } from "@/components/formedible/fields/object-field";
 import { InlineValidationWrapper } from "@/components/formedible/fields/inline-validation-wrapper";
 import { FieldHelp } from "@/components/formedible/fields/field-help";
 
@@ -72,6 +74,7 @@ interface FieldConfig {
   component?: React.ComponentType<FieldComponentProps>;
   wrapper?: React.ComponentType<{ children: React.ReactNode; field: FieldConfig }>;
   page?: number;
+  tab?: string;
   validation?: z.ZodSchema<unknown>;
   dependencies?: string[];
   conditional?: (values: Record<string, unknown>) => boolean;
@@ -85,6 +88,8 @@ interface FieldConfig {
     maxItems?: number; // Maximum number of items
     addButtonLabel?: string; // Label for add button
     removeButtonLabel?: string; // Label for remove button
+    addLabel?: string; // Alternative name for add button label
+    removeLabel?: string; // Alternative name for remove button label
     itemComponent?: React.ComponentType<FieldComponentProps>; // Custom component for each item
     sortable?: boolean; // Whether items can be reordered
     defaultValue?: unknown; // Default value for new items
@@ -190,6 +195,110 @@ interface FieldConfig {
     keepCharPositions?: boolean;
     pipe?: (conformedValue: string, config: unknown) => false | string | { value: string; indexesOfPipedChars: number[] };
   };
+  // Object field specific
+  objectConfig?: {
+    title?: string;
+    description?: string;
+    fields: Array<{
+      name: string;
+      type: string;
+      label?: string;
+      placeholder?: string;
+      description?: string;
+      options?: Array<{ value: string; label: string }>;
+      min?: number;
+      max?: number;
+      step?: number;
+      [key: string]: any;
+    }>;
+    collapsible?: boolean;
+    defaultExpanded?: boolean;
+    showCard?: boolean;
+    layout?: "vertical" | "horizontal" | "grid";
+    columns?: number;
+  };
+  // Slider field specific
+  sliderConfig?: {
+    min?: number;
+    max?: number;
+    step?: number;
+    marks?: Array<{ value: number; label: string }>;
+    showTooltip?: boolean;
+    showValue?: boolean;
+    orientation?: "horizontal" | "vertical";
+  };
+  // Number field specific
+  numberConfig?: {
+    min?: number;
+    max?: number;
+    step?: number;
+    precision?: number;
+    allowNegative?: boolean;
+    showSpinButtons?: boolean;
+  };
+  // Date field specific
+  dateConfig?: {
+    format?: string;
+    minDate?: Date;
+    maxDate?: Date;
+    disabledDates?: Date[];
+    showTime?: boolean;
+    timeFormat?: string;
+  };
+  // File upload specific
+  fileConfig?: {
+    accept?: string;
+    multiple?: boolean;
+    maxSize?: number;
+    maxFiles?: number;
+    allowedTypes?: string[];
+  };
+  // Textarea specific
+  textareaConfig?: {
+    rows?: number;
+    cols?: number;
+    resize?: "none" | "vertical" | "horizontal" | "both";
+    maxLength?: number;
+    showWordCount?: boolean;
+  };
+  // Password field specific
+  passwordConfig?: {
+    showToggle?: boolean;
+    strengthMeter?: boolean;
+    minStrength?: number;
+    requirements?: {
+      minLength?: number;
+      requireUppercase?: boolean;
+      requireLowercase?: boolean;
+      requireNumbers?: boolean;
+      requireSymbols?: boolean;
+    };
+  };
+  // Email field specific
+  emailConfig?: {
+    allowedDomains?: string | string[];
+    blockedDomains?: string | string[];
+    suggestions?: string | string[];
+    validateMX?: boolean;
+  };
+  // Simplified validation configuration for builder
+  validationConfig?: {
+    min?: number;
+    max?: number;
+    minLength?: number;
+    maxLength?: number;
+    pattern?: string;
+    custom?: string;
+    includes?: string;
+    startsWith?: string;
+    endsWith?: string;
+    email?: boolean;
+    url?: boolean;
+    uuid?: boolean;
+    transform?: string;
+    refine?: string;
+    customMessages?: Record<string, string>;
+  };
 }
 
 interface PageConfig {
@@ -227,6 +336,11 @@ interface UseFormedibleOptions<TFormValues> {
   fieldClassName?: string;
   pages?: PageConfig[];
   progress?: ProgressConfig;
+  tabs?: {
+    id: string;
+    label: string;
+    description?: string;
+  }[];
   defaultComponents?: {
     [key: string]: React.ComponentType<FieldComponentProps>;
   };
@@ -336,6 +450,7 @@ const defaultFieldComponents: Record<string, React.ComponentType<any>> = {
   duration: DurationPickerField,
   autocomplete: AutocompleteField,
   masked: MaskedInputField,
+  object: ObjectField,
 };
 
 const DefaultProgressComponent: React.FC<{
@@ -458,6 +573,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     fieldClassName,
     pages,
     progress,
+    tabs,
     defaultComponents,
     globalWrapper,
     formOptions,
@@ -508,8 +624,22 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     return grouped;
   }, [fields]);
 
+  // Group fields by tabs
+  const fieldsByTab = useMemo(() => {
+    const grouped: { [tab: string]: FieldConfig[] } = {};
+    
+    fields.forEach(field => {
+      const tab = field.tab || 'default';
+      if (!grouped[tab]) grouped[tab] = [];
+      grouped[tab].push(field);
+    });
+
+    return grouped;
+  }, [fields]);
+
   const totalPages = Math.max(...Object.keys(fieldsByPage).map(Number), 1);
   const hasPages = totalPages > 1;
+  const hasTabs = tabs && tabs.length > 0;
 
   // Calculate progress
   const progressValue = hasPages ? ((currentPage - 1) / (totalPages - 1)) * 100 : 100;
@@ -869,7 +999,13 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     validateCrossFields
   ]);
 
-  const getCurrentPageFields = () => fieldsByPage[currentPage] || [];
+  const getCurrentPageFields = () => {
+    if (hasTabs) {
+      // When using tabs, return all fields (tabs handle their own filtering)
+      return fields;
+    }
+    return fieldsByPage[currentPage] || [];
+  };
 
   const getCurrentPageConfig = () => pages?.find(p => p.page === currentPage);
 
@@ -1095,7 +1231,15 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
         locationConfig,
         durationConfig,
         autocompleteConfig,
-        maskedInputConfig
+        maskedInputConfig,
+        objectConfig,
+        sliderConfig,
+        numberConfig,
+        dateConfig,
+        fileConfig,
+        textareaConfig,
+        passwordConfig,
+        emailConfig
       } = fieldConfig;
 
       return (
@@ -1186,6 +1330,22 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
               props = { ...props, autocompleteConfig };
             } else if (type === 'masked') {
               props = { ...props, maskedInputConfig };
+            } else if (type === 'object') {
+              props = { ...props, objectConfig };
+            } else if (type === 'slider') {
+              props = { ...props, sliderConfig };
+            } else if (type === 'number') {
+              props = { ...props, numberConfig };
+            } else if (type === 'date') {
+              props = { ...props, dateConfig };
+            } else if (type === 'file') {
+              props = { ...props, fileConfig };
+            } else if (type === 'textarea') {
+              props = { ...props, textareaConfig };
+            } else if (type === 'password') {
+              props = { ...props, passwordConfig };
+            } else if (type === 'email') {
+              props = { ...props, emailConfig };
             }
 
             // Render the field component
@@ -1222,7 +1382,79 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
       );
     };
 
+    const renderTabContent = (tabFields: FieldConfig[]) => {
+      const currentValues = form.state.values;
+      
+      // Filter fields based on conditional sections
+      const visibleFields = tabFields.filter(field => {
+        // Check if field is part of any conditional section
+        const conditionalSection = conditionalSections.find(section => 
+          section.fields.includes(field.name)
+        );
+        
+        if (conditionalSection) {
+          return conditionalSection.condition(currentValues as TFormValues);
+        }
+        
+        return true;
+      });
+      
+      // Group fields by section and group
+      const groupedFields = visibleFields.reduce((acc, field) => {
+        const sectionKey = field.section?.title || 'default';
+        const groupKey = field.group || 'default';
+        
+        if (!acc[sectionKey]) {
+          acc[sectionKey] = {
+            section: field.section,
+            groups: {}
+          };
+        }
+        
+        if (!acc[sectionKey].groups[groupKey]) {
+          acc[sectionKey].groups[groupKey] = [];
+        }
+        
+        acc[sectionKey].groups[groupKey].push(field);
+        return acc;
+      }, {} as Record<string, { section?: { title: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean }; groups: Record<string, FieldConfig[]> }>);
+
+      const renderSection = (sectionKey: string, sectionData: { section?: { title: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean }; groups: Record<string, FieldConfig[]> }) => (
+        <SectionRenderer
+          key={sectionKey}
+          sectionKey={sectionKey}
+          sectionData={sectionData}
+          renderField={renderField}
+        />
+      );
+
+      const sectionsToRender = Object.entries(groupedFields);
+      
+      return sectionsToRender.length === 1 && sectionsToRender[0][0] === 'default' 
+        ? sectionsToRender[0][1].groups.default?.map((field: FieldConfig) => renderField(field))
+        : sectionsToRender.map(([sectionKey, sectionData]) => 
+            renderSection(sectionKey, sectionData)
+          );
+    };
+
     const renderPageContent = () => {
+      if (hasTabs) {
+        // Render tabs
+        const tabsToRender = tabs!.map(tab => ({
+          id: tab.id,
+          label: tab.label,
+          content: renderTabContent(fieldsByTab[tab.id] || [])
+        }));
+
+        return (
+          <FormTabs
+            tabs={tabsToRender}
+            defaultTab={tabs![0]?.id}
+          />
+        );
+      }
+
+      // Original page rendering logic
       const currentFields = getCurrentPageFields();
       const pageConfig = getCurrentPageConfig();
       const currentValues = form.state.values;

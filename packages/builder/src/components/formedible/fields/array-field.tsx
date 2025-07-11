@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { Plus, Trash2, GripVertical } from 'lucide-react';
-import type { BaseFieldProps } from '../../lib/formedible/types';
+import type { BaseFieldProps } from '@/lib/formedible/types';
 import { TextField } from './text-field';
 import { NumberField } from './number-field';
 import { TextareaField } from './textarea-field';
@@ -73,10 +73,10 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
     sortable = false,
     defaultValue = '',
     itemProps = {},
-  } = arrayConfig;
+  } = arrayConfig || {};
 
   // Get the component for rendering items
-  const ItemComponent = CustomItemComponent || fieldTypeComponents[itemType] || TextField;
+  const ItemComponent = CustomItemComponent || fieldTypeComponents[itemType || 'text'] || TextField;
 
   const addItem = useCallback(() => {
     if (value.length >= maxItems) return;

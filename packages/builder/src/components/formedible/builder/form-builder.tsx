@@ -23,6 +23,7 @@ interface FormField {
   description?: string;
   required?: boolean;
   page?: number;
+  tab?: string;
   group?: string;
   section?: {
     title: string;
@@ -199,7 +200,7 @@ const FieldList: React.FC<{
             <div>
               <div className="font-medium text-lg">{field.label}</div>
               <div className="text-muted-foreground">
-                {field.type} • {field.name} • Page {field.page || 1}
+                {field.type} • {field.name} • {field.tab ? `Tab ${field.tab}` : `Page ${field.page || 1}`}
               </div>
             </div>
           </div>
@@ -235,15 +236,24 @@ FieldList.displayName = "FieldList";
 const FieldTypeSidebar: React.FC<{
   onAddField: (type: string) => void;
   selectedPage: number | null;
-}> = React.memo(({ onAddField, selectedPage }) => {
+  selectedTab: string | null;
+  layoutType: "pages" | "tabs";
+}> = React.memo(({ onAddField, selectedPage, selectedTab, layoutType }) => {
   return (
     <div className="w-72 border-r bg-card overflow-y-auto">
       <div className="p-6">
         <h3 className="font-semibold text-lg mb-6">Field Types</h3>
-        {selectedPage && (
+        {layoutType === "pages" && selectedPage && (
           <div className="mb-4 p-3 bg-primary/10 rounded-lg">
             <p className="text-sm text-primary font-medium">
               Adding to Page {selectedPage}
+            </p>
+          </div>
+        )}
+        {layoutType === "tabs" && selectedTab && (
+          <div className="mb-4 p-3 bg-primary/10 rounded-lg">
+            <p className="text-sm text-primary font-medium">
+              Adding to Tab {selectedTab}
             </p>
           </div>
         )}
@@ -272,9 +282,9 @@ FieldTypeSidebar.displayName = "FieldTypeSidebar";
 const ConfiguratorPanel: React.FC<{
   selectedFieldId: string | null;
   getField: (id: string) => FormField | undefined;
-  onUpdateField: (fieldId: string, field: FormField) => void;
+  fieldStoreUpdateField: (fieldId: string, field: FormField) => void; // DIRECT STORE UPDATE
   availablePages: number[];
-}> = React.memo(({ selectedFieldId, getField, onUpdateField, availablePages }) => {
+}> = React.memo(({ selectedFieldId, getField, fieldStoreUpdateField, availablePages }) => {
   if (!selectedFieldId) return null;
 
   const field = getField(selectedFieldId);
@@ -286,7 +296,7 @@ const ConfiguratorPanel: React.FC<{
         key={selectedFieldId} // Force new instance when field changes
         fieldId={selectedFieldId}
         initialField={field}
-        onFieldChange={onUpdateField}
+        fieldStoreUpdateField={fieldStoreUpdateField} // DIRECT STORE UPDATE
         availablePages={availablePages}
       />
     </div>
@@ -302,6 +312,10 @@ export const FormBuilder: React.FC = () => {
   const [pages, setPages] = useState<Array<{ page: number; title: string; description?: string }>>([
     { page: 1, title: "Page 1", description: "First page" }
   ]);
+  const [tabs, setTabs] = useState<Array<{ id: string; label: string; description?: string }>>([
+    { id: "general", label: "General", description: "General information" }
+  ]);
+  const [layoutType, setLayoutType] = useState<"pages" | "tabs">("pages");
   const [settings, setSettings] = useState({
     submitLabel: "Submit",
     nextLabel: "Next",
@@ -312,7 +326,9 @@ export const FormBuilder: React.FC = () => {
   // UI state
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
   const [selectedPageId, setSelectedPageId] = useState<number | null>(null);
+  const [selectedTabId, setSelectedTabId] = useState<string | null>(null);
   const [editingPageId, setEditingPageId] = useState<number | null>(null);
+  const [editingTabId, setEditingTabId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>("builder");
   const [previewMode, setPreviewMode] = useState<"desktop" | "tablet" | "mobile">("desktop");
 
@@ -320,8 +336,12 @@ export const FormBuilder: React.FC = () => {
 
   const handleAddField = useCallback((type: string) => {
     const newFieldId = fieldStore.addField(type, selectedPageId || 1);
+    const field = fieldStore.getField(newFieldId);
+    if (field && layoutType === "tabs" && selectedTabId) {
+      fieldStore.updateField(newFieldId, { ...field, tab: selectedTabId });
+    }
     setSelectedFieldId(newFieldId);
-  }, [fieldStore, selectedPageId]);
+  }, [fieldStore, selectedPageId, selectedTabId, layoutType]);
 
   const handleSelectField = useCallback((fieldId: string | null) => {
     setSelectedFieldId(fieldId);
@@ -354,6 +374,7 @@ export const FormBuilder: React.FC = () => {
         description: field.description,
         required: field.required,
         page: field.page || 1,
+        tab: field.tab,
         group: field.group,
         section: field.section,
         help: field.help,
@@ -367,6 +388,8 @@ export const FormBuilder: React.FC = () => {
         phoneConfig: field.phoneConfig,
       })),
       pages: pages,
+      tabs: tabs,
+      layoutType: layoutType,
       settings: settings,
     };
 
@@ -437,6 +460,8 @@ export const FormBuilder: React.FC = () => {
           setFormTitle(config.title || "Imported Form");
           setFormDescription(config.description || "Imported from JSON");
           setPages(config.pages || [{ page: 1, title: "Page 1", description: "" }]);
+          setTabs(config.tabs || [{ id: "general", label: "General", description: "General information" }]);
+          setLayoutType(config.layoutType || "pages");
           setSettings({
             submitLabel: config.settings?.submitLabel || config.submitLabel || "Submit",
             nextLabel: config.settings?.nextLabel || config.nextLabel || "Next",
@@ -456,9 +481,12 @@ export const FormBuilder: React.FC = () => {
   }, [fieldStore, setFormTitle, setFormDescription, setPages, setSettings]);
 
   const allFields = fieldStore.getAllFields();
-  const fieldsToShow = selectedPageId 
-    ? fieldStore.getFieldsByPage(selectedPageId)
-    : allFields;
+  const fieldsToShow = layoutType === "pages" 
+    ? (selectedPageId ? fieldStore.getFieldsByPage(selectedPageId) : allFields)
+    : (selectedTabId ? allFields.filter(f => f.tab === selectedTabId) : allFields);
+
+  // Memoize availablePages to prevent unnecessary re-renders
+  const availablePages = useMemo(() => pages.map(p => p.page), [pages]);
 
   // Generate form configuration - EXACTLY like original
   const formConfig = useMemo(() => {
@@ -520,6 +548,7 @@ export const FormBuilder: React.FC = () => {
         placeholder: field.placeholder,
         description: field.description,
         page: field.page || 1,
+        tab: field.tab,
         group: field.group,
         section: field.section,
         help: field.help,
@@ -532,7 +561,8 @@ export const FormBuilder: React.FC = () => {
         ...(field.ratingConfig && { ratingConfig: field.ratingConfig }),
         ...(field.phoneConfig && { phoneConfig: field.phoneConfig }),
       })),
-      pages: pages.length > 1 ? pages : [],
+      pages: layoutType === "pages" && pages.length > 1 ? pages : [],
+      tabs: layoutType === "tabs" ? tabs : undefined,
       submitLabel: settings.submitLabel,
       nextLabel: settings.nextLabel,
       previousLabel: settings.previousLabel,
@@ -585,7 +615,12 @@ export const MyForm = () => {
 
       <div className="flex-1 flex min-h-0">
         {/* Sidebar - Field Types */}
-        <FieldTypeSidebar onAddField={handleAddField} selectedPage={selectedPageId} />
+        <FieldTypeSidebar 
+          onAddField={handleAddField} 
+          selectedPage={selectedPageId} 
+          selectedTab={selectedTabId}
+          layoutType={layoutType}
+        />
 
         {/* Main Content */}
         <div className="flex-1 flex flex-col">
@@ -635,6 +670,18 @@ export const MyForm = () => {
                               placeholder="Enter form description"
                             />
                           </div>
+                          <div>
+                            <Label htmlFor="layout-type">Layout Type</Label>
+                            <select
+                              id="layout-type"
+                              value={layoutType}
+                              onChange={(e) => setLayoutType(e.target.value as "pages" | "tabs")}
+                              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              <option value="pages">Multi-Page Form</option>
+                              <option value="tabs">Tabbed Form</option>
+                            </select>
+                          </div>
                         </CardContent>
                       </Card>
 
@@ -683,7 +730,8 @@ export const MyForm = () => {
                       </Card>
 
                       {/* Page Management */}
-                      <Card className="hover:shadow-lg transition-shadow gap-2">
+                      {layoutType === "pages" && (
+                        <Card className="hover:shadow-lg transition-shadow gap-2">
                         <CardHeader>
                           <CardTitle className="flex items-center justify-between text-xl">
                             Pages ({pages.length})
@@ -834,14 +882,172 @@ export const MyForm = () => {
                           </div>
                         </CardContent>
                       </Card>
+                      )}
+
+                      {/* Tab Management */}
+                      {layoutType === "tabs" && (
+                        <Card className="hover:shadow-lg transition-shadow gap-2">
+                          <CardHeader>
+                            <CardTitle className="flex items-center justify-between text-xl">
+                              Tabs ({tabs.length})
+                              {selectedTabId && (
+                                <span className="text-sm font-normal text-primary">
+                                  Tab {selectedTabId} selected
+                                </span>
+                              )}
+                              <Button
+                                onClick={() => {
+                                  const newTabId = `tab_${Date.now()}`;
+                                  setTabs(prev => [
+                                    ...prev,
+                                    {
+                                      id: newTabId,
+                                      label: `Tab ${tabs.length + 1}`,
+                                      description: "",
+                                    },
+                                  ]);
+                                  setEditingTabId(newTabId);
+                                }}
+                              >
+                                <Plus className="h-4 w-4 mr-2" />
+                                Add Tab
+                              </Button>
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-2 p-4">
+                            <div className="space-y-2">
+                              {tabs.map((tab) => (
+                                <div
+                                  key={tab.id}
+                                  className={cn(
+                                    "border rounded-lg transition-all cursor-pointer",
+                                    selectedTabId === tab.id
+                                      ? "border-primary bg-primary/5 shadow-sm"
+                                      : "border-border hover:border-primary/50",
+                                    editingTabId === tab.id && "ring-2 ring-primary/20"
+                                  )}
+                                  onClick={() => {
+                                    if (editingTabId === tab.id) return;
+                                    setSelectedTabId(tab.id);
+                                  }}
+                                >
+                                  {editingTabId === tab.id ? (
+                                    <div className="p-8 space-y-6">
+                                      <div>
+                                        <Label>Tab Label</Label>
+                                        <Input
+                                          value={tab.label}
+                                          onChange={(e) => {
+                                            setTabs(prev => prev.map(t =>
+                                              t.id === tab.id
+                                                ? { ...t, label: e.target.value }
+                                                : t
+                                            ));
+                                          }}
+                                        />
+                                      </div>
+                                      <div>
+                                        <Label>Description</Label>
+                                        <Textarea
+                                          value={tab.description || ""}
+                                          onChange={(e) => {
+                                            setTabs(prev => prev.map(t =>
+                                              t.id === tab.id
+                                                ? { ...t, description: e.target.value }
+                                                : t
+                                            ));
+                                          }}
+                                        />
+                                      </div>
+                                      <div className="flex items-center gap-3">
+                                        <Button onClick={() => setEditingTabId(null)}>Done</Button>
+                                        <Button variant="outline" onClick={() => setEditingTabId(null)}>
+                                          Cancel
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center justify-between p-8">
+                                      <div className="flex items-center space-x-4">
+                                        <FileText
+                                          className={cn(
+                                            "h-5 w-5",
+                                            selectedTabId === tab.id
+                                              ? "text-primary"
+                                              : "text-muted-foreground"
+                                          )}
+                                        />
+                                        <div>
+                                          <div
+                                            className={cn(
+                                              "font-medium text-lg",
+                                              selectedTabId === tab.id && "text-primary"
+                                            )}
+                                          >
+                                            {tab.label}
+                                          </div>
+                                          {tab.description && (
+                                            <div className="text-muted-foreground">{tab.description}</div>
+                                          )}
+                                          <div className="text-sm text-muted-foreground">
+                                            {allFields.filter(f => f.tab === tab.id).length} fields
+                                          </div>
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center space-x-2">
+                                        <Button
+                                          variant="ghost"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setEditingTabId(tab.id);
+                                          }}
+                                        >
+                                          <Edit className="h-4 w-4" />
+                                        </Button>
+                                        {tabs.length > 1 && (
+                                          <Button
+                                            variant="ghost"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              if (
+                                                confirm(
+                                                  `Delete ${tab.label}? Fields in this tab will be moved to the first tab.`
+                                                )
+                                              ) {
+                                                setTabs(prev => prev.filter(t => t.id !== tab.id));
+                                                if (selectedTabId === tab.id) {
+                                                  setSelectedTabId(null);
+                                                }
+                                              }
+                                            }}
+                                          >
+                                            <Trash2 className="h-4 w-4" />
+                                          </Button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
 
                       {/* Fields List */}
                       <Card className="hover:shadow-lg transition-shadow gap-2">
                         <CardHeader>
                           <CardTitle className="flex items-center justify-between text-xl">
-                            {selectedPageId ? (
+                            {layoutType === "pages" && selectedPageId ? (
                               <>
                                 {pages.find((p) => p.page === selectedPageId)?.title} Fields
+                                <span className="text-sm font-normal text-muted-foreground">
+                                  ({fieldsToShow.length} fields)
+                                </span>
+                              </>
+                            ) : layoutType === "tabs" && selectedTabId ? (
+                              <>
+                                {tabs.find((t) => t.id === selectedTabId)?.label} Fields
                                 <span className="text-sm font-normal text-muted-foreground">
                                   ({fieldsToShow.length} fields)
                                 </span>
@@ -857,9 +1063,11 @@ export const MyForm = () => {
                               </>
                             )}
                           </CardTitle>
-                          {selectedPageId && (
+                          {(selectedPageId || selectedTabId) && (
                             <p className="text-muted-foreground">
-                              New fields will be added to this page. Click the page again to deselect.
+                              {layoutType === "pages" 
+                                ? "New fields will be added to this page. Click the page again to deselect."
+                                : "New fields will be added to this tab. Click the tab again to deselect."}
                             </p>
                           )}
                         </CardHeader>
@@ -870,6 +1078,8 @@ export const MyForm = () => {
                               <p className="text-lg">
                                 {selectedPageId
                                   ? `No fields on this page yet. Add some from the sidebar!`
+                                  : selectedTabId
+                                  ? `No fields in this tab yet. Add some from the sidebar!`
                                   : `No fields yet. Add some from the sidebar!`}
                               </p>
                             </div>
@@ -891,8 +1101,8 @@ export const MyForm = () => {
                   <ConfiguratorPanel
                     selectedFieldId={selectedFieldId}
                     getField={fieldStore.getField}
-                    onUpdateField={fieldStore.updateField}
-                    availablePages={pages.map(p => p.page)}
+                    fieldStoreUpdateField={fieldStore.updateField}
+                    availablePages={availablePages}
                   />
                 </div>
               </TabsContent>

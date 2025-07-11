@@ -1450,9 +1450,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
           <FormTabs
             tabs={tabsToRender}
             defaultTab={tabs![0]?.id}
-          >
-            <div />
-          </FormTabs>
+          />
         );
       }
 

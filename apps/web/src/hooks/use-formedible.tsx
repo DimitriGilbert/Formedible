@@ -17,7 +17,6 @@ import { SliderField } from "@/components/formedible/fields/slider-field";
 import { FileUploadField } from "@/components/formedible/fields/file-upload-field";
 import { ArrayField } from "@/components/formedible/fields/array-field";
 import { RadioField } from "@/components/formedible/fields/radio-field";
-import { FormTabs } from "@/components/formedible/layout/form-tabs";
 import { MultiSelectField } from "@/components/formedible/fields/multi-select-field";
 import { ColorPickerField } from "@/components/formedible/fields/color-picker-field";
 import { RatingField } from "@/components/formedible/fields/rating-field";
@@ -74,7 +73,6 @@ interface FieldConfig {
   component?: React.ComponentType<FieldComponentProps>;
   wrapper?: React.ComponentType<{ children: React.ReactNode; field: FieldConfig }>;
   page?: number;
-  tab?: string;
   validation?: z.ZodSchema<unknown>;
   dependencies?: string[];
   conditional?: (values: Record<string, unknown>) => boolean;
@@ -336,11 +334,6 @@ interface UseFormedibleOptions<TFormValues> {
   fieldClassName?: string;
   pages?: PageConfig[];
   progress?: ProgressConfig;
-  tabs?: {
-    id: string;
-    label: string;
-    description?: string;
-  }[];
   defaultComponents?: {
     [key: string]: React.ComponentType<FieldComponentProps>;
   };
@@ -573,7 +566,6 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     fieldClassName,
     pages,
     progress,
-    tabs,
     defaultComponents,
     globalWrapper,
     formOptions,
@@ -624,22 +616,8 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     return grouped;
   }, [fields]);
 
-  // Group fields by tabs
-  const fieldsByTab = useMemo(() => {
-    const grouped: { [tab: string]: FieldConfig[] } = {};
-    
-    fields.forEach(field => {
-      const tab = field.tab || 'default';
-      if (!grouped[tab]) grouped[tab] = [];
-      grouped[tab].push(field);
-    });
-
-    return grouped;
-  }, [fields]);
-
   const totalPages = Math.max(...Object.keys(fieldsByPage).map(Number), 1);
   const hasPages = totalPages > 1;
-  const hasTabs = tabs && tabs.length > 0;
 
   // Calculate progress
   const progressValue = hasPages ? ((currentPage - 1) / (totalPages - 1)) * 100 : 100;
@@ -999,13 +977,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     validateCrossFields
   ]);
 
-  const getCurrentPageFields = () => {
-    if (hasTabs) {
-      // When using tabs, return all fields (tabs handle their own filtering)
-      return fields;
-    }
-    return fieldsByPage[currentPage] || [];
-  };
+  const getCurrentPageFields = () => fieldsByPage[currentPage] || [];
 
   const getCurrentPageConfig = () => pages?.find(p => p.page === currentPage);
 
@@ -1382,81 +1354,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
       );
     };
 
-    const renderTabContent = (tabFields: FieldConfig[]) => {
-      const currentValues = form.state.values;
-      
-      // Filter fields based on conditional sections
-      const visibleFields = tabFields.filter(field => {
-        // Check if field is part of any conditional section
-        const conditionalSection = conditionalSections.find(section => 
-          section.fields.includes(field.name)
-        );
-        
-        if (conditionalSection) {
-          return conditionalSection.condition(currentValues as TFormValues);
-        }
-        
-        return true;
-      });
-      
-      // Group fields by section and group
-      const groupedFields = visibleFields.reduce((acc, field) => {
-        const sectionKey = field.section?.title || 'default';
-        const groupKey = field.group || 'default';
-        
-        if (!acc[sectionKey]) {
-          acc[sectionKey] = {
-            section: field.section,
-            groups: {}
-          };
-        }
-        
-        if (!acc[sectionKey].groups[groupKey]) {
-          acc[sectionKey].groups[groupKey] = [];
-        }
-        
-        acc[sectionKey].groups[groupKey].push(field);
-        return acc;
-      }, {} as Record<string, { section?: { title: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean }; groups: Record<string, FieldConfig[]> }>);
-
-      const renderSection = (sectionKey: string, sectionData: { section?: { title: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean }; groups: Record<string, FieldConfig[]> }) => (
-        <SectionRenderer
-          key={sectionKey}
-          sectionKey={sectionKey}
-          sectionData={sectionData}
-          renderField={renderField}
-        />
-      );
-
-      const sectionsToRender = Object.entries(groupedFields);
-      
-      return sectionsToRender.length === 1 && sectionsToRender[0][0] === 'default' 
-        ? sectionsToRender[0][1].groups.default?.map((field: FieldConfig) => renderField(field))
-        : sectionsToRender.map(([sectionKey, sectionData]) => 
-            renderSection(sectionKey, sectionData)
-          );
-    };
-
     const renderPageContent = () => {
-      if (hasTabs) {
-        // Render tabs
-        const tabsToRender = tabs!.map(tab => ({
-          id: tab.id,
-          label: tab.label,
-          content: renderTabContent(fieldsByTab[tab.id] || [])
-        }));
-
-        return (
-          <FormTabs
-            tabs={tabsToRender}
-            defaultTab={tabs![0]?.id}
-          >
-            <div />
-          </FormTabs>
-        );
-      }
-
-      // Original page rendering logic
       const currentFields = getCurrentPageFields();
       const pageConfig = getCurrentPageConfig();
       const currentValues = form.state.values;

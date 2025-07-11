@@ -3,7 +3,7 @@ import React from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import type { BaseFieldProps } from '../../lib/formedible/types';
+import type { BaseFieldProps } from '@/lib/formedible/types';
 
 export interface NumberFieldSpecificProps extends BaseFieldProps {
   min?: number;

@@ -1,5 +1,5 @@
 "use client";
-import React, { useMemo } from "react";
+import React, { useRef, useCallback } from "react";
 import { useFormedible } from "formedible";
 import { z } from "zod";
 
@@ -12,6 +12,7 @@ interface FormField {
   description?: string;
   required?: boolean;
   page?: number;
+  tab?: string;
   group?: string;
   section?: {
     title: string;
@@ -139,149 +140,19 @@ interface FormField {
 interface FieldConfiguratorProps {
   fieldId: string;
   initialField: FormField;
-  onFieldChange: (fieldId: string, field: FormField) => void;
+  fieldStoreUpdateField: (fieldId: string, field: FormField) => void; // DIRECT STORE UPDATE
   availablePages?: number[];
 }
-
-// Simplified Configuration Schema
-const fieldConfigurationSchema = z.object({
-  // Basic configuration
-  label: z.string().min(1, "Field label is required"),
-  name: z.string().min(1, "Field name is required"),
-  placeholder: z.string().optional(),
-  description: z.string().optional(),
-  page: z.number().min(1),
-  group: z.string().optional(),
-  required: z.boolean().default(false),
-  
-  // Options configuration
-  options: z.array(z.object({
-    value: z.string().min(1, "Option value required"),
-    label: z.string().min(1, "Option label required"),
-  })).optional(),
-  
-  // Field-specific configurations
-  sliderConfig: z.object({
-    min: z.number().optional(),
-    max: z.number().optional(),
-    step: z.number().min(1).optional(),
-    showTooltip: z.boolean().default(false),
-    showValue: z.boolean().default(false),
-    orientation: z.enum(["horizontal", "vertical"]).default("horizontal"),
-  }).optional(),
-  
-  numberConfig: z.object({
-    min: z.number().optional(),
-    max: z.number().optional(),
-    step: z.number().min(1).optional(),
-    precision: z.number().min(0).max(10).optional(),
-    allowNegative: z.boolean().default(true),
-    showSpinButtons: z.boolean().default(true),
-  }).optional(),
-  
-  dateConfig: z.object({
-    minDate: z.string().optional(),
-    maxDate: z.string().optional(),
-    format: z.enum(["yyyy-MM-dd", "MM/dd/yyyy", "dd/MM/yyyy", "MMM dd, yyyy"]).default("yyyy-MM-dd"),
-    disablePast: z.boolean().default(false),
-    disableFuture: z.boolean().default(false),
-    disableWeekends: z.boolean().default(false),
-  }).optional(),
-  
-  multiSelectConfig: z.object({
-    placeholder: z.string().optional(),
-    searchable: z.boolean().default(false),
-    maxSelections: z.number().min(1).optional(),
-    creatable: z.boolean().default(false),
-  }).optional(),
-  
-  ratingConfig: z.object({
-    max: z.number().min(1).max(10).default(5),
-    allowHalf: z.boolean().default(false),
-    showValue: z.boolean().default(false),
-    icon: z.string().default("star"),
-  }).optional(),
-  
-  phoneConfig: z.object({
-    defaultCountry: z.string().default("US"),
-    format: z.enum(["national", "international"]).default("national"),
-    placeholder: z.string().optional(),
-  }).optional(),
-  
-  colorConfig: z.object({
-    format: z.enum(["hex", "rgb", "hsl"]).default("hex"),
-    presets: z.array(z.string()).optional(),
-  }).optional(),
-  
-  fileConfig: z.object({
-    accept: z.string().optional(),
-    multiple: z.boolean().default(false),
-    maxSize: z.number().min(1).optional(),
-    maxFiles: z.number().min(1).optional(),
-  }).optional(),
-  
-  textareaConfig: z.object({
-    rows: z.number().min(1).default(4),
-    cols: z.number().min(10).optional(),
-    resize: z.enum(["none", "vertical", "horizontal", "both"]).default("vertical"),
-    maxLength: z.number().min(1).optional(),
-    showWordCount: z.boolean().default(false),
-  }).optional(),
-  
-  passwordConfig: z.object({
-    showToggle: z.boolean().default(true),
-    strengthMeter: z.boolean().default(false),
-    minStrength: z.number().min(1).max(4).default(1),
-    requireUppercase: z.boolean().default(false),
-    requireLowercase: z.boolean().default(false),
-    requireNumbers: z.boolean().default(false),
-    requireSymbols: z.boolean().default(false),
-    minLength: z.number().min(1).default(8),
-  }).optional(),
-  
-  emailConfig: z.object({
-    allowedDomains: z.string().optional(),
-    blockedDomains: z.string().optional(),
-    suggestions: z.string().optional(),
-    validateMX: z.boolean().default(false),
-  }).optional(),
-  
-  // Advanced configurations
-  helpText: z.string().optional(),
-  helpTooltip: z.string().optional(),
-  helpPosition: z.enum(["top", "bottom", "left", "right"]).default("bottom"),
-  helpLinkUrl: z.string().optional(),
-  helpLinkText: z.string().optional(),
-  
-  sectionTitle: z.string().optional(),
-  sectionDescription: z.string().optional(),
-  sectionCollapsible: z.boolean().default(false),
-  sectionDefaultExpanded: z.boolean().default(true),
-  
-  inlineValidationEnabled: z.boolean().default(false),
-  inlineValidationDebounceMs: z.number().min(0).default(300),
-  inlineValidationShowSuccess: z.boolean().default(false),
-  
-  validationMinLength: z.number().min(0).optional(),
-  validationMaxLength: z.number().min(1).optional(),
-  validationMin: z.number().optional(),
-  validationMax: z.number().optional(),
-  validationPattern: z.string().optional(),
-  validationIncludes: z.string().optional(),
-  validationStartsWith: z.string().optional(),
-  validationEndsWith: z.string().optional(),
-  validationEmail: z.boolean().default(false),
-  validationUrl: z.boolean().default(false),
-  validationUuid: z.boolean().default(false),
-  validationCustom: z.string().optional(),
-});
 
 export const FieldConfigurator: React.FC<FieldConfiguratorProps> = ({
   fieldId,
   initialField,
-  onFieldChange,
+  fieldStoreUpdateField, // DIRECT STORE UPDATE - NO PARENT RE-RENDER
   availablePages = [1],
 }) => {
+  // Track the current field state without causing re-renders
+  const currentFieldRef = useRef<FormField>(initialField);
+  
   const needsOptions = ['select', 'radio', 'multiSelect'].includes(initialField.type);
   const needsSliderConfig = initialField.type === 'slider';
   const needsNumberConfig = initialField.type === 'number';
@@ -295,313 +166,319 @@ export const FieldConfigurator: React.FC<FieldConfiguratorProps> = ({
   const needsColorConfig = initialField.type === 'colorPicker';
   const needsMultiSelectConfig = initialField.type === 'multiSelect';
 
-  // Build fields array dynamically based on field type
-  const buildFields = () => {
-    const fields = [
-      // Basic Configuration
-      { name: "label", type: "text", label: "Field Label", placeholder: "Enter field label", section: { title: "Basic Configuration" } },
-      { name: "name", type: "text", label: "Field Name", placeholder: "Enter field name", section: { title: "Basic Configuration" } },
-      { name: "placeholder", type: "text", label: "Placeholder", placeholder: "Enter placeholder text", section: { title: "Basic Configuration" } },
-      { name: "description", type: "textarea", label: "Description", placeholder: "Enter field description", section: { title: "Basic Configuration" } },
+  // SINGLE FORM WITH TABS CONFIGURATION
+  const configForm = useFormedible({
+    schema: z.object({
+      // Basic fields
+      label: z.string().min(1, "Field label is required"),
+      name: z.string().min(1, "Field name is required"),
+      placeholder: z.string().optional(),
+      description: z.string().optional(),
+      page: z.number().min(1),
+      group: z.string().optional(),
+      required: z.boolean().default(false),
+      
+      // Options
+      options: z.array(z.object({
+        value: z.string().min(1, "Option value required"),
+        label: z.string().min(1, "Option label required"),
+      })).optional(),
+      
+      // Field-specific configs
+      sliderConfig: z.object({
+        min: z.number().optional(),
+        max: z.number().optional(),
+        step: z.number().min(1).optional(),
+        showTooltip: z.boolean().default(false),
+        showValue: z.boolean().default(false),
+        orientation: z.enum(["horizontal", "vertical"]).default("horizontal"),
+      }).optional(),
+      
+      numberConfig: z.object({
+        min: z.number().optional(),
+        max: z.number().optional(),
+        step: z.number().min(1).optional(),
+        precision: z.number().min(0).max(10).optional(),
+        allowNegative: z.boolean().default(true),
+        showSpinButtons: z.boolean().default(true),
+      }).optional(),
+      
+      dateConfig: z.object({
+        minDate: z.string().optional(),
+        maxDate: z.string().optional(),
+        format: z.enum(["yyyy-MM-dd", "MM/dd/yyyy", "dd/MM/yyyy", "MMM dd, yyyy"]).default("yyyy-MM-dd"),
+        disablePast: z.boolean().default(false),
+        disableFuture: z.boolean().default(false),
+        disableWeekends: z.boolean().default(false),
+      }).optional(),
+      
+      multiSelectConfig: z.object({
+        placeholder: z.string().optional(),
+        searchable: z.boolean().default(false),
+        maxSelections: z.number().min(1).optional(),
+        creatable: z.boolean().default(false),
+      }).optional(),
+      
+      ratingConfig: z.object({
+        max: z.number().min(1).max(10).default(5),
+        allowHalf: z.boolean().default(false),
+        showValue: z.boolean().default(false),
+        icon: z.string().default("star"),
+      }).optional(),
+      
+      phoneConfig: z.object({
+        defaultCountry: z.string().default("US"),
+        format: z.enum(["national", "international"]).default("national"),
+        placeholder: z.string().optional(),
+      }).optional(),
+      
+      colorConfig: z.object({
+        format: z.enum(["hex", "rgb", "hsl"]).default("hex"),
+        presets: z.array(z.string()).optional(),
+      }).optional(),
+      
+      fileConfig: z.object({
+        accept: z.string().optional(),
+        multiple: z.boolean().default(false),
+        maxSize: z.number().min(1).optional(),
+        maxFiles: z.number().min(1).optional(),
+      }).optional(),
+      
+      textareaConfig: z.object({
+        rows: z.number().min(1).default(4),
+        cols: z.number().min(10).optional(),
+        resize: z.enum(["none", "vertical", "horizontal", "both"]).default("vertical"),
+        maxLength: z.number().min(1).optional(),
+        showWordCount: z.boolean().default(false),
+      }).optional(),
+      
+      passwordConfig: z.object({
+        showToggle: z.boolean().default(true),
+        strengthMeter: z.boolean().default(false),
+        minStrength: z.number().min(1).max(4).default(1),
+        requireUppercase: z.boolean().default(false),
+        requireLowercase: z.boolean().default(false),
+        requireNumbers: z.boolean().default(false),
+        requireSymbols: z.boolean().default(false),
+        minLength: z.number().min(1).default(8),
+      }).optional(),
+      
+      emailConfig: z.object({
+        allowedDomains: z.string().optional(),
+        blockedDomains: z.string().optional(),
+        suggestions: z.string().optional(),
+        validateMX: z.boolean().default(false),
+      }).optional(),
+      
+      // Help and advanced
+      helpText: z.string().optional(),
+      helpTooltip: z.string().optional(),
+      helpPosition: z.enum(["top", "bottom", "left", "right"]).default("bottom"),
+      helpLinkUrl: z.string().optional(),
+      helpLinkText: z.string().optional(),
+      
+      sectionTitle: z.string().optional(),
+      sectionDescription: z.string().optional(),
+      sectionCollapsible: z.boolean().default(false),
+      sectionDefaultExpanded: z.boolean().default(true),
+      
+      inlineValidationEnabled: z.boolean().default(false),
+      inlineValidationDebounceMs: z.number().min(0).default(300),
+      inlineValidationShowSuccess: z.boolean().default(false),
+      
+      validationMinLength: z.number().min(0).optional(),
+      validationMaxLength: z.number().min(1).optional(),
+      validationMin: z.number().optional(),
+      validationMax: z.number().optional(),
+      validationPattern: z.string().optional(),
+      validationIncludes: z.string().optional(),
+      validationStartsWith: z.string().optional(),
+      validationEndsWith: z.string().optional(),
+      validationEmail: z.boolean().default(false),
+      validationUrl: z.boolean().default(false),
+      validationUuid: z.boolean().default(false),
+      validationCustom: z.string().optional(),
+    }),
+    
+    fields: [
+      // BASIC TAB
+      { name: "label", type: "text", label: "Field Label", placeholder: "Enter field label", tab: "basic" },
+      { name: "name", type: "text", label: "Field Name", placeholder: "Enter field name", tab: "basic" },
+      { name: "placeholder", type: "text", label: "Placeholder", placeholder: "Enter placeholder text", tab: "basic" },
+      { name: "description", type: "textarea", label: "Description", placeholder: "Enter field description", tab: "basic" },
       { 
         name: "page", 
         type: "select", 
         label: "Page",
         options: availablePages.map(page => ({ value: page.toString(), label: `Page ${page}` })),
-        section: { title: "Basic Configuration" }
+        tab: "basic"
       },
-      { name: "group", type: "text", label: "Group (Optional)", placeholder: "Group name for organizing fields", section: { title: "Basic Configuration" } },
-      { name: "required", type: "checkbox", label: "Required field", section: { title: "Basic Configuration" } },
-    ];
-
-    // Add options configuration if needed
-    if (needsOptions) {
-      fields.push({
-        name: "options",
-        type: "array",
-        label: "Field Options",
-        section: { title: "Options Configuration" }
-      });
-    }
-
-    // Add field-specific configurations
-    if (needsSliderConfig) {
-      fields.push(
-        { name: "sliderConfig.min", type: "number", label: "Minimum Value", section: { title: "Slider Configuration" } },
-        { name: "sliderConfig.max", type: "number", label: "Maximum Value", section: { title: "Slider Configuration" } },
-        { name: "sliderConfig.step", type: "number", label: "Step", section: { title: "Slider Configuration" } },
+      { name: "group", type: "text", label: "Group (Optional)", placeholder: "Group name for organizing fields", tab: "basic" },
+      { name: "required", type: "checkbox", label: "Required field", tab: "basic" },
+      
+      // OPTIONS TAB - only show if needed
+      ...(needsOptions ? [
+        { name: "options", type: "array", label: "Field Options", tab: "options" },
+      ] : []),
+      
+      // FIELD CONFIG TAB - show different configs based on field type
+      ...(needsSliderConfig ? [
+        { name: "sliderConfig.min", type: "number", label: "Minimum Value", tab: "config" },
+        { name: "sliderConfig.max", type: "number", label: "Maximum Value", tab: "config" },
+        { name: "sliderConfig.step", type: "number", label: "Step", tab: "config" },
         { name: "sliderConfig.orientation", type: "radio", label: "Orientation", options: [
           { value: "horizontal", label: "Horizontal" },
           { value: "vertical", label: "Vertical" }
-        ], section: { title: "Slider Configuration" }},
-        { name: "sliderConfig.showTooltip", type: "switch", label: "Show tooltip", section: { title: "Slider Configuration" } },
-        { name: "sliderConfig.showValue", type: "switch", label: "Show current value", section: { title: "Slider Configuration" } }
-      );
-    }
-
-    if (needsNumberConfig) {
-      fields.push(
-        { name: "numberConfig.min", type: "number", label: "Minimum Value", section: { title: "Number Configuration" } },
-        { name: "numberConfig.max", type: "number", label: "Maximum Value", section: { title: "Number Configuration" } },
-        { name: "numberConfig.step", type: "number", label: "Step", section: { title: "Number Configuration" } },
-        { name: "numberConfig.precision", type: "number", label: "Precision (Decimal Places)", section: { title: "Number Configuration" } },
-        { name: "numberConfig.allowNegative", type: "switch", label: "Allow negative numbers", section: { title: "Number Configuration" } },
-        { name: "numberConfig.showSpinButtons", type: "switch", label: "Show spin buttons", section: { title: "Number Configuration" } }
-      );
-    }
-
-    if (needsDateConfig) {
-      fields.push(
-        { name: "dateConfig.minDate", type: "date", label: "Minimum Date", section: { title: "Date Configuration" } },
-        { name: "dateConfig.maxDate", type: "date", label: "Maximum Date", section: { title: "Date Configuration" } },
+        ], tab: "config" },
+        { name: "sliderConfig.showTooltip", type: "switch", label: "Show tooltip", tab: "config" },
+        { name: "sliderConfig.showValue", type: "switch", label: "Show current value", tab: "config" },
+      ] : []),
+      
+      ...(needsNumberConfig ? [
+        { name: "numberConfig.min", type: "number", label: "Minimum Value", tab: "config" },
+        { name: "numberConfig.max", type: "number", label: "Maximum Value", tab: "config" },
+        { name: "numberConfig.step", type: "number", label: "Step", tab: "config" },
+        { name: "numberConfig.precision", type: "number", label: "Precision (Decimal Places)", tab: "config" },
+        { name: "numberConfig.allowNegative", type: "switch", label: "Allow negative numbers", tab: "config" },
+        { name: "numberConfig.showSpinButtons", type: "switch", label: "Show spin buttons", tab: "config" },
+      ] : []),
+      
+      ...(needsDateConfig ? [
+        { name: "dateConfig.minDate", type: "date", label: "Minimum Date", tab: "config" },
+        { name: "dateConfig.maxDate", type: "date", label: "Maximum Date", tab: "config" },
         { name: "dateConfig.format", type: "select", label: "Date Format", options: [
           { value: "yyyy-MM-dd", label: "YYYY-MM-DD" },
           { value: "MM/dd/yyyy", label: "MM/DD/YYYY" },
           { value: "dd/MM/yyyy", label: "DD/MM/YYYY" },
           { value: "MMM dd, yyyy", label: "MMM DD, YYYY" }
-        ], section: { title: "Date Configuration" }},
-        { name: "dateConfig.disablePast", type: "switch", label: "Disable past dates", section: { title: "Date Configuration" } },
-        { name: "dateConfig.disableFuture", type: "switch", label: "Disable future dates", section: { title: "Date Configuration" } },
-        { name: "dateConfig.disableWeekends", type: "switch", label: "Disable weekends", section: { title: "Date Configuration" } }
-      );
-    }
-
-    if (needsMultiSelectConfig) {
-      fields.push(
-        { name: "multiSelectConfig.placeholder", type: "text", label: "Placeholder", placeholder: "Select options...", section: { title: "Multi-Select Configuration" } },
-        { name: "multiSelectConfig.maxSelections", type: "number", label: "Max Selections", section: { title: "Multi-Select Configuration" } },
-        { name: "multiSelectConfig.searchable", type: "switch", label: "Enable search", section: { title: "Multi-Select Configuration" } },
-        { name: "multiSelectConfig.creatable", type: "switch", label: "Allow creating new options", section: { title: "Multi-Select Configuration" } }
-      );
-    }
-
-    if (needsRatingConfig) {
-      fields.push(
-        { name: "ratingConfig.max", type: "number", label: "Maximum Rating", section: { title: "Rating Configuration" } },
-        { name: "ratingConfig.allowHalf", type: "switch", label: "Allow half ratings", section: { title: "Rating Configuration" } },
-        { name: "ratingConfig.showValue", type: "switch", label: "Show rating value", section: { title: "Rating Configuration" } },
+        ], tab: "config" },
+        { name: "dateConfig.disablePast", type: "switch", label: "Disable past dates", tab: "config" },
+        { name: "dateConfig.disableFuture", type: "switch", label: "Disable future dates", tab: "config" },
+        { name: "dateConfig.disableWeekends", type: "switch", label: "Disable weekends", tab: "config" },
+      ] : []),
+      
+      ...(needsMultiSelectConfig ? [
+        { name: "multiSelectConfig.placeholder", type: "text", label: "Placeholder", placeholder: "Select options...", tab: "config" },
+        { name: "multiSelectConfig.maxSelections", type: "number", label: "Max Selections", tab: "config" },
+        { name: "multiSelectConfig.searchable", type: "switch", label: "Enable search", tab: "config" },
+        { name: "multiSelectConfig.creatable", type: "switch", label: "Allow creating new options", tab: "config" },
+      ] : []),
+      
+      ...(needsRatingConfig ? [
+        { name: "ratingConfig.max", type: "number", label: "Maximum Rating", tab: "config" },
+        { name: "ratingConfig.allowHalf", type: "switch", label: "Allow half ratings", tab: "config" },
+        { name: "ratingConfig.showValue", type: "switch", label: "Show rating value", tab: "config" },
         { name: "ratingConfig.icon", type: "select", label: "Icon Style", options: [
           { value: "star", label: "⭐ Star" },
           { value: "heart", label: "❤️ Heart" },
           { value: "thumb", label: "👍 Thumb" },
           { value: "circle", label: "⚫ Circle" }
-        ], section: { title: "Rating Configuration" }}
-      );
-    }
-
-    if (needsPhoneConfig) {
-      fields.push(
-        { name: "phoneConfig.defaultCountry", type: "text", label: "Default Country Code", placeholder: "US", section: { title: "Phone Configuration" } },
+        ], tab: "config" },
+      ] : []),
+      
+      ...(needsPhoneConfig ? [
+        { name: "phoneConfig.defaultCountry", type: "text", label: "Default Country Code", placeholder: "US", tab: "config" },
         { name: "phoneConfig.format", type: "radio", label: "Phone Format", options: [
           { value: "national", label: "National (123) 456-7890" },
           { value: "international", label: "International +1 123 456 7890" }
-        ], section: { title: "Phone Configuration" }},
-        { name: "phoneConfig.placeholder", type: "text", label: "Placeholder", placeholder: "Enter phone number", section: { title: "Phone Configuration" } }
-      );
-    }
-
-    if (needsColorConfig) {
-      fields.push(
+        ], tab: "config" },
+        { name: "phoneConfig.placeholder", type: "text", label: "Placeholder", placeholder: "Enter phone number", tab: "config" },
+      ] : []),
+      
+      ...(needsColorConfig ? [
         { name: "colorConfig.format", type: "select", label: "Color Format", options: [
           { value: "hex", label: "HEX (#ffffff)" },
           { value: "rgb", label: "RGB (255, 255, 255)" },
           { value: "hsl", label: "HSL (0, 0%, 100%)" }
-        ], section: { title: "Color Configuration" }},
-        { name: "colorConfig.presets", type: "array", label: "Color Presets", section: { title: "Color Configuration" }}
-      );
-    }
-
-    if (needsFileConfig) {
-      fields.push(
-        { name: "fileConfig.accept", type: "text", label: "Accepted File Types", placeholder: ".pdf,.doc,.docx,image/*", section: { title: "File Configuration" } },
-        { name: "fileConfig.multiple", type: "switch", label: "Allow multiple files", section: { title: "File Configuration" } },
-        { name: "fileConfig.maxSize", type: "number", label: "Max File Size (MB)", section: { title: "File Configuration" } },
-        { name: "fileConfig.maxFiles", type: "number", label: "Max Number of Files", section: { title: "File Configuration" } }
-      );
-    }
-
-    if (needsTextareaConfig) {
-      fields.push(
-        { name: "textareaConfig.rows", type: "number", label: "Rows", section: { title: "Textarea Configuration" } },
-        { name: "textareaConfig.cols", type: "number", label: "Columns", section: { title: "Textarea Configuration" } },
+        ], tab: "config" },
+        { name: "colorConfig.presets", type: "array", label: "Color Presets", tab: "config" },
+      ] : []),
+      
+      ...(needsFileConfig ? [
+        { name: "fileConfig.accept", type: "text", label: "Accepted File Types", placeholder: ".pdf,.doc,.docx,image/*", tab: "config" },
+        { name: "fileConfig.multiple", type: "switch", label: "Allow multiple files", tab: "config" },
+        { name: "fileConfig.maxSize", type: "number", label: "Max File Size (MB)", tab: "config" },
+        { name: "fileConfig.maxFiles", type: "number", label: "Max Number of Files", tab: "config" },
+      ] : []),
+      
+      ...(needsTextareaConfig ? [
+        { name: "textareaConfig.rows", type: "number", label: "Rows", tab: "config" },
+        { name: "textareaConfig.cols", type: "number", label: "Columns", tab: "config" },
         { name: "textareaConfig.resize", type: "select", label: "Resize Behavior", options: [
           { value: "none", label: "No resize" },
           { value: "vertical", label: "Vertical only" },
           { value: "horizontal", label: "Horizontal only" },
           { value: "both", label: "Both directions" }
-        ], section: { title: "Textarea Configuration" }},
-        { name: "textareaConfig.maxLength", type: "number", label: "Maximum Length", section: { title: "Textarea Configuration" } },
-        { name: "textareaConfig.showWordCount", type: "switch", label: "Show word count", section: { title: "Textarea Configuration" } }
-      );
-    }
-
-    if (needsPasswordConfig) {
-      fields.push(
-        { name: "passwordConfig.showToggle", type: "switch", label: "Show/hide toggle button", section: { title: "Password Configuration" } },
-        { name: "passwordConfig.strengthMeter", type: "switch", label: "Show strength meter", section: { title: "Password Configuration" } },
-        { name: "passwordConfig.minStrength", type: "number", label: "Minimum Strength (1-4)", section: { title: "Password Configuration" } },
-        { name: "passwordConfig.minLength", type: "number", label: "Minimum Length", section: { title: "Password Configuration" } },
-        { name: "passwordConfig.requireUppercase", type: "switch", label: "Require uppercase letters", section: { title: "Password Configuration" } },
-        { name: "passwordConfig.requireLowercase", type: "switch", label: "Require lowercase letters", section: { title: "Password Configuration" } },
-        { name: "passwordConfig.requireNumbers", type: "switch", label: "Require numbers", section: { title: "Password Configuration" } },
-        { name: "passwordConfig.requireSymbols", type: "switch", label: "Require symbols", section: { title: "Password Configuration" } }
-      );
-    }
-
-    if (needsEmailConfig) {
-      fields.push(
-        { name: "emailConfig.allowedDomains", type: "text", label: "Allowed Domains (comma-separated)", placeholder: "gmail.com, company.com", section: { title: "Email Configuration" } },
-        { name: "emailConfig.blockedDomains", type: "text", label: "Blocked Domains (comma-separated)", placeholder: "tempmail.com, throwaway.email", section: { title: "Email Configuration" } },
-        { name: "emailConfig.suggestions", type: "text", label: "Domain Suggestions (comma-separated)", placeholder: "gmail.com, yahoo.com, outlook.com", section: { title: "Email Configuration" } },
-        { name: "emailConfig.validateMX", type: "switch", label: "Validate MX records", section: { title: "Email Configuration" } }
-      );
-    }
-
-    // Always add advanced configuration
-    fields.push(
-      // Help configuration
-      { name: "helpText", type: "textarea", label: "Help Text", placeholder: "Additional help text for users", section: { title: "Advanced Configuration" } },
-      { name: "helpTooltip", type: "text", label: "Tooltip", placeholder: "Short tooltip text", section: { title: "Advanced Configuration" } },
+        ], tab: "config" },
+        { name: "textareaConfig.maxLength", type: "number", label: "Maximum Length", tab: "config" },
+        { name: "textareaConfig.showWordCount", type: "switch", label: "Show word count", tab: "config" },
+      ] : []),
+      
+      ...(needsPasswordConfig ? [
+        { name: "passwordConfig.showToggle", type: "switch", label: "Show/hide toggle button", tab: "config" },
+        { name: "passwordConfig.strengthMeter", type: "switch", label: "Show strength meter", tab: "config" },
+        { name: "passwordConfig.minStrength", type: "number", label: "Minimum Strength (1-4)", tab: "config" },
+        { name: "passwordConfig.minLength", type: "number", label: "Minimum Length", tab: "config" },
+        { name: "passwordConfig.requireUppercase", type: "switch", label: "Require uppercase letters", tab: "config" },
+        { name: "passwordConfig.requireLowercase", type: "switch", label: "Require lowercase letters", tab: "config" },
+        { name: "passwordConfig.requireNumbers", type: "switch", label: "Require numbers", tab: "config" },
+        { name: "passwordConfig.requireSymbols", type: "switch", label: "Require symbols", tab: "config" },
+      ] : []),
+      
+      ...(needsEmailConfig ? [
+        { name: "emailConfig.allowedDomains", type: "text", label: "Allowed Domains (comma-separated)", placeholder: "gmail.com, company.com", tab: "config" },
+        { name: "emailConfig.blockedDomains", type: "text", label: "Blocked Domains (comma-separated)", placeholder: "tempmail.com, throwaway.email", tab: "config" },
+        { name: "emailConfig.suggestions", type: "text", label: "Domain Suggestions (comma-separated)", placeholder: "gmail.com, yahoo.com, outlook.com", tab: "config" },
+        { name: "emailConfig.validateMX", type: "switch", label: "Validate MX records", tab: "config" },
+      ] : []),
+      
+      // HELP TAB
+      { name: "helpText", type: "textarea", label: "Help Text", placeholder: "Additional help text for users", tab: "help" },
+      { name: "helpTooltip", type: "text", label: "Tooltip", placeholder: "Short tooltip text", tab: "help" },
       { name: "helpPosition", type: "select", label: "Help Position", options: [
         { value: "top", label: "Top" },
         { value: "bottom", label: "Bottom" },
         { value: "left", label: "Left" },
         { value: "right", label: "Right" }
-      ], section: { title: "Advanced Configuration" }},
-      { name: "helpLinkUrl", type: "text", label: "Help Link URL", placeholder: "https://example.com/help", section: { title: "Advanced Configuration" } },
-      { name: "helpLinkText", type: "text", label: "Help Link Text", placeholder: "Learn more", section: { title: "Advanced Configuration" } },
+      ], tab: "help" },
+      { name: "helpLinkUrl", type: "text", label: "Help Link URL", placeholder: "https://example.com/help", tab: "help" },
+      { name: "helpLinkText", type: "text", label: "Help Link Text", placeholder: "Learn more", tab: "help" },
       
-      // Section configuration
-      { name: "sectionTitle", type: "text", label: "Section Title", placeholder: "Section title", section: { title: "Advanced Configuration" } },
-      { name: "sectionDescription", type: "textarea", label: "Section Description", placeholder: "Section description", section: { title: "Advanced Configuration" } },
-      { name: "sectionCollapsible", type: "switch", label: "Collapsible section", section: { title: "Advanced Configuration" } },
-      { name: "sectionDefaultExpanded", type: "switch", label: "Expanded by default", section: { title: "Advanced Configuration" } },
+      // SECTION TAB
+      { name: "sectionTitle", type: "text", label: "Section Title", placeholder: "Section title", tab: "section" },
+      { name: "sectionDescription", type: "textarea", label: "Section Description", placeholder: "Section description", tab: "section" },
+      { name: "sectionCollapsible", type: "switch", label: "Collapsible section", tab: "section" },
+      { name: "sectionDefaultExpanded", type: "switch", label: "Expanded by default", tab: "section" },
       
-      // Inline validation
-      { name: "inlineValidationEnabled", type: "switch", label: "Enable inline validation", section: { title: "Advanced Configuration" } },
-      { name: "inlineValidationDebounceMs", type: "number", label: "Debounce (ms)", section: { title: "Advanced Configuration" } },
-      { name: "inlineValidationShowSuccess", type: "switch", label: "Show success indicator", section: { title: "Advanced Configuration" } },
+      // VALIDATION TAB
+      { name: "inlineValidationEnabled", type: "switch", label: "Enable inline validation", tab: "validation" },
+      { name: "inlineValidationDebounceMs", type: "number", label: "Debounce (ms)", tab: "validation" },
+      { name: "inlineValidationShowSuccess", type: "switch", label: "Show success indicator", tab: "validation" },
       
-      // Validation rules
-      { name: "validationMinLength", type: "number", label: "Minimum Length", section: { title: "Advanced Configuration" } },
-      { name: "validationMaxLength", type: "number", label: "Maximum Length", section: { title: "Advanced Configuration" } },
-      { name: "validationMin", type: "number", label: "Minimum Value", section: { title: "Advanced Configuration" } },
-      { name: "validationMax", type: "number", label: "Maximum Value", section: { title: "Advanced Configuration" } },
-      { name: "validationPattern", type: "text", label: "Pattern (Regex)", placeholder: "e.g., ^[A-Za-z]+$", section: { title: "Advanced Configuration" } },
-      { name: "validationIncludes", type: "text", label: "Must Include", section: { title: "Advanced Configuration" } },
-      { name: "validationStartsWith", type: "text", label: "Must Start With", section: { title: "Advanced Configuration" } },
-      { name: "validationEndsWith", type: "text", label: "Must End With", section: { title: "Advanced Configuration" } },
-      { name: "validationEmail", type: "switch", label: "Validate email format", section: { title: "Advanced Configuration" } },
-      { name: "validationUrl", type: "switch", label: "URL format", section: { title: "Advanced Configuration" } },
-      { name: "validationUuid", type: "switch", label: "UUID format", section: { title: "Advanced Configuration" } },
-      { name: "validationCustom", type: "textarea", label: "Custom Validation Message", section: { title: "Advanced Configuration" } }
-    );
-
-    return fields;
-  };
-
-  // Helper function to get nested value
-  const getNestedValue = (obj: any, path: string) => {
-    return path.split('.').reduce((current, key) => current?.[key], obj);
-  };
-
-  // Helper function to set nested value
-  const setNestedValue = (obj: any, path: string, value: any) => {
-    const keys = path.split('.');
-    const lastKey = keys.pop()!;
-    const target = keys.reduce((current, key) => {
-      if (!current[key]) current[key] = {};
-      return current[key];
-    }, obj);
-    target[lastKey] = value;
-  };
-
-  // Single unified form
-  // Define tabs based on field type
-  const availableTabs = useMemo(() => {
-    const tabs = [
+      { name: "validationMinLength", type: "number", label: "Minimum Length", tab: "validation" },
+      { name: "validationMaxLength", type: "number", label: "Maximum Length", tab: "validation" },
+      { name: "validationMin", type: "number", label: "Minimum Value", tab: "validation" },
+      { name: "validationMax", type: "number", label: "Maximum Value", tab: "validation" },
+      { name: "validationPattern", type: "text", label: "Pattern (Regex)", placeholder: "e.g., ^[A-Za-z]+$", tab: "validation" },
+      { name: "validationIncludes", type: "text", label: "Must Include", tab: "validation" },
+      { name: "validationStartsWith", type: "text", label: "Must Start With", tab: "validation" },
+      { name: "validationEndsWith", type: "text", label: "Must End With", tab: "validation" },
+      { name: "validationEmail", type: "switch", label: "Validate email format", tab: "validation" },
+      { name: "validationUrl", type: "switch", label: "URL format", tab: "validation" },
+      { name: "validationUuid", type: "switch", label: "UUID format", tab: "validation" },
+      { name: "validationCustom", type: "textarea", label: "Custom Validation Message", tab: "validation" },
+    ],
+    
+    // TABS CONFIGURATION
+    tabs: [
       { id: "basic", label: "Basic" },
-    ];
-
-    if (needsOptions) {
-      tabs.push({ id: "options", label: "Options" });
-    }
-
-    if (needsSliderConfig) {
-      tabs.push({ id: "slider", label: "Slider" });
-    }
-
-    if (needsNumberConfig) {
-      tabs.push({ id: "number", label: "Number" });
-    }
-
-    if (needsDateConfig) {
-      tabs.push({ id: "date", label: "Date" });
-    }
-
-    if (needsFileConfig) {
-      tabs.push({ id: "file", label: "File" });
-    }
-
-    if (needsTextareaConfig) {
-      tabs.push({ id: "textarea", label: "Textarea" });
-    }
-
-    if (needsPasswordConfig) {
-      tabs.push({ id: "password", label: "Password" });
-    }
-
-    if (needsEmailConfig) {
-      tabs.push({ id: "email", label: "Email" });
-    }
-
-    if (needsRatingConfig) {
-      tabs.push({ id: "rating", label: "Rating" });
-    }
-
-    if (needsPhoneConfig) {
-      tabs.push({ id: "phone", label: "Phone" });
-    }
-
-    if (needsColorConfig) {
-      tabs.push({ id: "color", label: "Color" });
-    }
-
-    if (needsMultiSelectConfig) {
-      tabs.push({ id: "multiselect", label: "Multi-Select" });
-    }
-
-    tabs.push(
+      ...(needsOptions ? [{ id: "options", label: "Options" }] : []),
+      ...(needsSliderConfig || needsNumberConfig || needsDateConfig || needsMultiSelectConfig || needsRatingConfig || needsPhoneConfig || needsColorConfig || needsFileConfig || needsTextareaConfig || needsPasswordConfig || needsEmailConfig ? [{ id: "config", label: "Config" }] : []),
       { id: "help", label: "Help" },
       { id: "section", label: "Section" },
-      { id: "validation", label: "Validation" }
-    );
-
-    return tabs;
-  }, [needsOptions, needsSliderConfig, needsNumberConfig, needsDateConfig, needsFileConfig, needsTextareaConfig, needsPasswordConfig, needsEmailConfig, needsRatingConfig, needsPhoneConfig, needsColorConfig, needsMultiSelectConfig]);
-
-  const configForm = useFormedible({
-    fields: buildFields().map(field => ({
-      ...field,
-      tab: field.section?.title === "Basic Configuration" ? "basic" :
-           field.section?.title === "Options Configuration" ? "options" :
-           field.section?.title === "Slider Configuration" ? "slider" :
-           field.section?.title === "Number Configuration" ? "number" :
-           field.section?.title === "Date Configuration" ? "date" :
-           field.section?.title === "File Configuration" ? "file" :
-           field.section?.title === "Textarea Configuration" ? "textarea" :
-           field.section?.title === "Password Configuration" ? "password" :
-           field.section?.title === "Email Configuration" ? "email" :
-           field.section?.title === "Rating Configuration" ? "rating" :
-           field.section?.title === "Phone Configuration" ? "phone" :
-           field.section?.title === "Color Configuration" ? "color" :
-           field.section?.title === "Multi-Select Configuration" ? "multiselect" :
-           field.section?.title === "Help Configuration" ? "help" :
-           field.section?.title === "Section Configuration" ? "section" :
-           field.section?.title === "Validation Configuration" ? "validation" :
-           "basic"
-    })),
-    tabs: availableTabs,
+      { id: "validation", label: "Validation" },
+    ],
+    
     formOptions: {
       defaultValues: {
         label: initialField.label || "",
@@ -656,10 +533,11 @@ export const FieldConfigurator: React.FC<FieldConfiguratorProps> = ({
         validationUuid: initialField.validation?.uuid || false,
         validationCustom: initialField.validation?.custom || "",
       },
-      onChange: ({ value }) => {
-        // Real-time updates on every change
+      
+      // DIRECT STORE UPDATE - NO PARENT RE-RENDERS!
+      onChange: ({ value }: { value: any }) => {
         const updatedField: FormField = {
-          ...initialField,
+          ...currentFieldRef.current,
           label: value.label,
           name: value.name,
           placeholder: value.placeholder,
@@ -679,9 +557,9 @@ export const FieldConfigurator: React.FC<FieldConfiguratorProps> = ({
           textareaConfig: value.textareaConfig,
           passwordConfig: value.passwordConfig,
           emailConfig: value.emailConfig ? {
-            allowedDomains: value.emailConfig.allowedDomains ? value.emailConfig.allowedDomains.split(',').map(d => d.trim()).filter(Boolean) : undefined,
-            blockedDomains: value.emailConfig.blockedDomains ? value.emailConfig.blockedDomains.split(',').map(d => d.trim()).filter(Boolean) : undefined,
-            suggestions: value.emailConfig.suggestions ? value.emailConfig.suggestions.split(',').map(d => d.trim()).filter(Boolean) : undefined,
+            allowedDomains: value.emailConfig.allowedDomains ? value.emailConfig.allowedDomains.split(',').map((d: string) => d.trim()).filter(Boolean) : undefined,
+            blockedDomains: value.emailConfig.blockedDomains ? value.emailConfig.blockedDomains.split(',').map((d: string) => d.trim()).filter(Boolean) : undefined,
+            suggestions: value.emailConfig.suggestions ? value.emailConfig.suggestions.split(',').map((d: string) => d.trim()).filter(Boolean) : undefined,
             validateMX: value.emailConfig.validateMX,
           } : undefined,
           help: (value.helpText || value.helpTooltip || value.helpLinkUrl) ? {
@@ -718,9 +596,15 @@ export const FieldConfigurator: React.FC<FieldConfiguratorProps> = ({
             custom: value.validationCustom,
           } : undefined,
         };
-        onFieldChange(fieldId, updatedField);
+        
+        // UPDATE FIELD STORE DIRECTLY - NO PARENT RE-RENDER!
+        currentFieldRef.current = updatedField;
+        fieldStoreUpdateField(fieldId, updatedField);
       },
     },
+    
+    // NO SUBMIT BUTTON!
+    showSubmitButton: false,
   });
 
   return (
@@ -732,6 +616,7 @@ export const FieldConfigurator: React.FC<FieldConfiguratorProps> = ({
         </p>
       </div>
 
+      {/* SINGLE FORMEDIBLE FORM WITH TABS - NO RE-RENDERS! */}
       <configForm.Form />
     </div>
   );
