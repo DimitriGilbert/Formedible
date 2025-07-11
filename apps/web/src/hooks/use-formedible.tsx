@@ -1386,7 +1386,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
           }}
         </form.Field>
       );
-    }, [form, fieldComponents, globalWrapper, disabled, loading, crossFieldErrors, asyncValidationStates, fieldClassName]);
+    }, []);
 
     const renderTabContent = React.useCallback((tabFields: FieldConfig[]) => {
       const currentValues = form.state.values;
@@ -1441,7 +1441,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
         : sectionsToRender.map(([sectionKey, sectionData]) => 
             renderSection(sectionKey, sectionData)
           );
-    }, [form.state.values, conditionalSections, renderField]);
+    }, [renderField]);
 
     const renderPageContent = React.useCallback(() => {
       if (hasTabs) {
@@ -1528,7 +1528,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
           }
         </PageComponent>
       );
-    }, [hasTabs, tabs, fieldsByTab, renderTabContent, getCurrentPageFields, getCurrentPageConfig, form.state.values, conditionalSections, renderField, currentPage, totalPages]);
+    }, [renderTabContent, renderField, activeTab]);
 
     const renderProgress = () => {
       if (!hasPages || !progress) return null;
