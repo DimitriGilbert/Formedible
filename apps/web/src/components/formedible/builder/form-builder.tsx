@@ -35,16 +35,20 @@ const FIELD_TYPES = [
   { value: "array", label: "Array Field", icon: "📚" },
 ];
 
-// REACTIVE FIELD LIST - SUBSCRIBES TO FIELD CHANGES WITH MEMOIZATION
-const FieldList = React.memo<{
+// FIELD LIST WITH FRESH DATA ON RENDER - NO SUBSCRIPTIONS!
+const FieldList: React.FC<{
   fields: FormField[];
   selectedFieldId: string | null;
   onSelectField: (id: string | null) => void;
   onDeleteField: (id: string) => void;
   onDuplicateField: (id: string) => void;
-}>(({ fields, selectedFieldId, onSelectField, onDeleteField, onDuplicateField }) => (
-  <div className="space-y-4">
-    {fields.map((field) => (
+}> = ({ fields, selectedFieldId, onSelectField, onDeleteField, onDuplicateField }) => {
+  // Get fresh field data on every render - this is fast and ensures sync
+  const freshFields = fields.map(field => globalFieldStore.getField(field.id)).filter(Boolean) as FormField[];
+
+  return (
+    <div className="space-y-4">
+      {freshFields.map((field) => (
       <div
         key={field.id}
         className={cn(
@@ -89,19 +93,8 @@ const FieldList = React.memo<{
       </div>
     ))}
   </div>
-), (prevProps, nextProps) => {
-  // Custom comparison to detect actual field changes
-  return (
-    prevProps.selectedFieldId === nextProps.selectedFieldId &&
-    prevProps.fields.length === nextProps.fields.length &&
-    prevProps.fields.every((field, index) => 
-      field.id === nextProps.fields[index]?.id &&
-      field.label === nextProps.fields[index]?.label &&
-      field.name === nextProps.fields[index]?.name &&
-      field.type === nextProps.fields[index]?.type
-    )
   );
-});
+};
 
 FieldList.displayName = 'FieldList';
 
@@ -149,12 +142,11 @@ const FieldTypeSidebar: React.FC<{
 const ConfiguratorPanel: React.FC<{
   selectedFieldId: string | null;
   availablePages: number[];
-  fieldData: FormField[];
-}> = ({ selectedFieldId, availablePages, fieldData }) => {
+}> = ({ selectedFieldId, availablePages }) => {
   if (!selectedFieldId) return null;
 
-  // Use reactive field data instead of direct store access
-  const field = fieldData.find(f => f.id === selectedFieldId);
+  // Direct store access - NO PARENT STATE
+  const field = globalFieldStore.getField(selectedFieldId);
   if (!field) return null;
 
   return (
@@ -194,16 +186,12 @@ export const FormBuilder: React.FC = () => {
   const [activeTab, setActiveTab] = useState<string>("builder");
   const [previewMode, setPreviewMode] = useState<"desktop" | "tablet" | "mobile">("desktop");
   
-  // REACTIVE FIELD DATA - FRESH DATA AFTER STORE UPDATES
-  const [fieldData, setFieldData] = useState(() => globalFieldStore.getAllFields());
+  // ONLY SUBSCRIBE TO STRUCTURE CHANGES (add/delete) - NOT FIELD UPDATES!
+  const [, forceUpdate] = useState({});
+  const forceRerender = () => forceUpdate({});
 
-  // Subscribe to field store changes with fresh data fetching
   React.useEffect(() => {
-    const unsubscribe = globalFieldStore.subscribe(() => {
-      // Fetch fresh data after store update
-      const freshFields = globalFieldStore.getAllFields();
-      setFieldData(freshFields);
-    });
+    const unsubscribe = globalFieldStore.subscribe(forceRerender); // Only structure changes
     return unsubscribe;
   }, []);
 
@@ -239,7 +227,7 @@ export const FormBuilder: React.FC = () => {
     const formConfig = {
       title: formMetaRef.current.title,
       description: formMetaRef.current.description,
-      fields: fieldData.map((field) => ({
+      fields: globalFieldStore.getAllFields().map((field) => ({
         name: field.name,
         type: field.type,
         label: field.label,
@@ -321,17 +309,17 @@ export const FormBuilder: React.FC = () => {
     input.click();
   };
 
-  // Use reactive field data instead of direct store access
-  const allFields = fieldData;
+  // Direct store access - NO PARENT STATE FOR FIELD DATA
+  const allFields = globalFieldStore.getAllFields();
   const fieldsToShow = formMetaRef.current.layoutType === "pages" 
-    ? (selectedPageId ? fieldData.filter(f => (f.page || 1) === selectedPageId) : fieldData)
-    : (selectedTabId ? fieldData.filter(f => f.tab === selectedTabId) : fieldData);
+    ? (selectedPageId ? globalFieldStore.getFieldsByPage(selectedPageId) : allFields)
+    : (selectedTabId ? globalFieldStore.getFieldsByTab(selectedTabId) : allFields);
 
   const availablePages = formMetaRef.current.pages.map(p => p.page);
 
   // Generate form configuration - ON DEMAND for preview/code tabs
   const getFormConfig = () => {
-    const currentFields = fieldData;
+    const currentFields = globalFieldStore.getAllFields();
     const schemaFields: Record<string, any> = {};
 
     currentFields.forEach((field) => {
@@ -674,7 +662,7 @@ export const MyForm = () => {
                                           <div className="text-muted-foreground">{page.description}</div>
                                         )}
                                          <div className="text-sm text-muted-foreground">
-                                           {fieldData.filter(f => (f.page || 1) === page.page).length} fields
+                                           {globalFieldStore.getFieldsByPage(page.page).length} fields
                                          </div>                                      </div>
                                     </div>
                                     <div className="flex items-center space-x-2">
@@ -822,7 +810,7 @@ export const MyForm = () => {
                                             <div className="text-muted-foreground">{tab.description}</div>
                                           )}
                                            <div className="text-sm text-muted-foreground">
-                                             {fieldData.filter(f => f.tab === tab.id).length} fields
+                                             {globalFieldStore.getFieldsByTab(tab.id).length} fields
                                            </div>                                        </div>
                                       </div>
                                       <div className="flex items-center space-x-2">
@@ -933,7 +921,6 @@ export const MyForm = () => {
                   <ConfiguratorPanel
                     selectedFieldId={selectedFieldId}
                     availablePages={availablePages}
-                    fieldData={fieldData}
                   />
                 </div>
               </TabsContent>
