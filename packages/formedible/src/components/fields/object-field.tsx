@@ -7,11 +7,16 @@ import { TextField } from "./text-field";
 import { TextareaField } from "./textarea-field";
 import { NumberField } from "./number-field";
 import { SelectField } from "./select-field";
+import { MultiSelectField } from "./multi-select-field";
 import { CheckboxField } from "./checkbox-field";
 import { SwitchField } from "./switch-field";
 import { RadioField } from "./radio-field";
 import { SliderField } from "./slider-field";
 import { DateField } from "./date-field";
+import { RatingField } from "./rating-field";
+import { PhoneField } from "./phone-field";
+import { ColorPickerField } from "./color-picker-field";
+import { FileUploadField } from "./file-upload-field";
 
 interface ObjectFieldConfig {
   title?: string;
@@ -58,14 +63,20 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
     email: TextField,
     password: TextField,
     url: TextField,
+    tel: TextField,
     textarea: TextareaField,
     number: NumberField,
     select: SelectField,
+    multiselect: MultiSelectField,
     checkbox: CheckboxField,
     switch: SwitchField,
     radio: RadioField,
     slider: SliderField,
     date: DateField,
+    rating: RatingField,
+    phone: PhoneField,
+    color: ColorPickerField,
+    file: FileUploadField,
     // Add more as needed
   };
 
@@ -80,41 +91,39 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
     // Create a mock field API for object subfields
     const mockFieldApi = {
       name: `${fieldApi.name}.${fieldConfig.name}`,
-      value: fieldApi.state.value?.[fieldConfig.name] || '',
-      onChange: (value: any) => {
+      state: {
+        ...fieldApi.state,
+        value: fieldApi.state.value?.[fieldConfig.name] || ''
+      },
+      handleChange: (value: any) => {
         const currentValue = fieldApi.state.value || {};
         fieldApi.handleChange({
           ...currentValue,
           [fieldConfig.name]: value
         });
       },
-      onBlur: fieldApi.handleBlur,
-      state: {
-        meta: {
-          errors: [],
-          isTouched: false,
-          isValidating: false,
-        },
-        value: fieldApi.state.value?.[fieldConfig.name] || ''
-      },
-      form: fieldApi.form
+      handleBlur: fieldApi.handleBlur
+    } as any;
+
+    const fieldProps: any = {
+      fieldApi: mockFieldApi,
+      label: fieldConfig.label,
+      placeholder: fieldConfig.placeholder,
+      description: fieldConfig.description,
+      ...(fieldConfig.min !== undefined && { min: fieldConfig.min }),
+      ...(fieldConfig.max !== undefined && { max: fieldConfig.max }),
+      ...(fieldConfig.step !== undefined && { step: fieldConfig.step }),
+      ...(disabled !== undefined && { disabled }),
     };
+
+    // Handle fields that require options
+    if (['select', 'radio', 'multiselect'].includes(fieldConfig.type)) {
+      fieldProps.options = fieldConfig.options || [];
+    }
 
     return (
       <div key={fieldConfig.name}>
-        <FieldComponent
-          {...props}
-          fieldApi={mockFieldApi as any}
-          label={fieldConfig.label}
-          placeholder={fieldConfig.placeholder}
-          description={fieldConfig.description}
-          {...(fieldConfig.options && { options: fieldConfig.options })}
-          {...(fieldConfig.min !== undefined && { min: fieldConfig.min })}
-          {...(fieldConfig.max !== undefined && { max: fieldConfig.max })}
-          {...(fieldConfig.step !== undefined && { step: fieldConfig.step })}
-          {...(disabled !== undefined && { disabled })}
-          wrapperClassName={undefined}
-        />
+        <FieldComponent {...fieldProps} />
       </div>
     );
   };
