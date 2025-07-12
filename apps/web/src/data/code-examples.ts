@@ -406,4 +406,379 @@ const jobApplicationForm = useFormedible({
     { page: 3, title: "Additional Questions" },
   ],
   progress: { showSteps: true, showPercentage: true },
+});`
+
+// Advanced Examples
+export const analyticsTrackingFormCode = `const analyticsSchema = z.object({
+  email: z.string().email("Valid email required"),
+  companySize: z.enum(["1-10", "11-50", "51-200", "200+"]),
+  interests: z.array(z.string()).min(1, "Select at least one interest"),
+  budget: z.enum(["<10k", "10k-50k", "50k-100k", "100k+"]),
+  timeline: z.string().min(1, "Timeline is required"),
+  description: z.string().min(20, "Please provide more details"),
+});
+
+const analyticsForm = useFormedible({
+  schema: analyticsSchema,
+  fields: [
+    { name: "email", type: "email", label: "Business Email", page: 1 },
+    { 
+      name: "companySize", 
+      type: "select", 
+      label: "Company Size", 
+      page: 1,
+      options: [
+        { value: "1-10", label: "1-10 employees" },
+        { value: "11-50", label: "11-50 employees" },
+        { value: "51-200", label: "51-200 employees" },
+        { value: "200+", label: "200+ employees" }
+      ]
+    },
+    {
+      name: "interests",
+      type: "multiSelect",
+      label: "Areas of Interest",
+      page: 2,
+      options: [
+        { value: "web-dev", label: "Web Development" },
+        { value: "mobile", label: "Mobile Apps" },
+        { value: "ecommerce", label: "E-commerce" },
+        { value: "analytics", label: "Analytics" },
+        { value: "automation", label: "Automation" }
+      ]
+    },
+    { 
+      name: "budget", 
+      type: "radio", 
+      label: "Project Budget", 
+      page: 2,
+      options: [
+        { value: "<10k", label: "Less than $10,000" },
+        { value: "10k-50k", label: "$10,000 - $50,000" },
+        { value: "50k-100k", label: "$50,000 - $100,000" },
+        { value: "100k+", label: "$100,000+" }
+      ]
+    },
+    { 
+      name: "timeline", 
+      type: "select", 
+      label: "Timeline", 
+      page: 3,
+      options: ["ASAP", "1-3 months", "3-6 months", "6+ months"]
+    },
+    { 
+      name: "description", 
+      type: "textarea", 
+      label: "Project Description", 
+      page: 3,
+      textareaConfig: { rows: 4, showWordCount: true, maxLength: 500 }
+    },
+  ],
+  pages: [
+    { page: 1, title: "Company Info", description: "Tell us about your company" },
+    { page: 2, title: "Project Details", description: "What are you looking for?" },
+    { page: 3, title: "Timeline & Details", description: "When do you need this?" },
+  ],
+  progress: { showSteps: true, showPercentage: true },
+  analytics: {
+    onFormStart: (timestamp) => {
+      console.log('Form started at:', new Date(timestamp).toISOString());
+      gtag('event', 'form_start', { timestamp });
+    },
+    onFieldFocus: (fieldName, timestamp) => {
+      console.log(\`Field \${fieldName} focused at:\`, new Date(timestamp).toISOString());
+    },
+    onFieldBlur: (fieldName, timeSpent) => {
+      console.log(\`Field \${fieldName} completed in \${timeSpent}ms\`);
+    },
+    onPageChange: (fromPage, toPage, timeSpent) => {
+      console.log(\`Page \${fromPage} → \${toPage} (spent \${timeSpent}ms)\`);
+      gtag('event', 'form_page_change', { from_page: fromPage, to_page: toPage });
+    },
+    onFormComplete: (timeSpent, formData) => {
+      console.log(\`Form completed in \${timeSpent}ms with data:\`, formData);
+      gtag('event', 'form_complete', { 
+        time_spent: timeSpent,
+        company_size: formData.companySize,
+        budget: formData.budget 
+      });
+    },
+    onFormAbandon: (completionPercentage) => {
+      console.log(\`Form abandoned at \${completionPercentage}% completion\`);
+      gtag('event', 'form_abandon', { completion_percentage: completionPercentage });
+    }
+  },
+});`;
+
+export const persistenceFormCode = `const persistenceSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Valid email required"),
+  phone: z.string().min(1, "Phone is required"),
+  company: z.string().min(1, "Company is required"),
+  jobTitle: z.string().min(1, "Job title is required"),
+  projectType: z.array(z.string()).min(1, "Select at least one project type"),
+  timeline: z.string().min(1, "Timeline is required"),
+  budget: z.string().min(1, "Budget is required"),
+  description: z.string().min(50, "Please provide at least 50 characters"),
+  agreeToTerms: z.boolean().refine(val => val === true, "You must agree to terms"),
+});
+
+const persistenceForm = useFormedible({
+  schema: persistenceSchema,
+  fields: [
+    // Page 1: Contact Information
+    { 
+      name: "name", 
+      type: "text", 
+      label: "Full Name", 
+      page: 1,
+      section: { title: "Contact Information", description: "Your basic details" }
+    },
+    { name: "email", type: "email", label: "Email Address", page: 1 },
+    { name: "phone", type: "phone", label: "Phone Number", page: 1 },
+    { name: "company", type: "text", label: "Company Name", page: 1 },
+    { name: "jobTitle", type: "text", label: "Job Title", page: 1 },
+    
+    // Page 2: Project Details
+    {
+      name: "projectType",
+      type: "multiSelect",
+      label: "Project Type",
+      page: 2,
+      section: { title: "Project Requirements", description: "What do you need help with?" },
+      options: [
+        { value: "web-dev", label: "Web Development" },
+        { value: "mobile-app", label: "Mobile App" },
+        { value: "ecommerce", label: "E-commerce Platform" },
+        { value: "api", label: "API Development" },
+        { value: "consulting", label: "Technical Consulting" }
+      ],
+      multiSelectConfig: { searchable: true, maxSelections: 3 }
+    },
+    { 
+      name: "timeline", 
+      type: "select", 
+      label: "Timeline", 
+      page: 2,
+      options: ["ASAP", "1-3 months", "3-6 months", "6+ months", "Flexible"]
+    },
+    { 
+      name: "budget", 
+      type: "radio", 
+      label: "Budget Range", 
+      page: 2,
+      options: [
+        { value: "<25k", label: "Less than $25,000" },
+        { value: "25k-75k", label: "$25,000 - $75,000" },
+        { value: "75k-150k", label: "$75,000 - $150,000" },
+        { value: "150k+", label: "$150,000+" }
+      ]
+    },
+    
+    // Page 3: Final Details
+    { 
+      name: "description", 
+      type: "textarea", 
+      label: "Project Description", 
+      page: 3,
+      section: { title: "Project Details", description: "Tell us more about your project" },
+      textareaConfig: { rows: 6, showWordCount: true, maxLength: 1000 }
+    },
+    { 
+      name: "agreeToTerms", 
+      type: "checkbox", 
+      label: "I agree to the terms of service and privacy policy", 
+      page: 3 
+    },
+  ],
+  pages: [
+    { page: 1, title: "Contact Information", description: "Let's start with your details" },
+    { page: 2, title: "Project Requirements", description: "Tell us about your project" },
+    { page: 3, title: "Final Details", description: "Complete your inquiry" },
+  ],
+  progress: { showSteps: true, showPercentage: true },
+  persistence: {
+    key: "project-inquiry-form",
+    storage: "localStorage",
+    debounceMs: 1500,
+    exclude: ["agreeToTerms"], // Don't persist checkbox agreement
+    restoreOnMount: true
+  },
+  formOptions: {
+    onSubmit: async ({ value }) => {
+      console.log("Form submitted:", value);
+      toast.success("Inquiry submitted! We'll be in touch within 24 hours.");
+    }
+  }
+});`;
+
+// Continue with remaining examples
+export const arrayFieldsCode = `const arrayFieldsSchema = z.object({
+  teamMembers: z.array(z.object({
+    name: z.string().min(1, "Name is required"),
+    email: z.string().email("Valid email required"),
+    role: z.enum(["developer", "designer", "manager", "qa"]),
+    skills: z.array(z.string()),
+    startDate: z.date(),
+  })).min(1, "At least one team member is required"),
+  
+  contactMethods: z.array(z.string().email("Must be valid email")).min(1, "At least one contact method required"),
+  
+  emergencyContacts: z.array(z.object({
+    name: z.string().min(1),
+    relationship: z.string().min(1),
+    phone: z.string().min(1),
+    isPrimary: z.boolean()
+  })).max(3, "Maximum 3 emergency contacts"),
+});
+
+const arrayFieldsForm = useFormedible({
+  schema: arrayFieldsSchema,
+  fields: [
+    {
+      name: "teamMembers",
+      type: "array",
+      label: "Team Members",
+      arrayConfig: {
+        itemType: "object",
+        itemLabel: "Team Member",
+        minItems: 1,
+        maxItems: 10,
+        sortable: true,
+        addButtonLabel: "Add Team Member",
+        removeButtonLabel: "Remove Member",
+        defaultValue: {
+          name: "",
+          email: "",
+          role: "developer",
+          skills: [],
+          startDate: new Date(),
+        },
+      },
+    },
+    {
+      name: "contactMethods",
+      type: "array",
+      label: "Contact Email Addresses",
+      arrayConfig: {
+        itemType: "email",
+        itemLabel: "Email Address",
+        itemPlaceholder: "contact@company.com",
+        minItems: 1,
+        maxItems: 5,
+        addButtonLabel: "Add Email",
+        removeButtonLabel: "Remove",
+        defaultValue: "",
+      },
+    },
+  ],
+});`;
+
+export const advancedFieldTypesCode = `const advancedFieldsSchema = z.object({
+  satisfaction: z.number().min(1).max(5),
+  phoneNumber: z.string().min(1, "Phone number is required"),
+  favoriteColor: z.string().min(1, "Please select a color"),
+  workDuration: z.object({
+    hours: z.number().min(0),
+    minutes: z.number().min(0),
+  }).optional(),
+  skills: z.array(z.string()).min(1, "Select at least one skill"),
+  experienceLevel: z.number().min(1).max(10),
+  birthDate: z.date(),
+  resume: z.any().optional(),
+});
+
+const advancedFieldsForm = useFormedible({
+  schema: advancedFieldsSchema,
+  fields: [
+    {
+      name: "satisfaction",
+      type: "rating",
+      label: "How satisfied are you with our service?",
+      ratingConfig: {
+        max: 5,
+        allowHalf: true,
+        icon: "star",
+        size: "lg",
+        showValue: true
+      }
+    },
+    {
+      name: "phoneNumber",
+      type: "phone",
+      label: "Phone Number",
+      phoneConfig: {
+        defaultCountry: "US",
+        format: "international"
+      }
+    },
+    {
+      name: "favoriteColor",
+      type: "colorPicker",
+      label: "Brand Color",
+      colorConfig: {
+        format: "hex",
+        showPreview: true,
+        presetColors: ["#ff0000", "#00ff00", "#0000ff", "#ffff00"],
+        allowCustom: true
+      }
+    },
+    {
+      name: "workDuration",
+      type: "duration",
+      label: "Daily Work Hours",
+      durationConfig: {
+        format: "hm",
+        maxHours: 24,
+        showLabels: true
+      }
+    },
+    {
+      name: "skills",
+      type: "multiSelect",
+      label: "Technical Skills",
+      options: [
+        { value: "javascript", label: "JavaScript" },
+        { value: "typescript", label: "TypeScript" },
+        { value: "react", label: "React" },
+        { value: "python", label: "Python" }
+      ],
+      multiSelectConfig: {
+        searchable: true,
+        creatable: true,
+        maxSelections: 8
+      }
+    },
+    {
+      name: "experienceLevel",
+      type: "slider",
+      label: "Experience Level (1-10)",
+      sliderConfig: {
+        min: 1,
+        max: 10,
+        step: 1,
+        showTooltip: true,
+        showValue: true
+      }
+    },
+    {
+      name: "birthDate",
+      type: "date",
+      label: "Date of Birth",
+      dateConfig: {
+        maxDate: new Date(),
+        minDate: new Date(1900, 0, 1)
+      }
+    },
+    {
+      name: "resume",
+      type: "file",
+      label: "Upload Resume",
+      fileConfig: {
+        accept: ".pdf,.doc,.docx",
+        multiple: false,
+        maxSize: 5 * 1024 * 1024
+      }
+    }
+  ],
 });`;

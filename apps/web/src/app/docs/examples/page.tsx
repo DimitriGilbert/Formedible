@@ -23,6 +23,10 @@ import {
   exampleSurveyFormCode,
   exampleCheckoutFormCode,
   exampleJobApplicationFormCode,
+  analyticsTrackingFormCode,
+  persistenceFormCode,
+  arrayFieldsCode,
+  advancedFieldTypesCode,
 } from "@/data/code-examples";
 
 // Schemas
@@ -99,6 +103,64 @@ const tabbedFormSchema = z.object({
   marketing: z.boolean(),
   analytics: z.boolean(),
   location: z.string().optional(),
+});
+
+// Advanced Examples Schemas
+const analyticsTrackingSchema = z.object({
+  email: z.string().email("Valid email required"),
+  companySize: z.enum(["1-10", "11-50", "51-200", "200+"]),
+  interests: z.array(z.string()).min(1, "Select at least one interest"),
+  budget: z.enum(["<10k", "10k-50k", "50k-100k", "100k+"]),
+  timeline: z.string().min(1, "Timeline is required"),
+  description: z.string().min(20, "Please provide more details"),
+});
+
+const persistenceFormSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Valid email required"),
+  phone: z.string().min(1, "Phone is required"),
+  company: z.string().min(1, "Company is required"),
+  jobTitle: z.string().min(1, "Job title is required"),
+  projectType: z.array(z.string()).min(1, "Select at least one project type"),
+  timeline: z.string().min(1, "Timeline is required"),
+  budget: z.string().min(1, "Budget is required"),
+  description: z.string().min(50, "Please provide at least 50 characters"),
+  agreeToTerms: z.boolean().refine(val => val === true, "You must agree to terms"),
+});
+
+const arrayFieldsSchema = z.object({
+  teamMembers: z.array(z.object({
+    name: z.string().min(1, "Name is required"),
+    email: z.string().email("Valid email required"),
+    role: z.enum(["developer", "designer", "manager", "qa"]),
+    skills: z.array(z.string()),
+    startDate: z.date(),
+  })).min(1, "At least one team member is required"),
+  contactMethods: z.array(z.string().email("Must be valid email")).min(1, "At least one contact method required"),
+  emergencyContacts: z.array(z.object({
+    name: z.string().min(1),
+    relationship: z.string().min(1),
+    phone: z.string().min(1),
+    isPrimary: z.boolean()
+  })).max(3, "Maximum 3 emergency contacts"),
+});
+
+const advancedFieldTypesSchema = z.object({
+  satisfaction: z.number().min(1).max(5),
+  phoneNumber: z.string().min(1, "Phone number is required"),
+  favoriteColor: z.string().min(1, "Please select a color"),
+  workDuration: z.object({
+    hours: z.number().min(0),
+    minutes: z.number().min(0),
+  }).optional(),
+  skills: z.array(z.string()).min(1, "Select at least one skill"),
+  experienceLevel: z.number().min(1).max(10),
+  birthDate: z.date(),
+  resume: z.any().optional(),
+  aboutMe: z.string().min(50, "Please write at least 50 characters about yourself"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
+  workEmail: z.string().email("Valid work email required"),
+  overallRating: z.number().min(1).max(5),
 });
 
 export default function ExamplesPage() {
@@ -522,6 +584,460 @@ export default function ExamplesPage() {
     },
   });
 
+  // Analytics Tracking Form
+  const analyticsTrackingForm = useFormedible({
+    schema: analyticsTrackingSchema,
+    fields: [
+      { name: "email", type: "email", label: "Business Email", page: 1 },
+      { 
+        name: "companySize", 
+        type: "select", 
+        label: "Company Size", 
+        page: 1,
+        options: [
+          { value: "1-10", label: "1-10 employees" },
+          { value: "11-50", label: "11-50 employees" },
+          { value: "51-200", label: "51-200 employees" },
+          { value: "200+", label: "200+ employees" }
+        ]
+      },
+      {
+        name: "interests",
+        type: "multiSelect",
+        label: "Areas of Interest",
+        page: 2,
+        options: [
+          { value: "web-dev", label: "Web Development" },
+          { value: "mobile", label: "Mobile Apps" },
+          { value: "ecommerce", label: "E-commerce" },
+          { value: "analytics", label: "Analytics" },
+          { value: "automation", label: "Automation" }
+        ]
+      },
+      { 
+        name: "budget", 
+        type: "radio", 
+        label: "Project Budget", 
+        page: 2,
+        options: [
+          { value: "<10k", label: "Less than $10,000" },
+          { value: "10k-50k", label: "$10,000 - $50,000" },
+          { value: "50k-100k", label: "$50,000 - $100,000" },
+          { value: "100k+", label: "$100,000+" }
+        ]
+      },
+      { 
+        name: "timeline", 
+        type: "select", 
+        label: "Timeline", 
+        page: 3,
+        options: ["ASAP", "1-3 months", "3-6 months", "6+ months"]
+      },
+      { 
+        name: "description", 
+        type: "textarea", 
+        label: "Project Description", 
+        page: 3,
+        textareaConfig: { rows: 4, showWordCount: true, maxLength: 500 }
+      },
+    ],
+    pages: [
+      { page: 1, title: "Company Info", description: "Tell us about your company" },
+      { page: 2, title: "Project Details", description: "What are you looking for?" },
+      { page: 3, title: "Timeline & Details", description: "When do you need this?" },
+    ],
+    progress: { showSteps: true, showPercentage: true },
+    analytics: {
+      onFormStart: (timestamp) => {
+        console.log('Form started at:', new Date(timestamp).toISOString());
+        toast.info("Form analytics: Tracking started", { description: "Check console for analytics events" });
+      },
+      onFieldFocus: (fieldName, timestamp) => {
+        console.log(`Field ${fieldName} focused at:`, new Date(timestamp).toISOString());
+      },
+      onFieldBlur: (fieldName, timeSpent) => {
+        console.log(`Field ${fieldName} completed in ${timeSpent}ms`);
+      },
+      onPageChange: (fromPage, toPage, timeSpent) => {
+        console.log(`Page ${fromPage} → ${toPage} (spent ${timeSpent}ms)`);
+        toast.info(`Analytics: Page ${fromPage} → ${toPage}`, { description: `Time spent: ${(timeSpent/1000).toFixed(1)}s` });
+      },
+      onFormComplete: (timeSpent, formData) => {
+        console.log(`Form completed in ${timeSpent}ms with data:`, formData);
+        toast.success("Analytics form completed!", { 
+          description: `Total time: ${(timeSpent/1000).toFixed(1)}s - Check console for full analytics` 
+        });
+      },
+      onFormAbandon: (completionPercentage) => {
+        console.log(`Form abandoned at ${completionPercentage}% completion`);
+      }
+    },
+    formOptions: {
+      defaultValues: {
+        email: "",
+        companySize: "1-10" as const,
+        interests: [],
+        budget: "10k-50k" as const,
+        timeline: "",
+        description: "",
+      },
+      onSubmit: async ({ value }) => {
+        console.log("Analytics form submitted:", value);
+        toast.success("Form submitted successfully!");
+      },
+    },
+  });
+
+  // Persistence Form
+  const persistenceForm = useFormedible({
+    schema: persistenceFormSchema,
+    fields: [
+      { 
+        name: "name", 
+        type: "text", 
+        label: "Full Name", 
+        page: 1,
+        section: { title: "Contact Information", description: "Your basic details" }
+      },
+      { name: "email", type: "email", label: "Email Address", page: 1 },
+      { name: "phone", type: "phone", label: "Phone Number", page: 1 },
+      { name: "company", type: "text", label: "Company Name", page: 1 },
+      { name: "jobTitle", type: "text", label: "Job Title", page: 1 },
+      {
+        name: "projectType",
+        type: "multiSelect",
+        label: "Project Type",
+        page: 2,
+        section: { title: "Project Requirements", description: "What do you need help with?" },
+        options: [
+          { value: "web-dev", label: "Web Development" },
+          { value: "mobile-app", label: "Mobile App" },
+          { value: "ecommerce", label: "E-commerce Platform" },
+          { value: "api", label: "API Development" },
+          { value: "consulting", label: "Technical Consulting" }
+        ],
+        multiSelectConfig: { searchable: true, maxSelections: 3 }
+      },
+      { 
+        name: "timeline", 
+        type: "select", 
+        label: "Timeline", 
+        page: 2,
+        options: ["ASAP", "1-3 months", "3-6 months", "6+ months", "Flexible"]
+      },
+      { 
+        name: "budget", 
+        type: "radio", 
+        label: "Budget Range", 
+        page: 2,
+        options: [
+          { value: "<25k", label: "Less than $25,000" },
+          { value: "25k-75k", label: "$25,000 - $75,000" },
+          { value: "75k-150k", label: "$75,000 - $150,000" },
+          { value: "150k+", label: "$150,000+" }
+        ]
+      },
+      { 
+        name: "description", 
+        type: "textarea", 
+        label: "Project Description", 
+        page: 3,
+        section: { title: "Project Details", description: "Tell us more about your project" },
+        textareaConfig: { rows: 6, showWordCount: true, maxLength: 1000 }
+      },
+      { 
+        name: "agreeToTerms", 
+        type: "checkbox", 
+        label: "I agree to the terms of service and privacy policy", 
+        page: 3 
+      },
+    ],
+    pages: [
+      { page: 1, title: "Contact Information", description: "Let's start with your details" },
+      { page: 2, title: "Project Requirements", description: "Tell us about your project" },
+      { page: 3, title: "Final Details", description: "Complete your inquiry" },
+    ],
+    progress: { showSteps: true, showPercentage: true },
+    persistence: {
+      key: "demo-project-inquiry-form",
+      storage: "localStorage",
+      debounceMs: 1500,
+      exclude: ["agreeToTerms"],
+      restoreOnMount: true
+    },
+    formOptions: {
+      defaultValues: {
+        name: "",
+        email: "",
+        phone: "",
+        company: "",
+        jobTitle: "",
+        projectType: [],
+        timeline: "",
+        budget: "",
+        description: "",
+        agreeToTerms: false,
+      },
+      onSubmit: async ({ value }) => {
+        console.log("Persistence form submitted:", value);
+        toast.success("Inquiry submitted!", { description: "Form data auto-saved throughout - try refreshing the page!" });
+      }
+    }
+  });
+
+  // Array Fields Form
+  const arrayFieldsForm = useFormedible({
+    schema: arrayFieldsSchema,
+    fields: [
+      {
+        name: "teamMembers",
+        type: "array",
+        label: "Team Members",
+        section: { title: "Team Composition", description: "Add your team members" },
+        arrayConfig: {
+          itemType: "object",
+          itemLabel: "Team Member",
+          minItems: 1,
+          maxItems: 10,
+          sortable: true,
+          addButtonLabel: "Add Team Member",
+          removeButtonLabel: "Remove Member",
+          defaultValue: {
+            name: "",
+            email: "",
+            role: "developer",
+            skills: [],
+            startDate: new Date(),
+          },
+        },
+      },
+      {
+        name: "contactMethods",
+        type: "array",
+        label: "Contact Email Addresses",
+        section: { title: "Contact Information", description: "Primary and backup email addresses" },
+        arrayConfig: {
+          itemType: "email",
+          itemLabel: "Email Address",
+          itemPlaceholder: "contact@company.com",
+          minItems: 1,
+          maxItems: 5,
+          addButtonLabel: "Add Email",
+          removeButtonLabel: "Remove",
+          defaultValue: "",
+        },
+      },
+      {
+        name: "emergencyContacts",
+        type: "array",
+        label: "Emergency Contacts",
+        section: { title: "Emergency Information", description: "People to contact in case of emergency" },
+        arrayConfig: {
+          itemType: "object",
+          itemLabel: "Emergency Contact",
+          minItems: 0,
+          maxItems: 3,
+          addButtonLabel: "Add Emergency Contact",
+          removeButtonLabel: "Remove Contact",
+          defaultValue: {
+            name: "",
+            relationship: "",
+            phone: "",
+            isPrimary: false,
+          },
+        },
+      },
+    ],
+    formOptions: {
+      defaultValues: {
+        teamMembers: [{ name: "", email: "", role: "developer", skills: [], startDate: new Date() }],
+        contactMethods: [""],
+        emergencyContacts: [],
+      },
+      onSubmit: async ({ value }) => {
+        console.log("Array fields form submitted:", value);
+        toast.success("Team information saved!");
+      },
+    },
+  });
+
+  // Advanced Field Types Form
+  const advancedFieldTypesForm = useFormedible({
+    schema: advancedFieldTypesSchema,
+    fields: [
+      {
+        name: "satisfaction",
+        type: "rating",
+        label: "How satisfied are you with our service?",
+        section: { title: "Feedback & Ratings", description: "Rate your experience" },
+        ratingConfig: {
+          max: 5,
+          allowHalf: true,
+          icon: "star",
+          size: "lg",
+          showValue: true
+        }
+      },
+      {
+        name: "overallRating",
+        type: "rating",
+        label: "Overall Experience",
+        ratingConfig: {
+          max: 5,
+          allowHalf: false,
+          icon: "heart",
+          size: "md",
+          showValue: true
+        }
+      },
+      {
+        name: "phoneNumber",
+        type: "phone",
+        label: "Phone Number",
+        section: { title: "Contact Information", description: "How can we reach you?" },
+        phoneConfig: {
+          defaultCountry: "US",
+          format: "international"
+        }
+      },
+      {
+        name: "favoriteColor",
+        type: "colorPicker",
+        label: "Brand Color",
+        colorConfig: {
+          format: "hex",
+          showPreview: true,
+          presetColors: [
+            "#ff0000", "#00ff00", "#0000ff", "#ffff00", "#ff00ff", "#00ffff",
+            "#000000", "#ffffff", "#808080", "#800000", "#008000", "#000080"
+          ],
+          allowCustom: true
+        }
+      },
+      {
+        name: "workDuration",
+        type: "duration",
+        label: "Daily Work Hours",
+        section: { title: "Work Preferences", description: "Tell us about your work schedule" },
+        durationConfig: {
+          format: "hm",
+          maxHours: 24,
+          showLabels: true,
+          allowNegative: false
+        }
+      },
+      {
+        name: "skills",
+        type: "multiSelect",
+        label: "Technical Skills",
+        options: [
+          { value: "javascript", label: "JavaScript" },
+          { value: "typescript", label: "TypeScript" },
+          { value: "react", label: "React" },
+          { value: "vue", label: "Vue.js" },
+          { value: "angular", label: "Angular" },
+          { value: "nodejs", label: "Node.js" },
+          { value: "python", label: "Python" },
+          { value: "java", label: "Java" }
+        ],
+        multiSelectConfig: {
+          searchable: true,
+          creatable: true,
+          maxSelections: 8,
+          placeholder: "Select or type your skills..."
+        }
+      },
+      {
+        name: "experienceLevel",
+        type: "slider",
+        label: "Experience Level (1-10)",
+        section: { title: "Professional Background", description: "Your experience and background" },
+        sliderConfig: {
+          min: 1,
+          max: 10,
+          step: 1,
+          marks: [
+            { value: 1, label: "Beginner" },
+            { value: 5, label: "Intermediate" },
+            { value: 10, label: "Expert" }
+          ],
+          showTooltip: true,
+          showValue: true,
+          orientation: "horizontal"
+        }
+      },
+      {
+        name: "birthDate",
+        type: "date",
+        label: "Date of Birth",
+        dateConfig: {
+          format: "MM/dd/yyyy",
+          maxDate: new Date(),
+          minDate: new Date(1900, 0, 1),
+          showTime: false
+        }
+      },
+      {
+        name: "resume",
+        type: "file",
+        label: "Upload Resume",
+        fileConfig: {
+          accept: ".pdf,.doc,.docx",
+          multiple: false,
+          maxSize: 5 * 1024 * 1024,
+          maxFiles: 1
+        }
+      },
+      {
+        name: "aboutMe",
+        type: "textarea",
+        label: "About Me",
+        textareaConfig: {
+          rows: 6,
+          resize: "vertical",
+          maxLength: 1000,
+          showWordCount: true
+        }
+      },
+      {
+        name: "password",
+        type: "password",
+        label: "Password",
+        section: { title: "Security", description: "Account security settings" },
+        passwordConfig: {
+          showToggle: true,
+          strengthMeter: true,
+          minStrength: 3
+        }
+      },
+      {
+        name: "workEmail",
+        type: "email",
+        label: "Work Email"
+      }
+    ],
+    formOptions: {
+      defaultValues: {
+        satisfaction: 5,
+        phoneNumber: "",
+        favoriteColor: "",
+        workDuration: { hours: 8, minutes: 0 },
+        skills: [],
+        experienceLevel: 5,
+        birthDate: new Date(),
+        resume: null,
+        aboutMe: "",
+        password: "",
+        workEmail: "",
+        overallRating: 4,
+      },
+      onSubmit: async ({ value }) => {
+        console.log("Advanced field types form submitted:", value);
+        toast.success("Profile completed!", { description: "All advanced field types captured!" });
+      },
+    },
+  });
+
   return (
     <>
       <Toaster position="top-right" richColors />
@@ -551,14 +1067,29 @@ export default function ExamplesPage() {
           </div>
 
           <Tabs defaultValue="contact" className="w-full">
-            <TabsList className="grid w-full grid-cols-6">
-              <TabsTrigger value="contact">Contact Form</TabsTrigger>
-              <TabsTrigger value="registration">Registration</TabsTrigger>
-              <TabsTrigger value="survey">Survey</TabsTrigger>
-              <TabsTrigger value="checkout">Checkout</TabsTrigger>
-              <TabsTrigger value="job">Job Application</TabsTrigger>
-              <TabsTrigger value="tabbed">Tabbed Form</TabsTrigger>
-            </TabsList>
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-2xl font-semibold mb-4">Basic Examples</h2>
+                <TabsList className="grid w-full grid-cols-6">
+                  <TabsTrigger value="contact">Contact Form</TabsTrigger>
+                  <TabsTrigger value="registration">Registration</TabsTrigger>
+                  <TabsTrigger value="survey">Survey</TabsTrigger>
+                  <TabsTrigger value="checkout">Checkout</TabsTrigger>
+                  <TabsTrigger value="job">Job Application</TabsTrigger>
+                  <TabsTrigger value="tabbed">Tabbed Form</TabsTrigger>
+                </TabsList>
+              </div>
+              
+              <div>
+                <h2 className="text-2xl font-semibold mb-4">Advanced Examples</h2>
+                <TabsList className="grid w-full grid-cols-4">
+                  <TabsTrigger value="analytics">Analytics & Tracking</TabsTrigger>
+                  <TabsTrigger value="persistence">Form Persistence</TabsTrigger>
+                  <TabsTrigger value="arrays">Array Fields</TabsTrigger>
+                  <TabsTrigger value="advanced-fields">Advanced Field Types</TabsTrigger>
+                </TabsList>
+              </div>
+            </div>
 
             <TabsContent value="contact">
               <motion.div
@@ -696,6 +1227,78 @@ export default function ExamplesPage() {
 });`}
                   codeTitle="Tabbed Form Implementation"
                   codeDescription="Form with tabs for organizing related fields into logical groups"
+                />
+              </motion.div>
+            </TabsContent>
+
+            <TabsContent value="analytics">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <DemoCard
+                  title="Analytics & Tracking Form"
+                  description="A form with comprehensive analytics tracking, monitoring user behavior, field interactions, and form completion patterns."
+                  badges={[{ text: "Analytics", variant: "secondary" }, { text: "Tracking", variant: "outline" }]}
+                  preview={<analyticsTrackingForm.Form className="space-y-4" />}
+                  code={analyticsTrackingFormCode}
+                  codeTitle="Analytics & Tracking Implementation"
+                  codeDescription="Multi-page form with complete analytics tracking including field focus/blur, page changes, and completion analytics"
+                />
+              </motion.div>
+            </TabsContent>
+
+            <TabsContent value="persistence">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <DemoCard
+                  title="Form Persistence & Auto-Save"
+                  description="A form that automatically saves progress to localStorage and restores data on page reload. Try filling it out and refreshing!"
+                  badges={[{ text: "Persistence", variant: "secondary" }, { text: "Auto-Save", variant: "outline" }]}
+                  preview={<persistenceForm.Form className="space-y-4" />}
+                  code={persistenceFormCode}
+                  codeTitle="Form Persistence Implementation"
+                  codeDescription="Multi-page form with auto-save to localStorage, data restoration, and selective field exclusion"
+                />
+              </motion.div>
+            </TabsContent>
+
+            <TabsContent value="arrays">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <DemoCard
+                  title="Dynamic Array Fields"
+                  description="Forms with dynamic arrays including complex nested objects, simple arrays, and sortable lists with validation."
+                  badges={[{ text: "Arrays", variant: "secondary" }, { text: "Dynamic", variant: "outline" }]}
+                  preview={<arrayFieldsForm.Form className="space-y-4" />}
+                  code={arrayFieldsCode}
+                  codeTitle="Array Fields Implementation"
+                  codeDescription="Dynamic arrays with nested objects, email lists, and emergency contacts with add/remove functionality"
+                />
+              </motion.div>
+            </TabsContent>
+
+            <TabsContent value="advanced-fields">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.3 }}
+              >
+                <DemoCard
+                  title="Advanced Field Types"
+                  description="Showcase of all advanced field types including rating, phone, color picker, duration, sliders, file upload, and more."
+                  badges={[{ text: "Advanced", variant: "secondary" }, { text: "Field Types", variant: "outline" }]}
+                  preview={<advancedFieldTypesForm.Form className="space-y-4" />}
+                  code={advancedFieldTypesCode}
+                  codeTitle="Advanced Field Types Implementation"
+                  codeDescription="Complete showcase of rating, phone, color picker, duration, slider, file upload, and other advanced field types"
                 />
               </motion.div>
             </TabsContent>
