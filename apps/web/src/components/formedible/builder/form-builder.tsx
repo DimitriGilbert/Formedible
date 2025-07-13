@@ -13,13 +13,17 @@ const FormBuilderInternal: React.FC<{
   defaultTab?: string;
   onTabChange?: FormBuilderProps["onTabChange"];
   className?: string;
+  onSubmit?: FormBuilderProps["onSubmit"];
+  isLoading?: boolean;
 }> = ({ 
   tabs = defaultTabs, 
   defaultTab = "builder",
   onTabChange,
-  className 
+  className,
+  onSubmit,
+  isLoading = false
 }) => {
-  const { exportConfig, importConfig } = useBuilderContext();
+  const { exportConfig, importConfig, submitConfig } = useBuilderContext();
 
   return (
     <div className="w-full min-h-[800px] flex flex-col bg-background">
@@ -63,6 +67,9 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
   enabledTabs,
   onTabChange,
   className,
+  initialData,
+  onSubmit,
+  isLoading,
 }) => {
   // Filter tabs based on enabledTabs if provided
   const finalTabs = enabledTabs 
@@ -70,12 +77,18 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
     : tabs;
 
   return (
-    <BuilderProvider>
+    <BuilderProvider 
+      initialData={initialData}
+      onSubmit={onSubmit}
+      isLoading={isLoading}
+    >
       <FormBuilderInternal
         tabs={finalTabs}
         defaultTab={defaultTab}
         onTabChange={onTabChange}
         className={className}
+        onSubmit={onSubmit}
+        isLoading={isLoading}
       />
     </BuilderProvider>
   );

@@ -155,6 +155,9 @@ export interface TabConfig {
 export interface BuilderContextType extends TabContentProps {
   // Additional context-specific methods can be added here
   forceRerender: () => void;
+  // Submit functionality
+  submitConfig: () => void;
+  isLoading: boolean;
 }
 
 // Field Operations
@@ -179,6 +182,17 @@ export interface FormBuilderProps {
   enabledTabs?: string[];
   onTabChange?: (tabId: string) => void;
   className?: string;
+  initialData?: {
+    title: string;
+    description?: string;
+    config: string;
+  };
+  onSubmit?: (formData: {
+    title: string;
+    description?: string;
+    config: string;
+  }) => void;
+  isLoading?: boolean;
 }
 
 export interface TabContainerProps {

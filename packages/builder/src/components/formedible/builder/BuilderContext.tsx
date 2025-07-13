@@ -23,11 +23,25 @@ export const useBuilderContext = () => {
 interface BuilderProviderProps {
   children: React.ReactNode;
   initialMetadata?: Partial<FormMetadata>;
+  initialData?: {
+    title: string;
+    description?: string;
+    config: string;
+  };
+  onSubmit?: (formData: {
+    title: string;
+    description?: string;
+    config: string;
+  }) => void;
+  isLoading?: boolean;
 }
 
 export const BuilderProvider: React.FC<BuilderProviderProps> = ({
   children,
   initialMetadata = {},
+  initialData,
+  onSubmit,
+  isLoading = false,
 }) => {
   // Form metadata state (minimal, non-rerendering) - USING REF TO AVOID RE-RENDERS
   const formMetaRef = useRef<FormMetadata>({
@@ -62,6 +76,44 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     const unsubscribe = globalFieldStore.subscribe(forceRerender);
     return unsubscribe;
   }, [forceRerender]);
+
+  // Load initial config once without rerenders
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  React.useEffect(() => {
+    if (initialData && !isInitialized) {
+      // Update form metadata
+      formMetaRef.current.title = initialData.title;
+      formMetaRef.current.description = initialData.description || "";
+
+      // Parse and load config
+      try {
+        const config = JSON.parse(initialData.config);
+        if (config.fields) {
+          globalFieldStore.importFields(config.fields);
+        }
+        if (config.pages) {
+          formMetaRef.current.pages = config.pages;
+        }
+        if (config.tabs) {
+          formMetaRef.current.tabs = config.tabs;
+        }
+        if (config.layoutType) {
+          formMetaRef.current.layoutType = config.layoutType;
+        }
+        if (config.settings) {
+          formMetaRef.current.settings = {
+            ...formMetaRef.current.settings,
+            ...config.settings,
+          };
+        }
+      } catch (error) {
+        console.warn("Failed to parse initial config:", error);
+      }
+
+      setIsInitialized(true);
+    }
+  }, [initialData, isInitialized]);
 
   // Form metadata operations - DON'T TRIGGER RE-RENDERS
   const onFormMetadataChange = useCallback((updates: Partial<FormMetadata>) => {
@@ -282,6 +334,59 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     input.click();
   }, [forceRerender]);
 
+  // Submit configuration to parent
+  const submitConfig = useCallback(() => {
+    if (onSubmit) {
+      const config = {
+        title: formMetaRef.current.title,
+        description: formMetaRef.current.description,
+        fields: globalFieldStore.getAllFields().map((field) => ({
+          name: field.name,
+          type: field.type,
+          label: field.label,
+          placeholder: field.placeholder,
+          description: field.description,
+          required: field.required,
+          page: field.page || 1,
+          tab: field.tab,
+          group: field.group,
+          section: field.section,
+          help: field.help,
+          inlineValidation: field.inlineValidation,
+          options: field.options,
+          arrayConfig: field.arrayConfig,
+          datalist: field.datalist,
+          multiSelectConfig: field.multiSelectConfig,
+          colorConfig: field.colorConfig,
+          ratingConfig: field.ratingConfig,
+          phoneConfig: field.phoneConfig,
+        })),
+        pages: formMetaRef.current.pages,
+        tabs: formMetaRef.current.tabs,
+        layoutType: formMetaRef.current.layoutType,
+        settings: formMetaRef.current.settings,
+      };
+      onSubmit({
+        title: config.title,
+        description: config.description,
+        config: JSON.stringify(config),
+      });
+    }
+  }, [onSubmit]);
+
+  // Add keyboard shortcut for save (Ctrl+S)
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        submitConfig();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [submitConfig]);
+
   const contextValue: BuilderContextType = {
     // Form metadata - NON-REACTIVE
     getFormMetadata,
@@ -318,6 +423,10 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
 
     // Context-specific
     forceRerender,
+    
+    // Submit functionality
+    submitConfig,
+    isLoading,
   };
 
   return (
