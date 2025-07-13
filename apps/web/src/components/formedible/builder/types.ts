@@ -31,10 +31,21 @@ export interface FormField {
     showSuccess?: boolean;
   };
   validation?: {
-    customMessages?: {
-      required?: string;
-      [key: string]: string | undefined;
-    };
+    min?: number;
+    max?: number;
+    minLength?: number;
+    maxLength?: number;
+    pattern?: string;
+    custom?: string;
+    includes?: string;
+    startsWith?: string;
+    endsWith?: string;
+    email?: boolean;
+    url?: boolean;
+    uuid?: boolean;
+    transform?: string;
+    refine?: string;
+    customMessages?: Record<string, string>;
   };
   options?: Array<{ value: string; label: string }>;
   arrayConfig?: any;

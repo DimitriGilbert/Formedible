@@ -233,7 +233,7 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${formMetaRef.current.title.toLowerCase().replace(/\\s+/g, "-")}-form.json`;
+    a.download = `${formMetaRef.current.title.toLowerCase().replace(/\s+/g, "-")}-form.json`;
     a.click();
     URL.revokeObjectURL(url);
   }, []);

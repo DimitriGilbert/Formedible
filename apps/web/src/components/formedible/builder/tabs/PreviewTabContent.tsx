@@ -43,7 +43,10 @@ export const PreviewTabContent: React.FC<TabContentProps> = ({
               : "max-w-4xl"
           )}
         >
-          <FormPreview config={getFormConfig()} />
+          <FormPreview config={{
+            ...getFormConfig(),
+            pages: getFormConfig().pages || []
+          }} />
         </div>
       </div>
     </div>
