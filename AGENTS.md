@@ -23,6 +23,7 @@
 - React: No need to import React in JSX files (modern JSX transform)
 - Dependencies: Check existing package.json before adding new dependencies
 - Unused vars: Prefix with underscore to ignore ESLint warnings
+- NEVER USE confirm OR alert ! anti pattern terrible UX ! NEVER !
 
 ## formedible work
 - Always work on the package first then unse `scripts/sync-components` to sync the changes to the web app.

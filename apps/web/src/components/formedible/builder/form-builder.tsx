@@ -13,15 +13,11 @@ const FormBuilderInternal: React.FC<{
   defaultTab?: string;
   onTabChange?: FormBuilderProps["onTabChange"];
   className?: string;
-  onSubmit?: FormBuilderProps["onSubmit"];
-  isLoading?: boolean;
 }> = ({ 
   tabs = defaultTabs, 
   defaultTab = "builder",
   onTabChange,
-  className,
-  onSubmit,
-  isLoading = false
+  className
 }) => {
   const { exportConfig, importConfig, submitConfig } = useBuilderContext();
 
@@ -87,8 +83,6 @@ export const FormBuilder: React.FC<FormBuilderProps> = ({
         defaultTab={defaultTab}
         onTabChange={onTabChange}
         className={className}
-        onSubmit={onSubmit}
-        isLoading={isLoading}
       />
     </BuilderProvider>
   );
