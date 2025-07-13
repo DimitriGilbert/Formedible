@@ -45,9 +45,49 @@
           "target": "components/formedible/builder/form-preview.tsx"
         },
         {
+          "path": "src/components/formedible/builder/code-generator.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/builder/code-generator.tsx"
+        },
+        {
           "path": "src/components/formedible/builder/field-store.ts",
           "type": "registry:lib",
           "target": "components/formedible/builder/field-store.ts"
+        },
+        {
+          "path": "src/components/formedible/builder/types.ts",
+          "type": "registry:lib",
+          "target": "components/formedible/builder/types.ts"
+        },
+        {
+          "path": "src/components/formedible/builder/BuilderContext.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/builder/BuilderContext.tsx"
+        },
+        {
+          "path": "src/components/formedible/builder/TabContainer.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/builder/TabContainer.tsx"
+        },
+        {
+          "path": "src/components/formedible/builder/default-tabs.ts",
+          "type": "registry:lib",
+          "target": "components/formedible/builder/default-tabs.ts"
+        },
+        {
+          "path": "src/components/formedible/builder/tabs/BuilderTabContent.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/builder/tabs/BuilderTabContent.tsx"
+        },
+        {
+          "path": "src/components/formedible/builder/tabs/PreviewTabContent.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/builder/tabs/PreviewTabContent.tsx"
+        },
+        {
+          "path": "src/components/formedible/builder/tabs/CodeTabContent.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/builder/tabs/CodeTabContent.tsx"
         },
         {
           "path": "src/lib/utils.ts",
