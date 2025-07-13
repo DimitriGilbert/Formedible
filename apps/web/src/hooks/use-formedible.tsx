@@ -1639,7 +1639,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
           }}
         </form.Subscribe>
       );
-    }, [renderTabContent, renderField, activeTab, setActiveTab]);
+    }, [renderTabContent, renderField, activeTab, setActiveTab, hasTabs, tabs]);
 
     const renderProgress = () => {
       if (!hasPages || !progress) return null;
