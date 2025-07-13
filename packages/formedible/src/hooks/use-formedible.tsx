@@ -669,9 +669,9 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
   // Advanced features state
   const [crossFieldErrors, setCrossFieldErrors] = useState<Record<string, string>>({});
   const [asyncValidationStates, setAsyncValidationStates] = useState<Record<string, { loading: boolean; error?: string }>>({});
-  const [formStartTime] = useState<number>(Date.now());
-  const [fieldFocusTimes, setFieldFocusTimes] = useState<Record<string, number>>({});
-  const [pageStartTime, setPageStartTime] = useState<number>(Date.now());
+  const formStartTime = React.useRef<number>(Date.now());
+  const fieldFocusTimes = React.useRef<Record<string, number>>({});
+  const pageStartTime = React.useRef<number>(Date.now());
 
   // Combine default components with user overrides
   const fieldComponents = { ...defaultFieldComponents, ...defaultComponents };
@@ -808,7 +808,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
         
         // Call analytics if provided
         if (analytics?.onFormComplete) {
-          const timeSpent = Date.now() - formStartTime;
+          const timeSpent = Date.now() - formStartTime.current;
           analytics.onFormComplete(timeSpent, props.value);
         }
         
@@ -913,7 +913,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
 
     // Call analytics onFormStart if provided
     if (analytics?.onFormStart) {
-      analytics.onFormStart(formStartTime);
+      analytics.onFormStart(formStartTime.current);
     }
 
     if (formOptions?.onChange || autoSubmitOnChange || crossFieldValidation.length > 0 || analytics || persistence) {
@@ -965,8 +965,8 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
         
         if (fieldName && lastFocusedField === fieldName) {
           // Analytics tracking
-          if (analytics?.onFieldBlur && fieldFocusTimes[fieldName]) {
-            const timeSpent = Date.now() - fieldFocusTimes[fieldName];
+          if (analytics?.onFieldBlur && fieldFocusTimes.current[fieldName]) {
+            const timeSpent = Date.now() - fieldFocusTimes.current[fieldName];
             analytics.onFieldBlur(fieldName, timeSpent);
           }
           
@@ -990,7 +990,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
         // Analytics tracking
         if (fieldName && analytics?.onFieldFocus) {
           const timestamp = Date.now();
-          setFieldFocusTimes(prev => ({ ...prev, [fieldName]: timestamp }));
+          fieldFocusTimes.current[fieldName] = timestamp;
           analytics.onFieldFocus(fieldName, timestamp);
         }
       };
@@ -1055,12 +1055,10 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     crossFieldValidation,
     analytics,
     asyncValidation,
-    fieldFocusTimes,
     validateFieldAsync,
     persistence,
     saveToStorage,
     currentPage,
-    formStartTime,
     validateCrossFields
   ]);
 
@@ -1097,12 +1095,12 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
       
       // Analytics tracking
       if (analytics?.onPageChange) {
-        const timeSpent = Date.now() - pageStartTime;
+        const timeSpent = Date.now() - pageStartTime.current;
         analytics.onPageChange(currentPage, newPage, timeSpent);
       }
       
       setCurrentPage(newPage);
-      setPageStartTime(Date.now());
+      pageStartTime.current = Date.now();
       onPageChange?.(newPage, 'next');
     }
   };
@@ -1113,12 +1111,12 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
       
       // Analytics tracking
       if (analytics?.onPageChange) {
-        const timeSpent = Date.now() - pageStartTime;
+        const timeSpent = Date.now() - pageStartTime.current;
         analytics.onPageChange(currentPage, newPage, timeSpent);
       }
       
       setCurrentPage(newPage);
-      setPageStartTime(Date.now());
+      pageStartTime.current = Date.now();
       onPageChange?.(newPage, 'previous');
     }
   };

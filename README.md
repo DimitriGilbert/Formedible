@@ -33,6 +33,7 @@ While TanStack Form provides the robust foundation, **Formedible transforms it i
 - **Multi-Page Forms** - Built-in pagination with progress tracking and validation
 - **Tabbed Layouts** - Organize complex forms with tab navigation
 - **Conditional Logic** - Show/hide fields and sections based on form state
+- **Dynamic Options** - Options for select, radio, and multiSelect fields that update based on other form values
 - **Real-time Validation** - Sync and async validation with debouncing
 - **Cross-Field Validation** - Validate relationships between multiple fields
 
@@ -247,6 +248,97 @@ const dynamicForm = useFormedible({
   // ... rest of config
 });
 ```
+
+### 1.1. **Dynamic Options Based on Form State**
+
+```tsx
+const locationForm = useFormedible({
+  fields: [
+    {
+      name: "country",
+      type: "select",
+      label: "Country",
+      options: [
+        { value: "us", label: "United States" },
+        { value: "ca", label: "Canada" },
+        { value: "uk", label: "United Kingdom" },
+        { value: "au", label: "Australia" }
+      ]
+    },
+    {
+      name: "state",
+      type: "select",
+      label: "State/Province",
+      conditional: (values) => !!values.country, // Only show if country is selected
+      options: (values) => {
+        // Dynamic options based on selected country
+        if (values.country === "us") {
+          return [
+            { value: "ca", label: "California" },
+            { value: "ny", label: "New York" },
+            { value: "tx", label: "Texas" },
+            { value: "fl", label: "Florida" }
+          ];
+        } else if (values.country === "ca") {
+          return [
+            { value: "on", label: "Ontario" },
+            { value: "qc", label: "Quebec" },
+            { value: "bc", label: "British Columbia" },
+            { value: "ab", label: "Alberta" }
+          ];
+        } else if (values.country === "uk") {
+          return [
+            { value: "england", label: "England" },
+            { value: "scotland", label: "Scotland" },
+            { value: "wales", label: "Wales" },
+            { value: "ni", label: "Northern Ireland" }
+          ];
+        } else if (values.country === "au") {
+          return [
+            { value: "nsw", label: "New South Wales" },
+            { value: "vic", label: "Victoria" },
+            { value: "qld", label: "Queensland" },
+            { value: "wa", label: "Western Australia" }
+          ];
+        }
+        return []; // No options if country not selected
+      }
+    },
+    {
+      name: "city",
+      type: "autocomplete",
+      label: "City",
+      conditional: (values) => !!values.state,
+      autocompleteConfig: {
+        // Dynamic autocomplete options based on state
+        options: (values) => {
+          if (values.state === "ca") {
+            return ["Los Angeles", "San Francisco", "San Diego", "Sacramento"];
+          } else if (values.state === "ny") {
+            return ["New York City", "Buffalo", "Rochester", "Syracuse"];
+          }
+          // ... more state-specific cities
+          return [];
+        },
+        allowCustom: true
+      }
+    }
+  ],
+  // ... rest of config
+});
+```
+
+**Dynamic Options Work With:**
+- `select` fields - Dropdown selections
+- `radio` fields - Radio button groups  
+- `multiSelect` fields - Multiple selection dropdowns
+- `autocomplete` fields - Auto-complete suggestions
+
+**Key Benefits:**
+- **Responsive UX** - Options update instantly as users make selections
+- **Reduced Cognitive Load** - Only relevant options are shown
+- **Data Integrity** - Prevents invalid combinations
+- **Performance** - Efficient re-rendering using TanStack Form subscriptions
 
 ### 2. **Cross-Field Validation**
 
@@ -585,6 +677,7 @@ interface FieldConfig {
   label?: string;
   placeholder?: string;
   description?: string;
+  options?: string[] | { value: string; label: string }[] | ((values: Record<string, unknown>) => string[] | { value: string; label: string }[]); // Static or dynamic options
   
   // Validation & Logic
   validation?: z.ZodSchema<unknown>;
@@ -1259,6 +1352,7 @@ npm run lint
 ## 📝 Changelog
 
 ### v0.2.6 (Latest)
+- **✨ Added**: Dynamic options support for select, radio, multiSelect, and autocomplete fields
 - **🐛 Fixed**: Field configuration panel now properly updates when selecting fields
 - **🎨 Improved**: Better TypeScript configuration for shadcn/ui components
 - **⚡ Enhanced**: Form builder auto-selection behavior when adding new fields

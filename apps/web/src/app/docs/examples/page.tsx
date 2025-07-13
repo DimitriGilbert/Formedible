@@ -57,6 +57,8 @@ const surveySchema = z.object({
   referralSource: z.string().optional(),
   otherSource: z.string().optional(),
   features: z.array(z.string()),
+  country: z.string().optional(),
+  state: z.string().optional(),
 });
 
 const checkoutSchema = z.object({
@@ -315,6 +317,55 @@ export default function ExamplesPage() {
         multiSelectConfig: {
           maxSelections: 3
         }
+      },
+      {
+        name: "country",
+        type: "select",
+        label: "Country",
+        options: [
+          { value: "us", label: "United States" },
+          { value: "ca", label: "Canada" },
+          { value: "uk", label: "United Kingdom" },
+          { value: "au", label: "Australia" }
+        ]
+      },
+      {
+        name: "state",
+        type: "select",
+        label: "State/Province",
+        conditional: (values: any) => !!values.country,
+        options: (values: any) => {
+          if (values.country === "us") {
+            return [
+              { value: "ca", label: "California" },
+              { value: "ny", label: "New York" },
+              { value: "tx", label: "Texas" },
+              { value: "fl", label: "Florida" }
+            ];
+          } else if (values.country === "ca") {
+            return [
+              { value: "on", label: "Ontario" },
+              { value: "qc", label: "Quebec" },
+              { value: "bc", label: "British Columbia" },
+              { value: "ab", label: "Alberta" }
+            ];
+          } else if (values.country === "uk") {
+            return [
+              { value: "england", label: "England" },
+              { value: "scotland", label: "Scotland" },
+              { value: "wales", label: "Wales" },
+              { value: "ni", label: "Northern Ireland" }
+            ];
+          } else if (values.country === "au") {
+            return [
+              { value: "nsw", label: "New South Wales" },
+              { value: "vic", label: "Victoria" },
+              { value: "qld", label: "Queensland" },
+              { value: "wa", label: "Western Australia" }
+            ];
+          }
+          return [];
+        }
       }
     ],
     formOptions: {
@@ -325,6 +376,8 @@ export default function ExamplesPage() {
         referralSource: "",
         otherSource: "",
         features: [],
+        country: "",
+        state: "",
       },
       onSubmit: async ({ value }) => {
         console.log("Survey submitted:", value);
@@ -584,6 +637,44 @@ export default function ExamplesPage() {
     },
   });
 
+  // Analytics callbacks - memoized to prevent re-renders
+  const onFormStart = React.useCallback((timestamp: number) => {
+    console.log('📊 Form started at:', new Date(timestamp).toISOString());
+  }, []);
+
+  const onFieldFocus = React.useCallback((fieldName: string, timestamp: number) => {
+    console.log(`👁️ Field "${fieldName}" focused at:`, new Date(timestamp).toISOString());
+  }, []);
+
+  const onFieldBlur = React.useCallback((fieldName: string, timeSpent: number) => {
+    console.log(`⏱️ Field "${fieldName}" completed in ${timeSpent}ms`);
+  }, []);
+
+  const onPageChange = React.useCallback((fromPage: number, toPage: number, timeSpent: number) => {
+    console.log(`📄 Page ${fromPage} → ${toPage} (spent ${timeSpent}ms)`);
+  }, []);
+
+  const onFormComplete = React.useCallback((timeSpent: number, formData: any) => {
+    console.log(`✅ Form completed in ${timeSpent}ms with data:`, formData);
+    toast.success("Analytics form completed!", { 
+      description: `Total time: ${(timeSpent/1000).toFixed(1)}s - Check console for full analytics` 
+    });
+  }, []);
+
+  const onFormAbandon = React.useCallback((completionPercentage: number) => {
+    console.log(`❌ Form abandoned at ${completionPercentage}% completion`);
+  }, []);
+
+  // Memoize the analytics object
+  const analyticsConfig = React.useMemo(() => ({
+    onFormStart,
+    onFieldFocus,
+    onFieldBlur,
+    onPageChange,
+    onFormComplete,
+    onFormAbandon
+  }), [onFormStart, onFieldFocus, onFieldBlur, onPageChange, onFormComplete, onFormAbandon]);
+
   // Analytics Tracking Form
   const analyticsTrackingForm = useFormedible({
     schema: analyticsTrackingSchema,
@@ -647,31 +738,7 @@ export default function ExamplesPage() {
       { page: 3, title: "Timeline & Details", description: "When do you need this?" },
     ],
     progress: { showSteps: true, showPercentage: true },
-    analytics: {
-      onFormStart: (timestamp) => {
-        console.log('Form started at:', new Date(timestamp).toISOString());
-        toast.info("Form analytics: Tracking started", { description: "Check console for analytics events" });
-      },
-      onFieldFocus: (fieldName, timestamp) => {
-        console.log(`Field ${fieldName} focused at:`, new Date(timestamp).toISOString());
-      },
-      onFieldBlur: (fieldName, timeSpent) => {
-        console.log(`Field ${fieldName} completed in ${timeSpent}ms`);
-      },
-      onPageChange: (fromPage, toPage, timeSpent) => {
-        console.log(`Page ${fromPage} → ${toPage} (spent ${timeSpent}ms)`);
-        toast.info(`Analytics: Page ${fromPage} → ${toPage}`, { description: `Time spent: ${(timeSpent/1000).toFixed(1)}s` });
-      },
-      onFormComplete: (timeSpent, formData) => {
-        console.log(`Form completed in ${timeSpent}ms with data:`, formData);
-        toast.success("Analytics form completed!", { 
-          description: `Total time: ${(timeSpent/1000).toFixed(1)}s - Check console for full analytics` 
-        });
-      },
-      onFormAbandon: (completionPercentage) => {
-        console.log(`Form abandoned at ${completionPercentage}% completion`);
-      }
-    },
+    analytics: analyticsConfig,
     formOptions: {
       defaultValues: {
         email: "",
@@ -1135,8 +1202,8 @@ export default function ExamplesPage() {
               >
                 <DemoCard
                   title="Dynamic Survey Form"
-                  description="A survey form with conditional questions that appear based on previous answers."
-                  badges={[{ text: "Conditional", variant: "secondary" }]}
+                  description="A survey form with conditional questions and dynamic options. Select a country to see the state/province options update automatically."
+                  badges={[{ text: "Conditional", variant: "secondary" }, { text: "Dynamic Options", variant: "outline" }]}
                   preview={<surveyForm.Form className="space-y-4" />}
                   code={exampleSurveyFormCode}
                   codeTitle="Dynamic Survey with Conditional Logic"

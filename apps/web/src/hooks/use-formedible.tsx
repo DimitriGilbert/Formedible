@@ -130,7 +130,7 @@ export interface FieldConfig {
   label?: string;
   placeholder?: string;
   description?: string;
-  options?: string[] | { value: string; label: string }[];
+  options?: string[] | { value: string; label: string }[] | ((values: Record<string, unknown>) => string[] | { value: string; label: string }[]);
   min?: number;
   max?: number;
   step?: number;
@@ -241,7 +241,7 @@ export interface FieldConfig {
   };
   // Autocomplete specific
   autocompleteConfig?: {
-    options?: string[] | { value: string; label: string }[];
+    options?: string[] | { value: string; label: string }[] | ((values: Record<string, unknown>) => string[] | { value: string; label: string }[]);
     asyncOptions?: (query: string) => Promise<string[] | { value: string; label: string }[]>;
     debounceMs?: number;
     minChars?: number;
@@ -270,7 +270,7 @@ export interface FieldConfig {
       label?: string;
       placeholder?: string;
       description?: string;
-      options?: Array<{ value: string; label: string }>;
+      options?: Array<{ value: string; label: string }> | ((values: Record<string, unknown>) => Array<{ value: string; label: string }>);
       min?: number;
       max?: number;
       step?: number;
@@ -669,9 +669,9 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
   // Advanced features state
   const [crossFieldErrors, setCrossFieldErrors] = useState<Record<string, string>>({});
   const [asyncValidationStates, setAsyncValidationStates] = useState<Record<string, { loading: boolean; error?: string }>>({});
-  const [formStartTime] = useState<number>(Date.now());
-  const [fieldFocusTimes, setFieldFocusTimes] = useState<Record<string, number>>({});
-  const [pageStartTime, setPageStartTime] = useState<number>(Date.now());
+  const formStartTime = React.useRef<number>(Date.now());
+  const fieldFocusTimes = React.useRef<Record<string, number>>({});
+  const pageStartTime = React.useRef<number>(Date.now());
 
   // Combine default components with user overrides
   const fieldComponents = { ...defaultFieldComponents, ...defaultComponents };
@@ -808,7 +808,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
         
         // Call analytics if provided
         if (analytics?.onFormComplete) {
-          const timeSpent = Date.now() - formStartTime;
+          const timeSpent = Date.now() - formStartTime.current;
           analytics.onFormComplete(timeSpent, props.value);
         }
         
@@ -913,7 +913,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
 
     // Call analytics onFormStart if provided
     if (analytics?.onFormStart) {
-      analytics.onFormStart(formStartTime);
+      analytics.onFormStart(formStartTime.current);
     }
 
     if (formOptions?.onChange || autoSubmitOnChange || crossFieldValidation.length > 0 || analytics || persistence) {
@@ -965,8 +965,8 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
         
         if (fieldName && lastFocusedField === fieldName) {
           // Analytics tracking
-          if (analytics?.onFieldBlur && fieldFocusTimes[fieldName]) {
-            const timeSpent = Date.now() - fieldFocusTimes[fieldName];
+          if (analytics?.onFieldBlur && fieldFocusTimes.current[fieldName]) {
+            const timeSpent = Date.now() - fieldFocusTimes.current[fieldName];
             analytics.onFieldBlur(fieldName, timeSpent);
           }
           
@@ -990,7 +990,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
         // Analytics tracking
         if (fieldName && analytics?.onFieldFocus) {
           const timestamp = Date.now();
-          setFieldFocusTimes(prev => ({ ...prev, [fieldName]: timestamp }));
+          fieldFocusTimes.current[fieldName] = timestamp;
           analytics.onFieldFocus(fieldName, timestamp);
         }
       };
@@ -1055,12 +1055,10 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     crossFieldValidation,
     analytics,
     asyncValidation,
-    fieldFocusTimes,
     validateFieldAsync,
     persistence,
     saveToStorage,
     currentPage,
-    formStartTime,
     validateCrossFields
   ]);
 
@@ -1097,12 +1095,12 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
       
       // Analytics tracking
       if (analytics?.onPageChange) {
-        const timeSpent = Date.now() - pageStartTime;
+        const timeSpent = Date.now() - pageStartTime.current;
         analytics.onPageChange(currentPage, newPage, timeSpent);
       }
       
       setCurrentPage(newPage);
-      setPageStartTime(Date.now());
+      pageStartTime.current = Date.now();
       onPageChange?.(newPage, 'next');
     }
   };
@@ -1113,12 +1111,12 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
       
       // Analytics tracking
       if (analytics?.onPageChange) {
-        const timeSpent = Date.now() - pageStartTime;
+        const timeSpent = Date.now() - pageStartTime.current;
         analytics.onPageChange(currentPage, newPage, timeSpent);
       }
       
       setCurrentPage(newPage);
-      setPageStartTime(Date.now());
+      pageStartTime.current = Date.now();
       onPageChange?.(newPage, 'previous');
     }
   };
@@ -1273,6 +1271,14 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
 
     const formClass = cn("space-y-6", formClassName, className);
 
+    // Helper function to resolve options (static or dynamic)
+    const resolveOptions = React.useCallback((options: FieldConfig['options'], currentValues: Record<string, unknown>) => {
+      if (typeof options === 'function') {
+        return options(currentValues);
+      }
+      return options;
+    }, []);
+
     const renderField = React.useCallback((fieldConfig: FieldConfig) => {
       const { 
         name, 
@@ -1335,128 +1341,145 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
                     return null;
                   }
 
-                  // Check for cross-field validation errors
-                  const crossFieldError = crossFieldErrors[name];
-                  const asyncValidationState = asyncValidationStates[name];
+                  // Subscribe to form values for dynamic options
+                  return (
+                    <form.Subscribe
+                      selector={(state: any) => state.values}
+                    >
+                      {(currentValues) => {
+                        // Check for cross-field validation errors
+                        const crossFieldError = crossFieldErrors[name];
+                        const asyncValidationState = asyncValidationStates[name];
+
+                        // Resolve options (static or dynamic)
+                        const resolvedOptions = resolveOptions(options, currentValues);
             
-                  const baseProps = {
-                    fieldApi: field,
-                    label,
-                    placeholder,
-                    description,
-                    wrapperClassName: fieldClassName,
-                    min,
-                    max,
-                    step,
-                    accept,
-                    multiple,
-                    disabled: disabled || loading || field.form.state.isSubmitting,
-                    crossFieldError,
-                    asyncValidationState,
-                  };
+                        const baseProps = {
+                          fieldApi: field,
+                          label,
+                          placeholder,
+                          description,
+                          wrapperClassName: fieldClassName,
+                          min,
+                          max,
+                          step,
+                          accept,
+                          multiple,
+                          disabled: disabled || loading || field.form.state.isSubmitting,
+                          crossFieldError,
+                          asyncValidationState,
+                        };
 
-                  // Select the component to use
-                  const FieldComponent = CustomComponent || fieldComponents[type] || TextField;
+                        // Select the component to use
+                        const FieldComponent = CustomComponent || fieldComponents[type] || TextField;
 
-                  // Add type-specific props
-                  let props: FieldComponentProps = { ...baseProps };
-                  
-                  // Normalize options to the expected format
-                  const normalizedOptions = options ? options.map(opt => 
-                    typeof opt === 'string' ? { value: opt, label: opt } : opt
-                  ) : [];
+                        // Add type-specific props
+                        let props: FieldComponentProps = { ...baseProps };
+                        
+                        // Normalize options to the expected format
+                        const normalizedOptions = resolvedOptions ? resolvedOptions.map(opt => 
+                          typeof opt === 'string' ? { value: opt, label: opt } : opt
+                        ) : [];
 
-                  if (type === 'select') {
-                    props = { ...props, options: normalizedOptions };
-                  } else if (type === 'array') {
-                    const mappedArrayConfig = arrayConfig ? {
-                      itemType: arrayConfig.itemType || 'text',
-                      itemLabel: arrayConfig.itemLabel,
-                      itemPlaceholder: arrayConfig.itemPlaceholder,
-                      minItems: arrayConfig.minItems,
-                      maxItems: arrayConfig.maxItems,
-                      itemValidation: arrayConfig.itemValidation,
-                      itemComponent: arrayConfig.itemComponent as React.ComponentType<BaseFieldProps>,
-                      addButtonLabel: arrayConfig.addButtonLabel,
-                      removeButtonLabel: arrayConfig.removeButtonLabel,
-                      sortable: arrayConfig.sortable,
-                      defaultValue: arrayConfig.defaultValue
-                    } : undefined;
-                    props = { ...props, arrayConfig: mappedArrayConfig };
-                  } else if (['text', 'email', 'password', 'url', 'tel'].includes(type)) {
-                    props = { ...props, type: type as 'text' | 'email' | 'password' | 'url' | 'tel', datalist: datalist?.options };
-                  } else if (type === 'radio') {
-                    props = { ...props, options: normalizedOptions };
-                  } else if (type === 'multiSelect') {
-                    props = { ...props, options: normalizedOptions, multiSelectConfig };
-                  } else if (type === 'colorPicker') {
-                    props = { ...props, colorConfig };
-                  } else if (type === 'rating') {
-                    props = { ...props, ratingConfig };
-                  } else if (type === 'phone') {
-                    props = { ...props, phoneConfig };
-                  } else if (type === 'location') {
-                    props = { ...props, locationConfig };
-                  } else if (type === 'duration') {
-                    props = { ...props, durationConfig };
-                  } else if (type === 'autocomplete') {
-                    props = { ...props, autocompleteConfig };
-                  } else if (type === 'masked') {
-                    props = { ...props, maskedInputConfig };
-                  } else if (type === 'object') {
-                    props = { ...props, objectConfig };
-                  } else if (type === 'slider') {
-                    props = { ...props, sliderConfig };
-                  } else if (type === 'number') {
-                    props = { ...props, numberConfig };
-                  } else if (type === 'date') {
-                    props = { ...props, dateConfig };
-                  } else if (type === 'file') {
-                    props = { ...props, fileConfig };
-                  } else if (type === 'textarea') {
-                    props = { ...props, textareaConfig };
-                  } else if (type === 'password') {
-                    props = { ...props, passwordConfig };
-                  } else if (type === 'email') {
-                    props = { ...props, emailConfig };
-                  }
+                        if (type === 'select') {
+                          props = { ...props, options: normalizedOptions };
+                        } else if (type === 'array') {
+                          const mappedArrayConfig = arrayConfig ? {
+                            itemType: arrayConfig.itemType || 'text',
+                            itemLabel: arrayConfig.itemLabel,
+                            itemPlaceholder: arrayConfig.itemPlaceholder,
+                            minItems: arrayConfig.minItems,
+                            maxItems: arrayConfig.maxItems,
+                            itemValidation: arrayConfig.itemValidation,
+                            itemComponent: arrayConfig.itemComponent as React.ComponentType<BaseFieldProps>,
+                            addButtonLabel: arrayConfig.addButtonLabel,
+                            removeButtonLabel: arrayConfig.removeButtonLabel,
+                            sortable: arrayConfig.sortable,
+                            defaultValue: arrayConfig.defaultValue
+                          } : undefined;
+                          props = { ...props, arrayConfig: mappedArrayConfig };
+                        } else if (['text', 'email', 'password', 'url', 'tel'].includes(type)) {
+                          props = { ...props, type: type as 'text' | 'email' | 'password' | 'url' | 'tel', datalist: datalist?.options };
+                        } else if (type === 'radio') {
+                          props = { ...props, options: normalizedOptions };
+                        } else if (type === 'multiSelect') {
+                          props = { ...props, options: normalizedOptions, multiSelectConfig };
+                        } else if (type === 'colorPicker') {
+                          props = { ...props, colorConfig };
+                        } else if (type === 'rating') {
+                          props = { ...props, ratingConfig };
+                        } else if (type === 'phone') {
+                          props = { ...props, phoneConfig };
+                        } else if (type === 'location') {
+                          props = { ...props, locationConfig };
+                        } else if (type === 'duration') {
+                          props = { ...props, durationConfig };
+                        } else if (type === 'autocomplete') {
+                          // Handle dynamic options for autocomplete
+                          const resolvedAutocompleteConfig = autocompleteConfig ? {
+                            ...autocompleteConfig,
+                            options: resolveOptions(autocompleteConfig.options, currentValues)
+                          } : undefined;
+                          props = { ...props, autocompleteConfig: resolvedAutocompleteConfig };
+                        } else if (type === 'masked') {
+                          props = { ...props, maskedInputConfig };
+                        } else if (type === 'object') {
+                          props = { ...props, objectConfig };
+                        } else if (type === 'slider') {
+                          props = { ...props, sliderConfig };
+                        } else if (type === 'number') {
+                          props = { ...props, numberConfig };
+                        } else if (type === 'date') {
+                          props = { ...props, dateConfig };
+                        } else if (type === 'file') {
+                          props = { ...props, fileConfig };
+                        } else if (type === 'textarea') {
+                          props = { ...props, textareaConfig };
+                        } else if (type === 'password') {
+                          props = { ...props, passwordConfig };
+                        } else if (type === 'email') {
+                          props = { ...props, emailConfig };
+                        }
 
-                  // Render the field component
-                  const fieldElement = <FieldComponent {...props} />;
+                        // Render the field component
+                        const fieldElement = <FieldComponent {...props} />;
 
-                  // Apply inline validation wrapper if enabled
-                  const wrappedFieldElement = inlineValidation?.enabled 
-                    ? (
-                        <InlineValidationWrapper
-                          fieldApi={field}
-                          inlineValidation={inlineValidation}
-                        >
-                          {fieldElement}
-                        </InlineValidationWrapper>
-                      )
-                    : fieldElement;
+                        // Apply inline validation wrapper if enabled
+                        const wrappedFieldElement = inlineValidation?.enabled 
+                          ? (
+                              <InlineValidationWrapper
+                                fieldApi={field}
+                                inlineValidation={inlineValidation}
+                              >
+                                {fieldElement}
+                              </InlineValidationWrapper>
+                            )
+                          : fieldElement;
 
-                  // Add field help if provided
-                  const fieldWithHelp = help ? (
-                    <div className="space-y-2">
-                      {wrappedFieldElement}
-                      <FieldHelp help={help} />
-                    </div>
-                  ) : wrappedFieldElement;
+                        // Add field help if provided
+                        const fieldWithHelp = help ? (
+                          <div className="space-y-2">
+                            {wrappedFieldElement}
+                            <FieldHelp help={help} />
+                          </div>
+                        ) : wrappedFieldElement;
 
-                  // Apply custom wrapper or global wrapper
-                  const Wrapper = CustomWrapper || globalWrapper;
-                  
-                  return Wrapper 
-                    ? <Wrapper field={fieldConfig}>{fieldWithHelp}</Wrapper>
-                    : fieldWithHelp;
+                        // Apply custom wrapper or global wrapper
+                        const Wrapper = CustomWrapper || globalWrapper;
+                        
+                        return Wrapper 
+                          ? <Wrapper field={fieldConfig}>{fieldWithHelp}</Wrapper>
+                          : fieldWithHelp;
+                      }}
+                    </form.Subscribe>
+                  );
                 }}
               </FieldConditionalRenderer>
             );
           }}
         </form.Field>
       );
-    }, []);
+    }, [resolveOptions]);
 
     const renderTabContent = React.useCallback((tabFields: FieldConfig[]) => {
       // TanStack Form Best Practice: Use reusable subscription component
@@ -1616,7 +1639,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
           }}
         </form.Subscribe>
       );
-    }, [renderTabContent, renderField, activeTab, hasTabs, tabs, setActiveTab]);
+    }, [renderTabContent, renderField, activeTab, setActiveTab]);
 
     const renderProgress = () => {
       if (!hasPages || !progress) return null;

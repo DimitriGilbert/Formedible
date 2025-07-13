@@ -3,7 +3,8 @@
 ## Build/Test Commands
 - `npm run build` - Build all packages (uses turbo)
 - `npm run build:web` - Build web app
-- `npm run build:pkg` - Build package only
+- `npm run build:pkg` - Build formedible package only
+- `npm run build:builder` - Build builder package only
 - `npm run lint` - Run ESLint
 - `npm run lint:web` - Lint web app
 - `npm run lint:pkg` - Lint package only
@@ -23,7 +24,5 @@
 - Dependencies: Check existing package.json before adding new dependencies
 - Unused vars: Prefix with underscore to ignore ESLint warnings
 
-
 ## formedible work
-- Always work on the package first then unse `scripts/sync-formedible` to sync the changes to the web app.
-- work on package first, build package and then use `scripts/sync-formedible` to sync the changes to the web app.
+- Always work on the package first then unse `scripts/sync-components` to sync the changes to the web app.
