@@ -19,24 +19,24 @@ export const TextareaField: React.FC<TextareaFieldSpecificProps> = ({
   }
   const onChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     fieldApi.handleChange(e.target.value);
-    fieldApi.eventHandlers?.onChange?.(e.target.value, e);
+    fieldApi.onChange?.(e.target.value, e);
   };
 
   const onBlur = (e: React.FocusEvent<HTMLTextAreaElement>) => {
     fieldApi.handleBlur();
-    fieldApi.eventHandlers?.onBlur?.(e);
+    fieldApi.onBlur?.(e);
   };
 
   const onFocus = (e: React.FocusEvent<HTMLTextAreaElement>) => {
-    fieldApi.eventHandlers?.onFocus?.(e);
+    fieldApi.onFocus?.(e);
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    fieldApi.eventHandlers?.onKeyDown?.(e);
+    fieldApi.onKeyDown?.(e);
   };
 
   const onKeyUp = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    fieldApi.eventHandlers?.onKeyUp?.(e);
+    fieldApi.onKeyUp?.(e);
   };
 
   return (

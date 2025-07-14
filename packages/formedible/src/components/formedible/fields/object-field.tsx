@@ -3,7 +3,10 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import type { BaseFieldProps } from "@/lib/formedible/types";
-import { getFieldComponent, createFieldProps } from "./field-registry";
+// Note: Import individual field components directly to avoid circular dependency
+import { TextField } from "./text-field";
+import { NumberField } from "./number-field";
+import { SelectField } from "./select-field";
 import { BaseFieldWrapper } from './base-field-wrapper';
 
 interface ObjectFieldConfig {
@@ -77,7 +80,14 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
   };
 
   const renderField = (fieldConfig: ObjectFieldConfig['fields'][0]) => {
-    const FieldComponent = getFieldComponent(fieldConfig.type);
+    // Map field types to components directly to avoid circular dependency
+    const fieldComponentMap = {
+      text: TextField,
+      number: NumberField,
+      select: SelectField,
+    };
+    
+    const FieldComponent = fieldComponentMap[fieldConfig.type as keyof typeof fieldComponentMap];
     
     if (!FieldComponent) {
       console.warn(`Object field: Unknown field type "${fieldConfig.type}"`);
@@ -111,7 +121,15 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
       additionalProps.options = fieldConfig.options || [];
     }
 
-    const fieldProps = createFieldProps(baseProps, additionalProps);
+    const fieldProps: any = {
+      ...baseProps,
+      ...additionalProps,
+    };
+
+    // Ensure required props are provided for each field type
+    if (fieldConfig.type === 'select') {
+      fieldProps.options = fieldConfig.options || [];
+    }
 
     return (
       <div key={fieldConfig.name}>

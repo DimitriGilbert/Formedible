@@ -22,6 +22,11 @@ export const NumberField: React.FC<NumberFieldSpecificProps> = ({
   const { name, state, handleChange, handleBlur } = fieldApi;
   const value = state.value as number | string | undefined;
 
+  if (!fieldApi.state) {
+    console.error('NumberField: fieldApi.state is undefined');
+    return null;
+  }
+
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     let parsedValue: number | string | undefined;
@@ -34,24 +39,24 @@ export const NumberField: React.FC<NumberFieldSpecificProps> = ({
     }
     
     handleChange(parsedValue);
-    fieldApi.eventHandlers?.onChange?.(parsedValue, e);
+    fieldApi.onChange?.(parsedValue, e);
   };
 
   const onBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     handleBlur();
-    fieldApi.eventHandlers?.onBlur?.(e);
+    fieldApi.onBlur?.(e);
   };
 
   const onFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    fieldApi.eventHandlers?.onFocus?.(e);
+    fieldApi.onFocus?.(e);
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    fieldApi.eventHandlers?.onKeyDown?.(e);
+    fieldApi.onKeyDown?.(e);
   };
 
   const onKeyUp = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    fieldApi.eventHandlers?.onKeyUp?.(e);
+    fieldApi.onKeyUp?.(e);
   };
 
   let displayValue: string | number = '';

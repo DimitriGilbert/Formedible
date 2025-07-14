@@ -9,6 +9,7 @@
 - `npm run build:web` - Build web app
 - `npm run build:pkg` - Build formedible package only
 - `npm run build:builder` - Build builder package only
+- `npm run sync-components` - Sync components from formedible package to web app
 - `npm run lint` - Run ESLint
 - `npm run lint:web` - Lint web app
 - `npm run lint:pkg` - Lint package only

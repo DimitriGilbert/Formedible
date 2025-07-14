@@ -191,8 +191,8 @@ export const ColorPickerField: React.FC<ColorPickerFieldSpecificProps> = ({
                 type="color"
                 value={normalizedValue}
                 onChange={handleNativeColorChange}
-                onFocus={(e) => fieldApi.eventHandlers.onFocus?.(e)}
-                onBlur={(e) => fieldApi.eventHandlers.onBlur?.(e)}
+                onFocus={(e) => fieldApi.onFocus?.(e)}
+                onBlur={(e) => fieldApi.onBlur?.(e)}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 disabled={isDisabled}
               />
@@ -204,7 +204,7 @@ export const ColorPickerField: React.FC<ColorPickerFieldSpecificProps> = ({
               onChange={(e) => {
                 const inputValue = e.target.value;
                 handleChange(inputValue);
-                fieldApi.eventHandlers.onChange?.(inputValue, e);
+                fieldApi.onChange?.(inputValue, e);
                 // Try to extract hex value for internal use
                 if (inputValue.startsWith('#')) {
                   setCustomInput(inputValue);
@@ -212,9 +212,9 @@ export const ColorPickerField: React.FC<ColorPickerFieldSpecificProps> = ({
               }}
               onBlur={(e) => {
                 handleBlur();
-                fieldApi.eventHandlers.onBlur?.(e);
+                fieldApi.onBlur?.(e);
               }}
-              onFocus={(e) => fieldApi.eventHandlers.onFocus?.(e)}
+              onFocus={(e) => fieldApi.onFocus?.(e)}
               placeholder={format === 'hex' ? '#000000' : format === 'rgb' ? 'rgb(0, 0, 0)' : 'hsl(0, 0%, 0%)'}
               className={cn(
                 "flex-1",

@@ -13,10 +13,16 @@ import { SwitchField } from './switch-field';
 import { RadioField } from './radio-field';
 import { SliderField } from './slider-field';
 import { DateField } from './date-field';
-// import { RatingField } from './rating-field'; // TODO: Fix structural issues
+import { RatingField } from './rating-field';
 import { PhoneField } from './phone-field';
 import { ColorPickerField } from './color-picker-field';
 import { FileUploadField } from './file-upload-field';
+import { ArrayField } from './array-field';
+import { AutocompleteField } from './autocomplete-field';
+import { DurationPickerField } from './duration-picker-field';
+import { LocationPickerField } from './location-picker-field';
+import { MaskedInputField } from './masked-input-field';
+import { ObjectField } from './object-field';
 
 // Type-safe field component registry with flexible props
 export interface FieldComponentProps extends BaseFieldProps {
@@ -36,10 +42,16 @@ export const fieldComponents: Record<string, FieldComponent> = {
   radio: RadioField,
   slider: SliderField,
   date: DateField,
-  // rating: RatingField, // TODO: Fix structural issues
+  rating: RatingField,
   phone: PhoneField,
   color: ColorPickerField,
   file: FileUploadField,
+  array: ArrayField,
+  autocomplete: AutocompleteField,
+  duration: DurationPickerField,
+  location: LocationPickerField,
+  masked: MaskedInputField,
+  object: ObjectField,
 };
 
 // Helper function to get field component with type safety

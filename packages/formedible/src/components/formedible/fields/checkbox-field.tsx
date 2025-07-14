@@ -16,20 +16,22 @@ export const CheckboxField: React.FC<BaseFieldProps> = ({
   }
 
   const onCheckedChange = (checked: boolean) => {
-    fieldApi.handleChange(Boolean(checked));
-    fieldApi.eventHandlers?.onChange?.(Boolean(checked));
+    fieldApi.handleChange(checked);
+    fieldApi.onChange?.(checked);
   };
 
   const onBlur = (e: React.FocusEvent) => {
     fieldApi.handleBlur();
-    fieldApi.eventHandlers?.onBlur?.(e);
+    fieldApi.onBlur?.(e);
   };
 
   const onFocus = (e: React.FocusEvent) => {
-    fieldApi.eventHandlers?.onFocus?.(e);
+    fieldApi.onFocus?.(e);
   };
 
   return (
+    // Note: We pass label={undefined} to BaseFieldWrapper and render the label manually
+    // because Checkbox components need the label positioned next to (not above) the control
     <BaseFieldWrapper fieldApi={fieldApi} {...wrapperProps} label={undefined}>
       {({ isDisabled }) => (
         <>

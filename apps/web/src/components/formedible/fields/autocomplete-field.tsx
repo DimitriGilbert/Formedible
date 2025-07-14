@@ -221,11 +221,11 @@ export const AutocompleteField: React.FC<AutocompleteFieldProps> = ({
             onKeyDown={handleKeyDown}
             onFocus={(e) => {
               handleFocus();
-              fieldApi.eventHandlers?.onFocus?.(e);
+              fieldApi.onFocus?.(e);
             }}
             onBlur={(e) => {
               handleBlur();
-              fieldApi.eventHandlers?.onBlur?.(e);
+              fieldApi.onBlur?.(e);
             }}
             placeholder={placeholder || autocompleteConfig.placeholder || "Type to search..."}
             className={cn(inputClassName, isOpen && "rounded-b-none")}

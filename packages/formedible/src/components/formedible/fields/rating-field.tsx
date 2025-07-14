@@ -120,8 +120,8 @@ export const RatingField: React.FC<RatingFieldSpecificProps> = ({
                   onClick={() => !isDisabled && handleRatingClick(getRatingValue(index, false))}
                   onMouseEnter={() => !isDisabled && handleMouseEnter(getRatingValue(index, false))}
                   onMouseLeave={handleMouseLeave}
-                  onFocus={(e) => fieldApi.eventHandlers.onFocus?.(e)}
-                  onBlur={(e) => fieldApi.eventHandlers.onBlur?.(e)}
+                  onFocus={(e) => fieldApi.onFocus?.(e)}
+                  onBlur={(e) => fieldApi.onBlur?.(e)}
                   disabled={isDisabled}
                   title={`Rate ${getRatingValue(index, false)} ${icon}${getRatingValue(index, false) !== 1 ? 's' : ''}`}
                 >

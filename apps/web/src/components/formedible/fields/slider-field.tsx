@@ -39,16 +39,16 @@ export const SliderField: React.FC<SliderFieldSpecificProps> = ({
   const onValueChange = (valueArray: number[]) => {
     const newValue = valueArray[0];
     handleChange(newValue);
-    fieldApi.eventHandlers?.onChange?.(newValue);
+    fieldApi.onChange?.(newValue);
   };
 
   const onBlur = (e: React.FocusEvent) => {
     handleBlur();
-    fieldApi.eventHandlers?.onBlur?.(e);
+    fieldApi.onBlur?.(e);
   };
 
   const onFocus = (e: React.FocusEvent) => {
-    fieldApi.eventHandlers?.onFocus?.(e);
+    fieldApi.onFocus?.(e);
   };
 
   // Custom label with value display

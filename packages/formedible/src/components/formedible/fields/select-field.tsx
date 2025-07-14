@@ -20,18 +20,23 @@ export const SelectField: React.FC<SelectFieldSpecificProps> = ({
   
   ...wrapperProps
 }) => {
+  if (!fieldApi.state) {
+    console.error('SelectField: fieldApi.state is undefined');
+    return null;
+  }
+
   const onValueChange = (value: string) => {
     fieldApi.handleChange(value);
-    fieldApi.eventHandlers?.onChange?.(value);
+    fieldApi.onChange?.(value);
   };
 
   const onBlur = (e: React.FocusEvent) => {
     fieldApi.handleBlur();
-    fieldApi.eventHandlers?.onBlur?.(e);
+    fieldApi.onBlur?.(e);
   };
 
   const onFocus = (e: React.FocusEvent) => {
-    fieldApi.eventHandlers?.onFocus?.(e);
+    fieldApi.onFocus?.(e);
   };
 
   return (

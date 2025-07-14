@@ -35,16 +35,16 @@ export const RadioField: React.FC<RadioFieldSpecificProps> = ({
 
   const onValueChange = (value: string) => {
     handleChange(value);
-    fieldApi.eventHandlers?.onChange?.(value);
+    fieldApi.onChange?.(value);
   };
 
   const onBlur = (e: React.FocusEvent) => {
     handleBlur();
-    fieldApi.eventHandlers?.onBlur?.(e);
+    fieldApi.onBlur?.(e);
   };
 
   const onFocus = (e: React.FocusEvent) => {
-    fieldApi.eventHandlers?.onFocus?.(e);
+    fieldApi.onFocus?.(e);
   };
 
   return (

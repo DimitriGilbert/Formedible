@@ -218,9 +218,9 @@ export const PhoneField: React.FC<PhoneFieldSpecificProps> = ({
               onChange={handlePhoneNumberChange}
               onBlur={(e) => {
                 handleBlur();
-                fieldApi.eventHandlers.onBlur?.(e);
+                fieldApi.onBlur?.(e);
               }}
-              onFocus={(e) => fieldApi.eventHandlers.onFocus?.(e)}
+              onFocus={(e) => fieldApi.onFocus?.(e)}
               placeholder={getPlaceholder()}
               className={cn(
                 "rounded-l-none flex-1",

@@ -17,19 +17,21 @@ export const SwitchField: React.FC<BaseFieldProps> = ({
 
   const onCheckedChange = (checked: boolean) => {
     fieldApi.handleChange(checked);
-    fieldApi.eventHandlers?.onChange?.(checked);
+    fieldApi.onChange?.(checked);
   };
 
   const onBlur = (e: React.FocusEvent) => {
     fieldApi.handleBlur();
-    fieldApi.eventHandlers?.onBlur?.(e);
+    fieldApi.onBlur?.(e);
   };
 
   const onFocus = (e: React.FocusEvent) => {
-    fieldApi.eventHandlers?.onFocus?.(e);
+    fieldApi.onFocus?.(e);
   };
 
   return (
+    // Note: We pass label={undefined} to BaseFieldWrapper and render the label manually
+    // because Switch components need the label positioned next to (not above) the control
     <BaseFieldWrapper fieldApi={fieldApi} {...wrapperProps} label={undefined}>
       {({ isDisabled }) => (
         <div className="flex items-center space-x-2">

@@ -57,10 +57,10 @@ export const FileUploadField: React.FC<FileUploadFieldSpecificProps> = ({
             accept={accept}
             onChange={(e) => {
               handleFileChange(e);
-              fieldApi.eventHandlers.onChange?.(e.target.files?.[0] ?? null, e);
+              fieldApi.onChange?.(e.target.files?.[0] ?? null, e);
             }}
-            onFocus={(e) => fieldApi.eventHandlers.onFocus?.(e)}
-            onBlur={(e) => fieldApi.eventHandlers.onBlur?.(e)}
+            onFocus={(e) => fieldApi.onFocus?.(e)}
+            onBlur={(e) => fieldApi.onBlur?.(e)}
             className="hidden"
             disabled={isDisabled}
           />
