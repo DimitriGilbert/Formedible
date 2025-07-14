@@ -75,6 +75,12 @@ export const PhoneField: React.FC<PhoneFieldSpecificProps> = ({
   } = phoneConfig;
 
   const { state, handleChange, handleBlur } = fieldApi;
+  
+  if (!state) {
+    console.error('PhoneField: fieldApi.state is undefined', fieldApi);
+    return null;
+  }
+  
   const value = (state.value as string) || '';
   
   const [selectedCountry, setSelectedCountry] = useState(defaultCountry);

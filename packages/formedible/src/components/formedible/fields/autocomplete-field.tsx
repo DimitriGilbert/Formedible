@@ -44,6 +44,11 @@ export const AutocompleteField: React.FC<AutocompleteFieldProps> = ({
     loadingText = "Loading..."
   } = autocompleteConfig;
 
+  if (!fieldApi.state) {
+    console.error('AutocompleteField: fieldApi.state is undefined', fieldApi);
+    return null;
+  }
+
   const [inputValue, setInputValue] = useState(fieldApi.state.value || "");
   const [filteredOptions, setFilteredOptions] = useState<AutocompleteOption[]>([]);
   const [isOpen, setIsOpen] = useState(false);

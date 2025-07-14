@@ -2,7 +2,7 @@
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import type { BaseFieldProps, FieldEventHandlers } from '@/lib/formedible/types';
+import type { BaseFieldProps } from '@/lib/formedible/types';
 import { BaseFieldWrapper } from './base-field-wrapper';
 
 export interface NumberFieldSpecificProps extends BaseFieldProps {

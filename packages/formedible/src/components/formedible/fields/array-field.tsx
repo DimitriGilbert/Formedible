@@ -56,6 +56,12 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
   ...wrapperProps
 }) => {
   const { name, state, handleChange, handleBlur } = fieldApi;
+  
+  if (!state) {
+    console.error('ArrayField: fieldApi.state is undefined', fieldApi);
+    return null;
+  }
+  
   const value = useMemo(() => (state.value as unknown[]) || [], [state.value]);
   
   const {

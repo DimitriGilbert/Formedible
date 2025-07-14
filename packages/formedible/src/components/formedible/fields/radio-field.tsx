@@ -3,7 +3,7 @@ import React from 'react';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
-import type { BaseFieldProps, FieldEventHandlers } from '@/lib/formedible/types';
+import type { BaseFieldProps } from '@/lib/formedible/types';
 import { BaseFieldWrapper } from './base-field-wrapper';
 
 export interface RadioFieldSpecificProps extends BaseFieldProps {
@@ -19,6 +19,12 @@ export const RadioField: React.FC<RadioFieldSpecificProps> = ({
   ...wrapperProps
 }) => {
   const { name, state, handleChange, handleBlur } = fieldApi;
+  
+  if (!state) {
+    console.error('RadioField: fieldApi.state is undefined', fieldApi);
+    return null;
+  }
+  
   const value = state.value as string;
 
   const normalizedOptions = options.map(option => 

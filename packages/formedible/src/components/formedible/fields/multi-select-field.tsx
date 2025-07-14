@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 
 import { cn } from '@/lib/utils';
 import { X, ChevronDown, Check } from 'lucide-react';
-import type { BaseFieldProps, FieldEventHandlers } from '@/lib/formedible/types';
+import type { BaseFieldProps } from '@/lib/formedible/types';
 import { BaseFieldWrapper } from './base-field-wrapper';
 
 export interface MultiSelectFieldSpecificProps extends BaseFieldProps {
@@ -37,6 +37,12 @@ export const MultiSelectField: React.FC<MultiSelectFieldSpecificProps> = ({
   } = multiSelectConfig;
 
   const { state, handleChange, handleBlur } = fieldApi;
+  
+  if (!state) {
+    console.error('MultiSelectField: fieldApi.state is undefined', fieldApi);
+    return null;
+  }
+  
   const selectedValues = Array.isArray(state.value) ? (state.value as string[]) : [];
   
   const [isOpen, setIsOpen] = useState(false);

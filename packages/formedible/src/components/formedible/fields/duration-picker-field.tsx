@@ -48,6 +48,11 @@ export const DurationPickerField: React.FC<DurationPickerFieldProps> = ({
   const [minutes, setMinutes] = useState(0);
   const [seconds, setSeconds] = useState(0);
 
+  if (!fieldApi.state) {
+    console.error('DurationPickerField: fieldApi.state is undefined', fieldApi);
+    return null;
+  }
+
   // Initialize from field value
   useEffect(() => {
     const value = fieldApi.state.value;

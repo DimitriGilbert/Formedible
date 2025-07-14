@@ -1,9 +1,9 @@
 'use client';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import type { BaseFieldProps } from '@/lib/formedible/types';
+import { BaseFieldWrapper } from './base-field-wrapper';
 
 export interface TextFieldSpecificProps extends BaseFieldProps {
   type?: 'text' | 'email' | 'password' | 'url' | 'tel' | 'datetime-local';
@@ -18,14 +18,9 @@ export interface TextFieldSpecificProps extends BaseFieldProps {
 
 export const TextField: React.FC<TextFieldSpecificProps> = ({
   fieldApi,
-  label,
-  description,
-  placeholder,
-  inputClassName,
-  labelClassName,
-  wrapperClassName,
   type = 'text',
   datalist,
+  ...wrapperProps
 }) => {
   const { name, state, handleChange, handleBlur } = fieldApi;
   const value = state.value as string | number | undefined;
@@ -97,46 +92,55 @@ export const TextField: React.FC<TextFieldSpecificProps> = ({
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     handleChange(e.target.value);
-  };
+            fieldApi.eventHandlers?.onChange?.(e.target.value, e);  };
+
+  const onBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    handleBlur();
+            fieldApi.eventHandlers?.onBlur?.(e);  };
+
+  const onFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+            fieldApi.eventHandlers?.onFocus?.(e);  };
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+            fieldApi.eventHandlers?.onKeyDown?.(e);  };
+
+  const onKeyUp = (e: React.KeyboardEvent<HTMLInputElement>) => {
+            fieldApi.eventHandlers?.onKeyUp?.(e);  };
 
   return (
-    <div className={cn("space-y-1.5", wrapperClassName)}>
-      {label && (
-        <Label htmlFor={name} className={cn("text-sm font-medium", labelClassName)}>
-          {label}
+    <BaseFieldWrapper fieldApi={fieldApi} {...wrapperProps}>
+      {({ isDisabled, inputClassName }) => (
+        <>
+          <Input
+            id={name}
+            name={name}
+            type={type}
+            value={value === undefined || value === null ? '' : String(value)}
+            onBlur={onBlur}
+            onFocus={onFocus}
+            onChange={onChange}
+            onKeyDown={onKeyDown}
+            onKeyUp={onKeyUp}
+            placeholder={wrapperProps.placeholder}
+            className={cn(inputClassName, isLoadingOptions ? "pr-8" : "")}
+            disabled={isDisabled}
+            list={datalistId}
+            autoComplete={datalist ? "off" : undefined}
+          />
           {isLoadingOptions && (
-            <span className="ml-2 text-xs text-muted-foreground">Loading...</span>
+            <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+              <span className="text-xs text-muted-foreground">Loading...</span>
+            </div>
           )}
-        </Label>
+          {datalist && datalistOptions.length > 0 && (
+            <datalist id={datalistId}>
+              {datalistOptions.map((option, index) => (
+                <option key={`${option}-${index}`} value={option} />
+              ))}
+            </datalist>
+          )}
+        </>
       )}
-      {description && <p className="text-xs text-muted-foreground">{description}</p>}
-      <Input
-        id={name}
-        name={name}
-        type={type}
-        value={value === undefined || value === null ? '' : String(value)}
-        onBlur={handleBlur}
-        onChange={onChange}
-        placeholder={placeholder}
-        className={cn(inputClassName, state.meta.errors.length ? "border-destructive" : "")}
-        disabled={fieldApi.form.state.isSubmitting}
-        list={datalistId}
-        autoComplete={datalist ? "off" : undefined}
-      />
-      {datalist && datalistOptions.length > 0 && (
-        <datalist id={datalistId}>
-          {datalistOptions.map((option, index) => (
-            <option key={`${option}-${index}`} value={option} />
-          ))}
-        </datalist>
-      )}
-      {state.meta.isTouched && state.meta.errors.length > 0 && (
-        <div className="text-xs text-destructive pt-1">
-          {state.meta.errors.map((err: string | Error, index: number) => (
-            <p key={index}>{typeof err === 'string' ? err : (err as Error)?.message || 'Invalid'}</p>
-          ))}
-        </div>
-      )}
-    </div>
+    </BaseFieldWrapper>
   );
 };

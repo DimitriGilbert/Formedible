@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import type { BaseFieldProps } from "@/lib/formedible/types";
+import { BaseFieldWrapper } from "./base-field-wrapper";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -111,6 +112,11 @@ export const MaskedInputField: React.FC<MaskedInputFieldProps> = ({
 
     return maskedValue;
   }, [mask, guide, showMask, pipe, displayValue]);
+
+  if (!fieldApi.state) {
+    console.error('MaskedInputField: fieldApi.state is undefined', fieldApi);
+    return null;
+  }
 
   // Initialize from field value
   useEffect(() => {

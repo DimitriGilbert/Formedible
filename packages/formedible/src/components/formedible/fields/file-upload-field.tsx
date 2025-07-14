@@ -18,6 +18,12 @@ export const FileUploadField: React.FC<FileUploadFieldSpecificProps> = ({
   ...wrapperProps
 }) => {
   const { name, state, handleChange, handleBlur } = fieldApi;
+  
+  if (!state) {
+    console.error('FileUploadField: fieldApi.state is undefined', fieldApi);
+    return null;
+  }
+  
   const file = state.value as File | null;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

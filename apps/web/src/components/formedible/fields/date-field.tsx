@@ -9,18 +9,19 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { Label } from '@/components/ui/label';
 import type { BaseFieldProps } from '@/lib/formedible/types';
+import { BaseFieldWrapper } from './base-field-wrapper';
 
 export const DateField: React.FC<BaseFieldProps> = ({
   fieldApi,
-  label,
-  placeholder = "Pick a date",
-  description,
-  inputClassName,
-  labelClassName,
-  wrapperClassName,
+  
+  ...wrapperProps
 }) => {
+  if (!fieldApi.state) {
+    console.error('DateField: fieldApi.state is undefined', fieldApi);
+    return null;
+  }
+
   const [isOpen, setIsOpen] = React.useState(false);
 
   const selectedDate = fieldApi.state.value
@@ -38,29 +39,22 @@ export const DateField: React.FC<BaseFieldProps> = ({
   };
 
   return (
-    <div className={cn("space-y-1.5", wrapperClassName)}>
-      {label && (
-        <Label htmlFor={fieldApi.name + "-trigger"} className={cn("text-sm font-medium", labelClassName)}>
-          {label}
-        </Label>
-      )}
-      {description && <p className="text-xs text-muted-foreground">{description}</p>}
+    <BaseFieldWrapper fieldApi={fieldApi} {...wrapperProps}>
+      {({ isDisabled, inputClassName }) => (
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
           <Button
-            id={fieldApi.name + "-trigger"}
-            variant={"outline"}
+            variant="outline"
             className={cn(
               "w-full justify-start text-left font-normal",
               !selectedDate && "text-muted-foreground",
-              inputClassName,
-              fieldApi.state.meta.errors.length ? "border-destructive" : ""
+              inputClassName
             )}
-            disabled={fieldApi.form.state.isSubmitting}
-            onBlur={fieldApi.handleBlur}
+            disabled={isDisabled}
+            onClick={() => setIsOpen(true)}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
-            {selectedDate ? format(selectedDate, "PPP") : <span>{placeholder}</span>}
+            {selectedDate ? format(selectedDate, "PPP") : <span>{wrapperProps.placeholder || "Pick a date"}</span>}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0">
@@ -73,13 +67,7 @@ export const DateField: React.FC<BaseFieldProps> = ({
           />
         </PopoverContent>
       </Popover>
-      {fieldApi.state.meta.isTouched && fieldApi.state.meta.errors.length > 0 && (
-        <div className="text-xs text-destructive pt-1">
-          {fieldApi.state.meta.errors.map((err: string, index: number) => (
-            <p key={index}>{String(err)}</p>
-          ))}
-        </div>
       )}
-    </div>
+    </BaseFieldWrapper>
   );
 };

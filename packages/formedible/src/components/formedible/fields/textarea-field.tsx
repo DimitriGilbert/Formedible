@@ -11,9 +11,12 @@ export interface TextareaFieldSpecificProps extends BaseFieldProps {
 export const TextareaField: React.FC<TextareaFieldSpecificProps> = ({
   fieldApi,
   rows = 3,
-  
   ...wrapperProps
 }) => {
+  if (!fieldApi.state) {
+    console.error('TextareaField: fieldApi.state is undefined', fieldApi);
+    return null;
+  }
   const onChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     fieldApi.handleChange(e.target.value);
     fieldApi.eventHandlers?.onChange?.(e.target.value, e);

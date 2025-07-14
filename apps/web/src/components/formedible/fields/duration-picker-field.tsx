@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import type { BaseFieldProps } from "@/lib/formedible/types";
+import { BaseFieldWrapper } from "./base-field-wrapper";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -46,6 +47,11 @@ export const DurationPickerField: React.FC<DurationPickerFieldProps> = ({
   const [hours, setHours] = useState(0);
   const [minutes, setMinutes] = useState(0);
   const [seconds, setSeconds] = useState(0);
+
+  if (!fieldApi.state) {
+    console.error('DurationPickerField: fieldApi.state is undefined', fieldApi);
+    return null;
+  }
 
   // Initialize from field value
   useEffect(() => {

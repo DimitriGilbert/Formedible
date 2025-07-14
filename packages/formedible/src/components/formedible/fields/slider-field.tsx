@@ -1,7 +1,7 @@
 import React from 'react';
 import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
-import type { BaseFieldProps, FieldEventHandlers } from '@/lib/formedible/types';
+import type { BaseFieldProps } from '@/lib/formedible/types';
 import { BaseFieldWrapper } from './base-field-wrapper';
 
 export interface SliderFieldSpecificProps extends BaseFieldProps {
@@ -27,6 +27,12 @@ export const SliderField: React.FC<SliderFieldSpecificProps> = ({
   ...wrapperProps
 }) => {
   const { name, state, handleChange, handleBlur } = fieldApi;
+  
+  if (!state) {
+    console.error('SliderField: fieldApi.state is undefined', fieldApi);
+    return null;
+  }
+  
   const fieldValue = typeof state.value === 'number' ? state.value : min;
   const displayValue = fieldValue.toFixed(valueDisplayPrecision);
 

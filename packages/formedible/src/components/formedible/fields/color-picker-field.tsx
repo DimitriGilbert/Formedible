@@ -104,6 +104,12 @@ export const ColorPickerField: React.FC<ColorPickerFieldSpecificProps> = ({
   } = colorConfig;
 
   const { state, handleChange, handleBlur } = fieldApi;
+  
+  if (!state) {
+    console.error('ColorPickerField: fieldApi.state is undefined', fieldApi);
+    return null;
+  }
+  
   const value = (state.value as string) || '#000000';
   
   const [isOpen, setIsOpen] = useState(false);

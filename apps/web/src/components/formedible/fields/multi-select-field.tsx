@@ -1,6 +1,5 @@
 'use client';
 import React, { useState, useRef, useEffect } from 'react';
-import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { X, ChevronDown, Check } from 'lucide-react';
 import type { BaseFieldProps } from '@/lib/formedible/types';
+import { BaseFieldWrapper } from './base-field-wrapper';
 
 export interface MultiSelectFieldSpecificProps extends BaseFieldProps {
   options: Array<{ value: string; label: string }> | string[];
@@ -23,13 +23,10 @@ export interface MultiSelectFieldSpecificProps extends BaseFieldProps {
 
 export const MultiSelectField: React.FC<MultiSelectFieldSpecificProps> = ({
   fieldApi,
-  label,
-  description,
   options = [],
   multiSelectConfig = {},
-  inputClassName,
-  labelClassName,
-  wrapperClassName,
+  
+  ...wrapperProps
 }) => {
   const {
     maxSelections = Infinity,
@@ -40,6 +37,12 @@ export const MultiSelectField: React.FC<MultiSelectFieldSpecificProps> = ({
   } = multiSelectConfig;
 
   const { state, handleChange, handleBlur } = fieldApi;
+  
+  if (!state) {
+    console.error('MultiSelectField: fieldApi.state is undefined', fieldApi);
+    return null;
+  }
+  
   const selectedValues = Array.isArray(state.value) ? (state.value as string[]) : [];
   
   const [isOpen, setIsOpen] = useState(false);
@@ -135,20 +138,14 @@ export const MultiSelectField: React.FC<MultiSelectFieldSpecificProps> = ({
   };
 
   return (
-    <div className={cn("space-y-2", wrapperClassName)} ref={containerRef}>
-      {label && (
-        <Label className={cn("text-sm font-medium", labelClassName)}>
-          {label}
-          {maxSelections < Infinity && (
-            <span className="ml-2 text-xs text-muted-foreground">
+    <BaseFieldWrapper fieldApi={fieldApi} {...wrapperProps}>
+      {({ isDisabled, inputClassName }) => (
+        <div className="space-y-2" ref={containerRef}>
+          {wrapperProps.label && maxSelections < Infinity && (
+            <div className="text-sm text-muted-foreground">
               ({selectedValues.length}/{maxSelections})
-            </span>
+            </div>
           )}
-        </Label>
-      )}
-      {description && (
-        <p className="text-xs text-muted-foreground">{description}</p>
-      )}
 
       <div className="relative">
         {/* Selected items display */}
@@ -256,13 +253,8 @@ export const MultiSelectField: React.FC<MultiSelectFieldSpecificProps> = ({
         )}
       </div>
 
-      {state.meta.isTouched && state.meta.errors.length > 0 && (
-        <div className="text-xs text-destructive pt-1">
-          {state.meta.errors.map((err: string | Error, index: number) => (
-            <p key={index}>{typeof err === 'string' ? err : (err as Error)?.message || 'Invalid'}</p>
-          ))}
         </div>
       )}
-    </div>
+    </BaseFieldWrapper>
   );
 }; 

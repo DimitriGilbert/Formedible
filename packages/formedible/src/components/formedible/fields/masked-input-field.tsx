@@ -113,6 +113,11 @@ export const MaskedInputField: React.FC<MaskedInputFieldProps> = ({
     return maskedValue;
   }, [mask, guide, showMask, pipe, displayValue]);
 
+  if (!fieldApi.state) {
+    console.error('MaskedInputField: fieldApi.state is undefined', fieldApi);
+    return null;
+  }
+
   // Initialize from field value
   useEffect(() => {
     const value = fieldApi.state.value || '';

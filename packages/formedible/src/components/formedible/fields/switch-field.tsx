@@ -2,7 +2,7 @@ import React from 'react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import type { BaseFieldProps, FieldEventHandlers } from '@/lib/formedible/types';
+import type { BaseFieldProps } from '@/lib/formedible/types';
 import { BaseFieldWrapper } from './base-field-wrapper';
 
 export const SwitchField: React.FC<BaseFieldProps> = ({
@@ -10,6 +10,11 @@ export const SwitchField: React.FC<BaseFieldProps> = ({
   
   ...wrapperProps
 }) => {
+  if (!fieldApi.state) {
+    console.error('SwitchField: fieldApi.state is undefined', fieldApi);
+    return null;
+  }
+
   const onCheckedChange = (checked: boolean) => {
     fieldApi.handleChange(checked);
     fieldApi.eventHandlers?.onChange?.(checked);

@@ -1,8 +1,8 @@
 import React from 'react';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import type { BaseFieldProps } from '@/lib/formedible/types';
+import { BaseFieldWrapper } from './base-field-wrapper';
 
 export interface TextareaFieldSpecificProps extends BaseFieldProps {
   rows?: number;
@@ -10,40 +10,53 @@ export interface TextareaFieldSpecificProps extends BaseFieldProps {
 
 export const TextareaField: React.FC<TextareaFieldSpecificProps> = ({
   fieldApi,
-  label,
-  placeholder,
-  description,
   rows = 3,
-  inputClassName,
-  labelClassName,
-  wrapperClassName,
+  ...wrapperProps
 }) => {
+  if (!fieldApi.state) {
+    console.error('TextareaField: fieldApi.state is undefined', fieldApi);
+    return null;
+  }
+  const onChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    fieldApi.handleChange(e.target.value);
+    fieldApi.eventHandlers?.onChange?.(e.target.value, e);
+  };
+
+  const onBlur = (e: React.FocusEvent<HTMLTextAreaElement>) => {
+    fieldApi.handleBlur();
+    fieldApi.eventHandlers?.onBlur?.(e);
+  };
+
+  const onFocus = (e: React.FocusEvent<HTMLTextAreaElement>) => {
+    fieldApi.eventHandlers?.onFocus?.(e);
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    fieldApi.eventHandlers?.onKeyDown?.(e);
+  };
+
+  const onKeyUp = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    fieldApi.eventHandlers?.onKeyUp?.(e);
+  };
+
   return (
-    <div className={cn("space-y-1.5", wrapperClassName)}>
-      {label && (
-        <Label htmlFor={fieldApi.name} className={cn("text-sm font-medium", labelClassName)}>
-          {label}
-        </Label>
+    <BaseFieldWrapper fieldApi={fieldApi} {...wrapperProps}>
+      {({ isDisabled, inputClassName }) => (
+        <Textarea
+          id={fieldApi.name}
+          name={fieldApi.name}
+          value={(fieldApi.state.value as string) || ''}
+          onBlur={onBlur}
+          onFocus={onFocus}
+          onChange={onChange}
+          onKeyDown={onKeyDown}
+          onKeyUp={onKeyUp}
+          placeholder={wrapperProps.placeholder}
+          rows={rows}
+          className={cn(inputClassName)}
+          disabled={isDisabled}
+        />
       )}
-      {description && <p className="text-xs text-muted-foreground">{description}</p>}
-      <Textarea
-        id={fieldApi.name}
-        name={fieldApi.name}
-        value={(fieldApi.state.value as string) || ''}
-        onBlur={fieldApi.handleBlur}
-        onChange={(e) => fieldApi.handleChange(e.target.value)}
-        placeholder={placeholder}
-        rows={rows}
-        className={cn(inputClassName, fieldApi.state.meta.errors.length ? "border-destructive" : "")}
-        disabled={fieldApi.form.state.isSubmitting}
-      />
-      {fieldApi.state.meta.isTouched && fieldApi.state.meta.errors.length > 0 && (
-        <div className="text-xs text-destructive pt-1">
-          {fieldApi.state.meta.errors.map((err: string, index: number) => (
-            <p key={index}>{String(err)}</p>
-          ))}
-        </div>
-      )}
-    </div>
+    </BaseFieldWrapper>
   );
 };

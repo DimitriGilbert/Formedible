@@ -25,7 +25,8 @@
     "test:builder": "turbo -F formedible-builder test",
     "test:e2e": "jest --config jest.config.js",
     "test:e2e:watch": "jest --config jest.config.js --watch",
-    "test:e2e:coverage": "jest --config jest.config.js --coverage"
+    "test:e2e:coverage": "jest --config jest.config.js --coverage",
+    "sync-components": "npm run build:pkg && npm run build:builder && scripts/sync-components"
   },
   "keywords": [],
   "author": "",

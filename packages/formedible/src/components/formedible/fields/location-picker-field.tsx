@@ -60,6 +60,11 @@ export const LocationPickerField: React.FC<LocationPickerFieldProps> = ({
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [showResults, setShowResults] = useState(false);
+  if (!fieldApi.state) {
+    console.error('LocationPickerField: fieldApi.state is undefined', fieldApi);
+    return null;
+  }
+
   const [currentLocation, setCurrentLocation] = useState<LocationValue | null>(
     fieldApi.state.value || (defaultLocation ? { ...defaultLocation, address: "Default Location" } : null)
   );

@@ -1358,8 +1358,8 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
                         const resolvedOptions = resolveOptions(options, currentValues);
             
                         // Enhanced fieldApi with event handlers
-                        const enhancedFieldApi = {
-                          ...field,
+                        // Note: We need to preserve the field object's getters (like state)
+                        const enhancedFieldApi = Object.assign(field, {
                           eventHandlers: {
                             onFocus: (event: React.FocusEvent) => {
                               analytics?.onFieldFocus?.(name, Date.now());
@@ -1379,7 +1379,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
                               // Allow custom key handling
                             },
                           }
-                        } as EnhancedFieldApi;
+                        }) as EnhancedFieldApi;
 
                         const baseProps = {
                           fieldApi: enhancedFieldApi,

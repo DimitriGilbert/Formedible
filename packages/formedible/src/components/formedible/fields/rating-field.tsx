@@ -41,6 +41,12 @@ export const RatingField: React.FC<RatingFieldSpecificProps> = ({
   } = ratingConfig;
 
   const { state, handleChange, handleBlur } = fieldApi;
+  
+  if (!state) {
+    console.error('RatingField: fieldApi.state is undefined', fieldApi);
+    return null;
+  }
+  
   const value = (state.value as number) || 0;
   
   const [hoverValue, setHoverValue] = useState<number | null>(null);

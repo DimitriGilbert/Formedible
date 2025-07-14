@@ -39,6 +39,10 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
   disabled,
   ...wrapperProps
 }) => {
+  if (!fieldApi.state) {
+    console.error('ObjectField: fieldApi.state is undefined', fieldApi);
+    return null;
+  }
   const [isExpanded, setIsExpanded] = React.useState(
     objectConfig?.defaultExpanded !== false
   );
@@ -58,6 +62,10 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
         }
       },
       handleChange: (value: unknown) => {
+        if (!fieldApi.state) {
+          console.error('ObjectField: fieldApi.state is undefined', fieldApi);
+          return;
+        }
         const currentValue = fieldApi.state.value || {};
         fieldApi.handleChange({
           ...currentValue,
@@ -76,6 +84,10 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
       return null;
     }
 
+    if (!fieldApi.state) {
+      console.error('ObjectField: fieldApi.state is undefined in renderField', fieldApi);
+      return null;
+    }
     const fieldValue = fieldApi.state.value?.[fieldConfig.name] || '';
     const mockFieldApi = createMockFieldApi(fieldConfig.name, fieldValue) as unknown as BaseFieldProps['fieldApi'];
 

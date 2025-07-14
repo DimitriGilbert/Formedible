@@ -9,7 +9,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import type { BaseFieldProps, FieldEventHandlers } from '@/lib/formedible/types';
+import type { BaseFieldProps } from '@/lib/formedible/types';
 import { BaseFieldWrapper } from './base-field-wrapper';
 
 export const DateField: React.FC<BaseFieldProps> = ({
@@ -17,6 +17,11 @@ export const DateField: React.FC<BaseFieldProps> = ({
   
   ...wrapperProps
 }) => {
+  if (!fieldApi.state) {
+    console.error('DateField: fieldApi.state is undefined', fieldApi);
+    return null;
+  }
+
   const [isOpen, setIsOpen] = React.useState(false);
 
   const selectedDate = fieldApi.state.value
