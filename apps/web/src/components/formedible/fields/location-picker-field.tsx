@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import type { BaseFieldProps } from "@/lib/formedible/types";
-import { BaseFieldWrapper } from "./base-field-wrapper";
+import { FieldWrapper } from "./base-field-wrapper";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -56,17 +56,14 @@ export const LocationPickerField: React.FC<LocationPickerFieldProps> = ({
     enableGeolocation = true
   } = locationConfig;
 
+  const name = fieldApi.name;
+
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [showResults, setShowResults] = useState(false);
-  if (!fieldApi.state) {
-    console.error('LocationPickerField: fieldApi.state is undefined', fieldApi);
-    return null;
-  }
-
   const [currentLocation, setCurrentLocation] = useState<LocationValue | null>(
-    fieldApi.state.value || (defaultLocation ? { ...defaultLocation, address: "Default Location" } : null)
+    fieldApi.state?.value || (defaultLocation ? { ...defaultLocation, address: "Default Location" } : null)
   );
   const mapRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -200,7 +197,7 @@ export const LocationPickerField: React.FC<LocationPickerFieldProps> = ({
   return (
     <div className={cn("space-y-2", wrapperClassName)}>
       {label && (
-        <Label htmlFor={fieldApi.name} className={labelClassName}>
+        <Label htmlFor={name} className={labelClassName}>
           {label}
         </Label>
       )}
@@ -213,7 +210,7 @@ export const LocationPickerField: React.FC<LocationPickerFieldProps> = ({
         {enableSearch && (
           <div className="relative">
             <Input
-              id={fieldApi.name}
+              id={name}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={placeholder || searchPlaceholder}
@@ -322,9 +319,9 @@ export const LocationPickerField: React.FC<LocationPickerFieldProps> = ({
         <p className="text-sm text-destructive mt-2">{geoError}</p>
       )}
 
-      {fieldApi.state.meta.errors && fieldApi.state.meta.errors.length > 0 && (
+      {fieldApi.state?.meta?.errors && fieldApi.state?.meta?.errors.length > 0 && (
         <p className="text-sm text-destructive">
-          {fieldApi.state.meta.errors[0]}
+          {fieldApi.state?.meta?.errors[0]}
         </p>
       )}
     </div>

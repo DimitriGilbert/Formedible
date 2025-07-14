@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Star, Heart, ThumbsUp } from 'lucide-react';
 import type { BaseFieldProps } from '@/lib/formedible/types';
-import { BaseFieldWrapper } from './base-field-wrapper';
+import { FieldWrapper } from './base-field-wrapper';
 
 export interface RatingFieldSpecificProps extends BaseFieldProps {
   ratingConfig?: {
@@ -29,8 +29,13 @@ const SIZE_CLASSES = {
 
 export const RatingField: React.FC<RatingFieldSpecificProps> = ({
   fieldApi,
+  label,
+  description,
+  placeholder,
+  inputClassName,
+  labelClassName,
+  wrapperClassName,
   ratingConfig = {},
-  ...wrapperProps
 }) => {
   const {
     max = 5,
@@ -40,22 +45,17 @@ export const RatingField: React.FC<RatingFieldSpecificProps> = ({
     showValue = false,
   } = ratingConfig;
 
-  const { state, handleChange, handleBlur } = fieldApi;
-  
-  if (!state) {
-    console.error('RatingField: fieldApi.state is undefined', fieldApi);
-    return null;
-  }
-  
-  const value = (state.value as number) || 0;
+  const name = fieldApi.name;
+  const value = (fieldApi.state?.value as number) || 0;
+  const isDisabled = fieldApi.form?.state?.isSubmitting ?? false;
   
   const [hoverValue, setHoverValue] = useState<number | null>(null);
   const IconComponent = ICON_COMPONENTS[icon];
   const iconSizeClass = SIZE_CLASSES[size];
 
   const handleRatingClick = (rating: number) => {
-    handleChange(rating);
-    handleBlur();
+    fieldApi.handleChange(rating);
+    fieldApi.handleBlur();
   };
 
   const handleMouseEnter = (rating: number) => {
@@ -96,35 +96,40 @@ export const RatingField: React.FC<RatingFieldSpecificProps> = ({
 
 
   return (
-    <BaseFieldWrapper fieldApi={fieldApi} {...wrapperProps}>
-      {({ isDisabled }) => (
-        <div className="space-y-2">
-          {showValue && (
-            <div className="text-xs text-muted-foreground">
-              ({value}/{max})
-            </div>
-          )}
-          
-          <div className="flex items-center gap-1">
-            {Array.from({ length: max }, (_, index) => (
-              <div key={index} className="relative">
-                {/* Full star/icon button */}
-                <button
-                  type="button"
-                  className={cn(
-                    "relative transition-all duration-150 hover:scale-110",
-                    isDisabled 
-                      ? "cursor-not-allowed opacity-50" 
-                      : "cursor-pointer"
-                  )}
-                  onClick={() => !isDisabled && handleRatingClick(getRatingValue(index, false))}
-                  onMouseEnter={() => !isDisabled && handleMouseEnter(getRatingValue(index, false))}
-                  onMouseLeave={handleMouseLeave}
-                  onFocus={(e) => fieldApi.onFocus?.(e)}
-                  onBlur={(e) => fieldApi.onBlur?.(e)}
-                  disabled={isDisabled}
-                  title={`Rate ${getRatingValue(index, false)} ${icon}${getRatingValue(index, false) !== 1 ? 's' : ''}`}
-                >
+    <FieldWrapper
+      fieldApi={fieldApi}
+      label={label}
+      description={description}
+      inputClassName={inputClassName}
+      labelClassName={labelClassName}
+      wrapperClassName={wrapperClassName}
+    >
+      <div className="space-y-2">
+        {showValue && (
+          <div className="text-xs text-muted-foreground">
+            ({value}/{max})
+          </div>
+        )}
+        
+        <div className="flex items-center gap-1">
+          {Array.from({ length: max }, (_, index) => (
+            <div key={index} className="relative">
+              {/* Full star/icon button */}
+              <button
+                type="button"
+                className={cn(
+                  "relative transition-all duration-150 hover:scale-110",
+                  isDisabled 
+                    ? "cursor-not-allowed opacity-50" 
+                    : "cursor-pointer"
+                )}
+                onClick={() => !isDisabled && handleRatingClick(getRatingValue(index, false))}
+                onMouseEnter={() => !isDisabled && handleMouseEnter(getRatingValue(index, false))}
+                onMouseLeave={handleMouseLeave}
+                onBlur={() => fieldApi.handleBlur()}
+                disabled={isDisabled}
+                title={`Rate ${getRatingValue(index, false)} ${icon}${getRatingValue(index, false) !== 1 ? 's' : ''}`}
+              >
                   <IconComponent
                     className={cn(
                       iconSizeClass,
@@ -193,7 +198,6 @@ export const RatingField: React.FC<RatingFieldSpecificProps> = ({
             )}
           </div>
         </div>
-      )}
-    </BaseFieldWrapper>
+    </FieldWrapper>
   );
 }; 

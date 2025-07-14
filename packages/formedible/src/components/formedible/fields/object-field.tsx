@@ -7,7 +7,7 @@ import type { BaseFieldProps } from "@/lib/formedible/types";
 import { TextField } from "./text-field";
 import { NumberField } from "./number-field";
 import { SelectField } from "./select-field";
-import { BaseFieldWrapper } from './base-field-wrapper';
+import { FieldWrapper } from './base-field-wrapper';
 
 interface ObjectFieldConfig {
   title?: string;
@@ -42,10 +42,7 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
   disabled,
   ...wrapperProps
 }) => {
-  if (!fieldApi.state) {
-    console.error('ObjectField: fieldApi.state is undefined', fieldApi);
-    return null;
-  }
+  const name = fieldApi.name;
   const [isExpanded, setIsExpanded] = React.useState(
     objectConfig?.defaultExpanded !== false
   );
@@ -65,11 +62,7 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
         }
       },
       handleChange: (value: unknown) => {
-        if (!fieldApi.state) {
-          console.error('ObjectField: fieldApi.state is undefined', fieldApi);
-          return;
-        }
-        const currentValue = fieldApi.state.value || {};
+        const currentValue = fieldApi.state?.value || {};
         fieldApi.handleChange({
           ...currentValue,
           [fieldName]: value
@@ -94,11 +87,7 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
       return null;
     }
 
-    if (!fieldApi.state) {
-      console.error('ObjectField: fieldApi.state is undefined in renderField', fieldApi);
-      return null;
-    }
-    const fieldValue = fieldApi.state.value?.[fieldConfig.name] || '';
+    const fieldValue = fieldApi.state?.value?.[fieldConfig.name] || '';
     const mockFieldApi = createMockFieldApi(fieldConfig.name, fieldValue) as unknown as BaseFieldProps['fieldApi'];
 
     // Create properly typed field props using the helper
@@ -153,56 +142,53 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
   };
 
   const content = (
-    <BaseFieldWrapper fieldApi={fieldApi} {...wrapperProps}>
-      {({ isDisabled: _isDisabled }) => (
-        <div className="space-y-4">
-
-      {/* Object title and description */}
-      {(objectConfig?.title || objectConfig?.description) && (
-        <div className="space-y-1">
-          {objectConfig?.title && (
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-medium text-muted-foreground">
-                {objectConfig.title}
-              </h4>
-              {objectConfig?.collapsible && (
-                <button
-                  type="button"
-                  onClick={() => setIsExpanded(!isExpanded)}
-                  className="text-xs text-muted-foreground hover:text-foreground"
-                >
-                  {isExpanded ? "Collapse" : "Expand"}
-                </button>
-              )}
-            </div>
-          )}
-          {objectConfig?.description && (
-            <p className="text-xs text-muted-foreground">
-              {objectConfig.description}
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* Fields */}
-      {(!objectConfig?.collapsible || isExpanded) && (
-        <>
-          {objectConfig?.title && <div className="border-t my-4" />}
-          <div className={getLayoutClasses()}>
-            {objectConfig?.fields?.map(renderField)}
+    <FieldWrapper fieldApi={fieldApi} {...wrapperProps}>
+      <div className="space-y-4">
+        {/* Object title and description */}
+        {(objectConfig?.title || objectConfig?.description) && (
+          <div className="space-y-1">
+            {objectConfig?.title && (
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-medium text-muted-foreground">
+                  {objectConfig.title}
+                </h4>
+                {objectConfig?.collapsible && (
+                  <button
+                    type="button"
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    {isExpanded ? "Collapse" : "Expand"}
+                  </button>
+                )}
+              </div>
+            )}
+            {objectConfig?.description && (
+              <p className="text-xs text-muted-foreground">
+                {objectConfig.description}
+              </p>
+            )}
           </div>
-        </>
-      )}
+        )}
 
-      {/* Show field errors */}
-      {fieldApi.state.meta.errors && fieldApi.state.meta.errors.length > 0 && (
-        <div className="text-sm text-destructive">
-          {fieldApi.state.meta.errors.join(", ")}
-        </div>
-      )}
-        </div>
-      )}
-    </BaseFieldWrapper>
+        {/* Fields */}
+        {(!objectConfig?.collapsible || isExpanded) && (
+          <>
+            {objectConfig?.title && <div className="border-t my-4" />}
+            <div className={getLayoutClasses()}>
+              {objectConfig?.fields?.map(renderField)}
+            </div>
+          </>
+        )}
+
+        {/* Show field errors */}
+        {fieldApi.state?.meta?.errors && fieldApi.state?.meta?.errors.length > 0 && (
+          <div className="text-sm text-destructive">
+            {fieldApi.state?.meta?.errors.join(", ")}
+          </div>
+        )}
+      </div>
+    </FieldWrapper>
   );
 
   // Wrap in card if specified
@@ -240,9 +226,9 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
           )}
           
           {/* Show field errors */}
-          {fieldApi.state.meta.errors && fieldApi.state.meta.errors.length > 0 && (
+          {fieldApi.state?.meta?.errors && fieldApi.state?.meta?.errors.length > 0 && (
             <div className="text-sm text-destructive mt-4">
-              {fieldApi.state.meta.errors.join(", ")}
+              {fieldApi.state?.meta?.errors.join(", ")}
             </div>
           )}
         </CardContent>

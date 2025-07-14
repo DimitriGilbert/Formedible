@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { BaseFieldProps } from "@/lib/formedible/types";
-import { BaseFieldWrapper } from "./base-field-wrapper";
+import { FieldWrapper } from "./base-field-wrapper";
 
 export interface TextFieldSpecificProps extends BaseFieldProps {
   type?: "text" | "email" | "password" | "url" | "tel" | "datetime-local";
@@ -18,17 +18,19 @@ export interface TextFieldSpecificProps extends BaseFieldProps {
 
 export const TextField: React.FC<TextFieldSpecificProps> = ({
   fieldApi,
+  label,
+  description,
+  placeholder,
+  inputClassName,
+  labelClassName,
+  wrapperClassName,
   type = "text",
   datalist,
-  ...wrapperProps
 }) => {
-  const { name, state, handleChange, handleBlur } = fieldApi;
-  const value = state.value as string | number | undefined;
-
-  if (!fieldApi.state) {
-    console.error("TextField: fieldApi.state is undefined");
-    return null;
-  }
+  const name = fieldApi.name;
+  const value = fieldApi.state?.value as string | number | undefined;
+  const isDisabled = fieldApi.form?.state?.isSubmitting ?? false;
+  const hasErrors = fieldApi.state?.meta?.isTouched && fieldApi.state?.meta?.errors?.length > 0;
 
   // Datalist state
   const [datalistOptions, setDatalistOptions] = useState<string[]>(
@@ -98,61 +100,55 @@ export const TextField: React.FC<TextFieldSpecificProps> = ({
   );
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    handleChange(e.target.value);
-    fieldApi.onChange?.(e.target.value, e);
+    fieldApi.handleChange(e.target.value);
   };
 
-  const onBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    handleBlur();
-    fieldApi.onBlur?.(e);
+  const onBlur = () => {
+    fieldApi.handleBlur();
   };
 
-  const onFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    fieldApi.onFocus?.(e);
-  };
-
-  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    fieldApi.onKeyDown?.(e);
-  };
-
-  const onKeyUp = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    fieldApi.onKeyUp?.(e);
-  };
+  const computedInputClassName = cn(
+    inputClassName,
+    hasErrors ? "border-destructive" : "",
+    isLoadingOptions ? "pr-8" : ""
+  );
 
   return (
-    <BaseFieldWrapper fieldApi={fieldApi} {...wrapperProps}>
-      {({ isDisabled, inputClassName }) => (
-        <>
-          <Input
-            id={name}
-            name={name}
-            type={type}
-            value={value === undefined || value === null ? "" : String(value)}
-            onBlur={onBlur}
-            onFocus={onFocus}
-            onChange={onChange}
-            onKeyDown={onKeyDown}
-            onKeyUp={onKeyUp}
-            placeholder={wrapperProps.placeholder}
-            className={cn(inputClassName, isLoadingOptions ? "pr-8" : "")}
-            disabled={isDisabled}
-            list={datalistId}
-            autoComplete={datalist ? "off" : undefined}
-          />
-          {isLoadingOptions && (
-            <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
-              <span className="text-xs text-muted-foreground">Loading...</span>
-            </div>
-          )}
-          {datalist && datalistOptions.length > 0 && (
-            <datalist id={datalistId}>
-              {datalistOptions.map((option, index) => (
-                <option key={`${option}-${index}`} value={option} />
-              ))}
-            </datalist>
-          )}
-        </>
-      )}
-    </BaseFieldWrapper>
+    <FieldWrapper
+      fieldApi={fieldApi}
+      label={label}
+      description={description}
+      inputClassName={inputClassName}
+      labelClassName={labelClassName}
+      wrapperClassName={wrapperClassName}
+    >
+      <div className="relative">
+        <Input
+          id={name}
+          name={name}
+          type={type}
+          value={value === undefined || value === null ? "" : String(value)}
+          onBlur={onBlur}
+          onChange={onChange}
+          placeholder={placeholder}
+          className={computedInputClassName}
+          disabled={isDisabled}
+          list={datalistId}
+          autoComplete={datalist ? "off" : undefined}
+        />
+        {isLoadingOptions && (
+          <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+            <span className="text-xs text-muted-foreground">Loading...</span>
+          </div>
+        )}
+        {datalist && datalistOptions.length > 0 && (
+          <datalist id={datalistId}>
+            {datalistOptions.map((option, index) => (
+              <option key={`${option}-${index}`} value={option} />
+            ))}
+          </datalist>
+        )}
+      </div>
+    </FieldWrapper>
   );
 };

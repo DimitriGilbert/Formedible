@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 
 import { Plus, Trash2, GripVertical } from 'lucide-react';
 import type { BaseFieldProps } from '@/lib/formedible/types';
-import { BaseFieldWrapper } from './base-field-wrapper';
+import { FieldWrapper } from './base-field-wrapper';
 import { TextField } from './text-field';
 import { NumberField } from './number-field';
 import { TextareaField } from './textarea-field';
@@ -52,17 +52,18 @@ export interface ArrayFieldSpecificProps extends BaseFieldProps {
 
 export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
   fieldApi,
+  label,
+  description,
+  placeholder,
+  inputClassName,
+  labelClassName,
+  wrapperClassName,
   arrayConfig,
-  ...wrapperProps
 }) => {
-  const { name, state, handleChange, handleBlur } = fieldApi;
+  const name = fieldApi.name;
+  const isDisabled = fieldApi.form?.state?.isSubmitting ?? false;
   
-  if (!state) {
-    console.error('ArrayField: fieldApi.state is undefined', fieldApi);
-    return null;
-  }
-  
-  const value = useMemo(() => (state.value as unknown[]) || [], [state.value]);
+  const value = useMemo(() => (fieldApi.state?.value as unknown[]) || [], [fieldApi.state?.value]);
   
   const {
     itemType,
@@ -85,22 +86,22 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
     if (value.length >= maxItems) return;
     
     const newValue = [...value, defaultValue];
-    handleChange(newValue);
-  }, [value, maxItems, defaultValue, handleChange]);
+    fieldApi.handleChange(newValue);
+  }, [value, maxItems, defaultValue, fieldApi.handleChange]);
 
   const removeItem = useCallback((index: number) => {
     if (value.length <= minItems) return;
     
     const newValue = value.filter((_, i) => i !== index);
-    handleChange(newValue);
-    handleBlur();
-  }, [value, minItems, handleChange, handleBlur]);
+    fieldApi.handleChange(newValue);
+    fieldApi.handleBlur();
+  }, [value, minItems, fieldApi.handleChange, fieldApi.handleBlur]);
 
   const updateItem = useCallback((index: number, newItemValue: unknown) => {
     const newValue = [...value];
     newValue[index] = newItemValue;
-    handleChange(newValue);
-  }, [value, handleChange]);
+    fieldApi.handleChange(newValue);
+  }, [value, fieldApi.handleChange]);
 
   const moveItem = useCallback((fromIndex: number, toIndex: number) => {
     if (!sortable) return;
@@ -109,8 +110,8 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
     const newValue = [...value];
     const [movedItem] = newValue.splice(fromIndex, 1);
     newValue.splice(toIndex, 0, movedItem);
-    handleChange(newValue);
-  }, [value, handleChange, sortable]);
+    fieldApi.handleChange(newValue);
+  }, [value, fieldApi.handleChange, sortable]);
 
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
@@ -129,20 +130,26 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
         },
       },
       handleChange: (newValue: unknown) => updateItem(index, newValue),
-      handleBlur: () => handleBlur(),
+      handleBlur: () => fieldApi.handleBlur(),
       form: fieldApi.form,
     };
-  }, [name, value, updateItem, handleBlur, fieldApi.form]);
+  }, [name, value, updateItem, fieldApi.handleBlur, fieldApi.form]);
 
   const canAddMore = value.length < maxItems;
   const canRemove = value.length > minItems;
 
   return (
-    <BaseFieldWrapper fieldApi={fieldApi} {...wrapperProps}>
-      {({ isDisabled }) => (
-        <div className="space-y-4">
-          <div className="space-y-3">
-            {value.map((_, index) => (
+    <FieldWrapper
+      fieldApi={fieldApi}
+      label={label}
+      description={description}
+      inputClassName={inputClassName}
+      labelClassName={labelClassName}
+      wrapperClassName={wrapperClassName}
+    >
+      <div className="space-y-4">
+        <div className="space-y-3">
+          {value.map((_, index) => (
               <div
                 key={index}
                 className="flex items-start gap-2 p-3 border rounded-lg bg-card"
@@ -249,7 +256,6 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
             </p>
           )}
         </div>
-      )}
-    </BaseFieldWrapper>
+    </FieldWrapper>
   );
 }; 

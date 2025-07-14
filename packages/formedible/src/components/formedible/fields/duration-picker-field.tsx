@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import type { BaseFieldProps } from "@/lib/formedible/types";
-import { BaseFieldWrapper } from "./base-field-wrapper";
+import { FieldWrapper } from "./base-field-wrapper";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -35,6 +35,8 @@ export const DurationPickerField: React.FC<DurationPickerFieldProps> = ({
   inputClassName,
   durationConfig = {},
 }) => {
+  const name = fieldApi.name;
+
   const {
     format = 'hms',
     maxHours = 23,
@@ -48,14 +50,9 @@ export const DurationPickerField: React.FC<DurationPickerFieldProps> = ({
   const [minutes, setMinutes] = useState(0);
   const [seconds, setSeconds] = useState(0);
 
-  if (!fieldApi.state) {
-    console.error('DurationPickerField: fieldApi.state is undefined', fieldApi);
-    return null;
-  }
-
   // Initialize from field value
   useEffect(() => {
-    const value = fieldApi.state.value;
+    const value = fieldApi.state?.value;
     if (value) {
       if (typeof value === 'number') {
         // Value is total seconds
@@ -73,7 +70,7 @@ export const DurationPickerField: React.FC<DurationPickerFieldProps> = ({
         setSeconds(Math.min(value.seconds || 0, maxSeconds));
       }
     }
-  }, [fieldApi.state.value, maxHours, maxMinutes, maxSeconds]);
+  }, [fieldApi.state?.value, maxHours, maxMinutes, maxSeconds]);
 
   // Update field value when duration changes
   useEffect(() => {
@@ -99,7 +96,7 @@ export const DurationPickerField: React.FC<DurationPickerFieldProps> = ({
       default:
         fieldApi.handleChange(durationValue);
     }
-  }, [hours, minutes, seconds, format, fieldApi]);
+  }, [hours, minutes, seconds, format, fieldApi.handleChange]);
 
   const formatDuration = () => {
     const parts = [];
@@ -148,7 +145,7 @@ export const DurationPickerField: React.FC<DurationPickerFieldProps> = ({
     return (
       <div className="space-y-2">
         <Input
-          id={fieldApi.name}
+          id={name}
           value={formatDuration()}
           placeholder={placeholder || "Enter duration (e.g., 1h 30m 45s)"}
           className={inputClassName}
@@ -183,7 +180,7 @@ export const DurationPickerField: React.FC<DurationPickerFieldProps> = ({
   return (
     <div className={cn("space-y-2", wrapperClassName)}>
       {label && (
-        <Label htmlFor={fieldApi.name} className={labelClassName}>
+        <Label htmlFor={name} className={labelClassName}>
           {label}
         </Label>
       )}
@@ -228,9 +225,9 @@ export const DurationPickerField: React.FC<DurationPickerFieldProps> = ({
         </div>
       </div>
 
-      {fieldApi.state.meta.errors && fieldApi.state.meta.errors.length > 0 && (
+      {fieldApi.state?.meta?.errors && fieldApi.state?.meta?.errors.length > 0 && (
         <p className="text-sm text-destructive">
-          {fieldApi.state.meta.errors[0]}
+          {fieldApi.state?.meta?.errors[0]}
         </p>
       )}
     </div>

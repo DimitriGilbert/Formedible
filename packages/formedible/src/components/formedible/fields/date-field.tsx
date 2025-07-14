@@ -10,25 +10,29 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import type { BaseFieldProps } from '@/lib/formedible/types';
-import { BaseFieldWrapper } from './base-field-wrapper';
+import { FieldWrapper } from './base-field-wrapper';
 
 export const DateField: React.FC<BaseFieldProps> = ({
   fieldApi,
-  
-  ...wrapperProps
+  label,
+  description,
+  placeholder,
+  inputClassName,
+  labelClassName,
+  wrapperClassName,
 }) => {
-  if (!fieldApi.state) {
-    console.error('DateField: fieldApi.state is undefined', fieldApi);
-    return null;
-  }
+  const name = fieldApi.name;
+  const isDisabled = fieldApi.form?.state?.isSubmitting ?? false;
+  const hasErrors = fieldApi.state?.meta?.isTouched && fieldApi.state?.meta?.errors?.length > 0;
 
   const [isOpen, setIsOpen] = React.useState(false);
 
-  const selectedDate = fieldApi.state.value
-    ? fieldApi.state.value instanceof Date
-      ? fieldApi.state.value
-      : typeof fieldApi.state.value === 'string'
-        ? parseISO(fieldApi.state.value)
+  const value = fieldApi.state?.value;
+  const selectedDate = value
+    ? value instanceof Date
+      ? value
+      : typeof value === 'string'
+        ? parseISO(value)
         : undefined
     : undefined;
 
@@ -38,23 +42,32 @@ export const DateField: React.FC<BaseFieldProps> = ({
     setIsOpen(false);
   };
 
+  const computedInputClassName = cn(
+    "w-full justify-start text-left font-normal",
+    !selectedDate && "text-muted-foreground",
+    hasErrors ? "border-destructive" : "",
+    inputClassName
+  );
+
   return (
-    <BaseFieldWrapper fieldApi={fieldApi} {...wrapperProps}>
-      {({ isDisabled, inputClassName }) => (
+    <FieldWrapper
+      fieldApi={fieldApi}
+      label={label}
+      description={description}
+      inputClassName={inputClassName}
+      labelClassName={labelClassName}
+      wrapperClassName={wrapperClassName}
+    >
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger asChild>
           <Button
             variant="outline"
-            className={cn(
-              "w-full justify-start text-left font-normal",
-              !selectedDate && "text-muted-foreground",
-              inputClassName
-            )}
+            className={computedInputClassName}
             disabled={isDisabled}
             onClick={() => setIsOpen(true)}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
-            {selectedDate ? format(selectedDate, "PPP") : <span>{wrapperProps.placeholder || "Pick a date"}</span>}
+            {selectedDate ? format(selectedDate, "PPP") : <span>{placeholder || "Pick a date"}</span>}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0">
@@ -63,11 +76,10 @@ export const DateField: React.FC<BaseFieldProps> = ({
             selected={selectedDate}
             onSelect={handleDateSelect}
             initialFocus
-            disabled={fieldApi.form.state.isSubmitting}
+            disabled={isDisabled}
           />
         </PopoverContent>
       </Popover>
-      )}
-    </BaseFieldWrapper>
+    </FieldWrapper>
   );
 };

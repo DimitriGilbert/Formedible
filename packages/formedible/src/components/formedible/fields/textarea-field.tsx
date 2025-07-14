@@ -2,7 +2,7 @@ import React from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import type { BaseFieldProps } from '@/lib/formedible/types';
-import { BaseFieldWrapper } from './base-field-wrapper';
+import { FieldWrapper } from './base-field-wrapper';
 
 export interface TextareaFieldSpecificProps extends BaseFieldProps {
   rows?: number;
@@ -10,53 +10,52 @@ export interface TextareaFieldSpecificProps extends BaseFieldProps {
 
 export const TextareaField: React.FC<TextareaFieldSpecificProps> = ({
   fieldApi,
+  label,
+  description,
+  placeholder,
+  inputClassName,
+  labelClassName,
+  wrapperClassName,
   rows = 3,
-  ...wrapperProps
 }) => {
-  if (!fieldApi.state) {
-    console.error('TextareaField: fieldApi.state is undefined', fieldApi);
-    return null;
-  }
+  const name = fieldApi.name;
+  const value = (fieldApi.state?.value as string) || '';
+  const isDisabled = fieldApi.form?.state?.isSubmitting ?? false;
+  const hasErrors = fieldApi.state?.meta?.isTouched && fieldApi.state?.meta?.errors?.length > 0;
+
   const onChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     fieldApi.handleChange(e.target.value);
-    fieldApi.onChange?.(e.target.value, e);
   };
 
-  const onBlur = (e: React.FocusEvent<HTMLTextAreaElement>) => {
+  const onBlur = () => {
     fieldApi.handleBlur();
-    fieldApi.onBlur?.(e);
   };
 
-  const onFocus = (e: React.FocusEvent<HTMLTextAreaElement>) => {
-    fieldApi.onFocus?.(e);
-  };
-
-  const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    fieldApi.onKeyDown?.(e);
-  };
-
-  const onKeyUp = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    fieldApi.onKeyUp?.(e);
-  };
+  const computedInputClassName = cn(
+    inputClassName,
+    hasErrors ? "border-destructive" : ""
+  );
 
   return (
-    <BaseFieldWrapper fieldApi={fieldApi} {...wrapperProps}>
-      {({ isDisabled, inputClassName }) => (
-        <Textarea
-          id={fieldApi.name}
-          name={fieldApi.name}
-          value={(fieldApi.state.value as string) || ''}
-          onBlur={onBlur}
-          onFocus={onFocus}
-          onChange={onChange}
-          onKeyDown={onKeyDown}
-          onKeyUp={onKeyUp}
-          placeholder={wrapperProps.placeholder}
-          rows={rows}
-          className={cn(inputClassName)}
-          disabled={isDisabled}
-        />
-      )}
-    </BaseFieldWrapper>
+    <FieldWrapper
+      fieldApi={fieldApi}
+      label={label}
+      description={description}
+      inputClassName={inputClassName}
+      labelClassName={labelClassName}
+      wrapperClassName={wrapperClassName}
+    >
+      <Textarea
+        id={name}
+        name={name}
+        value={value}
+        onBlur={onBlur}
+        onChange={onChange}
+        placeholder={placeholder}
+        rows={rows}
+        className={computedInputClassName}
+        disabled={isDisabled}
+      />
+    </FieldWrapper>
   );
 };

@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import type { BaseFieldProps } from "@/lib/formedible/types";
-import { BaseFieldWrapper } from "./base-field-wrapper";
+import { FieldWrapper } from "./base-field-wrapper";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -39,6 +39,8 @@ export const MaskedInputField: React.FC<MaskedInputFieldProps> = ({
   inputClassName,
   maskedInputConfig = {},
 }) => {
+  const name = fieldApi.name;
+
   const {
     mask = '',
     showMask = false,
@@ -113,17 +115,12 @@ export const MaskedInputField: React.FC<MaskedInputFieldProps> = ({
     return maskedValue;
   }, [mask, guide, showMask, pipe, displayValue]);
 
-  if (!fieldApi.state) {
-    console.error('MaskedInputField: fieldApi.state is undefined', fieldApi);
-    return null;
-  }
-
   // Initialize from field value
   useEffect(() => {
-    const value = fieldApi.state.value || '';
+    const value = fieldApi.state?.value || '';
     setRawValue(value);
     setDisplayValue(applyMask(value));
-  }, [fieldApi.state.value, applyMask]);
+  }, [fieldApi.state?.value, applyMask]);
 
   // Extract raw value from masked value
   const extractRawValue = (maskedValue: string): string => {
@@ -162,7 +159,7 @@ export const MaskedInputField: React.FC<MaskedInputFieldProps> = ({
   };
 
   // Handle input change
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
     const newRawValue = extractRawValue(inputValue);
     const newDisplayValue = applyMask(newRawValue);
@@ -207,7 +204,7 @@ export const MaskedInputField: React.FC<MaskedInputFieldProps> = ({
   return (
     <div className={cn("space-y-2", wrapperClassName)}>
       {label && (
-        <Label htmlFor={fieldApi.name} className={labelClassName}>
+        <Label htmlFor={name} className={labelClassName}>
           {label}
         </Label>
       )}
@@ -218,10 +215,10 @@ export const MaskedInputField: React.FC<MaskedInputFieldProps> = ({
 
       <Input
         ref={inputRef}
-        id={fieldApi.name}
-        name={fieldApi.name}
+        id={name}
+        name={name}
         value={displayValue}
-        onChange={handleChange}
+        onChange={handleInputChange}
         onKeyDown={handleKeyDown}
         placeholder={getPlaceholder()}
         className={inputClassName}
@@ -241,9 +238,9 @@ export const MaskedInputField: React.FC<MaskedInputFieldProps> = ({
         </div>
       )}
 
-      {fieldApi.state.meta.errors && fieldApi.state.meta.errors.length > 0 && (
+      {fieldApi.state?.meta?.errors && fieldApi.state?.meta?.errors.length > 0 && (
         <p className="text-sm text-destructive">
-          {fieldApi.state.meta.errors[0]}
+          {fieldApi.state?.meta?.errors[0]}
         </p>
       )}
     </div>

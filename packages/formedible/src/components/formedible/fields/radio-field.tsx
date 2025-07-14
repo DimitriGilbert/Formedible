@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
 import type { BaseFieldProps } from '@/lib/formedible/types';
-import { BaseFieldWrapper } from './base-field-wrapper';
+import { FieldWrapper } from './base-field-wrapper';
 
 export interface RadioFieldSpecificProps extends BaseFieldProps {
   options: Array<{ value: string; label: string }> | string[];
@@ -13,19 +13,19 @@ export interface RadioFieldSpecificProps extends BaseFieldProps {
 
 export const RadioField: React.FC<RadioFieldSpecificProps> = ({
   fieldApi,
+  label,
+  description,
+  placeholder,
+  inputClassName,
+  labelClassName,
+  wrapperClassName,
   options = [],
   direction = 'vertical',
-  
-  ...wrapperProps
 }) => {
-  const { name, state, handleChange, handleBlur } = fieldApi;
-  
-  if (!state) {
-    console.error('RadioField: fieldApi.state is undefined', fieldApi);
-    return null;
-  }
-  
-  const value = state.value as string;
+  const name = fieldApi.name;
+  const value = fieldApi.state?.value as string | undefined;
+  const isDisabled = fieldApi.form?.state?.isSubmitting ?? false;
+  const hasErrors = fieldApi.state?.meta?.isTouched && fieldApi.state?.meta?.errors?.length > 0;
 
   const normalizedOptions = options.map(option => 
     typeof option === 'string' 
@@ -34,54 +34,52 @@ export const RadioField: React.FC<RadioFieldSpecificProps> = ({
   );
 
   const onValueChange = (value: string) => {
-    handleChange(value);
-    fieldApi.onChange?.(value);
+    fieldApi.handleChange(value);
   };
 
-  const onBlur = (e: React.FocusEvent) => {
-    handleBlur();
-    fieldApi.onBlur?.(e);
-  };
-
-  const onFocus = (e: React.FocusEvent) => {
-    fieldApi.onFocus?.(e);
+  const onBlur = () => {
+    fieldApi.handleBlur();
   };
 
   return (
-    <BaseFieldWrapper fieldApi={fieldApi} {...wrapperProps}>
-      {({ isDisabled, hasErrors }) => (
-        <RadioGroup
-          value={value || ''}
-          onValueChange={onValueChange}
-          onBlur={onBlur}
-          onFocus={onFocus}
-          disabled={isDisabled}
-          className={cn(
-            direction === 'horizontal' 
-              ? "flex flex-wrap gap-6" 
-              : "flex flex-col space-y-2",
-            wrapperProps.inputClassName
-          )}
-        >
-          {normalizedOptions.map((option, index) => (
-            <div key={`${option.value}-${index}`} className="flex items-center space-x-2">
-              <RadioGroupItem
-                value={option.value}
-                id={`${name}-${option.value}`}
-                className={cn(
-                  hasErrors ? "border-destructive" : ""
-                )}
-              />
-              <Label
-                htmlFor={`${name}-${option.value}`}
-                className="text-sm font-normal cursor-pointer"
-              >
-                {option.label}
-              </Label>
-            </div>
-          ))}
-        </RadioGroup>
-      )}
-    </BaseFieldWrapper>
+    <FieldWrapper
+      fieldApi={fieldApi}
+      label={label}
+      description={description}
+      inputClassName={inputClassName}
+      labelClassName={labelClassName}
+      wrapperClassName={wrapperClassName}
+    >
+      <RadioGroup
+        value={value || ''}
+        onValueChange={onValueChange}
+        onBlur={onBlur}
+        disabled={isDisabled}
+        className={cn(
+          direction === 'horizontal' 
+            ? "flex flex-wrap gap-6" 
+            : "flex flex-col space-y-2",
+          inputClassName
+        )}
+      >
+        {normalizedOptions.map((option, index) => (
+          <div key={`${option.value}-${index}`} className="flex items-center space-x-2">
+            <RadioGroupItem
+              value={option.value}
+              id={`${name}-${option.value}`}
+              className={cn(
+                hasErrors ? "border-destructive" : ""
+              )}
+            />
+            <Label
+              htmlFor={`${name}-${option.value}`}
+              className="text-sm font-normal cursor-pointer"
+            >
+              {option.label}
+            </Label>
+          </div>
+        ))}
+      </RadioGroup>
+    </FieldWrapper>
   );
 }; 
