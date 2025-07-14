@@ -62,6 +62,15 @@ export type FieldOptions = string[] | FieldOption[];
 // Normalize options to consistent format
 export type NormalizedFieldOption = FieldOption;
 
+// Enhanced field event types for better event access
+export interface FieldEventHandlers {
+  onFocus?: (event: React.FocusEvent) => void;
+  onBlur?: (event: React.FocusEvent) => void;
+  onChange?: (value: unknown, event?: React.ChangeEvent) => void;
+  onKeyDown?: (event: React.KeyboardEvent) => void;
+  onKeyUp?: (event: React.KeyboardEvent) => void;
+}
+
 // Props that all basic field components rendered by FormedibleRoot will receive
 export interface BaseFieldProps {
   fieldApi: AnyFieldApi;
@@ -71,6 +80,7 @@ export interface BaseFieldProps {
   inputClassName?: string;   // For the <Input /> component itself
   labelClassName?: string;   // For the <Label /> component
   wrapperClassName?: string; // For the div wrapping label and input
+  eventHandlers?: FieldEventHandlers; // Enhanced event access
 }
 
 // Specific field component prop types

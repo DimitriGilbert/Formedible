@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "tsup src/index.ts --format esm,cjs --dts --watch",
     "build": "npx shadcn@latest build && tsup src/index.ts --format esm,cjs --dts",
+    "check-types": "npx tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest"
   },

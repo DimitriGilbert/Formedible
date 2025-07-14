@@ -1,6 +1,10 @@
 # Agent Guidelines for Formedible
 
 ## Build/Test Commands
+- `npm run check-types` - Check types in all packages
+- `npm run check-types:pkg` - Check types in formedible package only
+- `npm run check-types:builder` - Check types in builder package only
+- `npm run check-types:web` - Check types in web app only
 - `npm run build` - Build all packages (uses turbo)
 - `npm run build:web` - Build web app
 - `npm run build:pkg` - Build formedible package only

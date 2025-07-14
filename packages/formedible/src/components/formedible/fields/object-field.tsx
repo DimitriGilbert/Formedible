@@ -3,20 +3,7 @@ import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import type { BaseFieldProps } from "@/lib/formedible/types";
-import { TextField } from "./text-field";
-import { TextareaField } from "./textarea-field";
-import { NumberField } from "./number-field";
-import { SelectField } from "./select-field";
-import { MultiSelectField } from "./multi-select-field";
-import { CheckboxField } from "./checkbox-field";
-import { SwitchField } from "./switch-field";
-import { RadioField } from "./radio-field";
-import { SliderField } from "./slider-field";
-import { DateField } from "./date-field";
-import { RatingField } from "./rating-field";
-import { PhoneField } from "./phone-field";
-import { ColorPickerField } from "./color-picker-field";
-import { FileUploadField } from "./file-upload-field";
+import { getFieldComponent, createFieldProps } from "./field-registry";
 
 interface ObjectFieldConfig {
   title?: string;
@@ -52,78 +39,72 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
   wrapperClassName,
   disabled,
   objectConfig,
-  ...props
 }) => {
   const [isExpanded, setIsExpanded] = React.useState(
     objectConfig?.defaultExpanded !== false
   );
 
-  const fieldComponents = {
-    text: TextField,
-    email: TextField,
-    password: TextField,
-    url: TextField,
-    tel: TextField,
-    textarea: TextareaField,
-    number: NumberField,
-    select: SelectField,
-    multiselect: MultiSelectField,
-    checkbox: CheckboxField,
-    switch: SwitchField,
-    radio: RadioField,
-    slider: SliderField,
-    date: DateField,
-    rating: RatingField,
-    phone: PhoneField,
-    color: ColorPickerField,
-    file: FileUploadField,
-    // Add more as needed
+  // Create a properly typed mockFieldApi that includes the form property
+  const createMockFieldApi = (fieldName: string, fieldValue: unknown) => {
+    return {
+      name: `${fieldApi.name}.${fieldName}`,
+      form: fieldApi.form, // Include the form property to fix the bug
+      state: {
+        ...fieldApi.state,
+        value: fieldValue,
+        meta: {
+          ...fieldApi.state.meta,
+          errors: [], // Reset errors for subfield
+          isTouched: false, // Reset touched state for subfield
+        }
+      },
+      handleChange: (value: unknown) => {
+        const currentValue = fieldApi.state.value || {};
+        fieldApi.handleChange({
+          ...currentValue,
+          [fieldName]: value
+        });
+      },
+      handleBlur: fieldApi.handleBlur,
+    };
   };
 
   const renderField = (fieldConfig: ObjectFieldConfig['fields'][0]) => {
-    const FieldComponent = fieldComponents[fieldConfig.type as keyof typeof fieldComponents];
+    const FieldComponent = getFieldComponent(fieldConfig.type);
     
     if (!FieldComponent) {
       console.warn(`Object field: Unknown field type "${fieldConfig.type}"`);
       return null;
     }
 
-    // Create a mock field API for object subfields
-    const mockFieldApi = {
-      name: `${fieldApi.name}.${fieldConfig.name}`,
-      state: {
-        ...fieldApi.state,
-        value: fieldApi.state.value?.[fieldConfig.name] || ''
-      },
-      handleChange: (value: unknown) => {
-        const currentValue = fieldApi.state.value || {};
-        fieldApi.handleChange({
-          ...currentValue,
-          [fieldConfig.name]: value
-        });
-      },
-      handleBlur: fieldApi.handleBlur
-    } as BaseFieldProps['fieldApi'];
+    const fieldValue = fieldApi.state.value?.[fieldConfig.name] || '';
+    const mockFieldApi = createMockFieldApi(fieldConfig.name, fieldValue) as unknown as BaseFieldProps['fieldApi'];
 
-    const fieldProps: BaseFieldProps & Record<string, unknown> = {
+    // Create properly typed field props using the helper
+    const baseProps: BaseFieldProps = {
       fieldApi: mockFieldApi,
       label: fieldConfig.label,
       placeholder: fieldConfig.placeholder,
       description: fieldConfig.description,
+    };
+
+    const additionalProps: Record<string, unknown> = {
       ...(fieldConfig.min !== undefined && { min: fieldConfig.min }),
       ...(fieldConfig.max !== undefined && { max: fieldConfig.max }),
       ...(fieldConfig.step !== undefined && { step: fieldConfig.step }),
       ...(disabled !== undefined && { disabled }),
     };
 
-    // Handle fields that require options
+    // Handle fields that require options with proper typing
     if (['select', 'radio', 'multiselect'].includes(fieldConfig.type)) {
-      fieldProps.options = fieldConfig.options || [];
+      additionalProps.options = fieldConfig.options || [];
     }
+
+    const fieldProps = createFieldProps(baseProps, additionalProps);
 
     return (
       <div key={fieldConfig.name}>
-        <FieldComponent {...(fieldProps as any)} />
+        <FieldComponent {...fieldProps} />
       </div>
     );
   };
