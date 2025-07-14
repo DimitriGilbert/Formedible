@@ -1,6 +1,30 @@
 import React from 'react';
 import type { AnyFieldApi } from '@tanstack/react-form';
-import type { FormApi, ValidationError } from '@tanstack/form-core';
+import type { FormApi, ValidationError, FormState } from '@tanstack/form-core';
+
+// Strict type definitions for better type safety
+export interface StrictFieldApi<T = unknown> {
+  name: string;
+  value: T;
+  errors: ValidationError[];
+  touched: boolean;
+  setValue: (value: T) => void;
+  setTouched: (touched: boolean) => void;
+  validate: () => Promise<ValidationError[]>;
+}
+
+export interface TypedFormState<TFormData = Record<string, unknown>> {
+  values: TFormData;
+  errors: Record<keyof TFormData, ValidationError[]>;
+  touched: Record<keyof TFormData, boolean>;
+  isSubmitting: boolean;
+  isValidating: boolean;
+  canSubmit: boolean;
+}
+
+export interface TypedFormSubscriptionSelector<TFormData = Record<string, unknown>, TSelected = unknown> {
+  (state: FormState<TFormData, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined>): TSelected;
+}
 
 // Validation error types based on TanStack Form
 export type FormedibleValidationError = ValidationError;

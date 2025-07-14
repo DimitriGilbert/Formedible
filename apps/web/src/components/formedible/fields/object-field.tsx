@@ -31,7 +31,7 @@ interface ObjectFieldConfig {
     min?: number;
     max?: number;
     step?: number;
-    [key: string]: any;
+    [key: string]: unknown;
   }>;
   collapsible?: boolean;
   defaultExpanded?: boolean;
@@ -95,7 +95,7 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
         ...fieldApi.state,
         value: fieldApi.state.value?.[fieldConfig.name] || ''
       },
-      handleChange: (value: any) => {
+      handleChange: (value: unknown) => {
         const currentValue = fieldApi.state.value || {};
         fieldApi.handleChange({
           ...currentValue,
@@ -103,9 +103,9 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
         });
       },
       handleBlur: fieldApi.handleBlur
-    } as any;
+    } as BaseFieldProps['fieldApi'];
 
-    const fieldProps: any = {
+    const fieldProps: BaseFieldProps & Record<string, unknown> = {
       fieldApi: mockFieldApi,
       label: fieldConfig.label,
       placeholder: fieldConfig.placeholder,
