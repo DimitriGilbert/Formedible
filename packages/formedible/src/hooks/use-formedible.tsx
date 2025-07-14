@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, memo } from "react";
 import { useForm } from "@tanstack/react-form";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
@@ -61,7 +61,7 @@ interface FormProps {
 
 // TanStack Form Best Practice: Reusable subscription component for conditional fields
 interface ConditionalFieldsSubscriptionProps<TFormValues extends Record<string, unknown> = Record<string, unknown>> {
-  form: any; // Form instance passed from parent
+  form: any;
   fields: FieldConfig[];
   conditionalSections: Array<{
     condition: (values: TFormValues) => boolean;
@@ -79,8 +79,8 @@ interface ConditionalFieldsSubscriptionProps<TFormValues extends Record<string, 
 
 const ConditionalFieldsSubscription = <TFormValues extends Record<string, unknown> = Record<string, unknown>>({
   form,
-  fields,
-  conditionalSections,
+  fields: _fields,
+  conditionalSections: _conditionalSections,
   children
 }: ConditionalFieldsSubscriptionProps<TFormValues>) => {
   // For now, subscribe to all form values since we don't have explicit dependencies
@@ -89,23 +89,23 @@ const ConditionalFieldsSubscription = <TFormValues extends Record<string, unknow
     <form.Subscribe
       selector={(state: any) => state.values}
     >
-      {children}
+      {(values: any) => children(values)}
     </form.Subscribe>
   );
 };
 
 // TanStack Form Best Practice: Individual field conditional renderer
-interface FieldConditionalRendererProps {
+interface FieldConditionalRendererProps<TFormValues extends Record<string, unknown> = Record<string, unknown>> {
   form: any;
   fieldConfig: FieldConfig;
   children: (shouldRender: boolean) => React.ReactNode;
 }
 
-const FieldConditionalRenderer: React.FC<FieldConditionalRendererProps> = ({
+const FieldConditionalRenderer = <TFormValues extends Record<string, unknown> = Record<string, unknown>>({
   form,
   fieldConfig,
   children
-}) => {
+}: FieldConditionalRendererProps<TFormValues>) => {
   const { conditional } = fieldConfig;
   
   // If no conditional logic, always render
@@ -123,6 +123,8 @@ const FieldConditionalRenderer: React.FC<FieldConditionalRendererProps> = ({
     </form.Subscribe>
   );
 };
+
+
 
 export interface FieldConfig {
   name: string;
@@ -274,7 +276,7 @@ export interface FieldConfig {
       min?: number;
       max?: number;
       step?: number;
-      [key: string]: any;
+      [key: string]: unknown;
     }>;
     collapsible?: boolean;
     defaultExpanded?: boolean;
@@ -490,8 +492,7 @@ interface UseFormedibleOptions<TFormValues> {
   };
 }
 
-// Note: Using 'any' here is necessary because field components have different specific prop requirements
-// that cannot be unified into a single type without losing type safety within each component
+// Field components with proper typing - each component accepts FieldComponentProps
 const defaultFieldComponents: Record<string, React.ComponentType<any>> = {
   text: TextField,
   email: TextField,
@@ -523,7 +524,7 @@ const DefaultProgressComponent: React.FC<{
   currentPage: number;
   totalPages: number;
   className?: string;
-}> = ({ value, currentPage, totalPages, className }) => (
+}> = memo(({ value, currentPage, totalPages, className }) => (
   <div className={cn("space-y-2", className)}>
     <div className="flex justify-between text-sm text-muted-foreground">
       <span>Step {currentPage} of {totalPages}</span>
@@ -531,7 +532,9 @@ const DefaultProgressComponent: React.FC<{
     </div>
     <Progress value={value} className="h-2" />
   </div>
-);
+));
+
+DefaultProgressComponent.displayName = 'DefaultProgressComponent';
 
 const DefaultPageComponent: React.FC<{
   children: React.ReactNode;
@@ -1346,7 +1349,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
                     <form.Subscribe
                       selector={(state: any) => state.values}
                     >
-                      {(currentValues) => {
+                      {(currentValues: any) => {
                         // Check for cross-field validation errors
                         const crossFieldError = crossFieldErrors[name];
                         const asyncValidationState = asyncValidationStates[name];
@@ -1574,7 +1577,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
         <form.Subscribe
           selector={(state: any) => state.values}
         >
-          {(currentValues) => {
+          {(currentValues: any) => {
             // Filter fields based on conditional sections using subscribed values
             const visibleFields = currentFields.filter(field => {
               const conditionalSection = conditionalSections.find(section => 
@@ -1639,7 +1642,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
           }}
         </form.Subscribe>
       );
-    }, [renderTabContent, renderField, activeTab, setActiveTab, hasTabs, tabs]);
+    }, [renderTabContent, renderField, activeTab, setActiveTab]);
 
     const renderProgress = () => {
       if (!hasPages || !progress) return null;

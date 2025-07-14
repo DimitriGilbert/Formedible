@@ -6,6 +6,7 @@
     "dev": "tsup src/index.ts --format esm,cjs --dts --watch",
     "build": "npx shadcn@latest build && tsup src/index.ts --format esm,cjs --dts",
     "lint": "eslint .",
+    "check-types": "npx tsc --noEmit",
     "test": "vitest"
   },
   "keywords": [],
