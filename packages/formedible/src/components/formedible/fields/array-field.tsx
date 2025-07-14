@@ -1,10 +1,10 @@
 'use client';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { cn } from '@/lib/utils';
+
 import { Plus, Trash2, GripVertical } from 'lucide-react';
 import type { BaseFieldProps } from '@/lib/formedible/types';
+import { BaseFieldWrapper } from './base-field-wrapper';
 import { TextField } from './text-field';
 import { NumberField } from './number-field';
 import { TextareaField } from './textarea-field';
@@ -52,11 +52,8 @@ export interface ArrayFieldSpecificProps extends BaseFieldProps {
 
 export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
   fieldApi,
-  label,
-  description,
-  wrapperClassName,
-  labelClassName,
   arrayConfig,
+  ...wrapperProps
 }) => {
   const { name, state, handleChange, handleBlur } = fieldApi;
   const value = useMemo(() => (state.value as unknown[]) || [], [state.value]);
@@ -135,132 +132,118 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
   const canRemove = value.length > minItems;
 
   return (
-    <div className={cn("space-y-4", wrapperClassName)}>
-      {label && (
-        <Label className={cn("text-sm font-medium", labelClassName)}>
-          {label}
-          {value.length > 0 && (
-            <span className="ml-2 text-xs text-muted-foreground">
-              ({value.length}{maxItems < Infinity ? `/${maxItems}` : ''} items)
-            </span>
+    <BaseFieldWrapper fieldApi={fieldApi} {...wrapperProps}>
+      {({ isDisabled }) => (
+        <div className="space-y-4">
+          <div className="space-y-3">
+            {value.map((_, index) => (
+              <div
+                key={index}
+                className="flex items-start gap-2 p-3 border rounded-lg bg-card"
+                onDragOver={sortable ? (e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = 'move';
+                } : undefined}
+                onDrop={sortable ? (e) => {
+                  e.preventDefault();
+                  if (draggedIndex !== null && draggedIndex !== index) {
+                    moveItem(draggedIndex, index);
+                  }
+                } : undefined}
+              >
+                {sortable && (
+                  <button
+                    type="button"
+                    className="mt-2 p-1 hover:bg-muted rounded cursor-grab active:cursor-grabbing"
+                    draggable
+                    onDragStart={(e) => {
+                      setDraggedIndex(index);
+                      e.dataTransfer.effectAllowed = 'move';
+                    }}
+                    onDragEnd={() => {
+                      setDraggedIndex(null);
+                    }}
+                    disabled={isDisabled}
+                  >
+                    <GripVertical className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                )}
+                
+                <div className="flex-1">
+                  <ItemComponent
+                    fieldApi={createItemFieldApi(index)}
+                    label={itemLabel ? `${itemLabel} ${index + 1}` : undefined}
+                    placeholder={itemPlaceholder}
+                    wrapperClassName="mb-0"
+                    {...itemProps}
+                    // Pass specific props based on item type
+                    {...(itemType === 'select' && { options: itemProps.options || [] })}
+                    {...(itemType === 'number' && { 
+                      min: itemProps.min, 
+                      max: itemProps.max, 
+                      step: itemProps.step 
+                    })}
+                    {...(itemType === 'slider' && { 
+                      min: itemProps.min, 
+                      max: itemProps.max, 
+                      step: itemProps.step 
+                    })}
+                    {...(itemType === 'file' && { 
+                      accept: itemProps.accept,
+                      multiple: itemProps.multiple 
+                    })}
+                    {...(itemType === 'date' && typeof itemProps.dateProps === 'object' && itemProps.dateProps ? itemProps.dateProps : {})}
+                    {...(['text', 'email', 'password', 'url', 'tel'].includes(itemType) && {
+                      type: itemType,
+                      datalist: itemProps.datalist,
+                    })}
+                  />
+                </div>
+                
+                {canRemove && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => removeItem(index)}
+                    className="mt-2 h-8 w-8 p-0 text-destructive hover:text-destructive"
+                    title={removeButtonLabel}
+                    disabled={isDisabled}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            ))}
+            
+            {value.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
+                <p className="text-sm">No items added yet</p>
+                <p className="text-xs mt-1">Click &quot;{addButtonLabel}&quot; to add your first item</p>
+              </div>
+            )}
+          </div>
+          
+          {canAddMore && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={addItem}
+              className="w-full"
+              disabled={isDisabled}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {addButtonLabel}
+            </Button>
           )}
-        </Label>
-      )}
-      {description && <p className="text-xs text-muted-foreground">{description}</p>}
-      
-      <div className="space-y-3">
-        {value.map((_, index) => (
-          <div
-            key={index}
-            className="flex items-start gap-2 p-3 border rounded-lg bg-card"
-            onDragOver={sortable ? (e) => {
-              e.preventDefault();
-              e.dataTransfer.dropEffect = 'move';
-            } : undefined}
-            onDrop={sortable ? (e) => {
-              e.preventDefault();
-              if (draggedIndex !== null && draggedIndex !== index) {
-                moveItem(draggedIndex, index);
-              }
-            } : undefined}
-          >
-            {sortable && (
-              <button
-                type="button"
-                className="mt-2 p-1 hover:bg-muted rounded cursor-grab active:cursor-grabbing"
-                draggable
-                onDragStart={(e) => {
-                  setDraggedIndex(index);
-                  e.dataTransfer.effectAllowed = 'move';
-                }}
-                onDragEnd={() => {
-                  setDraggedIndex(null);
-                }}
-              >
-                <GripVertical className="h-4 w-4 text-muted-foreground" />
-              </button>
-            )}
-            
-            <div className="flex-1">
-              <ItemComponent
-                fieldApi={createItemFieldApi(index)}
-                label={itemLabel ? `${itemLabel} ${index + 1}` : undefined}
-                placeholder={itemPlaceholder}
-                wrapperClassName="mb-0"
-                {...itemProps}
-                // Pass specific props based on item type
-                {...(itemType === 'select' && { options: itemProps.options || [] })}
-                {...(itemType === 'number' && { 
-                  min: itemProps.min, 
-                  max: itemProps.max, 
-                  step: itemProps.step 
-                })}
-                {...(itemType === 'slider' && { 
-                  min: itemProps.min, 
-                  max: itemProps.max, 
-                  step: itemProps.step 
-                })}
-                {...(itemType === 'file' && { 
-                  accept: itemProps.accept,
-                  multiple: itemProps.multiple 
-                })}
-                {...(itemType === 'date' && typeof itemProps.dateProps === 'object' && itemProps.dateProps ? itemProps.dateProps : {})}
-                {...(['text', 'email', 'password', 'url', 'tel'].includes(itemType) && {
-                  type: itemType,
-                  datalist: itemProps.datalist,
-                })}
-              />
-            </div>
-            
-            {canRemove && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => removeItem(index)}
-                className="mt-2 h-8 w-8 p-0 text-destructive hover:text-destructive"
-                title={removeButtonLabel}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-        ))}
-        
-        {value.length === 0 && (
-          <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
-            <p className="text-sm">No items added yet</p>
-            <p className="text-xs mt-1">Click &quot;{addButtonLabel}&quot; to add your first item</p>
-          </div>
-        )}
-      </div>
-      
-      {canAddMore && (
-        <Button
-          type="button"
-          variant="outline"
-          onClick={addItem}
-          className="w-full"
-          disabled={fieldApi.form.state.isSubmitting}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          {addButtonLabel}
-        </Button>
-      )}
-      
-      {minItems > 0 && value.length < minItems && (
-        <p className="text-xs text-muted-foreground">
-          Minimum {minItems} item{minItems !== 1 ? 's' : ''} required
-        </p>
-      )}
-      
-      {state.meta.isTouched && state.meta.errors.length > 0 && (
-        <div className="text-xs text-destructive pt-1">
-          {state.meta.errors.map((err: string | Error, index: number) => (
-            <p key={index}>{typeof err === 'string' ? err : (err as Error)?.message || 'Invalid'}</p>
-          ))}
+          
+          {minItems > 0 && value.length < minItems && (
+            <p className="text-xs text-muted-foreground">
+              Minimum {minItems} item{minItems !== 1 ? 's' : ''} required
+            </p>
+          )}
         </div>
       )}
-    </div>
+    </BaseFieldWrapper>
   );
 }; 

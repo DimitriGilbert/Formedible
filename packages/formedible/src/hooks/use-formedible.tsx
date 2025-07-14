@@ -3,7 +3,7 @@ import React, { useState, useMemo, memo } from "react";
 import { useForm } from "@tanstack/react-form";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
-import type { FormedibleFormApi, FieldComponentProps, BaseFieldProps } from "@/lib/formedible/types";
+import type { FormedibleFormApi, FieldComponentProps, BaseFieldProps, EnhancedFieldApi } from "@/lib/formedible/types";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { TextField } from "@/components/formedible/fields/text-field";
@@ -1357,8 +1357,32 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
                         // Resolve options (static or dynamic)
                         const resolvedOptions = resolveOptions(options, currentValues);
             
+                        // Enhanced fieldApi with event handlers
+                        const enhancedFieldApi = {
+                          ...field,
+                          eventHandlers: {
+                            onFocus: (event: React.FocusEvent) => {
+                              analytics?.onFieldFocus?.(name, Date.now());
+                            },
+                            onBlur: (event: React.FocusEvent) => {
+                              field.handleBlur();
+                              analytics?.onFieldBlur?.(name, Date.now());
+                            },
+                            onChange: (value: unknown, event?: React.ChangeEvent) => {
+                              field.handleChange(value as any);
+                              analytics?.onFieldChange?.(name, value, Date.now());
+                            },
+                            onKeyDown: (_event: React.KeyboardEvent) => {
+                              // Allow custom key handling
+                            },
+                            onKeyUp: (_event: React.KeyboardEvent) => {
+                              // Allow custom key handling
+                            },
+                          }
+                        } as EnhancedFieldApi;
+
                         const baseProps = {
-                          fieldApi: field,
+                          fieldApi: enhancedFieldApi,
                           label,
                           placeholder,
                           description,

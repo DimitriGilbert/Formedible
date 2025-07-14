@@ -1,9 +1,10 @@
 "use client";
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+
 import type { BaseFieldProps } from "@/lib/formedible/types";
 import { getFieldComponent, createFieldProps } from "./field-registry";
+import { BaseFieldWrapper } from './base-field-wrapper';
 
 interface ObjectFieldConfig {
   title?: string;
@@ -34,11 +35,9 @@ interface ObjectFieldProps extends BaseFieldProps {
 
 export const ObjectField: React.FC<ObjectFieldProps> = ({
   fieldApi,
-  label,
-  description,
-  wrapperClassName,
-  disabled,
   objectConfig,
+  disabled,
+  ...wrapperProps
 }) => {
   const [isExpanded, setIsExpanded] = React.useState(
     objectConfig?.defaultExpanded !== false
@@ -124,22 +123,9 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
   };
 
   const content = (
-    <div className={cn("space-y-4", wrapperClassName)}>
-      {/* Main label and description */}
-      {(label || description) && (
-        <div className="space-y-1">
-          {label && (
-            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-              {label}
-            </label>
-          )}
-          {description && (
-            <p className="text-sm text-muted-foreground">
-              {description}
-            </p>
-          )}
-        </div>
-      )}
+    <BaseFieldWrapper fieldApi={fieldApi} {...wrapperProps}>
+      {({ isDisabled: _isDisabled }) => (
+        <div className="space-y-4">
 
       {/* Object title and description */}
       {(objectConfig?.title || objectConfig?.description) && (
@@ -184,7 +170,9 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
           {fieldApi.state.meta.errors.join(", ")}
         </div>
       )}
-    </div>
+        </div>
+      )}
+    </BaseFieldWrapper>
   );
 
   // Wrap in card if specified

@@ -38,6 +38,8 @@ While TanStack Form provides the robust foundation, **Formedible transforms it i
 - **Cross-Field Validation** - Validate relationships between multiple fields
 
 ### 🏗️ **Advanced Architecture**
+- **Unified Field Wrapper System** - Consistent behavior across all 22+ field types with BaseFieldWrapper
+- **Enhanced Event System** - Comprehensive event handling through fieldApi.eventHandlers
 - **Component Override System** - Replace any field with custom implementations
 - **Global & Field-Level Wrappers** - Add animations, styling, or functionality
 - **Sectioned Forms** - Organize fields into collapsible sections and groups
@@ -50,6 +52,8 @@ While TanStack Form provides the robust foundation, **Formedible transforms it i
 - **Full TypeScript Support** - End-to-end type safety with inference
 - **TanStack Form Best Practices** - Optimized subscription patterns and performance
 - **shadcn/ui Integration** - Beautiful, accessible components included
+- **Unified Field Architecture** - All 22+ field types use consistent BaseFieldWrapper system
+- **Enhanced Event Access** - Rich event handling through fieldApi.eventHandlers
 - **Extensive Customization** - Override any part of the system
 
 ## 📦 Installation
@@ -1351,7 +1355,15 @@ npm run lint
 
 ## 📝 Changelog
 
-### v0.2.6 (Latest)
+### v0.2.7 (Latest)
+- **🚀 Major**: Unified Field Wrapper System - All 22+ field types now use consistent BaseFieldWrapper
+- **⚡ Enhanced**: Event handling moved to fieldApi.eventHandlers for better architecture
+- **🎯 Added**: Enhanced event access (onFocus, onBlur, onChange, onKeyDown, onKeyUp) across all fields
+- **🏗️ Improved**: Type-safe field registry and component system
+- **🔧 Fixed**: ObjectField type safety issues and mockFieldApi bugs
+- **📦 Updated**: Registry includes new BaseFieldWrapper and FieldRegistry components
+
+### v0.2.6
 - **✨ Added**: Dynamic options support for select, radio, multiSelect, and autocomplete fields
 - **🐛 Fixed**: Field configuration panel now properly updates when selecting fields
 - **🎨 Improved**: Better TypeScript configuration for shadcn/ui components

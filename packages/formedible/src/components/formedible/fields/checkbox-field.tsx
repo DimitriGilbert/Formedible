@@ -2,40 +2,53 @@ import React from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import type { BaseFieldProps } from '@/lib/formedible/types';
+import type { BaseFieldProps, FieldEventHandlers } from '@/lib/formedible/types';
+import { BaseFieldWrapper } from './base-field-wrapper';
 
 export const CheckboxField: React.FC<BaseFieldProps> = ({
   fieldApi,
-  label,
-  description,
-  labelClassName,
-  wrapperClassName,
+  
+  ...wrapperProps
 }) => {
+  const onCheckedChange = (checked: boolean) => {
+    fieldApi.handleChange(Boolean(checked));
+    fieldApi.eventHandlers?.onChange?.(Boolean(checked));
+  };
+
+  const onBlur = (e: React.FocusEvent) => {
+    fieldApi.handleBlur();
+    fieldApi.eventHandlers?.onBlur?.(e);
+  };
+
+  const onFocus = (e: React.FocusEvent) => {
+    fieldApi.eventHandlers?.onFocus?.(e);
+  };
+
   return (
-    <div className={cn("space-y-1.5", wrapperClassName)}>
-      <div className="flex items-center space-x-2">
-        <Checkbox
-          id={fieldApi.name}
-          checked={!!fieldApi.state.value}
-          onCheckedChange={(checked) => fieldApi.handleChange(Boolean(checked))}
-          onBlur={fieldApi.handleBlur}
-          disabled={fieldApi.form.state.isSubmitting}
-          aria-describedby={description ? `${fieldApi.name}-description` : undefined}
-        />
-        {label && (
-          <Label htmlFor={fieldApi.name} className={cn("text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70", labelClassName)}>
-            {label}
-          </Label>
-        )}
-      </div>
-      {description && <p id={`${fieldApi.name}-description`} className="text-xs text-muted-foreground">{description}</p>}
-      {fieldApi.state.meta.isTouched && fieldApi.state.meta.errors.length > 0 && (
-        <div className="text-xs text-destructive pt-1">
-          {fieldApi.state.meta.errors.map((err: string, index: number) => (
-            <p key={index}>{String(err)}</p>
-          ))}
-        </div>
+    <BaseFieldWrapper fieldApi={fieldApi} {...wrapperProps} label={undefined}>
+      {({ isDisabled }) => (
+        <>
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id={fieldApi.name}
+              checked={!!fieldApi.state.value}
+              onCheckedChange={onCheckedChange}
+              onBlur={onBlur}
+              onFocus={onFocus}
+              disabled={isDisabled}
+              aria-describedby={wrapperProps.description ? `${fieldApi.name}-description` : undefined}
+            />
+            {wrapperProps.label && (
+              <Label 
+                htmlFor={fieldApi.name} 
+                className={cn("text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70", wrapperProps.labelClassName)}
+              >
+                {wrapperProps.label}
+              </Label>
+            )}
+          </div>
+        </>
       )}
-    </div>
+    </BaseFieldWrapper>
   );
 };

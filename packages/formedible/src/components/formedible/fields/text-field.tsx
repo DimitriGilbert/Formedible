@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import type { BaseFieldProps, FieldEventHandlers } from '@/lib/formedible/types';
+import type { BaseFieldProps } from '@/lib/formedible/types';
 import { BaseFieldWrapper } from './base-field-wrapper';
 
 export interface TextFieldSpecificProps extends BaseFieldProps {
@@ -20,7 +20,6 @@ export const TextField: React.FC<TextFieldSpecificProps> = ({
   fieldApi,
   type = 'text',
   datalist,
-  eventHandlers = {},
   ...wrapperProps
 }) => {
   const { name, state, handleChange, handleBlur } = fieldApi;
@@ -93,25 +92,20 @@ export const TextField: React.FC<TextFieldSpecificProps> = ({
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     handleChange(e.target.value);
-    eventHandlers?.onChange?.(e.target.value, e);
-  };
+            fieldApi.eventHandlers?.onChange?.(e.target.value, e);  };
 
   const onBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     handleBlur();
-    eventHandlers?.onBlur?.(e);
-  };
+            fieldApi.eventHandlers?.onBlur?.(e);  };
 
   const onFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    eventHandlers?.onFocus?.(e);
-  };
+            fieldApi.eventHandlers?.onFocus?.(e);  };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    eventHandlers?.onKeyDown?.(e);
-  };
+            fieldApi.eventHandlers?.onKeyDown?.(e);  };
 
   const onKeyUp = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    eventHandlers?.onKeyUp?.(e);
-  };
+            fieldApi.eventHandlers?.onKeyUp?.(e);  };
 
   return (
     <BaseFieldWrapper fieldApi={fieldApi} {...wrapperProps}>

@@ -1,11 +1,11 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import type { BaseFieldProps } from "@/lib/formedible/types";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { BaseFieldWrapper } from './base-field-wrapper';
 
 interface AutocompleteOption {
   value: string;
@@ -28,13 +28,10 @@ interface AutocompleteFieldProps extends BaseFieldProps {
 
 export const AutocompleteField: React.FC<AutocompleteFieldProps> = ({
   fieldApi,
-  label,
-  description,
   placeholder,
-  wrapperClassName,
-  labelClassName,
   inputClassName,
   autocompleteConfig = {},
+  ...wrapperProps
 }) => {
   const {
     options = [],
@@ -207,89 +204,84 @@ export const AutocompleteField: React.FC<AutocompleteFieldProps> = ({
   const showDropdown = isOpen && (filteredOptions.length > 0 || isLoading || (inputValue.length >= minChars && !isLoading));
 
   return (
-    <div className={cn("space-y-2", wrapperClassName)}>
-      {label && (
-        <Label htmlFor={fieldApi.name} className={labelClassName}>
-          {label}
-        </Label>
-      )}
-      
-      {description && (
-        <p className="text-sm text-muted-foreground">{description}</p>
-      )}
+    <BaseFieldWrapper fieldApi={fieldApi} {...wrapperProps}>
+      {({ isDisabled }) => (
+        <div className="relative">
+          <Input
+            ref={inputRef}
+            id={fieldApi.name}
+            name={fieldApi.name}
+            value={inputValue}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            onFocus={(e) => {
+              handleFocus();
+              fieldApi.eventHandlers?.onFocus?.(e);
+            }}
+            onBlur={(e) => {
+              handleBlur();
+              fieldApi.eventHandlers?.onBlur?.(e);
+            }}
+            placeholder={placeholder || autocompleteConfig.placeholder || "Type to search..."}
+            className={cn(inputClassName, isOpen && "rounded-b-none")}
+            autoComplete="off"
+            disabled={isDisabled}
+          />
 
-      <div className="relative">
-        <Input
-          ref={inputRef}
-          id={fieldApi.name}
-          name={fieldApi.name}
-          value={inputValue}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-          placeholder={placeholder || autocompleteConfig.placeholder || "Type to search..."}
-          className={cn(inputClassName, isOpen && "rounded-b-none")}
-          autoComplete="off"
-        />
-
-        {showDropdown && (
-          <Card className="absolute top-full left-0 right-0 z-50 max-h-60 overflow-y-auto border-t-0 rounded-t-none">
-            <div ref={listRef} className="p-1">
-              {isLoading && (
-                <div className="px-3 py-2 text-sm text-muted-foreground">
-                  {loadingText}
-                </div>
-              )}
-              
-              {!isLoading && filteredOptions.length === 0 && inputValue.length >= minChars && (
-                <div className="px-3 py-2 text-sm text-muted-foreground">
-                  {noOptionsText}
-                  {allowCustom && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="ml-2 h-auto p-1 text-xs"
-                      onClick={() => {
-                        fieldApi.handleChange(inputValue);
-                        setIsOpen(false);
-                      }}
-                    >
-                      Use "{inputValue}"
-                    </Button>
-                  )}
-                </div>
-              )}
-              
-              {!isLoading && filteredOptions.map((option, index) => (
-                <button
-                  key={`${option.value}-${index}`}
-                  type="button"
-                  className={cn(
-                    "w-full text-left px-3 py-2 text-sm rounded-sm transition-colors",
-                    "hover:bg-muted focus:bg-muted focus:outline-none",
-                    highlightedIndex === index && "bg-muted"
-                  )}
-                  onClick={() => handleOptionSelect(option)}
-                  onMouseEnter={() => setHighlightedIndex(index)}
-                >
-                  <div className="font-medium">{option.label}</div>
-                  {option.value !== option.label && (
-                    <div className="text-xs text-muted-foreground">{option.value}</div>
-                  )}
-                </button>
-              ))}
-            </div>
-          </Card>
-        )}
-      </div>
-
-      {fieldApi.state.meta.errors && fieldApi.state.meta.errors.length > 0 && (
-        <p className="text-sm text-destructive">
-          {fieldApi.state.meta.errors[0]}
-        </p>
+          {showDropdown && (
+            <Card className="absolute top-full left-0 right-0 z-50 max-h-60 overflow-y-auto border-t-0 rounded-t-none">
+              <div ref={listRef} className="p-1">
+                {isLoading && (
+                  <div className="px-3 py-2 text-sm text-muted-foreground">
+                    {loadingText}
+                  </div>
+                )}
+                
+                {!isLoading && filteredOptions.length === 0 && inputValue.length >= minChars && (
+                  <div className="px-3 py-2 text-sm text-muted-foreground">
+                    {noOptionsText}
+                    {allowCustom && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="ml-2 h-auto p-1 text-xs"
+                        onClick={() => {
+                          fieldApi.handleChange(inputValue);
+                          setIsOpen(false);
+                        }}
+                        disabled={isDisabled}
+                      >
+                        Use "{inputValue}"
+                      </Button>
+                    )}
+                  </div>
+                )}
+                
+                {!isLoading && filteredOptions.map((option, index) => (
+                  <button
+                    key={`${option.value}-${index}`}
+                    type="button"
+                    className={cn(
+                      "w-full text-left px-3 py-2 text-sm rounded-sm transition-colors",
+                      "hover:bg-muted focus:bg-muted focus:outline-none",
+                      highlightedIndex === index && "bg-muted"
+                    )}
+                    onClick={() => handleOptionSelect(option)}
+                    onMouseEnter={() => setHighlightedIndex(index)}
+                    disabled={isDisabled}
+                  >
+                    <div className="font-medium">{option.label}</div>
+                    {option.value !== option.label && (
+                      <div className="text-xs text-muted-foreground">{option.value}</div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </Card>
+          )}
+        </div>
       )}
-    </div>
+    </BaseFieldWrapper>
   );
 };

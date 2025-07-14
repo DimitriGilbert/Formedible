@@ -1,9 +1,9 @@
 'use client';
 import React, { useState } from 'react';
-import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { Star, Heart, ThumbsUp } from 'lucide-react';
 import type { BaseFieldProps } from '@/lib/formedible/types';
+import { BaseFieldWrapper } from './base-field-wrapper';
 
 export interface RatingFieldSpecificProps extends BaseFieldProps {
   ratingConfig?: {
@@ -29,11 +29,8 @@ const SIZE_CLASSES = {
 
 export const RatingField: React.FC<RatingFieldSpecificProps> = ({
   fieldApi,
-  label,
-  description,
   ratingConfig = {},
-  labelClassName,
-  wrapperClassName,
+  ...wrapperProps
 }) => {
   const {
     max = 5,
@@ -90,124 +87,107 @@ export const RatingField: React.FC<RatingFieldSpecificProps> = ({
     return currentValue >= halfRating && currentValue < fullRating;
   };
 
-  const getDisplayValue = (): string => {
-    if (!showValue) return '';
-    
-    const displayRating = hoverValue !== null ? hoverValue : value;
-    return allowHalf && displayRating % 1 !== 0 
-      ? displayRating.toFixed(1) 
-      : displayRating.toString();
-  };
+
 
   return (
-    <div className={cn("space-y-2", wrapperClassName)}>
-      {label && (
-        <Label className={cn("text-sm font-medium", labelClassName)}>
-          {label}
+    <BaseFieldWrapper fieldApi={fieldApi} {...wrapperProps}>
+      {({ isDisabled }) => (
+        <div className="space-y-2">
           {showValue && (
-            <span className="ml-2 text-sm text-muted-foreground">
-              ({getDisplayValue()}/{max})
-            </span>
+            <div className="text-xs text-muted-foreground">
+              ({value}/{max})
+            </div>
           )}
-        </Label>
-      )}
-      {description && (
-        <p className="text-xs text-muted-foreground">{description}</p>
-      )}
-
-      <div className="flex items-center gap-1">
-        {Array.from({ length: max }, (_, index) => (
-          <div key={index} className="relative">
-            {/* Full star/icon button */}
-            <button
-              type="button"
-              className={cn(
-                "relative transition-all duration-150 hover:scale-110",
-                fieldApi.form.state.isSubmitting 
-                  ? "cursor-not-allowed opacity-50" 
-                  : "cursor-pointer"
-              )}
-              onClick={() => handleRatingClick(getRatingValue(index, false))}
-              onMouseEnter={() => handleMouseEnter(getRatingValue(index, false))}
-              onMouseLeave={handleMouseLeave}
-              disabled={fieldApi.form.state.isSubmitting}
-              title={`Rate ${getRatingValue(index, false)} ${icon}${getRatingValue(index, false) !== 1 ? 's' : ''}`}
-            >
-              <IconComponent
-                className={cn(
-                  iconSizeClass,
-                  "transition-colors duration-150",
-                  shouldShowFilled(index, false)
-                    ? icon === 'star' 
-                      ? "fill-yellow-400 text-yellow-400" 
-                      : icon === 'heart'
-                      ? "fill-red-500 text-red-500"
-                      : "fill-blue-500 text-blue-500"
-                    : "text-muted-foreground hover:text-muted-foreground/80"
-                )}
-              />
-              
-              {/* Half-fill overlay for half ratings */}
-              {allowHalf && shouldShowHalfFilled(index) && (
-                <div className="absolute inset-0 overflow-hidden" style={{ width: '50%' }}>
+          
+          <div className="flex items-center gap-1">
+            {Array.from({ length: max }, (_, index) => (
+              <div key={index} className="relative">
+                {/* Full star/icon button */}
+                <button
+                  type="button"
+                  className={cn(
+                    "relative transition-all duration-150 hover:scale-110",
+                    isDisabled 
+                      ? "cursor-not-allowed opacity-50" 
+                      : "cursor-pointer"
+                  )}
+                  onClick={() => !isDisabled && handleRatingClick(getRatingValue(index, false))}
+                  onMouseEnter={() => !isDisabled && handleMouseEnter(getRatingValue(index, false))}
+                  onMouseLeave={handleMouseLeave}
+                  onFocus={(e) => fieldApi.eventHandlers.onFocus?.(e)}
+                  onBlur={(e) => fieldApi.eventHandlers.onBlur?.(e)}
+                  disabled={isDisabled}
+                  title={`Rate ${getRatingValue(index, false)} ${icon}${getRatingValue(index, false) !== 1 ? 's' : ''}`}
+                >
                   <IconComponent
                     className={cn(
                       iconSizeClass,
-                      icon === 'star' 
-                        ? "fill-yellow-400 text-yellow-400" 
-                        : icon === 'heart'
-                        ? "fill-red-500 text-red-500"
-                        : "fill-blue-500 text-blue-500"
+                      "transition-colors duration-150",
+                      shouldShowFilled(index, false)
+                        ? icon === 'star' 
+                          ? "fill-yellow-400 text-yellow-400" 
+                          : icon === 'heart'
+                          ? "fill-red-500 text-red-500"
+                          : "fill-blue-500 text-blue-500"
+                        : "text-muted-foreground hover:text-muted-foreground/80"
                     )}
                   />
-                </div>
-              )}
-            </button>
+                  
+                  {/* Half-fill overlay for half ratings */}
+                  {allowHalf && shouldShowHalfFilled(index) && (
+                    <div className="absolute inset-0 overflow-hidden" style={{ width: '50%' }}>
+                      <IconComponent
+                        className={cn(
+                          iconSizeClass,
+                          icon === 'star' 
+                            ? "fill-yellow-400 text-yellow-400" 
+                            : icon === 'heart'
+                            ? "fill-red-500 text-red-500"
+                            : "fill-blue-500 text-blue-500"
+                        )}
+                      />
+                    </div>
+                  )}
+                </button>
 
-            {/* Half star/icon button (if half ratings allowed) */}
-            {allowHalf && (
+                {/* Half star/icon button (if half ratings allowed) */}
+                {allowHalf && (
+                  <button
+                    type="button"
+                    className={cn(
+                      "absolute inset-0 w-1/2 transition-all duration-150",
+                      isDisabled 
+                        ? "cursor-not-allowed" 
+                        : "cursor-pointer"
+                    )}
+                    onClick={() => !isDisabled && handleRatingClick(getRatingValue(index, true))}
+                    onMouseEnter={() => !isDisabled && handleMouseEnter(getRatingValue(index, true))}
+                    onMouseLeave={handleMouseLeave}
+                    disabled={isDisabled}
+                    title={`Rate ${getRatingValue(index, true)} ${icon}s`}
+                  />
+                )}
+              </div>
+            ))}
+            
+            {/* Clear rating button */}
+            {value > 0 && (
               <button
                 type="button"
                 className={cn(
-                  "absolute inset-0 w-1/2 transition-all duration-150",
-                  fieldApi.form.state.isSubmitting 
-                    ? "cursor-not-allowed" 
-                    : "cursor-pointer"
+                  "ml-2 text-xs text-muted-foreground hover:text-foreground transition-colors",
+                  isDisabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"
                 )}
-                onClick={() => handleRatingClick(getRatingValue(index, true))}
-                onMouseEnter={() => handleMouseEnter(getRatingValue(index, true))}
-                onMouseLeave={handleMouseLeave}
-                disabled={fieldApi.form.state.isSubmitting}
-                title={`Rate ${getRatingValue(index, true)} ${icon}s`}
-              />
+                onClick={() => !isDisabled && handleRatingClick(0)}
+                disabled={isDisabled}
+                title="Clear rating"
+              >
+                Clear
+              </button>
             )}
           </div>
-        ))}
-        
-        {/* Clear rating button */}
-        {value > 0 && (
-          <button
-            type="button"
-            className={cn(
-              "ml-2 text-xs text-muted-foreground hover:text-foreground transition-colors",
-              fieldApi.form.state.isSubmitting ? "cursor-not-allowed opacity-50" : "cursor-pointer"
-            )}
-            onClick={() => handleRatingClick(0)}
-            disabled={fieldApi.form.state.isSubmitting}
-            title="Clear rating"
-          >
-            Clear
-          </button>
-        )}
-      </div>
-
-      {state.meta.isTouched && state.meta.errors.length > 0 && (
-        <div className="text-xs text-destructive pt-1">
-          {state.meta.errors.map((err: string | Error, index: number) => (
-            <p key={index}>{typeof err === 'string' ? err : (err as Error)?.message || 'Invalid'}</p>
-          ))}
         </div>
       )}
-    </div>
+    </BaseFieldWrapper>
   );
 }; 

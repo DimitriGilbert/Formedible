@@ -81,9 +81,19 @@
           "target": "components/formedible/fields/duration-picker-field.tsx"
         },
         {
+          "path": "src/components/formedible/fields/base-field-wrapper.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/fields/base-field-wrapper.tsx"
+        },
+        {
           "path": "src/components/formedible/fields/field-help.tsx",
           "type": "registry:component",
           "target": "components/formedible/fields/field-help.tsx"
+        },
+        {
+          "path": "src/components/formedible/fields/field-registry.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/fields/field-registry.tsx"
         },
         {
           "path": "src/components/formedible/fields/file-upload-field.tsx",
