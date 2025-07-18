@@ -346,14 +346,124 @@ export interface ConditionalSection<TFormValues = Record<string, unknown>> {
 }
 
 // Location picker configuration
+export interface LocationValue {
+  lat: number;
+  lng: number;
+  address?: string;
+  country?: string;
+  city?: string;
+  state?: string;
+  postalCode?: string;
+  [key: string]: any; // Allow additional properties from different services
+}
+
+export interface LocationSearchResult extends LocationValue {
+  id: string | number;
+  relevance?: number;
+  bounds?: {
+    northeast: { lat: number; lng: number };
+    southwest: { lat: number; lng: number };
+  };
+}
+
 export interface LocationConfig {
-  apiKey?: string;
+  // Basic configuration
   defaultLocation?: { lat: number; lng: number };
   zoom?: number;
   searchPlaceholder?: string;
   enableSearch?: boolean;
   enableGeolocation?: boolean;
-  mapProvider?: 'google' | 'openstreetmap';
+  enableManualEntry?: boolean;
+  
+  // Map provider - determines which map component to render
+  mapProvider?: 'google' | 'openstreetmap' | 'bing' | 'custom' | 'cartodb' | 'stamen' | 'satellite';
+  
+  // User-defined search function
+  // This function should handle the API calls to your preferred geocoding service
+  searchCallback?: (query: string, options?: {
+    // Optional parameters that can be passed to the search
+    limit?: number;
+    countryCode?: string;
+    bounds?: {
+      northeast: { lat: number; lng: number };
+      southwest: { lat: number; lng: number };
+    };
+    [key: string]: any;
+  }) => Promise<LocationSearchResult[]>;
+  
+  // User-defined reverse geocoding function
+  // This function should convert coordinates back to an address
+  reverseGeocodeCallback?: (lat: number, lng: number) => Promise<LocationValue>;
+  
+  // Map rendering callback - allows complete customization of map display
+  mapRenderCallback?: (params: {
+    location: LocationValue | null;
+    onLocationSelect: (location: LocationValue) => void;
+    mapContainer: HTMLDivElement;
+    zoom: number;
+    readonly: boolean;
+    defaultLocation?: { lat: number; lng: number };
+  }) => {
+    // Return cleanup function
+    cleanup?: () => void;
+    // Update location on map
+    updateLocation?: (location: LocationValue) => void;
+  };
+  
+  // Provider-specific configuration
+  googleMaps?: {
+    apiKey: string;
+    libraries?: string[];
+    mapOptions?: any; // Google Maps MapOptions
+    searchOptions?: any; // Google Places search options
+  };
+  
+  openStreetMap?: {
+    tileServer?: string; // Custom tile server URL
+    attribution?: string;
+    nominatimEndpoint?: string; // Custom Nominatim endpoint
+    searchOptions?: {
+      countrycodes?: string;
+      addressdetails?: boolean;
+      limit?: number;
+      [key: string]: any;
+    };
+  };
+  
+  bingMaps?: {
+    apiKey: string;
+    mapOptions?: any; // Bing Maps options
+    searchOptions?: any; // Bing geocoding options
+  };
+  
+  // Custom provider configuration
+  custom?: {
+    [key: string]: any;
+  };
+  
+  // Search behavior
+  searchOptions?: {
+    debounceMs?: number;
+    minQueryLength?: number;
+    maxResults?: number;
+    countryCode?: string; // ISO country code to restrict search
+    bounds?: {
+      northeast: { lat: number; lng: number };
+      southwest: { lat: number; lng: number };
+    };
+    [key: string]: any;
+  };
+  
+  // UI customization
+  ui?: {
+    showCoordinates?: boolean;
+    showAddress?: boolean;
+    mapHeight?: number;
+    searchInputClassName?: string;
+    mapClassName?: string;
+    coordinatesFormat?: 'decimal' | 'dms'; // Decimal degrees or degrees/minutes/seconds
+    [key: string]: any;
+  };
 }
 
 // Duration picker configuration

@@ -7,6 +7,7 @@ import type {
   FormedibleFormApi,
   FieldComponentProps,
   BaseFieldProps,
+  LocationConfig,
 } from "@/lib/formedible/types";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -261,15 +262,7 @@ export interface FieldConfig {
     loadingText?: string; // Loading text
   };
   // Location picker specific
-  locationConfig?: {
-    apiKey?: string;
-    defaultLocation?: { lat: number; lng: number };
-    zoom?: number;
-    searchPlaceholder?: string;
-    enableSearch?: boolean;
-    enableGeolocation?: boolean;
-    mapProvider?: "google" | "openstreetmap";
-  };
+  locationConfig?: LocationConfig;
   // Duration picker specific
   durationConfig?: {
     format?: "hms" | "hm" | "ms" | "hours" | "minutes" | "seconds";

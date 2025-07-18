@@ -151,6 +151,13 @@ const advancedFieldTypesSchema = z.object({
   satisfaction: z.number().min(1).max(5),
   phoneNumber: z.string().min(1, "Phone number is required"),
   favoriteColor: z.string().min(1, "Please select a color"),
+  workLocation: z.object({
+    lat: z.number(),
+    lng: z.number(),
+    address: z.string().optional(),
+    city: z.string().optional(),
+    country: z.string().optional(),
+  }).optional(),
   workDuration: z.object({
     hours: z.number().min(0),
     minutes: z.number().min(0),
@@ -1059,10 +1066,64 @@ export default function ExamplesPage() {
         }
       },
       {
+        name: "workLocation",
+        type: "location",
+        label: "Work Location",
+        section: { title: "Location & Preferences", description: "Where do you work and your preferences" },
+        locationConfig: {
+          defaultLocation: { lat: 51.5074, lng: -0.1278 }, // London
+          zoom: 12,
+          enableSearch: true,
+          enableGeolocation: true,
+          enableManualEntry: true,
+          mapProvider: "openstreetmap",
+          searchPlaceholder: "Search for your work location...",
+          searchOptions: {
+            debounceMs: 300,
+            minQueryLength: 3,
+            maxResults: 5,
+          },
+          ui: {
+            showCoordinates: true,
+            showAddress: true,
+            mapHeight: 400,
+            coordinatesFormat: "decimal",
+          },
+          // Custom search using OpenStreetMap Nominatim
+          searchCallback: async (query: string, options: any = {}) => {
+            const params = new URLSearchParams({
+              q: query,
+              format: 'json',
+              limit: String(options.limit || 5),
+              addressdetails: '1',
+            });
+            
+            try {
+              const response = await fetch(`https://nominatim.openstreetmap.org/search?${params}`);
+              const data = await response.json();
+              
+              return data.map((item: any, index: number) => ({
+                id: item.place_id || index,
+                lat: parseFloat(item.lat),
+                lng: parseFloat(item.lon),
+                address: item.display_name,
+                city: item.address?.city || item.address?.town || item.address?.village,
+                state: item.address?.state,
+                country: item.address?.country,
+                postalCode: item.address?.postcode,
+                relevance: parseFloat(item.importance || 0),
+              }));
+            } catch (error) {
+              console.error('Location search error:', error);
+              return [];
+            }
+          }
+        }
+      },
+      {
         name: "workDuration",
         type: "duration",
         label: "Daily Work Hours",
-        section: { title: "Work Preferences", description: "Tell us about your work schedule" },
         durationConfig: {
           format: "hm",
           maxHours: 24,
@@ -1207,6 +1268,7 @@ export default function ExamplesPage() {
         satisfaction: 5,
         phoneNumber: "",
         favoriteColor: "",
+        workLocation: undefined,
         workDuration: { hours: 8, minutes: 0 },
         skills: [],
         experienceLevel: 5,
