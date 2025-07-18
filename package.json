@@ -43,5 +43,8 @@
     "puppeteer": "^24.11.2",
     "ts-jest": "^29.4.0",
     "turbo": "^2.5.3"
+  },
+  "dependencies": {
+    "zod": "^4.0.5"
   }
 }

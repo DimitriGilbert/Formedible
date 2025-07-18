@@ -14,6 +14,7 @@ import { SwitchField } from './switch-field';
 import { DateField } from './date-field';
 import { SliderField } from './slider-field';
 import { FileUploadField } from './file-upload-field';
+import { ObjectField } from './object-field';
 
 // Map of field types to components
 const fieldTypeComponents: Record<string, React.ComponentType<any>> = {
@@ -30,6 +31,7 @@ const fieldTypeComponents: Record<string, React.ComponentType<any>> = {
   date: DateField,
   slider: SliderField,
   file: FileUploadField,
+  object: ObjectField,
 };
 
 export interface ArrayFieldSpecificProps extends BaseFieldProps {
@@ -47,6 +49,28 @@ export interface ArrayFieldSpecificProps extends BaseFieldProps {
     defaultValue?: unknown;
     // Additional props to pass to item components
     itemProps?: Record<string, unknown>;
+    // Object field configuration (when itemType is "object")
+    objectConfig?: {
+      title?: string;
+      description?: string;
+      fields: Array<{
+        name: string;
+        type: string;
+        label?: string;
+        placeholder?: string;
+        description?: string;
+        options?: Array<{ value: string; label: string }>;
+        min?: number;
+        max?: number;
+        step?: number;
+        [key: string]: unknown;
+      }>;
+      collapsible?: boolean;
+      defaultExpanded?: boolean;
+      showCard?: boolean;
+      layout?: "vertical" | "horizontal" | "grid";
+      columns?: number;
+    };
   };
 }
 
@@ -77,6 +101,7 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
     sortable = false,
     defaultValue = '',
     itemProps = {},
+    objectConfig,
   } = arrayConfig || {};
 
   // Get the component for rendering items
@@ -87,7 +112,7 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
     
     const newValue = [...value, defaultValue];
     fieldApi.handleChange(newValue);
-  }, [value, maxItems, defaultValue, fieldApi.handleChange]);
+  }, [value, maxItems, defaultValue, fieldApi]);
 
   const removeItem = useCallback((index: number) => {
     if (value.length <= minItems) return;
@@ -95,13 +120,13 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
     const newValue = value.filter((_, i) => i !== index);
     fieldApi.handleChange(newValue);
     fieldApi.handleBlur();
-  }, [value, minItems, fieldApi.handleChange, fieldApi.handleBlur]);
+  }, [value, minItems, fieldApi]);
 
   const updateItem = useCallback((index: number, newItemValue: unknown) => {
     const newValue = [...value];
     newValue[index] = newItemValue;
     fieldApi.handleChange(newValue);
-  }, [value, fieldApi.handleChange]);
+  }, [value, fieldApi]);
 
   const moveItem = useCallback((fromIndex: number, toIndex: number) => {
     if (!sortable) return;
@@ -111,7 +136,7 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
     const [movedItem] = newValue.splice(fromIndex, 1);
     newValue.splice(toIndex, 0, movedItem);
     fieldApi.handleChange(newValue);
-  }, [value, fieldApi.handleChange, sortable]);
+  }, [value, fieldApi, sortable]);
 
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
@@ -133,7 +158,7 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
       handleBlur: () => fieldApi.handleBlur(),
       form: fieldApi.form,
     };
-  }, [name, value, updateItem, fieldApi.handleBlur, fieldApi.form]);
+  }, [name, value, updateItem, fieldApi]);
 
   const canAddMore = value.length < maxItems;
   const canRemove = value.length > minItems;
@@ -210,6 +235,7 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
                       type: itemType,
                       datalist: itemProps.datalist,
                     })}
+                    {...(itemType === 'object' && objectConfig && { objectConfig })}
                   />
                 </div>
                 

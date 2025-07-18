@@ -23,7 +23,7 @@
     "@tanstack/react-form": "^1.11.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "zod": "^3.25.56"
+    "zod": "^4.0.5"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",

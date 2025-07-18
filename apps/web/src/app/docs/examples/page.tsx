@@ -876,6 +876,20 @@ export default function ExamplesPage() {
             skills: [],
             startDate: new Date(),
           },
+          objectConfig: {
+            fields: [
+              { name: "name", type: "text", label: "Name", placeholder: "Enter name" },
+              { name: "email", type: "text", label: "Email", placeholder: "Enter email" },
+              { name: "role", type: "select", label: "Role", options: [
+                { value: "developer", label: "Developer" },
+                { value: "designer", label: "Designer" },
+                { value: "manager", label: "Manager" },
+                { value: "qa", label: "QA" }
+              ]},
+              { name: "skills", type: "text", label: "Skills", placeholder: "Enter skills (comma-separated)" },
+              { name: "startDate", type: "text", label: "Start Date", placeholder: "YYYY-MM-DD" }
+            ]
+          }
         },
       },
       {
@@ -912,6 +926,14 @@ export default function ExamplesPage() {
             phone: "",
             isPrimary: false,
           },
+          objectConfig: {
+            fields: [
+              { name: "name", type: "text", label: "Name", placeholder: "Enter name" },
+              { name: "relationship", type: "text", label: "Relationship", placeholder: "e.g., Spouse, Parent" },
+              { name: "phone", type: "text", label: "Phone", placeholder: "Enter phone number" },
+              { name: "isPrimary", type: "text", label: "Primary Contact", placeholder: "true/false" }
+            ]
+          }
         },
       },
     ],
@@ -923,7 +945,35 @@ export default function ExamplesPage() {
       },
       onSubmit: async ({ value }) => {
         console.log("Array fields form submitted:", value);
-        toast.success("Team information saved!");
+        
+        // Format the array data for display
+        const formatValue = (val: any): string => {
+          if (val === null || val === undefined) return 'null';
+          if (typeof val === 'boolean') return val.toString();
+          if (typeof val === 'number') return val.toString();
+          if (typeof val === 'string') return val;
+          if (Array.isArray(val)) {
+            return val.map(item => 
+              typeof item === 'object' ? JSON.stringify(item, null, 2) : String(item)
+            ).join('\n');
+          }
+          if (typeof val === 'object') {
+            return JSON.stringify(val, null, 2);
+          }
+          return String(val);
+        };
+        
+        const formattedData = Object.entries(value)
+          .map(([key, val]) => `${key}: ${formatValue(val)}`)
+          .join('\n\n');
+        
+        toast.success("Team information saved!", {
+          description: "Check console for detailed data",
+          action: {
+            label: "View Data",
+            onClick: () => alert(`Form Data:\n\n${formattedData}`)
+          }
+        });
       },
     },
   });

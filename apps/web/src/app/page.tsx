@@ -78,7 +78,7 @@ const advancedFieldsSchema = z.object({
   skills: z.array(z.string()).min(1, "Please select at least one skill"),
   phone: z.string().min(1, "Phone number is required"),
   experience: z.enum(["beginner", "intermediate", "advanced"], {
-    required_error: "Please select your experience level",
+    message: "Please select your experience level",
   }),
   rating: z.number().min(1, "Please provide a rating").max(5),
 });
@@ -93,7 +93,7 @@ const comprehensiveSchema = z.object({
   favoriteColor: z.string().min(1, "Please select a color"),
   skills: z.array(z.string()).min(1, "Please select at least one skill"),
   experience: z.enum(["beginner", "intermediate", "advanced"], {
-    required_error: "Please select your experience level",
+    message: "Please select your experience level",
   }),
   satisfaction: z.number().min(1, "Please provide a rating").max(5),
 

@@ -156,7 +156,29 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
         formOptions: {
           onSubmit: async ({ value }: any) => {
             console.log('Preview form submitted:', value);
-            alert('Form submitted successfully! Check the console for form data.');
+            
+            // Format the form data for display
+            const formatValue = (val: any): string => {
+              if (val === null || val === undefined) return 'null';
+              if (typeof val === 'boolean') return val.toString();
+              if (typeof val === 'number') return val.toString();
+              if (typeof val === 'string') return val;
+              if (Array.isArray(val)) {
+                return val.map(item => 
+                  typeof item === 'object' ? JSON.stringify(item, null, 2) : String(item)
+                ).join('\n');
+              }
+              if (typeof val === 'object') {
+                return JSON.stringify(val, null, 2);
+              }
+              return String(val);
+            };
+            
+            const formattedData = Object.entries(value)
+              .map(([key, val]) => `${key}: ${formatValue(val)}`)
+              .join('\n');
+            
+            alert(`✅ Form submitted successfully!\n\nForm Data:\n${formattedData}`);
           },
         },
       };

@@ -103,6 +103,27 @@ export interface ArrayFieldProps extends BaseFieldProps {
     defaultValue?: unknown;
     itemComponent?: React.ComponentType<BaseFieldProps>;
     itemProps?: Record<string, unknown>;
+    objectConfig?: {
+      title?: string;
+      description?: string;
+      fields: Array<{
+        name: string;
+        type: string;
+        label?: string;
+        placeholder?: string;
+        description?: string;
+        options?: Array<{ value: string; label: string }> | ((values: Record<string, unknown>) => Array<{ value: string; label: string }>);
+        min?: number;
+        max?: number;
+        step?: number;
+        [key: string]: unknown;
+      }>;
+      collapsible?: boolean;
+      defaultExpanded?: boolean;
+      showCard?: boolean;
+      layout?: "vertical" | "horizontal" | "grid";
+      columns?: number;
+    };
   };
 }
 
@@ -202,11 +223,36 @@ export interface PhoneFieldProps extends BaseFieldProps {
   };
 }
 
+export interface ObjectFieldProps extends BaseFieldProps {
+  objectConfig?: {
+    title?: string;
+    description?: string;
+    fields: Array<{
+      name: string;
+      type: string;
+      label?: string;
+      placeholder?: string;
+      description?: string;
+      options?: Array<{ value: string; label: string }> | ((values: Record<string, unknown>) => Array<{ value: string; label: string }>);
+      min?: number;
+      max?: number;
+      step?: number;
+      [key: string]: unknown;
+    }>;
+    collapsible?: boolean;
+    defaultExpanded?: boolean;
+    showCard?: boolean;
+    layout?: "vertical" | "horizontal" | "grid";
+    columns?: number;
+  };
+}
+
 // Union type for all possible field component props - using intersection for flexibility
 export type FieldComponentProps = BaseFieldProps & {
   // Optional props that specific field types might need
   options?: FieldOptions;
   arrayConfig?: ArrayFieldProps['arrayConfig'];
+  objectConfig?: ObjectFieldProps['objectConfig'];
   type?: TextFieldProps['type'];
   datalist?: string[];
   dateConfig?: DateFieldProps['dateConfig'];
