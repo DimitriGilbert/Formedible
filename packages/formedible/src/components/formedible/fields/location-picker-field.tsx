@@ -310,6 +310,9 @@ const TILE_PROVIDERS = {
   },
 };
 
+// Constants - prevent re-creation
+const DEFAULT_LOCATION = { lat: 51.5074, lng: -0.1278 };
+
 // Load Leaflet CSS and JS dynamically
 const loadLeaflet = () => {
   if (typeof (window as any).L !== "undefined") {
@@ -344,137 +347,149 @@ export const LocationPickerField: React.FC<LocationPickerFieldProps> = ({
   wrapperClassName,
   labelClassName,
   inputClassName,
-  locationConfig = {},
+  locationConfig,
 }) => {
-  const {
-    defaultLocation = { lat: 51.5074, lng: -0.1278 },
-    zoom = 10,
-    searchPlaceholder = "🔍 Search for an address or place...",
-    enableSearch = true,
-    enableGeolocation = true,
-    enableManualEntry = true,
-    mapProvider = "openstreetmap",
-    searchCallback,
-    reverseGeocodeCallback,
-    mapRenderCallback,
-    searchOptions = {},
-    ui = {},
-  } = locationConfig;
+  // Extract config with defaults - NO objects created inline
+  const config = locationConfig || {};
+  const defaultLocation = config.defaultLocation || DEFAULT_LOCATION;
+  const zoom = config.zoom || 10;
+  const searchPlaceholder = config.searchPlaceholder || "🔍 Search for an address or place...";
+  const enableSearch = config.enableSearch !== false;
+  const enableGeolocation = config.enableGeolocation !== false;
+  const enableManualEntry = config.enableManualEntry !== false;
+  const mapProvider = config.mapProvider || "openstreetmap";
+  const searchCallback = config.searchCallback;
+  const reverseGeocodeCallback = config.reverseGeocodeCallback;
+  const mapRenderCallback = config.mapRenderCallback;
+  
+  // Search options with defaults
+  const searchOpts = config.searchOptions || {};
+  const debounceMs = searchOpts.debounceMs || 300;
+  const minQueryLength = searchOpts.minQueryLength || 2;
+  const maxResults = searchOpts.maxResults || 5;
+  
+  // UI options with defaults
+  const uiOpts = config.ui || {};
+  const showCoordinates = uiOpts.showCoordinates !== false;
+  const showAddress = uiOpts.showAddress !== false;
+  const mapHeight = uiOpts.mapHeight || 400;
+  const coordinatesFormat = uiOpts.coordinatesFormat || "decimal";
 
-  const {
-    debounceMs = 300,
-    minQueryLength = 2,
-    maxResults = 5,
-  } = searchOptions;
-
-  const {
-    showCoordinates = true,
-    showAddress = true,
-    mapHeight = 400,
-    coordinatesFormat = "decimal",
-  } = ui;
-
-  const name = fieldApi.name;
+  // Simple state - no complex dependencies
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [searchResults, setSearchResults] = useState<LocationSearchResult[]>(
-    []
-  );
+  const [searchResults, setSearchResults] = useState<LocationSearchResult[]>([]);
   const [showResults, setShowResults] = useState(false);
-  const [currentLocation, setCurrentLocation] = useState<LocationValue | null>(
-    fieldApi.state?.value || null
-  );
+  const [currentLocation, setCurrentLocation] = useState<LocationValue | null>(fieldApi.state?.value || null);
   const [geoError, setGeoError] = useState<string | null>(null);
   const [manualLat, setManualLat] = useState("");
   const [manualLng, setManualLng] = useState("");
   const [isManualDialogOpen, setIsManualDialogOpen] = useState(false);
   const [leafletLoaded, setLeafletLoaded] = useState(false);
-  const selectedProvider = mapProvider || "openstreetmap";
 
   const mapRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mapInstanceRef = useRef<any>(null);
 
-  // Load Leaflet on component mount
+  // Load Leaflet on mount - simple
   useEffect(() => {
     loadLeaflet()
       .then(() => setLeafletLoaded(true))
       .catch(() => setGeoError("Failed to load map library"));
   }, []);
 
-  // Get search function - user-defined or built-in
-  const getSearchFunction = useCallback(() => {
-    if (searchCallback) {
-      return searchCallback;
-    }
-
-    switch (selectedProvider) {
-      case "openstreetmap":
-        return (query: string, options: any) =>
-          builtInProviders.nominatim(query, {
-            ...locationConfig.openStreetMap,
-            ...options,
-          });
-      default:
-        return builtInProviders.nominatim;
-    }
-  }, [searchCallback, selectedProvider, locationConfig]);
-
-  // Get reverse geocoding function - user-defined or built-in
-  const getReverseGeocodeFunction = useCallback(() => {
-    if (reverseGeocodeCallback) {
-      return reverseGeocodeCallback;
-    }
-
-    switch (selectedProvider) {
-      case "openstreetmap":
-        return (lat: number, lng: number) =>
-          builtInProviders.nominatimReverse(
-            lat,
-            lng,
-            locationConfig.openStreetMap
-          );
-      default:
-        return builtInProviders.nominatimReverse;
-    }
-  }, [reverseGeocodeCallback, selectedProvider, locationConfig]);
-
-  // Location selection handler
-  const handleLocationSelect = useCallback(
-    async (location: LocationValue) => {
-      if (!location.address && location.lat && location.lng) {
-        try {
-          const reverseGeocodeFn = getReverseGeocodeFunction();
-          const geocodedLocation = await reverseGeocodeFn(
-            location.lat,
-            location.lng
-          );
-          location = { ...location, ...geocodedLocation };
-        } catch (error) {
-          console.error("Reverse geocoding error:", error);
-          location.address = `${location.lat}, ${location.lng}`;
-        }
-      }
-
-      setCurrentLocation(location);
-      fieldApi.handleChange(location);
+  // Search function - simple, no complex dependencies
+  const performSearch = useCallback(async (query: string) => {
+    if (!query.trim() || query.length < minQueryLength) {
+      setSearchResults([]);
       setShowResults(false);
-      setSearchQuery(location.address || `${location.lat}, ${location.lng}`);
-      setGeoError(null);
+      return;
+    }
 
-      if (mapInstanceRef.current?.updateLocation) {
-        mapInstanceRef.current.updateLocation(location);
+    setIsSearching(true);
+    try {
+      let results: LocationSearchResult[];
+      
+      if (searchCallback) {
+        results = await searchCallback(query, { limit: maxResults });
+      } else {
+        results = await builtInProviders.nominatim(query, { 
+          limit: maxResults,
+          ...config.openStreetMap 
+        });
       }
-    },
-    [fieldApi, getReverseGeocodeFunction]
-  );
+      
+      setSearchResults(results);
+      setShowResults(true);
+    } catch (error) {
+      console.error("Location search error:", error);
+      setSearchResults([]);
+      setGeoError("Search failed. Please try again.");
+    } finally {
+      setIsSearching(false);
+    }
+  }, [searchCallback, minQueryLength, maxResults, config.openStreetMap]);
 
-  // Initialize map
+  // Debounced search - simple
+  useEffect(() => {
+    if (!enableSearch) return;
+
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      performSearch(searchQuery);
+    }, debounceMs);
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchQuery, enableSearch, performSearch, debounceMs]);
+
+  // Location selection - simple
+  const handleLocationSelect = useCallback(async (location: LocationValue) => {
+    // Add address if missing
+    if (!location.address && location.lat && location.lng) {
+      try {
+        let geocodedLocation: LocationValue;
+        
+        if (reverseGeocodeCallback) {
+          geocodedLocation = await reverseGeocodeCallback(location.lat, location.lng);
+        } else {
+          geocodedLocation = await builtInProviders.nominatimReverse(
+            location.lat, 
+            location.lng, 
+            config.openStreetMap
+          );
+        }
+        
+        location = { ...location, ...geocodedLocation };
+      } catch (error) {
+        console.error("Reverse geocoding error:", error);
+        location.address = `${location.lat}, ${location.lng}`;
+      }
+    }
+
+    setCurrentLocation(location);
+    fieldApi.handleChange(location);
+    setShowResults(false);
+    setSearchQuery(location.address || `${location.lat}, ${location.lng}`);
+    setGeoError(null);
+
+    if (mapInstanceRef.current?.updateLocation) {
+      mapInstanceRef.current.updateLocation(location);
+    }
+  }, [fieldApi, reverseGeocodeCallback, config.openStreetMap]);
+
+  // Initialize map - simple
   useEffect(() => {
     if (!mapRef.current || !leafletLoaded) return;
 
     const mapRenderer = mapRenderCallback || defaultMapRenderer;
-
+    
     const mapInstance = mapRenderer({
       location: currentLocation,
       onLocationSelect: handleLocationSelect,
@@ -486,85 +501,22 @@ export const LocationPickerField: React.FC<LocationPickerFieldProps> = ({
 
     mapInstanceRef.current = mapInstance;
 
+    // Apply tile provider if not default
+    if (mapProvider !== "openstreetmap") {
+      const tileConfig = TILE_PROVIDERS[mapProvider as keyof typeof TILE_PROVIDERS];
+      if (tileConfig && 'switchTileLayer' in mapInstance) {
+        (mapInstance as any).switchTileLayer(tileConfig);
+      }
+    }
+
     return () => {
       if (mapInstance.cleanup) {
         mapInstance.cleanup();
       }
     };
-  }, [
-    currentLocation,
-    mapRenderCallback,
-    zoom,
-    handleLocationSelect,
-    defaultLocation,
-    leafletLoaded,
-  ]);
+  }, [leafletLoaded, currentLocation, handleLocationSelect, mapRenderCallback, zoom, defaultLocation, mapProvider]);
 
-  // Apply configured tile provider
-  useEffect(() => {
-    if (
-      mapInstanceRef.current?.switchTileLayer &&
-      selectedProvider !== "openstreetmap"
-    ) {
-      const tileConfig =
-        TILE_PROVIDERS[selectedProvider as keyof typeof TILE_PROVIDERS];
-      if (tileConfig) {
-        mapInstanceRef.current.switchTileLayer(tileConfig);
-      }
-    }
-  }, [selectedProvider, leafletLoaded]);
-
-  // Handle search with debouncing
-  useEffect(() => {
-    if (
-      !enableSearch ||
-      !searchQuery.trim() ||
-      searchQuery.length < minQueryLength
-    ) {
-      setSearchResults([]);
-      setShowResults(false);
-      return;
-    }
-
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
-    searchTimeoutRef.current = setTimeout(async () => {
-      setIsSearching(true);
-      try {
-        const searchFn = getSearchFunction();
-        const results = await searchFn(searchQuery, {
-          limit: maxResults,
-          ...searchOptions,
-        });
-
-        setSearchResults(results);
-        setShowResults(true);
-      } catch (error) {
-        console.error("Location search error:", error);
-        setSearchResults([]);
-        setGeoError("Search failed. Please try again.");
-      } finally {
-        setIsSearching(false);
-      }
-    }, debounceMs);
-
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
-  }, [
-    searchQuery,
-    enableSearch,
-    getSearchFunction,
-    minQueryLength,
-    maxResults,
-    searchOptions,
-    debounceMs,
-  ]);
-
+  // Simple handlers - no complex state
   const handleGetCurrentLocation = () => {
     if (!enableGeolocation || !navigator.geolocation) {
       setGeoError("Geolocation is not supported by your browser");
@@ -635,16 +587,14 @@ export const LocationPickerField: React.FC<LocationPickerFieldProps> = ({
           <div className="relative">
             <div className="relative">
               <Input
-                id={name}
+                id={fieldApi.name}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={
-                  placeholder || "🔍 Search for an address or place..."
-                }
+                placeholder={placeholder || searchPlaceholder}
                 className={cn(
                   "pl-10 pr-4",
                   inputClassName,
-                  ui.searchInputClassName,
+                  uiOpts.searchInputClassName,
                   isSearching && "animate-pulse"
                 )}
                 onFocus={() => searchResults.length > 0 && setShowResults(true)}
@@ -676,7 +626,7 @@ export const LocationPickerField: React.FC<LocationPickerFieldProps> = ({
             {showResults && searchResults.length > 0 && (
               <Card className="absolute top-full left-0 right-0 z-[999] mt-1 max-h-60 overflow-y-auto shadow-lg border-2">
                 <div className="p-1">
-                  {searchResults.map((result, index) => (
+                  {searchResults.map((result) => (
                     <button
                       key={result.id}
                       type="button"
@@ -826,7 +776,7 @@ export const LocationPickerField: React.FC<LocationPickerFieldProps> = ({
           )}
           <div
             ref={mapRef}
-            className={cn("w-full border rounded-md", ui.mapClassName)}
+            className={cn("w-full border rounded-md", uiOpts.mapClassName)}
             style={{ height: `${mapHeight}px`, minHeight: "300px" }}
           />
         </div>
