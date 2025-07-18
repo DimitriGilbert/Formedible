@@ -224,7 +224,7 @@ export interface FieldConfig {
   // Field grouping
   group?: string; // Group name for organizing fields
   section?: {
-    title: string; // Section title
+    title?: string; // Section title (optional)
     description?: string; // Section description
     collapsible?: boolean; // Whether section can be collapsed
     defaultExpanded?: boolean; // Default expansion state
@@ -341,10 +341,35 @@ export interface FieldConfig {
     min?: number;
     max?: number;
     step?: number;
-    marks?: Array<{ value: number; label: string }>;
-    showTooltip?: boolean;
+    // Value mapping between slider value (int) and display value (arbitrary)
+    valueMapping?: Array<{
+      sliderValue: number;
+      displayValue: string | number;
+      label?: string;
+    }>;
+    // Gradient colors for the slider
+    gradientColors?: {
+      start: string;
+      end: string;
+      direction?: 'horizontal' | 'vertical';
+    };
+    // Custom visualization component for each step
+    visualizationComponent?: React.ComponentType<{
+      value: number;
+      displayValue: string | number;
+      label?: string;
+      isActive: boolean;
+    }>;
+    // Legacy and additional config
+    valueLabelPrefix?: string;
+    valueLabelSuffix?: string;
+    valueDisplayPrecision?: number;
+    showRawValue?: boolean;
     showValue?: boolean;
+    showTooltip?: boolean;
+    showTicks?: boolean;
     orientation?: "horizontal" | "vertical";
+    marks?: Array<{ value: number; label: string }>;
   };
   // Number field specific
   numberConfig?: {
@@ -451,6 +476,9 @@ interface UseFormedibleOptions<TFormValues> {
   submitLabel?: string;
   nextLabel?: string;
   previousLabel?: string;
+  // Translation support for section buttons
+  collapseLabel?: string;
+  expandLabel?: string;
   formClassName?: string;
   fieldClassName?: string;
   pages?: PageConfig[];
@@ -664,7 +692,7 @@ interface SectionRendererProps {
   sectionKey: string;
   sectionData: {
     section?: {
-      title: string;
+      title?: string;
       description?: string;
       collapsible?: boolean;
       defaultExpanded?: boolean;
@@ -674,10 +702,12 @@ interface SectionRendererProps {
   renderField: (field: FieldConfig) => React.ReactNode;
 }
 
-const SectionRenderer: React.FC<SectionRendererProps> = ({
+const SectionRenderer: React.FC<SectionRendererProps & { collapseLabel?: string; expandLabel?: string }> = ({
   sectionKey,
   sectionData,
   renderField,
+  collapseLabel = "Collapse",
+  expandLabel = "Expand",
 }) => {
   const { section, groups } = sectionData;
   const [isExpanded, setIsExpanded] = React.useState(
@@ -713,7 +743,7 @@ const SectionRenderer: React.FC<SectionRendererProps> = ({
       <div key={sectionKey} className="space-y-4">
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">{section.title}</h3>
+            {section.title && <h3 className="text-lg font-semibold">{section.title}</h3>}
             {section.collapsible && (
               <Button
                 type="button"
@@ -722,7 +752,7 @@ const SectionRenderer: React.FC<SectionRendererProps> = ({
                 onClick={() => setIsExpanded(!isExpanded)}
                 className="text-muted-foreground hover:text-foreground"
               >
-                {isExpanded ? "Collapse" : "Expand"}
+                {isExpanded ? collapseLabel : expandLabel}
               </Button>
             )}
           </div>
@@ -750,6 +780,8 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     submitLabel = "Submit",
     nextLabel = "Next",
     previousLabel = "Previous",
+    collapseLabel = "Collapse",
+    expandLabel = "Expand",
     formClassName,
     fieldClassName,
     pages,
@@ -1770,13 +1802,13 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
 
                 acc[sectionKey].groups[groupKey].push(field);
                 return acc;
-              }, {} as Record<string, { section?: { title: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean }; groups: Record<string, FieldConfig[]> }>);
+              }, {} as Record<string, { section?: { title?: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean }; groups: Record<string, FieldConfig[]> }>);
 
               const renderSection = (
                 sectionKey: string,
                 sectionData: {
                   section?: {
-                    title: string;
+                    title?: string;
                     description?: string;
                     collapsible?: boolean;
                     defaultExpanded?: boolean;
@@ -1789,6 +1821,8 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
                   sectionKey={sectionKey}
                   sectionData={sectionData}
                   renderField={renderField}
+                  collapseLabel={collapseLabel}
+                  expandLabel={expandLabel}
                 />
               );
 
@@ -1871,13 +1905,13 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
 
               acc[sectionKey].groups[groupKey].push(field);
               return acc;
-            }, {} as Record<string, { section?: { title: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean }; groups: Record<string, FieldConfig[]> }>);
+            }, {} as Record<string, { section?: { title?: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean }; groups: Record<string, FieldConfig[]> }>);
 
             const renderSection = (
               sectionKey: string,
               sectionData: {
                 section?: {
-                  title: string;
+                  title?: string;
                   description?: string;
                   collapsible?: boolean;
                   defaultExpanded?: boolean;
@@ -1917,7 +1951,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
           }}
         </form.Subscribe>
       );
-    }, [renderTabContent, renderField, activeTab, setActiveTab, hasTabs, tabs]);
+    }, [renderTabContent, renderField, activeTab, setActiveTab]);
 
     const renderProgress = () => {
       if (!hasPages || !progress) return null;

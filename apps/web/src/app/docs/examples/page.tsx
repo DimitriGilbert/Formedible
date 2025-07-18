@@ -157,6 +157,8 @@ const advancedFieldTypesSchema = z.object({
   }).optional(),
   skills: z.array(z.string()).min(1, "Select at least one skill"),
   experienceLevel: z.number().min(1).max(10),
+  energyRating: z.number().min(1).max(5),
+  performanceLevel: z.number().min(0).max(100),
   birthDate: z.date(),
   resume: z.any().optional(),
   aboutMe: z.string().min(50, "Please write at least 50 characters about yourself"),
@@ -165,8 +167,29 @@ const advancedFieldTypesSchema = z.object({
   overallRating: z.number().min(1).max(5),
 });
 
+// Energy Rating Visualization Component
+const EnergyRatingComponent: React.FC<{
+  value: number;
+  displayValue: string | number;
+  label?: string;
+  isActive: boolean;
+}> = ({ value, displayValue, label, isActive }) => (
+  <div className={`flex flex-col items-center p-2 rounded-lg transition-all ${
+    isActive 
+      ? 'bg-primary text-primary-foreground scale-110' 
+      : 'bg-muted text-muted-foreground hover:bg-muted/80'
+  }`}>
+    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+      value <= 2 ? 'bg-red-500' : value <= 3 ? 'bg-yellow-500' : 'bg-green-500'
+    }`}>
+      {displayValue}
+    </div>
+    {label && <span className="text-xs mt-1">{label}</span>}
+  </div>
+);
+
 export default function ExamplesPage() {
-  // Contact Form
+  // Contact Form with translation support
   const contactForm = useFormedible({
     schema: contactSchema,
     fields: [
@@ -185,6 +208,10 @@ export default function ExamplesPage() {
       { name: "message", type: "textarea", label: "Message", placeholder: "How can we help?" },
       { name: "urgent", type: "checkbox", label: "This is urgent" },
     ],
+    // Translation support for buttons
+    submitLabel: "Send Message",
+    collapseLabel: "Hide",
+    expandLabel: "Show",
     formOptions: {
       defaultValues: {
         name: "",
@@ -1084,6 +1111,48 @@ export default function ExamplesPage() {
         }
       },
       {
+        name: "energyRating",
+        type: "slider",
+        label: "Energy Efficiency Rating",
+        section: { title: "Advanced Sliders", description: "Enhanced slider examples with custom visualizations" },
+        sliderConfig: {
+          min: 1,
+          max: 5,
+          step: 1,
+          valueMapping: [
+            { sliderValue: 1, displayValue: "E", label: "Poor" },
+            { sliderValue: 2, displayValue: "D", label: "Fair" },
+            { sliderValue: 3, displayValue: "C", label: "Good" },
+            { sliderValue: 4, displayValue: "B", label: "Very Good" },
+            { sliderValue: 5, displayValue: "A", label: "Excellent" }
+          ],
+          visualizationComponent: EnergyRatingComponent,
+          showValue: true
+        }
+      },
+      {
+        name: "performanceLevel",
+        type: "slider",
+        label: "Performance Level",
+        sliderConfig: {
+          min: 0,
+          max: 100,
+          step: 10,
+          gradientColors: {
+            start: "#ef4444",
+            end: "#22c55e",
+            direction: "horizontal"
+          },
+          valueLabelSuffix: "%",
+          showValue: true,
+          marks: [
+            { value: 0, label: "Low" },
+            { value: 50, label: "Medium" },
+            { value: 100, label: "High" }
+          ]
+        }
+      },
+      {
         name: "birthDate",
         type: "date",
         label: "Date of Birth",
@@ -1141,6 +1210,8 @@ export default function ExamplesPage() {
         workDuration: { hours: 8, minutes: 0 },
         skills: [],
         experienceLevel: 5,
+        energyRating: 3,
+        performanceLevel: 50,
         birthDate: new Date(),
         resume: null,
         aboutMe: "",

@@ -96,7 +96,7 @@ export const DurationPickerField: React.FC<DurationPickerFieldProps> = ({
       default:
         fieldApi.handleChange(durationValue);
     }
-  }, [hours, minutes, seconds, format, fieldApi.handleChange]);
+  }, [hours, minutes, seconds, format, fieldApi]);
 
   const formatDuration = () => {
     const parts = [];

@@ -159,9 +159,35 @@ export interface SliderFieldProps extends BaseFieldProps {
     min?: number;
     max?: number;
     step?: number;
+    // Value mapping between slider value (int) and display value (arbitrary)
+    valueMapping?: Array<{
+      sliderValue: number;
+      displayValue: string | number;
+      label?: string;
+    }>;
+    // Gradient colors for the slider
+    gradientColors?: {
+      start: string;
+      end: string;
+      direction?: 'horizontal' | 'vertical';
+    };
+    // Custom visualization component for each step
+    visualizationComponent?: React.ComponentType<{
+      value: number;
+      displayValue: string | number;
+      label?: string;
+      isActive: boolean;
+    }>;
+    // Legacy and additional config
+    valueLabelPrefix?: string;
+    valueLabelSuffix?: string;
+    valueDisplayPrecision?: number;
+    showRawValue?: boolean;
     showValue?: boolean;
+    showTooltip?: boolean;
     showTicks?: boolean;
     orientation?: 'horizontal' | 'vertical';
+    marks?: Array<{ value: number; label: string }>;
   };
 }
 

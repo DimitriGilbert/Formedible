@@ -119,7 +119,7 @@ interface FieldConfig {
   // Field grouping
   group?: string; // Group name for organizing fields
   section?: {
-    title: string; // Section title
+    title?: string; // Section title (optional)
     description?: string; // Section description
     collapsible?: boolean; // Whether section can be collapsed
     defaultExpanded?: boolean; // Default expansion state
@@ -492,7 +492,7 @@ interface SectionRendererProps {
   sectionKey: string;
   sectionData: {
     section?: {
-      title: string;
+      title?: string;
       description?: string;
       collapsible?: boolean;
       defaultExpanded?: boolean;
@@ -1417,9 +1417,9 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
         
         acc[sectionKey].groups[groupKey].push(field);
         return acc;
-      }, {} as Record<string, { section?: { title: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean }; groups: Record<string, FieldConfig[]> }>);
+      }, {} as Record<string, { section?: { title?: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean }; groups: Record<string, FieldConfig[]> }>);
 
-      const renderSection = (sectionKey: string, sectionData: { section?: { title: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean }; groups: Record<string, FieldConfig[]> }) => (
+      const renderSection = (sectionKey: string, sectionData: { section?: { title?: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean }; groups: Record<string, FieldConfig[]> }) => (
         <SectionRenderer
           key={sectionKey}
           sectionKey={sectionKey}
@@ -1491,9 +1491,9 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
         
         acc[sectionKey].groups[groupKey].push(field);
         return acc;
-      }, {} as Record<string, { section?: { title: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean }; groups: Record<string, FieldConfig[]> }>);
+      }, {} as Record<string, { section?: { title?: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean }; groups: Record<string, FieldConfig[]> }>);
 
-      const renderSection = (sectionKey: string, sectionData: { section?: { title: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean }; groups: Record<string, FieldConfig[]> }) => (
+      const renderSection = (sectionKey: string, sectionData: { section?: { title?: string; description?: string; collapsible?: boolean; defaultExpanded?: boolean }; groups: Record<string, FieldConfig[]> }) => (
         <SectionRenderer
           key={sectionKey}
           sectionKey={sectionKey}
