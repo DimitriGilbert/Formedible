@@ -32,7 +32,7 @@
 - **Method**: via shadcn/ui CLI. This is not a standard npm package installation; it adds the source files directly to the user's project.
 - **Command**:
   ```bash
-  npx shadcn@latest add https://dimitrigilbert.github.io/Formedible/r/use-formedible.json
+  npx shadcn@latest add https://formedible.dev/r/use-formedible.json
   ```
 - **Result**: Adds the following files to the project:
   - `hooks/use-formedible.tsx`

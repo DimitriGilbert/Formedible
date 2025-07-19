@@ -35,7 +35,7 @@ import { ObjectField } from "@/components/formedible/fields/object-field";
 import { InlineValidationWrapper } from "@/components/formedible/fields/inline-validation-wrapper";
 import { FieldHelp } from "@/components/formedible/fields/field-help";
 
-interface FormProps {
+export interface FormProps {
   className?: string;
   children?: React.ReactNode;
   onSubmit?: (e: React.FormEvent) => void;
@@ -68,7 +68,7 @@ interface FormProps {
 }
 
 // TanStack Form Best Practice: Reusable subscription component for conditional fields
-interface ConditionalFieldsSubscriptionProps<
+export interface ConditionalFieldsSubscriptionProps<
   TFormValues extends Record<string, unknown> = Record<string, unknown>
 > {
   form: any;
@@ -105,7 +105,7 @@ const ConditionalFieldsSubscription = <
 };
 
 // TanStack Form Best Practice: Individual field conditional renderer
-interface FieldConditionalRendererProps<
+export interface FieldConditionalRendererProps<
   TFormValues extends Record<string, unknown> = Record<string, unknown>
 > {
   form: any;
@@ -187,7 +187,11 @@ export interface FieldConfig {
         label?: string;
         placeholder?: string;
         description?: string;
-        options?: Array<{ value: string; label: string }> | ((values: Record<string, unknown>) => Array<{ value: string; label: string }>);
+        options?:
+          | Array<{ value: string; label: string }>
+          | ((
+              values: Record<string, unknown>
+            ) => Array<{ value: string; label: string }>);
         min?: number;
         max?: number;
         step?: number;
@@ -344,7 +348,7 @@ export interface FieldConfig {
     gradientColors?: {
       start: string;
       end: string;
-      direction?: 'horizontal' | 'vertical';
+      direction?: "horizontal" | "vertical";
     };
     // Custom visualization component for each step
     visualizationComponent?: React.ComponentType<{
@@ -438,7 +442,7 @@ export interface FieldConfig {
   };
 }
 
-interface PageConfig {
+export interface PageConfig {
   page: number;
   title?: string;
   description?: string;
@@ -451,7 +455,7 @@ interface PageConfig {
   }>;
 }
 
-interface ProgressConfig {
+export interface ProgressConfig {
   component?: React.ComponentType<{
     value: number;
     currentPage: number;
@@ -463,7 +467,7 @@ interface ProgressConfig {
   className?: string;
 }
 
-interface UseFormedibleOptions<TFormValues> {
+export interface UseFormedibleOptions<TFormValues> {
   fields?: FieldConfig[];
   schema?: z.ZodSchema<TFormValues>;
   submitLabel?: string;
@@ -681,7 +685,7 @@ const DefaultPageComponent: React.FC<{
   </div>
 );
 
-interface SectionRendererProps {
+export interface SectionRendererProps {
   sectionKey: string;
   sectionData: {
     section?: {
@@ -695,7 +699,9 @@ interface SectionRendererProps {
   renderField: (field: FieldConfig) => React.ReactNode;
 }
 
-const SectionRenderer: React.FC<SectionRendererProps & { collapseLabel?: string; expandLabel?: string }> = ({
+const SectionRenderer: React.FC<
+  SectionRendererProps & { collapseLabel?: string; expandLabel?: string }
+> = ({
   sectionKey,
   sectionData,
   renderField,
@@ -736,7 +742,9 @@ const SectionRenderer: React.FC<SectionRendererProps & { collapseLabel?: string;
       <div key={sectionKey} className="space-y-4">
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            {section.title && <h3 className="text-lg font-semibold">{section.title}</h3>}
+            {section.title && (
+              <h3 className="text-lg font-semibold">{section.title}</h3>
+            )}
             {section.collapsible && (
               <Button
                 type="button"

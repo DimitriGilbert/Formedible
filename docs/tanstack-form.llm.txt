@@ -1,0 +1,184 @@
+################################################################################
+#
+# Library: TanStack Form (React)
+# Purpose: Knowledge base for LLM to understand and generate code for the
+#          TanStack Form library in a React environment.
+# Version: v1
+# Date: 2025-07-18
+#
+################################################################################
+
+### META
+---
+- **Library Name**: TanStack Form (React)
+- **Description**: A headless, framework-agnostic library for managing forms in web applications, with first-class support for TypeScript.
+- **Core Technologies**: React, TypeScript
+- **Primary Goal**: To provide a flexible, developer-friendly API for building complex and dynamic forms with a focus on performance and type safety.
+
+### CORE CONCEPTS
+---
+1.  **Headless**: TanStack Form provides the logic and state management for your forms without dictating how you should render your UI. This gives you complete control over the look and feel of your forms.
+2.  **`useForm` Hook**: The foundation of any form built with TanStack Form. This hook is responsible for creating and managing the form's state, including default values, submission handling, and validation.
+3.  **`form.Field` Component**: Used to create individual form fields. This component is responsible for managing the state of a single field, including its value, validation errors, and whether it has been touched.
+4.  **Render Props**: The `form.Field` component uses a render prop pattern, passing a `field` object to its children. This object contains all the necessary props and methods to connect your input element to the form's state.
+5.  **Validation**: TanStack Form offers flexible and powerful validation. You can define validation rules at the field level, using either simple functions or more robust schema-based validation with libraries like Zod.
+
+### INSTALLATION
+---
+- **Method**: via npm, pnpm, bun, or yarn.
+- **Command**:
+  ```bash
+  # npm
+  $ npm i @tanstack/react-form
+  # pnpm
+  $ pnpm add @tanstack/react-form
+  # bun
+  $ bun add @tanstack/react-form
+  # yarn
+  $ yarn add @tanstack/react-form
+  ```
+
+### PRIMARY API: `useForm(options)`
+---
+This is the main hook and entry point for the library.
+
+- **Returns**: A `form` object containing the form's state and methods.
+
+### CONFIGURATION: `useForm` Options
+---
+- **`defaultValues?: TFormValues`**: The default values for the form fields.
+- **`onSubmit?: (props: { value: TFormValues; formApi: any }) => any | Promise<any>`**: A function that will be called when the form is submitted.
+- **`validatorAdapter?: any`**: An adapter for a schema validation library like Zod.
+- **`validators?: { onChange?: TSchema; onBlur?: TSchema; onSubmit?: TSchema }`**: An object containing validation schemas for different events.
+
+### `form.Field` Component
+---
+- **`name: string`**: (Required) The key in the form values object.
+- **`children: (field: any) => React.ReactNode`**: (Required) A render prop that receives a `field` object.
+- **`validators?: { onChange?: (value: any) => string | undefined; onChangeAsync?: (value: any) => Promise<string | undefined> }`**: An object containing validation functions for different events.
+
+### `field` Object Properties
+---
+- **`state.value: any`**: The current value of the field.
+- **`state.meta.touchedErrors: string[]`**: An array of validation errors for the field that have been touched.
+- **`handleBlur: () => void`**: A function to handle the blur event.
+- **`handleChange: (value: any) => void`**: A function to handle changes to the field's value.
+
+### USAGE PATTERNS
+---
+
+#### Pattern 1: Simple Form
+
+```tsx
+import { useForm } from '@tanstack/react-form';
+
+const MyForm = () => {
+  const form = useForm({
+    defaultValues: {
+      username: '',
+      password: '',
+    },
+    onSubmit: async ({ value }) => {
+      // Handle form submission
+      console.log(value);
+    },
+  });
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        form.handleSubmit();
+      }}
+    >
+      <form.Field
+        name="username"
+        children={(field) => (
+          <>
+            <label htmlFor={field.name}>Username</label>
+            <input
+              id={field.name}
+              name={field.name}
+              value={field.state.value}
+              onBlur={field.handleBlur}
+              onChange={(e) => field.handleChange(e.target.value)}
+            />
+            {field.state.meta.touchedErrors ? (
+              <em>{field.state.meta.touchedErrors}</em>
+            ) : null}
+          </>
+        )}
+      />
+      {/* ... other fields ... */}
+      <form.Subscribe
+        selector={(state) => [state.canSubmit, state.isSubmitting]}
+        children={([canSubmit, isSubmitting]) => (
+          <button type="submit" disabled={!canSubmit}>
+            {isSubmitting ? '...' : 'Submit'}
+          </button>
+        )}
+      />
+    </form>
+  );
+};
+```
+
+#### Pattern 2: Form with Zod Validation
+
+```tsx
+import { useForm } from '@tanstack/react-form';
+import { zodValidator } from '@tanstack/zod-form-adapter';
+import { z } from 'zod';
+
+const userSchema = z.object({
+  username: z.string().min(3, 'Username must be at least 3 characters'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+});
+
+const MyForm = () => {
+  const form = useForm({
+    defaultValues: {
+      username: '',
+      password: '',
+    },
+    onSubmit: async ({ value }) => {
+      console.log(value);
+    },
+    validatorAdapter: zodValidator,
+    validators: {
+      onChange: userSchema,
+    },
+  });
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        form.handleSubmit();
+      }}
+    >
+      <form.Field
+        name="username"
+        validators={{
+          onChange: userSchema.shape.username,
+        }}
+        children={(field) => (
+          // ... field implementation ...
+        )}
+      />
+      <form.Field
+        name="password"
+        validators={{
+          onChange: userSchema.shape.password,
+        }}
+        children={(field) => (
+          // ... field implementation ...
+        )}
+      />
+      {/* ... submit button ... */}
+    </form>
+  );
+};
+```
