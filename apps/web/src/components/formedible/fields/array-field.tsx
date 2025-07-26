@@ -15,6 +15,15 @@ import { DateField } from './date-field';
 import { SliderField } from './slider-field';
 import { FileUploadField } from './file-upload-field';
 import { ObjectField } from './object-field';
+import { RadioField } from './radio-field';
+import { MultiSelectField } from './multi-select-field';
+import { ColorPickerField } from './color-picker-field';
+import { RatingField } from './rating-field';
+import { PhoneField } from './phone-field';
+import { LocationPickerField } from './location-picker-field';
+import { DurationPickerField } from './duration-picker-field';
+import { AutocompleteField } from './autocomplete-field';
+import { MaskedInputField } from './masked-input-field';
 
 // Map of field types to components
 const fieldTypeComponents: Record<string, React.ComponentType<any>> = {
@@ -32,6 +41,15 @@ const fieldTypeComponents: Record<string, React.ComponentType<any>> = {
   slider: SliderField,
   file: FileUploadField,
   object: ObjectField,
+  radio: RadioField,
+  multiSelect: MultiSelectField,
+  colorPicker: ColorPickerField,
+  rating: RatingField,
+  phone: PhoneField,
+  location: LocationPickerField,
+  duration: DurationPickerField,
+  autocomplete: AutocompleteField,
+  masked: MaskedInputField,
 };
 
 export interface ArrayFieldSpecificProps extends BaseFieldProps {
@@ -236,6 +254,19 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
                       datalist: itemProps.datalist,
                     })}
                     {...(itemType === 'object' && objectConfig && { objectConfig })}
+                    {...(itemType === 'radio' && { options: itemProps.options || [] })}
+                    {...(itemType === 'multiSelect' && { 
+                      options: itemProps.options || [],
+                      multiSelectConfig: itemProps.multiSelectConfig
+                    })}
+                    {...(itemType === 'colorPicker' && { colorConfig: itemProps.colorConfig })}
+                    {...(itemType === 'rating' && { ratingConfig: itemProps.ratingConfig })}
+                    {...(itemType === 'phone' && { phoneConfig: itemProps.phoneConfig })}
+                    {...(itemType === 'location' && { locationConfig: itemProps.locationConfig })}
+                    {...(itemType === 'duration' && { durationConfig: itemProps.durationConfig })}
+                    {...(itemType === 'autocomplete' && { autocompleteConfig: itemProps.autocompleteConfig })}
+                    {...(itemType === 'masked' && { maskedInputConfig: itemProps.maskedInputConfig })}
+                    {...(itemType === 'textarea' && { textareaConfig: itemProps.textareaConfig })}
                   />
                 </div>
                 

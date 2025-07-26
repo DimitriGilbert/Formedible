@@ -983,7 +983,10 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
             analytics.onFormComplete(timeSpent, props.value);
           }
 
-          const result = await formOptions.onSubmit!(props);
+          let result: unknown;
+          if (formOptions.onSubmit) {
+            result = await formOptions.onSubmit(props);
+          }
 
           // Clear storage on successful submit
           clearStorage();
@@ -1021,7 +1024,8 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
         const filteredValues = persistence.exclude
           ? Object.fromEntries(
               Object.entries(values as Record<string, unknown>).filter(
-                ([key]) => !persistence.exclude!.includes(key)
+                ([key]) =>
+                  !(persistence.exclude && persistence.exclude.includes(key))
               )
             )
           : values;
@@ -1132,7 +1136,8 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
         if (formOptions?.onChange && formApi.state.isValid) {
           clearTimeout(onChangeTimeout);
           onChangeTimeout = setTimeout(() => {
-            formOptions.onChange!({ value: values as TFormValues, formApi });
+            if (!formOptions.onChange) return;
+            formOptions.onChange({ value: values as TFormValues, formApi });
           }, 300); // 300ms debounce
         }
 
@@ -1156,7 +1161,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
       const handleBlur = (event: FocusEvent) => {
         const target = event.target as HTMLElement;
         if (target) {
-          const fieldName = target.getAttribute("name");
+          const fieldName = target.getAttribute("name") || "";
 
           if (fieldName && lastFocusedField === fieldName) {
             // Analytics tracking
@@ -1169,9 +1174,10 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
             if (formOptions?.onBlur) {
               clearTimeout(onBlurTimeout);
               onBlurTimeout = setTimeout(() => {
+                if (!formOptions.onBlur) return;
                 const formApi = form;
                 const values = formApi.state.values;
-                formOptions.onBlur!({ value: values as TFormValues, formApi });
+                formOptions.onBlur({ value: values as TFormValues, formApi });
               }, 100); // 100ms debounce for blur
             }
           }
@@ -1180,7 +1186,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
 
       const handleFocus = (event: FocusEvent) => {
         const target = event.target as HTMLElement;
-        const fieldName = target.getAttribute("name");
+        const fieldName = target.getAttribute("name") || "";
         lastFocusedField = fieldName;
 
         // Analytics tracking
@@ -1256,7 +1262,6 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     validateFieldAsync,
     persistence,
     saveToStorage,
-    currentPage,
     validateCrossFields,
   ]);
 
@@ -1925,6 +1930,8 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
                 sectionKey={sectionKey}
                 sectionData={sectionData}
                 renderField={renderField}
+                collapseLabel={collapseLabel}
+                expandLabel={expandLabel}
               />
             );
 
@@ -1952,7 +1959,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
           }}
         </form.Subscribe>
       );
-    }, [renderTabContent, renderField, activeTab, setActiveTab]);
+    }, [renderTabContent, renderField, activeTab]);
 
     const renderProgress = () => {
       if (!hasPages || !progress) return null;
