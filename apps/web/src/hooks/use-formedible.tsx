@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useMemo, memo } from "react";
+import React, { useState, useMemo, memo, useRef } from "react";
 import { useForm } from "@tanstack/react-form";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
@@ -34,6 +34,13 @@ import { MaskedInputField } from "@/components/formedible/fields/masked-input-fi
 import { ObjectField } from "@/components/formedible/fields/object-field";
 import { InlineValidationWrapper } from "@/components/formedible/fields/inline-validation-wrapper";
 import { FieldHelp } from "@/components/formedible/fields/field-help";
+
+// Utility function to scroll to top of a specific form
+const scrollToTop = (htmlFormRef: React.RefObject<HTMLFormElement | null>, smooth = true) => {
+  if (typeof window !== 'undefined' && htmlFormRef.current) {
+    htmlFormRef.current.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
+  }
+};
 
 export interface FormProps {
   className?: string;
@@ -654,14 +661,22 @@ const DefaultProgressComponent: React.FC<{
   currentPage: number;
   totalPages: number;
   className?: string;
-}> = memo(({ value, currentPage, totalPages, className }) => (
+  showSteps?: boolean;
+  showPercentage?: boolean;
+}> = memo(({ value, currentPage, totalPages, className, showSteps = true, showPercentage = true }) => (
   <div className={cn("space-y-2", className)}>
-    <div className="flex justify-between text-sm text-muted-foreground">
-      <span>
-        Step {currentPage} of {totalPages}
-      </span>
-      <span>{Math.round(value)}%</span>
-    </div>
+    {(showSteps || showPercentage) && (
+      <div className="flex justify-between text-sm text-muted-foreground">
+        {showSteps && (
+          <span>
+            Step {currentPage} of {totalPages}
+          </span>
+        )}
+        {showPercentage && (
+          <span>{Math.round(value)}%</span>
+        )}
+      </div>
+    )}
     <Progress value={value} className="h-2" />
   </div>
 ));
@@ -814,6 +829,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     persistence,
   } = options;
 
+  const htmlFormRef = useRef<HTMLFormElement>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
   // Advanced features state
@@ -1394,6 +1410,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
       setCurrentPage(newPage);
       pageStartTime.current = Date.now();
       onPageChange?.(newPage, "next");
+      scrollToTop(htmlFormRef);
     }
   };
 
@@ -1410,6 +1427,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
       setCurrentPage(newPage);
       pageStartTime.current = Date.now();
       onPageChange?.(newPage, "previous");
+      scrollToTop(htmlFormRef);
     }
   };
 
@@ -1459,6 +1477,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     // If validation passes or going backward, allow navigation
     setCurrentPage(targetPage);
     onPageChange?.(targetPage, targetPage > currentPage ? "next" : "previous");
+    scrollToTop(htmlFormRef);
   };
 
   const Form: React.FC<FormProps> = ({
@@ -2060,6 +2079,8 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
           currentPage={currentPage}
           totalPages={totalPages}
           className={progress.className}
+          showSteps={progress.showSteps}
+          showPercentage={progress.showPercentage}
         />
       );
     };
@@ -2146,6 +2167,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
 
     return (
       <form
+        ref={htmlFormRef}
         onSubmit={handleSubmit}
         className={formClass}
         action={action}
