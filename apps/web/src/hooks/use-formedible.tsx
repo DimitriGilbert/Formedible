@@ -36,9 +36,15 @@ import { InlineValidationWrapper } from "@/components/formedible/fields/inline-v
 import { FieldHelp } from "@/components/formedible/fields/field-help";
 
 // Utility function to scroll to top of a specific form
-const scrollToTop = (htmlFormRef: React.RefObject<HTMLFormElement | null>, smooth = true) => {
-  if (typeof window !== 'undefined' && htmlFormRef.current) {
-    htmlFormRef.current.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
+const scrollToTop = (
+  htmlFormRef: React.RefObject<HTMLFormElement | null>,
+  smooth = true
+) => {
+  if (typeof window !== "undefined" && htmlFormRef.current) {
+    htmlFormRef.current.scrollIntoView({
+      behavior: smooth ? "smooth" : "auto",
+      block: "start",
+    });
   }
 };
 
@@ -486,6 +492,12 @@ export interface UseFormedibleOptions<TFormValues> {
   expandLabel?: string;
   formClassName?: string;
   fieldClassName?: string;
+  labelClassName?: string;
+  buttonClassName?: string;
+  submitButtonClassName?: string;
+  submitButton?: React.ComponentType<React.ButtonHTMLAttributes<HTMLButtonElement> & {
+    children?: React.ReactNode;
+  }>;
   pages?: PageConfig[];
   progress?: ProgressConfig;
   tabs?: {
@@ -663,23 +675,30 @@ const DefaultProgressComponent: React.FC<{
   className?: string;
   showSteps?: boolean;
   showPercentage?: boolean;
-}> = memo(({ value, currentPage, totalPages, className, showSteps = true, showPercentage = true }) => (
-  <div className={cn("space-y-2", className)}>
-    {(showSteps || showPercentage) && (
-      <div className="flex justify-between text-sm text-muted-foreground">
-        {showSteps && (
-          <span>
-            Step {currentPage} of {totalPages}
-          </span>
-        )}
-        {showPercentage && (
-          <span>{Math.round(value)}%</span>
-        )}
-      </div>
-    )}
-    <Progress value={value} className="h-2" />
-  </div>
-));
+}> = memo(
+  ({
+    value,
+    currentPage,
+    totalPages,
+    className,
+    showSteps = true,
+    showPercentage = true,
+  }) => (
+    <div className={cn("space-y-2", className)}>
+      {(showSteps || showPercentage) && (
+        <div className="flex justify-between text-sm text-muted-foreground">
+          {showSteps && (
+            <span>
+              Step {currentPage} of {totalPages}
+            </span>
+          )}
+          {showPercentage && <span>{Math.round(value)}%</span>}
+        </div>
+      )}
+      <Progress value={value} className="h-2" />
+    </div>
+  )
+);
 
 DefaultProgressComponent.displayName = "DefaultProgressComponent";
 
@@ -801,6 +820,10 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     expandLabel = "Expand",
     formClassName,
     fieldClassName,
+    labelClassName,
+    buttonClassName,
+    submitButtonClassName,
+    submitButton,
     pages,
     progress,
     tabs,
@@ -860,39 +883,44 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
   }, [fields]);
 
   // Function to check if a page should be visible based on conditions
-  const getVisiblePages = React.useCallback((currentValues: Record<string, unknown>) => {
-    const allPageNumbers = Object.keys(fieldsByPage).map(Number).sort((a, b) => a - b);
-    
-    return allPageNumbers.filter(pageNumber => {
-      // Check if the page itself has a condition
-      const pageConfig = pages?.find(p => p.page === pageNumber);
-      if (pageConfig?.conditional && !pageConfig.conditional(currentValues)) {
-        return false;
-      }
+  const getVisiblePages = React.useCallback(
+    (currentValues: Record<string, unknown>) => {
+      const allPageNumbers = Object.keys(fieldsByPage)
+        .map(Number)
+        .sort((a, b) => a - b);
 
-      // Check if page has any visible fields
-      const pageFields = fieldsByPage[pageNumber] || [];
-      const hasVisibleFields = pageFields.some((field) => {
-        // Check field's own conditional
-        if (field.conditional && !field.conditional(currentValues)) {
+      return allPageNumbers.filter((pageNumber) => {
+        // Check if the page itself has a condition
+        const pageConfig = pages?.find((p) => p.page === pageNumber);
+        if (pageConfig?.conditional && !pageConfig.conditional(currentValues)) {
           return false;
         }
 
-        // Check conditional sections
-        const conditionalSection = conditionalSections.find((section) =>
-          section.fields.includes(field.name)
-        );
+        // Check if page has any visible fields
+        const pageFields = fieldsByPage[pageNumber] || [];
+        const hasVisibleFields = pageFields.some((field) => {
+          // Check field's own conditional
+          if (field.conditional && !field.conditional(currentValues)) {
+            return false;
+          }
 
-        if (conditionalSection) {
-          return conditionalSection.condition(currentValues as TFormValues);
-        }
+          // Check conditional sections
+          const conditionalSection = conditionalSections.find((section) =>
+            section.fields.includes(field.name)
+          );
 
-        return true;
+          if (conditionalSection) {
+            return conditionalSection.condition(currentValues as TFormValues);
+          }
+
+          return true;
+        });
+
+        return hasVisibleFields;
       });
-
-      return hasVisibleFields;
-    });
-  }, [fieldsByPage, pages, conditionalSections]);
+    },
+    [fieldsByPage, pages, conditionalSections]
+  );
 
   // Group fields by tabs
   const fieldsByTab = useMemo(() => {
@@ -910,9 +938,11 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
   // State to track visible pages based on current form values
   const [visiblePages, setVisiblePages] = useState<number[]>(() => {
     // Initialize with all possible pages
-    return Object.keys(fieldsByPage).map(Number).sort((a, b) => a - b);
+    return Object.keys(fieldsByPage)
+      .map(Number)
+      .sort((a, b) => a - b);
   });
-  
+
   const totalPages = Math.max(visiblePages.length, 1);
   const hasPages = totalPages > 1;
   const hasTabs = tabs && tabs.length > 0;
@@ -1067,7 +1097,9 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
 
   // Track visible pages using a ref to avoid circular dependencies
   const visiblePagesRef = React.useRef<number[]>(
-    Object.keys(fieldsByPage).map(Number).sort((a, b) => a - b)
+    Object.keys(fieldsByPage)
+      .map(Number)
+      .sort((a, b) => a - b)
   );
 
   // Update visible pages when form values change (without causing re-renders)
@@ -1075,18 +1107,25 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     const updateVisiblePages = () => {
       const currentValues = form.state.values as Record<string, unknown>;
       const newVisiblePages = getVisiblePages(currentValues);
-      
+
       // Only update if actually changed
-      if (JSON.stringify(visiblePagesRef.current) !== JSON.stringify(newVisiblePages)) {
+      if (
+        JSON.stringify(visiblePagesRef.current) !==
+        JSON.stringify(newVisiblePages)
+      ) {
         visiblePagesRef.current = newVisiblePages;
-        
+
         // Update state only when necessary
         setVisiblePages(newVisiblePages);
-        
+
         // Check if current page is still visible using setCurrentPage callback
-        setCurrentPage(prevCurrentPage => {
+        setCurrentPage((prevCurrentPage) => {
           const currentActualPage = newVisiblePages[prevCurrentPage - 1];
-          if (!currentActualPage && prevCurrentPage > 1 && newVisiblePages.length > 0) {
+          if (
+            !currentActualPage &&
+            prevCurrentPage > 1 &&
+            newVisiblePages.length > 0
+          ) {
             return 1; // Navigate to first visible page
           }
           return prevCurrentPage; // Keep current page
@@ -1096,7 +1135,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
 
     // Set up subscription
     const unsubscribe = form.store.subscribe(updateVisiblePages);
-    
+
     // Initialize on mount
     updateVisiblePages();
 
@@ -1373,7 +1412,9 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
 
   const getCurrentPageConfig = () => {
     const actualPageNumber = visiblePages[currentPage - 1];
-    return actualPageNumber ? pages?.find((p) => p.page === actualPageNumber) : undefined;
+    return actualPageNumber
+      ? pages?.find((p) => p.page === actualPageNumber)
+      : undefined;
   };
 
   const goToNextPage = () => {
@@ -1446,10 +1487,14 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
 
     // If going forward, validate all pages between current and target
     if (targetPage > currentPage) {
-      for (let pageIndex = currentPage - 1; pageIndex < targetPage - 1; pageIndex++) {
+      for (
+        let pageIndex = currentPage - 1;
+        pageIndex < targetPage - 1;
+        pageIndex++
+      ) {
         const actualPageNumber = visiblePages[pageIndex];
         if (!actualPageNumber) continue;
-        
+
         const pageFields = fieldsByPage[actualPageNumber] || [];
         const formState = form.state;
 
@@ -1694,6 +1739,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
                             placeholder,
                             description,
                             wrapperClassName: fieldClassName,
+                            labelClassName,
                             min,
                             max,
                             step,
@@ -2100,18 +2146,21 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
                 canSubmit: boolean;
                 isSubmitting: boolean;
               };
+              
+              const SubmitButton = submitButton || Button;
+              
               return (
-                <Button
+                <SubmitButton
                   type="submit"
                   disabled={!canSubmit || isSubmitting || disabled || loading}
-                  className="w-full"
+                  className={cn("w-full", submitButtonClassName)}
                 >
                   {loading
                     ? "Loading..."
                     : isSubmitting
                     ? "Submitting..."
                     : submitLabel}
-                </Button>
+                </SubmitButton>
               );
             }}
           </form.Subscribe>
@@ -2130,6 +2179,9 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
               canSubmit: boolean;
               isSubmitting: boolean;
             };
+            
+            const SubmitButton = submitButton || Button;
+            
             return (
               <div className="flex justify-between gap-4">
                 <Button
@@ -2137,18 +2189,18 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
                   variant="outline"
                   onClick={goToPreviousPage}
                   disabled={isFirstPage || disabled || loading}
-                  className={isFirstPage ? "invisible" : ""}
+                  className={cn(isFirstPage ? "invisible" : "", buttonClassName)}
                 >
                   {previousLabel}
                 </Button>
 
-                <Button
+                <SubmitButton
                   type="submit"
                   disabled={
                     (!canSubmit || isSubmitting || disabled || loading) &&
                     isLastPage
                   }
-                  className="flex-1 max-w-xs"
+                  className={cn("flex-1 max-w-xs", isLastPage ? submitButtonClassName : buttonClassName)}
                 >
                   {loading && isLastPage
                     ? "Loading..."
@@ -2157,7 +2209,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
                     : isLastPage
                     ? submitLabel
                     : nextLabel}
-                </Button>
+                </SubmitButton>
               </div>
             );
           }}
