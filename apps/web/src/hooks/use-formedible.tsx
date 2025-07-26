@@ -453,6 +453,7 @@ export interface PageConfig {
     page: number;
     totalPages: number;
   }>;
+  conditional?: (values: Record<string, unknown>) => boolean;
 }
 
 export interface ProgressConfig {
@@ -842,6 +843,41 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     return grouped;
   }, [fields]);
 
+  // Function to check if a page should be visible based on conditions
+  const getVisiblePages = React.useCallback((currentValues: Record<string, unknown>) => {
+    const allPageNumbers = Object.keys(fieldsByPage).map(Number).sort((a, b) => a - b);
+    
+    return allPageNumbers.filter(pageNumber => {
+      // Check if the page itself has a condition
+      const pageConfig = pages?.find(p => p.page === pageNumber);
+      if (pageConfig?.conditional && !pageConfig.conditional(currentValues)) {
+        return false;
+      }
+
+      // Check if page has any visible fields
+      const pageFields = fieldsByPage[pageNumber] || [];
+      const hasVisibleFields = pageFields.some((field) => {
+        // Check field's own conditional
+        if (field.conditional && !field.conditional(currentValues)) {
+          return false;
+        }
+
+        // Check conditional sections
+        const conditionalSection = conditionalSections.find((section) =>
+          section.fields.includes(field.name)
+        );
+
+        if (conditionalSection) {
+          return conditionalSection.condition(currentValues as TFormValues);
+        }
+
+        return true;
+      });
+
+      return hasVisibleFields;
+    });
+  }, [fieldsByPage, pages, conditionalSections]);
+
   // Group fields by tabs
   const fieldsByTab = useMemo(() => {
     const grouped: { [tab: string]: FieldConfig[] } = {};
@@ -855,7 +891,13 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     return grouped;
   }, [fields]);
 
-  const totalPages = Math.max(...Object.keys(fieldsByPage).map(Number), 1);
+  // State to track visible pages based on current form values
+  const [visiblePages, setVisiblePages] = useState<number[]>(() => {
+    // Initialize with all possible pages
+    return Object.keys(fieldsByPage).map(Number).sort((a, b) => a - b);
+  });
+  
+  const totalPages = Math.max(visiblePages.length, 1);
   const hasPages = totalPages > 1;
   const hasTabs = tabs && tabs.length > 0;
 
@@ -983,7 +1025,10 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
             analytics.onFormComplete(timeSpent, props.value);
           }
 
-          const result = await formOptions.onSubmit!(props);
+          let result: unknown;
+          if (formOptions.onSubmit) {
+            result = await formOptions.onSubmit(props);
+          }
 
           // Clear storage on successful submit
           clearStorage();
@@ -1004,6 +1049,44 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     formRef.current = form;
   }, [form]);
 
+  // Track visible pages using a ref to avoid circular dependencies
+  const visiblePagesRef = React.useRef<number[]>(
+    Object.keys(fieldsByPage).map(Number).sort((a, b) => a - b)
+  );
+
+  // Update visible pages when form values change (without causing re-renders)
+  React.useEffect(() => {
+    const updateVisiblePages = () => {
+      const currentValues = form.state.values as Record<string, unknown>;
+      const newVisiblePages = getVisiblePages(currentValues);
+      
+      // Only update if actually changed
+      if (JSON.stringify(visiblePagesRef.current) !== JSON.stringify(newVisiblePages)) {
+        visiblePagesRef.current = newVisiblePages;
+        
+        // Update state only when necessary
+        setVisiblePages(newVisiblePages);
+        
+        // Check if current page is still visible using setCurrentPage callback
+        setCurrentPage(prevCurrentPage => {
+          const currentActualPage = newVisiblePages[prevCurrentPage - 1];
+          if (!currentActualPage && prevCurrentPage > 1 && newVisiblePages.length > 0) {
+            return 1; // Navigate to first visible page
+          }
+          return prevCurrentPage; // Keep current page
+        });
+      }
+    };
+
+    // Set up subscription
+    const unsubscribe = form.store.subscribe(updateVisiblePages);
+    
+    // Initialize on mount
+    updateVisiblePages();
+
+    return unsubscribe;
+  }, [form, getVisiblePages]);
+
   // Form persistence logic
   const persistenceTimeout = React.useRef<
     ReturnType<typeof setTimeout> | undefined
@@ -1021,7 +1104,8 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
         const filteredValues = persistence.exclude
           ? Object.fromEntries(
               Object.entries(values as Record<string, unknown>).filter(
-                ([key]) => !persistence.exclude!.includes(key)
+                ([key]) =>
+                  !(persistence.exclude && persistence.exclude.includes(key))
               )
             )
           : values;
@@ -1132,7 +1216,8 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
         if (formOptions?.onChange && formApi.state.isValid) {
           clearTimeout(onChangeTimeout);
           onChangeTimeout = setTimeout(() => {
-            formOptions.onChange!({ value: values as TFormValues, formApi });
+            if (!formOptions.onChange) return;
+            formOptions.onChange({ value: values as TFormValues, formApi });
           }, 300); // 300ms debounce
         }
 
@@ -1156,7 +1241,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
       const handleBlur = (event: FocusEvent) => {
         const target = event.target as HTMLElement;
         if (target) {
-          const fieldName = target.getAttribute("name") || (target as HTMLInputElement).name;
+          const fieldName = target.getAttribute("name") || "";
 
           if (fieldName && lastFocusedField === fieldName) {
             // Analytics tracking
@@ -1169,9 +1254,10 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
             if (formOptions?.onBlur) {
               clearTimeout(onBlurTimeout);
               onBlurTimeout = setTimeout(() => {
+                if (!formOptions.onBlur) return;
                 const formApi = form;
                 const values = formApi.state.values;
-                formOptions.onBlur!({ value: values as TFormValues, formApi });
+                formOptions.onBlur({ value: values as TFormValues, formApi });
               }, 100); // 100ms debounce for blur
             }
           }
@@ -1180,7 +1266,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
 
       const handleFocus = (event: FocusEvent) => {
         const target = event.target as HTMLElement;
-        const fieldName = target.getAttribute("name") || (target as HTMLInputElement).name;
+        const fieldName = target.getAttribute("name") || "";
         lastFocusedField = fieldName;
 
         // Analytics tracking
@@ -1256,7 +1342,6 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     validateFieldAsync,
     persistence,
     saveToStorage,
-    currentPage,
     validateCrossFields,
   ]);
 
@@ -1265,10 +1350,15 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
       // When using tabs, return all fields (tabs handle their own filtering)
       return fields;
     }
-    return fieldsByPage[currentPage] || [];
+    // Get the actual page number from visible pages array
+    const actualPageNumber = visiblePages[currentPage - 1];
+    return actualPageNumber ? fieldsByPage[actualPageNumber] || [] : [];
   };
 
-  const getCurrentPageConfig = () => pages?.find((p) => p.page === currentPage);
+  const getCurrentPageConfig = () => {
+    const actualPageNumber = visiblePages[currentPage - 1];
+    return actualPageNumber ? pages?.find((p) => p.page === actualPageNumber) : undefined;
+  };
 
   const goToNextPage = () => {
     if (currentPage < totalPages) {
@@ -1338,8 +1428,11 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
 
     // If going forward, validate all pages between current and target
     if (targetPage > currentPage) {
-      for (let page = currentPage; page < targetPage; page++) {
-        const pageFields = fieldsByPage[page] || [];
+      for (let pageIndex = currentPage - 1; pageIndex < targetPage - 1; pageIndex++) {
+        const actualPageNumber = visiblePages[pageIndex];
+        if (!actualPageNumber) continue;
+        
+        const pageFields = fieldsByPage[actualPageNumber] || [];
         const formState = form.state;
 
         const hasPageErrors = pageFields.some((field) => {
@@ -1954,7 +2047,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
           }}
         </form.Subscribe>
       );
-    }, [renderTabContent, renderField, activeTab, setActiveTab]);
+    }, [renderTabContent, renderField, activeTab]);
 
     const renderProgress = () => {
       if (!hasPages || !progress) return null;
@@ -2091,6 +2184,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     Form,
     currentPage,
     totalPages,
+    visiblePages,
     goToNextPage,
     goToPreviousPage,
     setCurrentPage: setCurrentPageWithValidation,
