@@ -1,9 +1,15 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "form-builder",
-  "type": "registry:component",
-  "title": "Form Builder",
-  "description": "A visual form builder component for creating forms",
+  "type": "registry:block",
+  "title": "Formedible Form Builder",
+  "description": "A visual drag-and-drop form builder component for creating forms with live preview and code generation. Includes field configurator, preview panel, and TypeScript code output.",
+  "dependencies": [
+    "react",
+    "lucide-react",
+    "clsx",
+    "tailwind-merge"
+  ],
   "registryDependencies": [
     "button",
     "input",
@@ -109,11 +115,5 @@
       "type": "registry:component",
       "target": "components/ui/code-block.tsx"
     }
-  ],
-  "docs": "Make sure to install formedible and configure your shadcn/ui components before using this builder. This component provides a visual interface for creating forms that can be used with the formedible library.",
-  "categories": [
-    "form",
-    "builder",
-    "component"
   ]
 }
