@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
 import type { BaseFieldProps } from '@/lib/formedible/types';
@@ -123,10 +123,19 @@ export const SliderField: React.FC<SliderFieldSpecificProps> = ({
     ? `${label} (${valueLabelPrefix}${displayValue}${valueLabelSuffix})`
     : label;
 
-  // Generate gradient style if configured
-  const sliderStyle = gradientColors ? {
-    background: `linear-gradient(${gradientColors.direction === 'vertical' ? 'to bottom' : 'to right'}, ${gradientColors.start}, ${gradientColors.end})`,
-  } : {};
+  const sliderRef = useRef<HTMLDivElement>(null);
+  
+  // Direct DOM manipulation to override the background
+  useEffect(() => {
+    if (gradientColors && sliderRef.current) {
+      const rangeElement = sliderRef.current.querySelector('[data-slot="slider-range"]') as HTMLElement;
+      if (rangeElement) {
+        const gradient = `linear-gradient(${gradientColors.direction === 'vertical' ? 'to bottom' : 'to right'}, ${gradientColors.start}, ${gradientColors.end})`;
+        rangeElement.style.setProperty('background', gradient, 'important');
+        rangeElement.style.setProperty('background-image', gradient, 'important');
+      }
+    }
+  }, [gradientColors, fieldValue]);
 
   return (
     <FieldWrapper
@@ -159,7 +168,7 @@ export const SliderField: React.FC<SliderFieldSpecificProps> = ({
           </div>
         )}
         
-        <div className="relative">
+        <div className="relative" ref={sliderRef}>
           <Slider
             id={name}
             name={name}
@@ -171,7 +180,6 @@ export const SliderField: React.FC<SliderFieldSpecificProps> = ({
             max={max}
             step={step}
             className={cn(inputClassName)}
-            style={sliderStyle}
           />
           
           {/* Marks display */}

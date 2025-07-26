@@ -36,7 +36,12 @@ log_error() {
 
 update_web_components() {
   log_info "Installing formedible components using shadcn CLI..."
-  rm -rf apps/web/src/components/formedible/ apps/web/src/hooks/use-formedible.tsx apps/web/src/lib/formedible/types.ts -rf
+  
+  # FORCE CLEAN - remove all existing files first
+  log_info "Cleaning existing formedible components..."
+  rm -rf apps/web/src/components/formedible/
+  rm -f apps/web/src/hooks/use-formedible.tsx
+  rm -f apps/web/src/lib/formedible/types.ts
   
   # Change to web app directory
   cd apps/web
@@ -45,14 +50,14 @@ update_web_components() {
   # first, as it uses older formedible from web
   if [[ -f "../../packages/builder/public/r/form-builder.json" ]]; then
     log_info "Installing form-builder from built registry..."
-    npx shadcn@latest add --overwrite "../../packages/builder/public/r/form-builder.json"
+    npx shadcn@latest add --yes "../../packages/builder/public/r/form-builder.json"
   else
     log_warning "Builder registry not found, skipping builder installation"
   fi
   
   # Install formedible using shadcn CLI with file path
   log_info "Installing formedible from built registry..."
-  npx shadcn@latest add --overwrite "../../packages/formedible/public/r/use-formedible.json"
+  npx shadcn@latest add --yes "../../packages/formedible/public/r/use-formedible.json"
   
   
   # Return to project root
