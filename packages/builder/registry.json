@@ -5,13 +5,13 @@
   "items": [
     {
       "name": "form-builder",
-      "type": "registry:component",
-      "title": "Form Builder",
-      "description": "A visual form builder component for creating forms",
+      "type": "registry:block",
+      "title": "Formedible Form Builder",
+      "description": "A visual drag-and-drop form builder component for creating forms with live preview and code generation. Includes field configurator, preview panel, and TypeScript code output.",
       "registryDependencies": [
         "button",
         "input",
-        "textarea",
+        "textarea", 
         "select",
         "checkbox",
         "switch",
@@ -28,80 +28,70 @@
         "alert",
         "skeleton"
       ],
+      "dependencies": [
+        "react",
+        "lucide-react",
+        "clsx",
+        "tailwind-merge"
+      ],
       "files": [
         {
           "path": "src/components/formedible/builder/form-builder.tsx",
-          "type": "registry:component",
-          "target": "components/formedible/builder/form-builder.tsx"
+          "type": "registry:component"
         },
         {
           "path": "src/components/formedible/builder/field-configurator.tsx",
-          "type": "registry:component",
-          "target": "components/formedible/builder/field-configurator.tsx"
+          "type": "registry:component"
         },
         {
           "path": "src/components/formedible/builder/form-preview.tsx",
-          "type": "registry:component",
-          "target": "components/formedible/builder/form-preview.tsx"
+          "type": "registry:component"
         },
         {
           "path": "src/components/formedible/builder/code-generator.tsx",
-          "type": "registry:component",
-          "target": "components/formedible/builder/code-generator.tsx"
+          "type": "registry:component"
         },
         {
           "path": "src/components/formedible/builder/field-store.ts",
-          "type": "registry:lib",
-          "target": "components/formedible/builder/field-store.ts"
+          "type": "registry:lib"
         },
         {
           "path": "src/components/formedible/builder/types.ts",
-          "type": "registry:lib",
-          "target": "components/formedible/builder/types.ts"
+          "type": "registry:lib"
         },
         {
           "path": "src/components/formedible/builder/BuilderContext.tsx",
-          "type": "registry:component",
-          "target": "components/formedible/builder/BuilderContext.tsx"
+          "type": "registry:component"
         },
         {
           "path": "src/components/formedible/builder/TabContainer.tsx",
-          "type": "registry:component",
-          "target": "components/formedible/builder/TabContainer.tsx"
+          "type": "registry:component"
         },
         {
           "path": "src/components/formedible/builder/default-tabs.ts",
-          "type": "registry:lib",
-          "target": "components/formedible/builder/default-tabs.ts"
+          "type": "registry:lib"
         },
         {
           "path": "src/components/formedible/builder/tabs/BuilderTabContent.tsx",
-          "type": "registry:component",
-          "target": "components/formedible/builder/tabs/BuilderTabContent.tsx"
+          "type": "registry:component"
         },
         {
           "path": "src/components/formedible/builder/tabs/PreviewTabContent.tsx",
-          "type": "registry:component",
-          "target": "components/formedible/builder/tabs/PreviewTabContent.tsx"
+          "type": "registry:component"
         },
         {
           "path": "src/components/formedible/builder/tabs/CodeTabContent.tsx",
-          "type": "registry:component",
-          "target": "components/formedible/builder/tabs/CodeTabContent.tsx"
+          "type": "registry:component"
         },
         {
           "path": "src/lib/utils.ts",
-          "type": "registry:lib",
-          "target": "lib/utils.ts"
+          "type": "registry:lib"
         },
         {
           "path": "src/components/ui/code-block.tsx",
-          "type": "registry:component",
-          "target": "components/ui/code-block.tsx"
+          "type": "registry:component"
         }
-      ],
-      "categories": ["form", "builder", "component"],
-      "docs": "Make sure to install formedible and configure your shadcn/ui components before using this builder. This component provides a visual interface for creating forms that can be used with the formedible library."
+      ]
     }
   ]
 }
