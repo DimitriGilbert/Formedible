@@ -4,7 +4,7 @@
   "homepage": "https://github.com/DimitriGilbert/Formedible",
   "items": [
     {
-      "name": "formedible",
+      "name": "use-formedible",
       "type": "registry:block",
       "title": "Formedible Form Builder",
       "description": "A powerful React hook for creating schema-driven forms with TanStack Form and shadcn/ui components. Includes field components, validation, and advanced features.",

@@ -4,7 +4,7 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsup src/index.ts --format esm,cjs --dts --watch",
-    "build": "npx shadcn@latest build && tsup src/index.ts --format esm,cjs --dts",
+    "build": "tsup src/index.ts --format esm,cjs --dts && rm public/r/form-builder.json && npx shadcn@latest build ",
     "check-types": "npx tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest"
