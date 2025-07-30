@@ -144,6 +144,7 @@ const locationConfig = React.useMemo(
     enableSearch: true,
     enableGeolocation: true,
     enableManualEntry: true,
+    showMap: true,
     mapProvider: "openstreetmap" as const,
     searchPlaceholder: "Search for your work location...",
     searchOptions: {
@@ -464,6 +465,7 @@ export function AdvancedFieldTypesFormExample() {
       enableSearch: true,
       enableGeolocation: true,
       enableManualEntry: true,
+      showMap: true,
       mapProvider: "openstreetmap" as const,
       searchPlaceholder: "Search for your work location...",
       searchOptions: {

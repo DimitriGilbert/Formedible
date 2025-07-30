@@ -374,6 +374,7 @@ export interface LocationConfig {
   enableSearch?: boolean;
   enableGeolocation?: boolean;
   enableManualEntry?: boolean;
+  showMap?: boolean;
   
   // Map provider - determines which map component to render
   mapProvider?: 'google' | 'openstreetmap' | 'bing' | 'custom' | 'cartodb' | 'stamen' | 'satellite';

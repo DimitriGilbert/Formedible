@@ -50,14 +50,14 @@ update_web_components() {
   # first, as it uses older formedible from web
   if [[ -f "../../packages/builder/public/r/form-builder.json" ]]; then
     log_info "Installing form-builder from built registry..."
-    npx shadcn@latest add --yes "../../packages/builder/public/r/form-builder.json"
+    npx shadcn@latest add --yes --overwrite "../../packages/builder/public/r/form-builder.json"
   else
     log_warning "Builder registry not found, skipping builder installation"
   fi
   
   # Install formedible using shadcn CLI with file path
   log_info "Installing formedible from built registry..."
-  npx shadcn@latest add --yes "../../packages/formedible/public/r/use-formedible.json"
+  npx shadcn@latest add --yes --overwrite "../../packages/formedible/public/r/use-formedible.json"
   
   
   # Return to project root

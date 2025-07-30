@@ -495,9 +495,11 @@ export interface UseFormedibleOptions<TFormValues> {
   labelClassName?: string;
   buttonClassName?: string;
   submitButtonClassName?: string;
-  submitButton?: React.ComponentType<React.ButtonHTMLAttributes<HTMLButtonElement> & {
-    children?: React.ReactNode;
-  }>;
+  submitButton?: React.ComponentType<
+    React.ButtonHTMLAttributes<HTMLButtonElement> & {
+      children?: React.ReactNode;
+    }
+  >;
   pages?: PageConfig[];
   progress?: ProgressConfig;
   tabs?: {
@@ -1294,34 +1296,34 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
       let lastFocusedField: string | null = null;
 
       const handleBlur = (event: FocusEvent) => {
-        const target = event.target as HTMLElement;
-        if (target) {
-          const fieldName = target.getAttribute("name") || "";
+        const target = event.target;
+        if (!target) return "";
+        const fieldName = (target as HTMLElement).getAttribute("name") || "";
 
-          if (fieldName && lastFocusedField === fieldName) {
-            // Analytics tracking
-            if (analytics?.onFieldBlur && fieldFocusTimes.current[fieldName]) {
-              const timeSpent = Date.now() - fieldFocusTimes.current[fieldName];
-              analytics.onFieldBlur(fieldName, timeSpent);
-            }
+        if (fieldName && lastFocusedField === fieldName) {
+          // Analytics tracking
+          if (analytics?.onFieldBlur && fieldFocusTimes.current[fieldName]) {
+            const timeSpent = Date.now() - fieldFocusTimes.current[fieldName];
+            analytics.onFieldBlur(fieldName, timeSpent);
+          }
 
-            // User's onBlur handler
-            if (formOptions?.onBlur) {
-              clearTimeout(onBlurTimeout);
-              onBlurTimeout = setTimeout(() => {
-                if (!formOptions.onBlur) return;
-                const formApi = form;
-                const values = formApi.state.values;
-                formOptions.onBlur({ value: values as TFormValues, formApi });
-              }, 100); // 100ms debounce for blur
-            }
+          // User's onBlur handler
+          if (formOptions?.onBlur) {
+            clearTimeout(onBlurTimeout);
+            onBlurTimeout = setTimeout(() => {
+              if (!formOptions.onBlur) return;
+              const formApi = form;
+              const values = formApi.state.values;
+              formOptions.onBlur({ value: values as TFormValues, formApi });
+            }, 100); // 100ms debounce for blur
           }
         }
       };
 
       const handleFocus = (event: FocusEvent) => {
-        const target = event.target as HTMLElement;
-        const fieldName = target.getAttribute("name") || "";
+        const target = event.target;
+        if (!target) return "";
+        const fieldName = (target as HTMLElement).getAttribute("name") || "";
         lastFocusedField = fieldName;
 
         // Analytics tracking
@@ -1333,8 +1335,9 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
       };
 
       const handleChange = (event: Event) => {
-        const target = event.target as HTMLElement;
-        const fieldName = target.getAttribute("name");
+        const target = event.target;
+        if (!target) return "";
+        const fieldName = (target as HTMLElement).getAttribute("name") || "";
 
         if (fieldName && analytics?.onFieldChange) {
           const value = (target as HTMLInputElement).value;
@@ -2145,9 +2148,9 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
                 canSubmit: boolean;
                 isSubmitting: boolean;
               };
-              
+
               const SubmitButton = submitButton || Button;
-              
+
               return (
                 <SubmitButton
                   type="submit"
@@ -2178,9 +2181,9 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
               canSubmit: boolean;
               isSubmitting: boolean;
             };
-            
+
             const SubmitButton = submitButton || Button;
-            
+
             return (
               <div className="flex justify-between gap-4">
                 <Button
@@ -2188,7 +2191,10 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
                   variant="outline"
                   onClick={goToPreviousPage}
                   disabled={isFirstPage || disabled || loading}
-                  className={cn(isFirstPage ? "invisible" : "", buttonClassName)}
+                  className={cn(
+                    isFirstPage ? "invisible" : "",
+                    buttonClassName
+                  )}
                 >
                   {previousLabel}
                 </Button>
@@ -2199,7 +2205,10 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
                     (!canSubmit || isSubmitting || disabled || loading) &&
                     isLastPage
                   }
-                  className={cn("flex-1 max-w-xs", isLastPage ? submitButtonClassName : buttonClassName)}
+                  className={cn(
+                    "flex-1 max-w-xs",
+                    isLastPage ? submitButtonClassName : buttonClassName
+                  )}
                 >
                   {loading && isLastPage
                     ? "Loading..."

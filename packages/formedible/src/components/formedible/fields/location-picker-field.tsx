@@ -357,6 +357,7 @@ export const LocationPickerField: React.FC<LocationPickerFieldProps> = ({
   const enableSearch = config.enableSearch !== false;
   const enableGeolocation = config.enableGeolocation !== false;
   const enableManualEntry = config.enableManualEntry !== false;
+  const showMap = config.showMap !== false;
   const mapProvider = config.mapProvider || "openstreetmap";
   const searchCallback = config.searchCallback;
   const reverseGeocodeCallback = config.reverseGeocodeCallback;
@@ -391,12 +392,17 @@ export const LocationPickerField: React.FC<LocationPickerFieldProps> = ({
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mapInstanceRef = useRef<any>(null);
 
-  // Load Leaflet on mount - simple
+  // Load Leaflet on mount only if map is enabled - simple
   useEffect(() => {
+    if (!showMap) {
+      setLeafletLoaded(false);
+      return;
+    }
+    
     loadLeaflet()
       .then(() => setLeafletLoaded(true))
       .catch(() => setGeoError("Failed to load map library"));
-  }, []);
+  }, [showMap]);
 
   // Search function - simple, no complex dependencies
   const performSearch = useCallback(async (query: string) => {
@@ -486,7 +492,7 @@ export const LocationPickerField: React.FC<LocationPickerFieldProps> = ({
 
   // Initialize map - simple
   useEffect(() => {
-    if (!mapRef.current || !leafletLoaded) return;
+    if (!showMap || !mapRef.current || !leafletLoaded) return;
 
     const mapRenderer = mapRenderCallback || defaultMapRenderer;
     
@@ -514,7 +520,7 @@ export const LocationPickerField: React.FC<LocationPickerFieldProps> = ({
         mapInstance.cleanup();
       }
     };
-  }, [leafletLoaded, currentLocation, handleLocationSelect, mapRenderCallback, zoom, defaultLocation, mapProvider]);
+  }, [showMap, leafletLoaded, currentLocation, handleLocationSelect, mapRenderCallback, zoom, defaultLocation, mapProvider]);
 
   // Simple handlers - no complex state
   const handleGetCurrentLocation = () => {
@@ -768,18 +774,20 @@ export const LocationPickerField: React.FC<LocationPickerFieldProps> = ({
         </div>
 
         {/* Map */}
-        <div className="relative">
-          {!leafletLoaded && (
-            <div className="absolute inset-0 flex items-center justify-center bg-muted rounded-md">
-              <div className="text-muted-foreground">Loading map...</div>
-            </div>
-          )}
-          <div
-            ref={mapRef}
-            className={cn("w-full border rounded-md", uiOpts.mapClassName)}
-            style={{ height: `${mapHeight}px`, minHeight: "300px" }}
-          />
-        </div>
+        {showMap && (
+          <div className="relative">
+            {!leafletLoaded && (
+              <div className="absolute inset-0 flex items-center justify-center bg-muted rounded-md">
+                <div className="text-muted-foreground">Loading map...</div>
+              </div>
+            )}
+            <div
+              ref={mapRef}
+              className={cn("w-full border rounded-md", uiOpts.mapClassName)}
+              style={{ height: `${mapHeight}px`, minHeight: "300px" }}
+            />
+          </div>
+        )}
 
         {/* Location Display */}
         {currentLocation && (
