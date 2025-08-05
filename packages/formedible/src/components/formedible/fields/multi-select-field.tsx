@@ -37,7 +37,7 @@ export const MultiSelectField: React.FC<MultiSelectFieldSpecificProps> = ({
   } = multiSelectConfig;
 
   const name = fieldApi.name;
-  const selectedValues = Array.isArray(fieldApi.state?.value) ? (fieldApi.state?.value as string[]) : [];
+  const selectedValues = Array.isArray(fieldApi.state?.value) ? (fieldApi.state?.value as string[]) : (fieldApi.state?.value === undefined ? [] : []);
   
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');

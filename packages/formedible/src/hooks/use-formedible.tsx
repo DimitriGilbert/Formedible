@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useMemo, memo, useRef } from "react";
-import { useForm } from "@tanstack/react-form";
+import { useForm, AnyFormApi, AnyFieldApi } from "@tanstack/react-form";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
 import type {
@@ -737,44 +737,78 @@ export interface SectionRendererProps {
 }
 
 const SectionRenderer: React.FC<
-  SectionRendererProps & { collapseLabel?: string; expandLabel?: string }
+  SectionRendererProps & { collapseLabel?: string; expandLabel?: string; form?: AnyFormApi }
 > = ({
   sectionKey,
   sectionData,
   renderField,
   collapseLabel = "Collapse",
   expandLabel = "Expand",
+  form,
 }) => {
   const { section, groups } = sectionData;
   const [isExpanded, setIsExpanded] = React.useState(
     section?.defaultExpanded !== false
   );
 
+  // Check if any fields in this section will actually render
+  const hasVisibleFields = React.useMemo(() => {
+    if (!form) return true; // Fallback to showing section if form is not available
+    
+    const currentValues = form.state.values;
+    return Object.values(groups).some((groupFields) =>
+      (groupFields as FieldConfig[]).some((field) => {
+        // Check individual field conditional
+        if (field.conditional && !field.conditional(currentValues)) {
+          return false;
+        }
+        return true;
+      })
+    );
+  }, [groups, form?.state.values]);
+
   const sectionContent = (
     <div className="space-y-4">
-      {Object.entries(groups).map(([groupKey, groupFields]) => (
-        <div
-          key={groupKey}
-          className={cn(
-            groupKey !== "default" ? "p-4 border rounded-lg bg-muted/20" : ""
-          )}
-        >
-          {groupKey !== "default" && (
-            <h4 className="font-medium text-sm text-muted-foreground mb-3 uppercase tracking-wide">
-              {groupKey}
-            </h4>
-          )}
+      {Object.entries(groups).map(([groupKey, groupFields]) => {
+        // Filter out fields that won't render due to conditionals
+        const visibleGroupFields = (groupFields as FieldConfig[]).filter((field) => {
+          if (!form) return true;
+          const currentValues = form.state.values;
+          return !field.conditional || field.conditional(currentValues);
+        });
+
+        // Don't render empty groups
+        if (visibleGroupFields.length === 0) return null;
+
+        return (
           <div
-            className={cn(groupKey !== "default" ? "space-y-3" : "space-y-4")}
+            key={groupKey}
+            className={cn(
+              groupKey !== "default" ? "p-4 border rounded-lg bg-muted/20" : ""
+            )}
           >
-            {(groupFields as FieldConfig[]).map((field) => renderField(field))}
+            {groupKey !== "default" && (
+              <h4 className="font-medium text-sm text-muted-foreground mb-3 uppercase tracking-wide">
+                {groupKey}
+              </h4>
+            )}
+            <div
+              className={cn(groupKey !== "default" ? "space-y-3" : "space-y-4")}
+            >
+              {visibleGroupFields.map((field) => renderField(field))}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 
   if (section && sectionKey !== "default") {
+    // Don't render section if no fields are visible
+    if (!hasVisibleFields) {
+      return null;
+    }
+
     return (
       <div key={sectionKey} className="space-y-4">
         <div className="space-y-2">
@@ -1736,7 +1770,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
                           );
 
                           const baseProps = {
-                            fieldApi: field,
+                            fieldApi: field as unknown as AnyFieldApi,
                             label,
                             placeholder,
                             description,
@@ -1878,7 +1912,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
                           const wrappedFieldElement =
                             inlineValidation?.enabled ? (
                               <InlineValidationWrapper
-                                fieldApi={field}
+                                fieldApi={field as unknown as AnyFieldApi}
                                 inlineValidation={inlineValidation}
                               >
                                 {fieldElement}
@@ -1984,6 +2018,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
                   renderField={renderField}
                   collapseLabel={collapseLabel}
                   expandLabel={expandLabel}
+                  form={form as unknown as AnyFormApi}
                 />
               );
 
@@ -2087,6 +2122,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
                 renderField={renderField}
                 collapseLabel={collapseLabel}
                 expandLabel={expandLabel}
+                form={form as unknown as AnyFormApi}
               />
             );
 

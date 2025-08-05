@@ -23,7 +23,7 @@ export interface TypedFormState<TFormData = Record<string, unknown>> {
 }
 
 export interface TypedFormSubscriptionSelector<TFormData = Record<string, unknown>, TSelected = unknown> {
-  (state: FormState<TFormData, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined>): TSelected;
+  (state: FormState<TFormData, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined>): TSelected;
 }
 
 // Validation error types based on TanStack Form
@@ -38,6 +38,7 @@ export type FieldValidationErrors = FieldValidationError[];
 // Type alias for our FormApi - use the core FormApi type which is what useForm actually returns
 export type FormedibleFormApi<TFormData = Record<string, unknown>> = FormApi<
   TFormData,
+  undefined,
   undefined,
   undefined,
   undefined,
