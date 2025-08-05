@@ -38,13 +38,20 @@ import { FieldHelp } from "@/components/formedible/fields/field-help";
 // Utility function to scroll to top of a specific form
 const scrollToTop = (
   htmlFormRef: React.RefObject<HTMLFormElement | null>,
-  smooth = true
+  smooth = true,
+  enabled = true
 ) => {
-  if (typeof window !== "undefined" && htmlFormRef.current) {
-    htmlFormRef.current.scrollIntoView({
-      behavior: smooth ? "smooth" : "auto",
-      block: "start",
-    });
+  if (typeof window !== "undefined" && htmlFormRef.current && enabled) {
+    // Check if form is already in view to prevent unnecessary jumping
+    const rect = htmlFormRef.current.getBoundingClientRect();
+    const isInView = rect.top >= 0 && rect.top <= window.innerHeight * 0.3;
+    
+    if (!isInView) {
+      htmlFormRef.current.scrollIntoView({
+        behavior: smooth ? "smooth" : "auto",
+        block: "start",
+      });
+    }
   }
 };
 
@@ -495,6 +502,8 @@ export interface UseFormedibleOptions<TFormValues> {
   labelClassName?: string;
   buttonClassName?: string;
   submitButtonClassName?: string;
+  // Auto scroll configuration
+  autoScroll?: boolean;
   submitButton?: React.ComponentType<
     React.ButtonHTMLAttributes<HTMLButtonElement> & {
       children?: React.ReactNode;
@@ -765,7 +774,7 @@ const SectionRenderer: React.FC<
         return true;
       })
     );
-  }, [groups, form?.state.values]);
+  }, [groups, form?.state.values, form]);
 
   const sectionContent = (
     <div className="space-y-4">
@@ -873,6 +882,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     loading,
     resetOnSubmitSuccess,
     showSubmitButton = true,
+    autoScroll = false,
     onFormReset,
     onFormInput,
     onFormInvalid,
@@ -1487,7 +1497,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
       setCurrentPage(newPage);
       pageStartTime.current = Date.now();
       onPageChange?.(newPage, "next");
-      scrollToTop(htmlFormRef);
+      scrollToTop(htmlFormRef, true, autoScroll);
     }
   };
 
@@ -1504,7 +1514,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
       setCurrentPage(newPage);
       pageStartTime.current = Date.now();
       onPageChange?.(newPage, "previous");
-      scrollToTop(htmlFormRef);
+      scrollToTop(htmlFormRef, true, autoScroll);
     }
   };
 
@@ -1558,7 +1568,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     // If validation passes or going backward, allow navigation
     setCurrentPage(targetPage);
     onPageChange?.(targetPage, targetPage > currentPage ? "next" : "previous");
-    scrollToTop(htmlFormRef);
+    scrollToTop(htmlFormRef, true, autoScroll);
   };
 
   const Form: React.FC<FormProps> = ({
@@ -2188,17 +2198,19 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
               const SubmitButton = submitButton || Button;
 
               return (
-                <SubmitButton
-                  type="submit"
-                  disabled={!canSubmit || isSubmitting || disabled || loading}
-                  className={cn("w-full", submitButtonClassName)}
-                >
+                <div className="flex justify-end">
+                  <SubmitButton
+                    type="submit"
+                    disabled={!canSubmit || isSubmitting || disabled || loading}
+                    className={cn("px-8", submitButtonClassName)}
+                  >
                   {loading
                     ? "Loading..."
                     : isSubmitting
                     ? "Submitting..."
                     : submitLabel}
-                </SubmitButton>
+                  </SubmitButton>
+                </div>
               );
             }}
           </form.Subscribe>
@@ -2242,7 +2254,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
                     isLastPage
                   }
                   className={cn(
-                    "flex-1 max-w-xs",
+                    "px-8",
                     isLastPage ? submitButtonClassName : buttonClassName
                   )}
                 >

@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { useFormedible } from "@/hooks/use-formedible";
 import {
   Card,
   CardContent,
@@ -22,8 +21,6 @@ import {
   Users,
   Sparkles,
 } from "lucide-react";
-import { z } from "zod";
-import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { motion, AnimatePresence } from "motion/react";
 import Link from "next/link";
@@ -31,526 +28,20 @@ import { CodeBlock } from "@/components/ui/code-block";
 
 // Components
 import { DemoCard } from "@/components/demo/demo-card";
-import { CustomProgress } from "@/components/demo/custom-progress";
 
-// Code examples
-import {
-  contactFormCode,
-  profileFormCode,
-  surveyFormCode,
-} from "@/data/code-examples";
+// Import examples from docs/examples
+import { ContactFormExample, contactFormCode } from "@/app/docs/examples/contact-form";
+import { RegistrationFormExample, registrationFormCode } from "@/app/docs/examples/registration-form";
+import { SurveyFormExample, surveyFormCode } from "@/app/docs/examples/survey-form";
 
 
-// Enhanced schemas with proper validation
-const contactSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Please enter a valid email"),
-  message: z.string().min(10, "Message must be at least 10 characters"),
-  newsletter: z.boolean().optional(),
-});
 
-const userProfileSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Please enter a valid email"),
-  age: z
-    .number()
-    .min(13, "Must be at least 13 years old")
-    .max(120, "Invalid age"),
-  country: z.string().min(1, "Please select a country"),
-  bio: z.string().optional(),
-  notifications: z.boolean().default(true),
-  newsletter: z.boolean().default(false),
-  birthday: z.date().optional(),
-});
-
-const surveySchema = z.object({
-  satisfaction: z.number().min(1).max(10),
-  recommend: z.boolean(),
-  feedback: z
-    .string()
-    .min(5, "Please provide at least 5 characters of feedback"),
-  category: z.string().min(1, "Please select a category"),
-});
-
-const advancedFieldsSchema = z.object({
-  favoriteColor: z.string().min(1, "Please select a color"),
-  skills: z.array(z.string()).min(1, "Please select at least one skill"),
-  phone: z.string().min(1, "Phone number is required"),
-  experience: z.enum(["beginner", "intermediate", "advanced"], {
-    message: "Please select your experience level",
-  }),
-  rating: z.number().min(1, "Please provide a rating").max(5),
-});
-
-const comprehensiveSchema = z.object({
-  // Basic fields
-  name: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Please enter a valid email"),
-  phone: z.string().min(1, "Phone number is required"),
-
-  // Advanced fields
-  favoriteColor: z.string().min(1, "Please select a color"),
-  skills: z.array(z.string()).min(1, "Please select at least one skill"),
-  experience: z.enum(["beginner", "intermediate", "advanced"], {
-    message: "Please select your experience level",
-  }),
-  satisfaction: z.number().min(1, "Please provide a rating").max(5),
-
-  // Preferences
-  notifications: z.boolean(),
-  newsletter: z.boolean(),
-});
-
-// Enhanced Animated Field Wrapper with deterministic intro animations
-const EnhancedAnimatedWrapper: React.FC<{
-  children: React.ReactNode;
-  field: any;
-}> = ({ children, field }) => {
-  const animations = [
-    { opacity: 0, y: 15 },
-    { opacity: 0, x: -15 },
-    { opacity: 0, scale: 0.95 },
-    { opacity: 0, y: -10 },
-  ];
-
-  // Use field name hash for deterministic animation selection
-  const fieldNameHash = field?.name
-    ? field.name.split("").reduce((a: number, b: string) => {
-        a = (a << 5) - a + b.charCodeAt(0);
-        return a & a;
-      }, 0)
-    : 0;
-
-  const animationIndex = Math.abs(fieldNameHash) % animations.length;
-  const selectedAnimation = animations[animationIndex];
-
-  return (
-    <motion.div
-      initial={selectedAnimation}
-      animate={{ opacity: 1, y: 0, x: 0, scale: 1 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
-      whileHover={{ scale: 1.01 }}
-      className="space-y-2"
-    >
-      {children}
-    </motion.div>
-  );
-};
 
 
 
 
 
 export default function Home() {
-  const contactForm = useFormedible({
-    schema: contactSchema,
-    fields: [
-      {
-        name: "name",
-        type: "text",
-        label: "Full Name",
-        placeholder: "Enter your full name",
-      },
-      {
-        name: "email",
-        type: "email",
-        label: "Email Address",
-        placeholder: "your@email.com",
-      },
-      {
-        name: "message",
-        type: "textarea",
-        label: "Message",
-        placeholder: "Tell us what you think...",
-      },
-      {
-        name: "newsletter",
-        type: "checkbox",
-        label: "Subscribe to newsletter",
-      },
-    ],
-    submitLabel: "Send Message",
-    globalWrapper: EnhancedAnimatedWrapper,
-    formOptions: {
-      defaultValues: {
-        name: "",
-        email: "",
-        message: "",
-        newsletter: false,
-      },
-      onSubmit: async ({ value }) => {
-        console.log("Contact form submitted:", value);
-        toast.success(
-          "Thank you for your message! We'll get back to you soon.",
-          {
-            description: "Your message has been sent successfully.",
-          }
-        );
-      },
-    },
-  });
-
-  const profileForm = useFormedible({
-    schema: userProfileSchema,
-    fields: [
-      {
-        name: "firstName",
-        type: "text",
-        label: "First Name",
-        placeholder: "John",
-      },
-      {
-        name: "lastName",
-        type: "text",
-        label: "Last Name",
-        placeholder: "Doe",
-      },
-      {
-        name: "email",
-        type: "email",
-        label: "Email",
-        placeholder: "john@example.com",
-      },
-      {
-        name: "age",
-        type: "number",
-        label: "Age",
-        placeholder: "25",
-        min: 13,
-        max: 120,
-      },
-      {
-        name: "country",
-        type: "select",
-        label: "Country",
-        options: [
-          "United States",
-          "Canada",
-          "United Kingdom",
-          "Germany",
-          "France",
-          "Other",
-        ],
-      },
-      {
-        name: "bio",
-        type: "textarea",
-        label: "Bio",
-        placeholder: "Tell us about yourself...",
-      },
-      { name: "notifications", type: "switch", label: "Enable notifications" },
-      {
-        name: "newsletter",
-        type: "checkbox",
-        label: "Subscribe to newsletter",
-      },
-      { name: "birthday", type: "date", label: "Birthday" },
-    ],
-    submitLabel: "Update Profile",
-    globalWrapper: EnhancedAnimatedWrapper,
-    formOptions: {
-      defaultValues: {
-        firstName: "",
-        lastName: "",
-        email: "",
-        age: 25,
-        country: "",
-        bio: "",
-        notifications: true,
-        newsletter: false,
-      },
-      onSubmit: async ({ value }) => {
-        console.log("Profile updated:", value);
-        toast.success("Profile updated successfully!", {
-          description: "Your changes have been saved.",
-        });
-      },
-    },
-  });
-
-  const advancedFieldsForm = useFormedible({
-    schema: advancedFieldsSchema,
-    fields: [
-      {
-        name: "favoriteColor",
-        type: "colorPicker",
-        label: "Favorite Color",
-        colorConfig: {
-          format: "hex",
-          showPreview: true,
-          presetColors: [
-            "#FF6B6B",
-            "#4ECDC4",
-            "#45B7D1",
-            "#96CEB4",
-            "#FFEAA7",
-            "#DDA0DD",
-            "#98D8C8",
-          ],
-        },
-      },
-      {
-        name: "skills",
-        type: "multiSelect",
-        label: "Skills & Technologies",
-        options: [
-          { value: "javascript", label: "JavaScript" },
-          { value: "typescript", label: "TypeScript" },
-          { value: "react", label: "React" },
-          { value: "vue", label: "Vue.js" },
-          { value: "angular", label: "Angular" },
-          { value: "node", label: "Node.js" },
-          { value: "python", label: "Python" },
-          { value: "java", label: "Java" },
-          { value: "csharp", label: "C#" },
-          { value: "go", label: "Go" },
-        ],
-        multiSelectConfig: {
-          searchable: true,
-          creatable: true,
-          maxSelections: 5,
-          placeholder: "Select your skills...",
-        },
-      },
-      {
-        name: "phone",
-        type: "phone",
-        label: "Phone Number",
-        phoneConfig: {
-          defaultCountry: "US",
-          format: "national",
-          allowedCountries: ["US", "CA", "GB", "FR", "DE", "AU"],
-        },
-      },
-      {
-        name: "experience",
-        type: "radio",
-        label: "Experience Level",
-        options: [
-          { value: "beginner", label: "Beginner (0-2 years)" },
-          { value: "intermediate", label: "Intermediate (2-5 years)" },
-          { value: "advanced", label: "Advanced (5+ years)" },
-        ],
-      },
-      {
-        name: "rating",
-        type: "rating",
-        label: "Rate Your Overall Experience",
-        ratingConfig: {
-          max: 5,
-          icon: "star",
-          size: "md",
-          showValue: true,
-          allowHalf: true,
-        },
-      },
-    ],
-    submitLabel: "Save Preferences",
-    globalWrapper: EnhancedAnimatedWrapper,
-    formOptions: {
-      defaultValues: {
-        favoriteColor: "#4ECDC4",
-        skills: [],
-        phone: "",
-        experience: "beginner" as const,
-        rating: 0,
-      },
-      onSubmit: async ({ value }) => {
-        console.log("Advanced fields submitted:", value);
-        toast.success("Preferences saved!", {
-          description: "Your advanced preferences have been updated.",
-        });
-      },
-    },
-  });
-
-  const comprehensiveForm = useFormedible({
-    schema: comprehensiveSchema,
-    fields: [
-      // Page 1 - Basic Information
-      {
-        name: "name",
-        type: "text",
-        label: "Full Name",
-        placeholder: "Enter your full name",
-        page: 1,
-      },
-      {
-        name: "email",
-        type: "email",
-        label: "Email Address",
-        placeholder: "your@email.com",
-        page: 1,
-      },
-      {
-        name: "phone",
-        type: "phone",
-        label: "Phone Number",
-        page: 1,
-        phoneConfig: {
-          defaultCountry: "US",
-          format: "international",
-        },
-      },
-
-      // Page 2 - Preferences & Style
-      {
-        name: "favoriteColor",
-        type: "colorPicker",
-        label: "Theme Color",
-        page: 2,
-        colorConfig: {
-          format: "hex",
-          showPreview: true,
-          presetColors: ["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7"],
-        },
-      },
-      {
-        name: "skills",
-        type: "multiSelect",
-        label: "Areas of Interest",
-        page: 2,
-        options: [
-          { value: "technology", label: "Technology" },
-          { value: "design", label: "Design" },
-          { value: "business", label: "Business" },
-          { value: "marketing", label: "Marketing" },
-          { value: "education", label: "Education" },
-          { value: "healthcare", label: "Healthcare" },
-        ],
-        multiSelectConfig: {
-          searchable: true,
-          maxSelections: 3,
-        },
-      },
-      {
-        name: "experience",
-        type: "radio",
-        label: "Experience Level",
-        page: 2,
-        options: [
-          { value: "beginner", label: "Just getting started" },
-          { value: "intermediate", label: "Some experience" },
-          { value: "advanced", label: "Very experienced" },
-        ],
-      },
-
-      // Page 3 - Feedback & Settings
-      {
-        name: "satisfaction",
-        type: "rating",
-        label: "How satisfied are you with our service?",
-        page: 3,
-        ratingConfig: {
-          max: 5,
-          icon: "star",
-          showValue: true,
-        },
-      },
-      {
-        name: "notifications",
-        type: "switch",
-        label: "Enable email notifications",
-        page: 3,
-      },
-      {
-        name: "newsletter",
-        type: "checkbox",
-        label: "Subscribe to our newsletter",
-        page: 3,
-      },
-    ],
-    pages: [
-      {
-        page: 1,
-        title: "Contact Information",
-        description: "Let's start with your basic details",
-      },
-      {
-        page: 2,
-        title: "Preferences",
-        description: "Tell us about your preferences and interests",
-      },
-      {
-        page: 3,
-        title: "Final Settings",
-        description: "Complete your profile setup",
-      },
-    ],
-    progress: {
-      component: CustomProgress,
-      className: "mb-6",
-    },
-    submitLabel: "Complete Setup",
-    nextLabel: "Continue →",
-    previousLabel: "← Back",
-    globalWrapper: EnhancedAnimatedWrapper,
-    formOptions: {
-      defaultValues: {
-        name: "",
-        email: "",
-        phone: "",
-        favoriteColor: "#4ECDC4",
-        skills: [],
-        experience: "beginner" as const,
-        satisfaction: 0,
-        notifications: true,
-        newsletter: false,
-      },
-      onSubmit: async ({ value }) => {
-        console.log("Comprehensive form completed:", value);
-        toast.success("Setup completed! 🎉", {
-          description: "Your profile has been set up successfully.",
-        });
-      },
-    },
-    onPageChange: (page, direction) => {
-      console.log(`Navigated to page ${page} via ${direction}`);
-    },
-  });
-
-  const surveyForm = useFormedible({
-    schema: surveySchema,
-    fields: [
-      {
-        name: "satisfaction",
-        type: "slider",
-        label: "Satisfaction (1-10)",
-        min: 1,
-        max: 10,
-      },
-      { name: "recommend", type: "switch", label: "Would you recommend us?" },
-      {
-        name: "feedback",
-        type: "textarea",
-        label: "Feedback",
-        placeholder: "Your feedback helps us improve...",
-      },
-      {
-        name: "category",
-        type: "select",
-        label: "Category",
-        options: ["Product", "Support", "Documentation", "Other"],
-      },
-    ],
-    submitLabel: "Submit Survey",
-    globalWrapper: EnhancedAnimatedWrapper,
-    formOptions: {
-      defaultValues: {
-        satisfaction: 5,
-        recommend: true,
-        feedback: "",
-        category: "",
-      },
-      onSubmit: async ({ value }) => {
-        console.log("Survey submitted:", value);
-        toast.success("Thank you for your feedback!", {
-          description: "Your response helps us improve our service.",
-        });
-      },
-    },
-  });
 
   const [origin, setOrigin] = React.useState("");
 
@@ -856,14 +347,10 @@ export function MyForm() {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.2 }}
             >
-              <TabsList className="grid w-full grid-cols-5 mb-8">
-                <TabsTrigger value="contact">Simple Form</TabsTrigger>
-                <TabsTrigger value="profile">Enhanced Fields</TabsTrigger>
-                <TabsTrigger value="advanced">New Field Types</TabsTrigger>
-                <TabsTrigger value="survey">Custom Components</TabsTrigger>
-                <TabsTrigger value="comprehensive">
-                  Complete Example
-                </TabsTrigger>
+              <TabsList className="grid w-full grid-cols-3 mb-8">
+                <TabsTrigger value="contact">Contact Form</TabsTrigger>
+                <TabsTrigger value="registration">Multi-Page Form</TabsTrigger>
+                <TabsTrigger value="survey">Conditional Logic</TabsTrigger>
               </TabsList>
             </motion.div>
 
@@ -877,118 +364,35 @@ export function MyForm() {
                   transition={{ duration: 0.3 }}
                 >
                   <DemoCard
-                    title="Simple Contact Form"
-                    description="Basic form with schema validation and standard field types"
-                    preview={<contactForm.Form className="space-y-4" />}
+                    title="Contact Form"
+                    description="Simple form with validation, select options, and checkbox"
+                    preview={<ContactFormExample />}
                     code={contactFormCode}
                     codeTitle="Contact Form Implementation"
-                    codeDescription="Simple form setup with Zod schema validation and basic field configuration"
+                    codeDescription="Clean contact form with subject selection and urgency checkbox"
                   />
                 </motion.div>
               </TabsContent>
 
-              <TabsContent key="profile" value="profile">
+              <TabsContent key="registration" value="registration">
                 <motion.div
-                  key="profile"
+                  key="registration"
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
                   transition={{ duration: 0.3 }}
                 >
                   <DemoCard
-                    title="Enhanced Profile Form"
-                    description="Profile form with animated wrappers and advanced field types"
-                    preview={<profileForm.Form className="space-y-4" />}
-                    code={profileFormCode}
-                    codeTitle="Profile Form with Enhanced Features"
-                    codeDescription="Form with custom animated wrappers, date picker, and various field types"
+                    title="Multi-Page Registration"
+                    description="3-step registration form with progress tracking and page validation"
+                    preview={<RegistrationFormExample />}
+                    code={registrationFormCode}
+                    codeTitle="Multi-Page Form Implementation"
+                    codeDescription="Registration form split across multiple pages with progress indicator"
                   />
                 </motion.div>
               </TabsContent>
 
-              <TabsContent key="advanced" value="advanced">
-                <motion.div
-                  key="advanced"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <DemoCard
-                    title="Advanced Field Types"
-                    description="Showcase of color picker, multi-select, phone, radio, and rating fields"
-                    preview={<advancedFieldsForm.Form className="space-y-4" />}
-                    code={`const advancedFieldsForm = useFormedible({
-  schema: z.object({
-    favoriteColor: z.string().min(1, "Please select a color"),
-    skills: z.array(z.string()).min(1, "Please select at least one skill"),
-    phone: z.string().min(1, "Phone number is required"),
-    experience: z.enum(["beginner", "intermediate", "advanced"]),
-    rating: z.number().min(1).max(5),
-  }),
-  fields: [
-    { 
-      name: "favoriteColor", 
-      type: "colorPicker", 
-      label: "Favorite Color",
-      colorConfig: {
-        format: "hex",
-        showPreview: true,
-        presetColors: ["#FF6B6B", "#4ECDC4", "#45B7D1"]
-      }
-    },
-    { 
-      name: "skills", 
-      type: "multiSelect", 
-      label: "Skills & Technologies",
-      options: [
-        { value: "javascript", label: "JavaScript" },
-        { value: "react", label: "React" },
-        { value: "typescript", label: "TypeScript" }
-      ],
-      multiSelectConfig: {
-        searchable: true,
-        creatable: true,
-        maxSelections: 5
-      }
-    },
-    { 
-      name: "phone", 
-      type: "phone", 
-      label: "Phone Number",
-      phoneConfig: {
-        defaultCountry: "US",
-        format: "national"
-      }
-    },
-    { 
-      name: "experience", 
-      type: "radio", 
-      label: "Experience Level",
-      options: [
-        { value: "beginner", label: "Beginner (0-2 years)" },
-        { value: "intermediate", label: "Intermediate (2-5 years)" },
-        { value: "advanced", label: "Advanced (5+ years)" }
-      ]
-    },
-    { 
-      name: "rating", 
-      type: "rating", 
-      label: "Rate Your Experience",
-      ratingConfig: {
-        max: 5,
-        icon: "star",
-        showValue: true,
-        allowHalf: true
-      }
-    }
-  ]
-});`}
-                    codeTitle="Advanced Field Types Implementation"
-                    codeDescription="Demonstration of color picker, multi-select, phone, radio, and rating field components"
-                  />
-                </motion.div>
-              </TabsContent>
 
               <TabsContent key="survey" value="survey">
                 <motion.div
@@ -999,67 +403,16 @@ export function MyForm() {
                   transition={{ duration: 0.3 }}
                 >
                   <DemoCard
-                    title="Survey with Custom Components"
-                    description="Advanced form featuring slider, switch components, and custom validation"
-                    preview={<surveyForm.Form className="space-y-4" />}
+                    title="Smart Survey Form"
+                    description="Dynamic form with conditional fields and smart option filtering"
+                    preview={<SurveyFormExample />}
                     code={surveyFormCode}
-                    codeTitle="Survey Form with Custom Components"
-                    codeDescription="Advanced form showcasing slider input, switch toggle, and enhanced validation"
+                    codeTitle="Conditional Logic Implementation"
+                    codeDescription="Survey form showcasing conditional fields and dynamic options based on user input"
                   />
                 </motion.div>
               </TabsContent>
 
-              <TabsContent key="comprehensive" value="comprehensive">
-                <motion.div
-                  key="comprehensive"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <DemoCard
-                    title="Comprehensive Multi-Page Form"
-                    description="Complete example with all field types, multi-page navigation, and progress tracking"
-                    preview={<comprehensiveForm.Form className="space-y-4" />}
-                    code={`const comprehensiveForm = useFormedible({
-  schema: z.object({
-    name: z.string().min(2),
-    email: z.string().email(),
-    phone: z.string().min(1),
-    favoriteColor: z.string().min(1),
-    skills: z.array(z.string()).min(1),
-    experience: z.enum(["beginner", "intermediate", "advanced"]),
-    satisfaction: z.number().min(1).max(5),
-    notifications: z.boolean(),
-    newsletter: z.boolean(),
-  }),
-  fields: [
-    // Page 1 - Contact
-    { name: "name", type: "text", label: "Full Name", page: 1 },
-    { name: "email", type: "email", label: "Email", page: 1 },
-    { name: "phone", type: "phone", label: "Phone", page: 1 },
-    
-    // Page 2 - Preferences  
-    { name: "favoriteColor", type: "colorPicker", label: "Theme Color", page: 2 },
-    { name: "skills", type: "multiSelect", label: "Interests", page: 2 },
-    { name: "experience", type: "radio", label: "Experience", page: 2 },
-    
-    // Page 3 - Settings
-    { name: "satisfaction", type: "rating", label: "Satisfaction", page: 3 },
-    { name: "notifications", type: "switch", label: "Notifications", page: 3 },
-    { name: "newsletter", type: "checkbox", label: "Newsletter", page: 3 },
-  ],
-  pages: [
-    { page: 1, title: "Contact Information" },
-    { page: 2, title: "Preferences" },
-    { page: 3, title: "Final Settings" },
-  ]
-});`}
-                    codeTitle="Comprehensive Multi-Page Form"
-                    codeDescription="Complete example showcasing all field types with multi-page navigation and progress tracking"
-                  />
-                </motion.div>
-              </TabsContent>
             </AnimatePresence>
           </Tabs>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto p-4">
