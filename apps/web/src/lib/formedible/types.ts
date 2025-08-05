@@ -47,7 +47,8 @@ export type FormedibleFormApi<TFormData = Record<string, unknown>> = FormApi<
   undefined,
   undefined,
   undefined,
-  undefined
+  undefined,
+  never
 >;
 
 // Option types for select, radio, and multi-select fields
