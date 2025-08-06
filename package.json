@@ -1,6 +1,6 @@
 {
   "name": "formedible",
-  "version": "0.2.17",
+  "version": "0.2.18",
   "main": "index.js",
   "packageManager": "npm@10.0.0",
   "scripts": {

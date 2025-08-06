@@ -44,6 +44,8 @@ interface ObjectFieldConfig {
   showCard?: boolean;
   layout?: "vertical" | "horizontal" | "grid";
   columns?: number;
+  collapseLabel?: string;
+  expandLabel?: string;
 }
 
 interface ObjectFieldProps extends BaseFieldProps {
@@ -191,7 +193,7 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
                     onClick={() => setIsExpanded(!isExpanded)}
                     className="text-xs text-muted-foreground hover:text-foreground"
                   >
-                    {isExpanded ? "Collapse" : "Expand"}
+                    {isExpanded ? (objectConfig?.collapseLabel || "Collapse") : (objectConfig?.expandLabel || "Expand")}
                   </button>
                 )}
               </div>
@@ -239,7 +241,7 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
                     onClick={() => setIsExpanded(!isExpanded)}
                     className="text-xs text-muted-foreground hover:text-foreground"
                   >
-                    {isExpanded ? "Collapse" : "Expand"}
+                    {isExpanded ? (objectConfig?.collapseLabel || "Collapse") : (objectConfig?.expandLabel || "Expand")}
                   </button>
                 )}
               </div>
