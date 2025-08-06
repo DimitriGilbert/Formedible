@@ -6,7 +6,22 @@ import type { BaseFieldProps } from "@/lib/formedible/types";
 // Note: Import individual field components directly to avoid circular dependency
 import { TextField } from "./text-field";
 import { NumberField } from "./number-field";
+import { TextareaField } from "./textarea-field";
 import { SelectField } from "./select-field";
+import { CheckboxField } from "./checkbox-field";
+import { SwitchField } from "./switch-field";
+import { DateField } from "./date-field";
+import { SliderField } from "./slider-field";
+import { FileUploadField } from "./file-upload-field";
+import { RadioField } from "./radio-field";
+import { MultiSelectField } from "./multi-select-field";
+import { ColorPickerField } from "./color-picker-field";
+import { RatingField } from "./rating-field";
+import { PhoneField } from "./phone-field";
+import { LocationPickerField } from "./location-picker-field";
+import { DurationPickerField } from "./duration-picker-field";
+import { AutocompleteField } from "./autocomplete-field";
+import { MaskedInputField } from "./masked-input-field";
 import { FieldWrapper } from './base-field-wrapper';
 
 interface ObjectFieldConfig {
@@ -42,7 +57,6 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
   disabled,
   ...wrapperProps
 }) => {
-  const name = fieldApi.name;
   const [isExpanded, setIsExpanded] = React.useState(
     objectConfig?.defaultExpanded !== false
   );
@@ -76,8 +90,27 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
     // Map field types to components directly to avoid circular dependency
     const fieldComponentMap = {
       text: TextField,
+      email: TextField,
+      password: TextField,
+      url: TextField,
+      tel: TextField,
       number: NumberField,
+      textarea: TextareaField,
       select: SelectField,
+      checkbox: CheckboxField,
+      switch: SwitchField,
+      date: DateField,
+      slider: SliderField,
+      file: FileUploadField,
+      radio: RadioField,
+      multiSelect: MultiSelectField,
+      colorPicker: ColorPickerField,
+      rating: RatingField,
+      phone: PhoneField,
+      location: LocationPickerField,
+      duration: DurationPickerField,
+      autocomplete: AutocompleteField,
+      masked: MaskedInputField,
     };
     
     const FieldComponent = fieldComponentMap[fieldConfig.type as keyof typeof fieldComponentMap];
