@@ -19,7 +19,7 @@ export default function Header() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-8">
             <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-gradient-to-br from-primary to-muted-foreground rounded-lg flex items-center justify-center">
                 <span className="text-primary-foreground font-bold text-sm">F</span>
               </div>
               <span className="font-bold text-xl">Formedible</span>

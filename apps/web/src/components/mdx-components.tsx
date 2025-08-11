@@ -4,7 +4,7 @@ import { CodeBlock } from '@/components/ui/code-block';
 export function useMDXComponents(components: MDXComponents): MDXComponents {
   return {
     h1: ({ children }) => (
-       <h1 className="text-4xl font-bold mb-6 bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">        {children}
+       <h1 className="text-4xl font-bold mb-6 bg-gradient-to-r from-primary to-muted-foreground bg-clip-text text-transparent">        {children}
       </h1>
     ),
     h2: ({ children }) => (

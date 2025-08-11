@@ -108,7 +108,7 @@ export default function DocsPage() {
               <Badge variant="secondary" className="mb-4">
                 Documentation
               </Badge>
-              <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-primary via-accent to-secondary bg-clip-text text-transparent">
+              <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-primary to-muted-foreground bg-clip-text text-transparent">
                 Forms cooked just "A Point" for you to use
               </h1>
               <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
@@ -142,7 +142,7 @@ export default function DocsPage() {
 
             {/* Quick Install */}
             <motion.div
-              className="bg-gradient-to-r from-secondary to-accent/20 p-6 rounded-xl border mb-16"
+              className="bg-gradient-to-r from-primary/5 to-muted-foreground/5 p-6 rounded-xl border mb-16"
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.3 }}
@@ -186,7 +186,7 @@ export default function DocsPage() {
                     <CardHeader className="pb-6">
                       <div className="flex items-center gap-3 mb-3">
                         <div
-                          className={`p-2 rounded-lg bg-gradient-to-br from-card to-secondary border`}
+                          className={`p-2 rounded-lg bg-gradient-to-br from-primary/8 to-muted-foreground/8 border`}
                         >
                           <section.icon
                             className={`w-6 h-6 ${section.color}`}
@@ -213,7 +213,7 @@ export default function DocsPage() {
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.8 }}
           >
-            <div className="bg-gradient-to-r from-secondary to-muted p-8 rounded-xl border">
+            <div className="bg-gradient-to-r from-primary/5 to-muted-foreground/5 p-8 rounded-xl border">
               <h3 className="text-2xl font-bold mb-4">
                 Ready to Build Amazing Forms?
               </h3>

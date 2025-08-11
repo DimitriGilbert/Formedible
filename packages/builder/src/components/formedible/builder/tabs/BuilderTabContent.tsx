@@ -7,13 +7,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { Plus, Trash2, Copy, Edit, FileText } from "lucide-react";
+import { Plus, Trash2, Copy, Edit, FileText, ChevronDown, ChevronUp } from "lucide-react";
 import { FieldConfigurator } from "../field-configurator";
 import { globalFieldStore } from "../field-store";
 import type { TabContentProps, FormField } from "../types";
 import { FIELD_TYPES } from "../types";
 
-// FieldList Component
+// FieldList Component with grid layout (2 per row)
 const FieldList: React.FC<{
   fields: FormField[];
   selectedFieldId: string | null;
@@ -46,47 +46,52 @@ const FieldList: React.FC<{
   }, [fields]);
 
   return (
-    <div className="space-y-4">
+    <div className="grid grid-cols-2 gap-4">
       {displayFields.map((field) => (
       <div
         key={field.id}
         className={cn(
-          "flex items-center justify-between p-6 border rounded-lg cursor-pointer transition-colors hover:shadow-md",
+          "flex flex-col p-4 rounded-lg cursor-pointer transition-colors hover:shadow-md border bg-muted/30",
           selectedFieldId === field.id
-            ? "border-primary bg-primary/5"
-            : "border-border hover:border-primary/50"
+            ? "border-primary bg-primary/5 ring-1 ring-primary/30"
+            : "border-border hover:bg-muted/50"
         )}
         onClick={() => onSelectField(field.id)}
       >
-        <div className="flex items-center space-x-4">
-          <span className="text-2xl">
+        <div className="flex items-center space-x-3 mb-2">
+          <span className="text-xl">
             {FIELD_TYPES.find((t) => t.value === field.type)?.icon || "📝"}
           </span>
-          <div>
-            <div className="font-medium text-lg">{field.label}</div>
-            <div className="text-muted-foreground">
-              {field.type} • {field.name} • {field.tab ? `Tab ${field.tab}` : `Page ${field.page || 1}`}
+          <div className="flex-1 min-w-0">
+            <div className="font-medium truncate">{field.label}</div>
+            <div className="text-sm text-muted-foreground truncate">
+              {field.type} • {field.name}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {field.tab ? `Tab ${field.tab}` : `Page ${field.page || 1}`}
             </div>
           </div>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center justify-end space-x-2 mt-auto">
           <Button
             variant="ghost"
+            size="sm"
             onClick={(e) => {
               e.stopPropagation();
               onDuplicateField(field.id);
             }}
           >
-            <Copy className="h-4 w-4" />
+            <Copy className="h-3 w-3" />
           </Button>
           <Button
             variant="ghost"
+            size="sm"
             onClick={(e) => {
               e.stopPropagation();
               onDeleteField(field.id);
             }}
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="h-3 w-3" />
           </Button>
         </div>
       </div>
@@ -97,6 +102,43 @@ const FieldList: React.FC<{
 
 FieldList.displayName = 'FieldList';
 
+// Collapsible Section Component
+const CollapsibleSection: React.FC<{
+  title: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+  className?: string;
+}> = ({ title, children, defaultOpen = true, className }) => {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+
+  return (
+    <div className={cn("space-y-4", className)}>
+      <div 
+        className="flex items-center justify-between cursor-pointer py-2 hover:text-primary transition-colors border-b border-border"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <h3 className="text-xl font-semibold">{title}</h3>
+        {isOpen ? (
+          <ChevronUp className="h-5 w-5" />
+        ) : (
+          <ChevronDown className="h-5 w-5" />
+        )}
+      </div>
+      {isOpen && (
+        <div className="space-y-4">
+          {children}
+        </div>
+      )}
+      {/* Dashed separator line at bottom - only when open */}
+      {isOpen && (
+        <div className="flex justify-center">
+          <div className="w-2/3 border-b border-dashed border-border/60" />
+        </div>
+      )}
+    </div>
+  );
+};
+
 // FieldTypeSidebar Component
 const FieldTypeSidebar: React.FC<{
   onAddField: (type: string) => void;
@@ -104,8 +146,8 @@ const FieldTypeSidebar: React.FC<{
   selectedTab: string | null;
   layoutType: "pages" | "tabs";
 }> = ({ onAddField, selectedPage, selectedTab, layoutType }) => (
-  <div className="w-72 border-r bg-card overflow-y-auto">
-    <div className="p-6">
+  <div className="w-72 overflow-y-auto">
+    <div className="p-6 bg-card border-r">
       <h3 className="font-semibold text-lg mb-6">Field Types</h3>
       {layoutType === "pages" && selectedPage && (
         <div className="mb-4 p-3 bg-primary/10 rounded-lg">
@@ -159,12 +201,14 @@ const ConfiguratorPanel: React.FC<{
   if (!selectedFieldId || !currentField) return null;
 
   return (
-    <div className="w-96 border-l bg-card overflow-y-auto min-h-0">
-      <FieldConfigurator
-        fieldId={selectedFieldId}
-        initialField={currentField}
-        availablePages={availablePages}
-      />
+    <div className="w-96 overflow-y-auto min-h-0">
+      <div className="bg-card border-l">
+        <FieldConfigurator
+          fieldId={selectedFieldId}
+          initialField={currentField}
+          availablePages={availablePages}
+        />
+      </div>
     </div>
   );
 };
@@ -214,11 +258,8 @@ export const BuilderTabContent: React.FC<TabContentProps> = ({
       <div className="flex-1 p-4 overflow-y-auto min-h-0">
         <div className="mx-auto space-y-4">
           {/* Form Configuration */}
-          <Card className="hover:shadow-lg transition-shadow py-3 gap-2">
-            <CardHeader>
-              <CardTitle className="text-xl">Form Configuration</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 p-4">
+          <CollapsibleSection title="Form Configuration">
+            <div className="space-y-4">
               <div>
                 <Label htmlFor="form-title">Form Title</Label>
                 <Input
@@ -249,15 +290,12 @@ export const BuilderTabContent: React.FC<TabContentProps> = ({
                   <option value="tabs">Tabbed Form</option>
                 </select>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </CollapsibleSection>
 
           {/* Form Settings */}
-          <Card className="hover:shadow-lg transition-shadow py-3 gap-2">
-            <CardHeader>
-              <CardTitle className="text-xl">Form Settings</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 p-4">
+          <CollapsibleSection title="Form Settings">
+            <div className="space-y-4">
               <div>
                 <Label htmlFor="submit-label">Submit Button Label</Label>
                 <Input
@@ -301,17 +339,18 @@ export const BuilderTabContent: React.FC<TabContentProps> = ({
                 />
                 <Label htmlFor="show-progress">Show progress indicator</Label>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </CollapsibleSection>
 
           {/* Page Management */}
           {formMetadata.layoutType === "pages" && (
-            <Card className="hover:shadow-lg transition-shadow gap-2">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between text-xl">
-                Pages ({formMetadata.pages.length})
+            <CollapsibleSection 
+              title={`Pages (${formMetadata.pages.length})`}
+              className="space-y-4"
+            >
+              <div className="flex items-center justify-between mb-4">
                 {selectedPageId && (
-                  <span className="text-sm font-normal text-primary">
+                  <span className="text-sm text-primary">
                     Page {selectedPageId} selected
                   </span>
                 )}
@@ -330,18 +369,16 @@ export const BuilderTabContent: React.FC<TabContentProps> = ({
                   <Plus className="h-4 w-4 mr-2" />
                   Add Page
                 </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 p-4">
-              <div className="space-y-2">
+              </div>
+              <div className="grid grid-cols-3 gap-4">
                 {formMetadata.pages.map((page) => (
                   <div
                     key={page.page}
                     className={cn(
-                      "border rounded-lg transition-all cursor-pointer",
+                      "border rounded-lg transition-all cursor-pointer bg-muted/30",
                       selectedPageId === page.page
-                        ? "border-primary bg-primary/5 shadow-sm"
-                        : "border-border hover:border-primary/50",
+                        ? "border-primary bg-primary/5 ring-1 ring-primary/30"
+                        : "border-border hover:bg-muted/50",
                       editingPageId === page.page && "ring-2 ring-primary/20"
                     )}
                     onClick={() => {
@@ -383,46 +420,48 @@ export const BuilderTabContent: React.FC<TabContentProps> = ({
                         </div>
                       </div>
                     ) : (
-                      <div className="flex items-center justify-between p-8">
-                        <div className="flex items-center space-x-4">
+                      <div className="p-4">
+                        <div className="flex items-start space-x-3 mb-3">
                           <FileText
                             className={cn(
-                              "h-5 w-5",
+                              "h-5 w-5 mt-0.5",
                               selectedPageId === page.page
                                 ? "text-primary"
                                 : "text-muted-foreground"
                             )}
                           />
-                          <div>
+                          <div className="flex-1 min-w-0">
                             <div
                               className={cn(
-                                "font-medium text-lg",
+                                "font-medium text-base truncate",
                                 selectedPageId === page.page && "text-primary"
                               )}
                             >
                               {page.title}
                             </div>
                             {page.description && (
-                              <div className="text-muted-foreground">{page.description}</div>
+                              <div className="text-sm text-muted-foreground line-clamp-2">{page.description}</div>
                             )}
-                             <div className="text-sm text-muted-foreground">
+                             <div className="text-xs text-muted-foreground mt-1">
                                {getFieldsByPage(page.page).length} fields
                              </div>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center justify-end space-x-1">
                           <Button
                             variant="ghost"
+                            size="sm"
                             onClick={(e) => {
                               e.stopPropagation();
                               setEditingPageId(page.page);
                             }}
                           >
-                            <Edit className="h-4 w-4" />
+                            <Edit className="h-3 w-3" />
                           </Button>
                           {formMetadata.pages.length > 1 && (
                             <Button
                               variant="ghost"
+                              size="sm"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 if (
@@ -440,7 +479,7 @@ export const BuilderTabContent: React.FC<TabContentProps> = ({
                                 }
                               }}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-3 w-3" />
                             </Button>
                           )}
                         </div>
@@ -449,48 +488,46 @@ export const BuilderTabContent: React.FC<TabContentProps> = ({
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
+            </CollapsibleSection>
           )}
 
           {/* Tab Management */}
           {formMetadata.layoutType === "tabs" && (
-            <Card className="hover:shadow-lg transition-shadow gap-2">
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between text-xl">
-                  Tabs ({formMetadata.tabs.length})
-                  {selectedTabId && (
-                    <span className="text-sm font-normal text-primary">
-                      Tab {selectedTabId} selected
-                    </span>
-                  )}
-                  <Button
-                    onClick={() => {
-                      const newTabId = `tab_${Date.now()}`;
-                      const newTabs = [...formMetadata.tabs, {
-                        id: newTabId,
-                        label: `Tab ${formMetadata.tabs.length + 1}`,
-                        description: "",
-                      }];
-                      onFormMetadataChange({ tabs: newTabs });
-                      setEditingTabId(newTabId);
-                    }}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Tab
-                  </Button>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 p-4">
-                <div className="space-y-2">
+            <CollapsibleSection 
+              title={`Tabs (${formMetadata.tabs.length})`}
+              className="space-y-4"
+            >
+              <div className="flex items-center justify-between mb-4">
+                {selectedTabId && (
+                  <span className="text-sm text-primary">
+                    Tab {selectedTabId} selected
+                  </span>
+                )}
+                <Button
+                  onClick={() => {
+                    const newTabId = `tab_${Date.now()}`;
+                    const newTabs = [...formMetadata.tabs, {
+                      id: newTabId,
+                      label: `Tab ${formMetadata.tabs.length + 1}`,
+                      description: "",
+                    }];
+                    onFormMetadataChange({ tabs: newTabs });
+                    setEditingTabId(newTabId);
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Tab
+                </Button>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
                   {formMetadata.tabs.map((tab) => (
                     <div
                       key={tab.id}
                       className={cn(
-                        "border rounded-lg transition-all cursor-pointer",
+                        "border rounded-lg transition-all cursor-pointer bg-muted/30",
                         selectedTabId === tab.id
-                          ? "border-primary bg-primary/5 shadow-sm"
-                          : "border-border hover:border-primary/50",
+                          ? "border-primary bg-primary/5 ring-1 ring-primary/30"
+                          : "border-border hover:bg-muted/50",
                         editingTabId === tab.id && "ring-2 ring-primary/20"
                       )}
                       onClick={() => {
@@ -595,49 +632,29 @@ export const BuilderTabContent: React.FC<TabContentProps> = ({
                       )}
                     </div>
                   ))}
-                </div>
-              </CardContent>
-            </Card>
+              </div>
+            </CollapsibleSection>
           )}
 
           {/* Fields List */}
-          <Card className="hover:shadow-lg transition-shadow gap-2">
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between text-xl">
-                {formMetadata.layoutType === "pages" && selectedPageId ? (
-                  <>
-                    {formMetadata.pages.find((p) => p.page === selectedPageId)?.title} Fields
-                    <span className="text-sm font-normal text-muted-foreground">
-                      ({fieldsToShow.length} fields)
-                    </span>
-                  </>
-                ) : formMetadata.layoutType === "tabs" && selectedTabId ? (
-                  <>
-                    {formMetadata.tabs.find((t) => t.id === selectedTabId)?.label} Fields
-                    <span className="text-sm font-normal text-muted-foreground">
-                      ({fieldsToShow.length} fields)
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    All Fields ({allFields.length})
-                    {allFields.length === 0 && (
-                      <span className="text-sm font-normal text-muted-foreground">
-                        Add fields from the sidebar →
-                      </span>
-                    )}
-                  </>
-                )}
-              </CardTitle>
-              {(selectedPageId || selectedTabId) && (
-                <p className="text-muted-foreground">
-                  {formMetadata.layoutType === "pages" 
-                    ? "New fields will be added to this page. Click the page again to deselect."
-                    : "New fields will be added to this tab. Click the tab again to deselect."}
-                </p>
-              )}
-            </CardHeader>
-            <CardContent className="space-y-2 p-4">
+          <CollapsibleSection 
+            title={
+              formMetadata.layoutType === "pages" && selectedPageId 
+                ? `${formMetadata.pages.find((p) => p.page === selectedPageId)?.title} Fields (${fieldsToShow.length})`
+                : formMetadata.layoutType === "tabs" && selectedTabId 
+                ? `${formMetadata.tabs.find((t) => t.id === selectedTabId)?.label} Fields (${fieldsToShow.length})`
+                : `All Fields (${allFields.length})`
+            }
+            className="space-y-4"
+          >
+            {(selectedPageId || selectedTabId) && (
+              <p className="text-sm text-muted-foreground">
+                {formMetadata.layoutType === "pages" 
+                  ? "New fields will be added to this page. Click the page again to deselect."
+                  : "New fields will be added to this tab. Click the tab again to deselect."}
+              </p>
+            )}
+            <div>
               {fieldsToShow.length === 0 ? (
                 <div className="text-center py-12 text-muted-foreground">
                   <Plus className="h-12 w-12 mx-auto mb-4 opacity-50" />
@@ -659,8 +676,8 @@ export const BuilderTabContent: React.FC<TabContentProps> = ({
                   onDuplicateField={onDuplicateField}
                 />
               )}
-            </CardContent>
-          </Card>
+            </div>
+          </CollapsibleSection>
         </div>
       </div>
 

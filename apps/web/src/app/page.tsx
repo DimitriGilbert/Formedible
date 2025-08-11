@@ -27,12 +27,7 @@ import Link from "next/link";
 import { CodeBlock } from "@/components/ui/code-block";
 
 // Components
-import { DemoCard } from "@/components/demo/demo-card";
-
-// Import examples from docs/examples
-import { ContactFormExample, contactFormCode } from "@/app/docs/examples/contact-form";
-import { RegistrationFormExample, registrationFormCode } from "@/app/docs/examples/registration-form";
-import { SurveyFormExample, surveyFormCode } from "@/app/docs/examples/survey-form";
+import { HeroExamples } from "@/components/demo/hero-examples";
 
 
 
@@ -58,216 +53,161 @@ export default function Home() {
       <Toaster position="top-right" richColors />
        <div className="min-h-screen bg-background">
         {/* Hero Section */}
-        <section className="container mx-auto px-4 py-16 text-center">
-          <motion.div
-            className="max-w-4xl mx-auto"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
+        <section className="container mx-auto px-4 py-16">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-16 xl:gap-24 items-start max-w-7xl mx-auto">
+            {/* Left Content */}
             <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.2 }}
-            >
-              <Badge variant="secondary" className="mb-4">
-                <Package className="w-3 h-3 mr-1" />
-                shadcn/ui Registry Component
-              </Badge>
-            </motion.div>
-
-            <motion.h2
-              className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 bg-clip-text text-transparent"
-              initial={{ y: 30, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.3 }}
-            >
-              Schema-Driven Forms
-              <br />
-              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Made Simple
-              </span>
-            </motion.h2>
-
-            <motion.p
-              className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto"
-              initial={{ y: 30, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.4 }}
-            >
-              A powerful React hook that wraps TanStack Form with shadcn/ui
-              components. Features schema validation, multi-page support,
-              component overrides, and custom wrappers.
-            </motion.p>
-
-            <motion.div
-              className="flex flex-col sm:flex-row gap-4 justify-center mb-8"
-              initial={{ y: 30, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.5 }}
+              className="text-center xl:text-left"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6 }}
             >
               <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: 0.2 }}
               >
-                <Button size="lg" className="text-lg px-8" asChild>
-                  <a href="#installation">
-                    <Terminal className="w-5 h-5 mr-2" />
-                    Install Now
-                  </a>
-                </Button>
+                <Badge variant="secondary" className="mb-4">
+                  <Package className="w-3 h-3 mr-1" />
+                  shadcn/ui Registry Component
+                </Badge>
               </motion.div>
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="text-lg px-8"
-                  asChild
-                >
-                  <Link href="/builder">
-                    <Sparkles className="w-5 h-5 mr-2" />
-                    Try Builder
-                  </Link>
-                </Button>
-              </motion.div>
-            </motion.div>
 
-            {/* Installation Command */}
-            <motion.div
-              className="max-w-2xl mx-auto"
-              initial={{ y: 30, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.6 }}
-            >
-              <div className="mb-2 text-center">
-                <span className="text-muted-foreground text-sm">
-                  Install via shadcn CLI
+              <motion.h2
+                className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary to-muted-foreground bg-clip-text text-transparent"
+                initial={{ y: 30, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.3 }}
+              >
+                Schema-Driven Forms
+                <br />
+                <span className="bg-gradient-to-r from-primary to-muted-foreground bg-clip-text text-transparent">
+                  Made Simple
                 </span>
-              </div>
-                <CodeBlock 
-                  code={installCommand} 
-                  language="bash"
-                  showPackageManagerTabs={true} 
-                />            </motion.div>
-          </motion.div>
+              </motion.h2>
+
+              <motion.p
+                className="text-xl text-muted-foreground mb-8"
+                initial={{ y: 30, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.4 }}
+              >
+                A powerful React hook that wraps TanStack Form with shadcn/ui
+                components. Features schema validation, multi-page support,
+                component overrides, and custom wrappers.
+              </motion.p>
+
+              <motion.div
+                className="flex flex-col sm:flex-row gap-4 justify-center xl:justify-start mb-8"
+                initial={{ y: 30, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.5 }}
+              >
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button size="lg" className="text-lg px-8" asChild>
+                    <a href="#installation">
+                      <Terminal className="w-5 h-5 mr-2" />
+                      Install Now
+                    </a>
+                  </Button>
+                </motion.div>
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="text-lg px-8"
+                    asChild
+                  >
+                    <Link href="/builder">
+                      <Sparkles className="w-5 h-5 mr-2" />
+                      Try Builder
+                    </Link>
+                  </Button>
+                </motion.div>
+              </motion.div>
+
+            </motion.div>
+
+            {/* Right Examples */}
+            <motion.div
+              className="space-y-6"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+            >
+              <HeroExamples />
+            </motion.div>
+          </div>
         </section>
 
-        {/* Component Features */}
+        {/* Installation & Features Combined Section */}
         <motion.section
+          id="installation"
           className="container mx-auto px-4 py-16"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.7 }}
         >
-          <div className="text-center mb-12">
-            <motion.h3
-              className="text-3xl font-bold mb-4"
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
+          <div className="grid grid-cols-1 2xl:grid-cols-2 gap-12 max-w-7xl mx-auto">
+            {/* Installation & Setup - Left Side */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.8 }}
+              className="space-y-6"
             >
-              Component Features
-            </motion.h3>
-            <motion.p
-              className="text-muted-foreground text-lg"
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.1 }}
-            >
-              Everything you need for building powerful forms with shadcn/ui
-            </motion.p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-            {[
-              {
-                icon: Shield,
-                title: "Schema Validation",
-                description:
-                  "Built-in Zod schema validation with real-time error handling and type safety",
-                color: "text-blue-500",
-              },
-              {
-                icon: Zap,
-                title: "Component Override",
-                description:
-                  "Replace any field component with your custom implementations seamlessly",
-                color: "text-purple-500",
-              },
-              {
-                icon: Sparkles,
-                title: "Custom Wrappers",
-                description:
-                  "Add animations, special styling, or extra functionality to any field",
-                color: "text-green-500",
-              },
-              {
-                icon: Users,
-                title: "Multi-Page Forms",
-                description:
-                  "Built-in pagination with customizable progress indicators and navigation",
-                color: "text-orange-500",
-              },
-            ].map((feature, index) => (
-              <motion.div
-                key={feature.title}
-                initial={{ y: 30, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.2 + index * 0.1 }}
-                whileHover={{ y: -5 }}
-              >
-                <Card className="h-full hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <feature.icon className={`w-8 h-8 ${feature.color} mb-2`} />
-                    <CardTitle>{feature.title}</CardTitle>
-                    <CardDescription>{feature.description}</CardDescription>
-                  </CardHeader>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        </motion.section>
-
-        {/* Installation Section */}
-        <motion.section
-          id="installation"
-          className="container mx-auto px-4 py-16"
-          initial={{ opacity: 0, y: 50 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-        >
-          <Card className="max-w-4xl mx-auto">
-            <CardHeader>
-              <CardTitle className="text-2xl flex items-center gap-2">
-                <Terminal className="w-6 h-6" />
-                Installation & Setup
-              </CardTitle>
-              <CardDescription>
-                Get the use-formedible hook installed in your project that uses shadcn/ui
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div>
-                <h4 className="font-semibold mb-2">
-                  Install the component via shadcn CLI
-                </h4>
-              <CodeBlock 
-                code={installCommand} 
-                language="bash"
-                showPackageManagerTabs={true} 
-              />                <p className="text-sm text-muted-foreground mt-2">
-                  This installs the hook, all field components, and their
-                  dependencies automatically.
-                </p>
+              <div className="text-center 2xl:text-left mb-8">
+                <motion.h3
+                  className="text-3xl font-bold mb-4 flex items-center justify-center 2xl:justify-start gap-2"
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                >
+                  <Terminal className="w-8 h-8" />
+                  Installation & Setup
+                </motion.h3>
+                <motion.p
+                  className="text-muted-foreground text-lg"
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.1 }}
+                >
+                  Get the use-formedible hook installed in your project that uses shadcn/ui
+                </motion.p>
               </div>
 
-              <div>
-                <h4 className="font-semibold mb-2">Basic usage example</h4>
-                <CodeBlock 
-                  language="tsx"
-                  title="Basic Usage Example"
-                  code={`import { useFormedible } from "@/hooks/use-formedible";
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-xl">Install via shadcn CLI</CardTitle>
+                  <CardDescription>
+                    This installs the hook, all field components, and their dependencies automatically.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <CodeBlock 
+                    code={installCommand} 
+                    language="bash"
+                    showPackageManagerTabs={true} 
+                  />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-xl">Basic Usage Example</CardTitle>
+                  <CardDescription>
+                    Quick example showing how to create a form with validation
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <CodeBlock 
+                    language="tsx"
+                    code={`import { useFormedible } from "@/hooks/use-formedible";
 import { z } from "zod";
 
 const schema = z.object({
@@ -290,30 +230,114 @@ export function MyForm() {
 
   return <Form />;
 }`}
-                />
-              </div>
+                  />
+                </CardContent>
+              </Card>
 
-              <motion.div
-                className="bg-gradient-to-r from-secondary to-accent/20 p-4 rounded-lg border"
-                whileHover={{ scale: 1.01 }}
-              >
-                <h4 className="font-semibold mb-2 text-primary">
-                  📦 What gets installed
-                </h4>
-                <ul className="text-sm text-foreground space-y-1">
-                  <li>
-                    • <code>hooks/use-formedible.tsx</code> - Main form hook
-                  </li>
-                  <li>
-                    • <code>components/fields/*</code> - All field components
-                    (text, select, date, etc.)
-                  </li>
-                  <li>• All required shadcn/ui components and dependencies</li>
-                  <li>• TypeScript definitions and component interfaces</li>
-                </ul>
-              </motion.div>
-            </CardContent>
-          </Card>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-xl">📦 What Gets Installed</CardTitle>
+                  <CardDescription>
+                    Complete package includes everything you need
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ul className="text-sm text-foreground space-y-2">
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary">•</span>
+                      <span><code>hooks/use-formedible.tsx</code> - Main form hook</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary">•</span>
+                      <span><code>components/fields/*</code> - All field components (text, select, date, etc.)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary">•</span>
+                      <span>All required shadcn/ui components and dependencies</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <span className="text-primary">•</span>
+                      <span>TypeScript definitions and component interfaces</span>
+                    </li>
+                  </ul>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Component Features - Right Side */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.9 }}
+              className="space-y-6"
+            >
+              <div className="text-center 2xl:text-left mb-8">
+                <motion.h3
+                  className="text-3xl font-bold mb-4"
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                >
+                  Component Features
+                </motion.h3>
+                <motion.p
+                  className="text-muted-foreground text-lg"
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ delay: 0.1 }}
+                >
+                  Everything you need for building powerful forms with shadcn/ui
+                </motion.p>
+              </div>
+              <div className="space-y-6">
+                {[
+                  {
+                    icon: Shield,
+                    title: "Schema Validation",
+                    description:
+                      "Built-in Zod schema validation with real-time error handling and type safety",
+                    color: "text-blue-500",
+                  },
+                  {
+                    icon: Zap,
+                    title: "Component Override",
+                    description:
+                      "Replace any field component with your custom implementations seamlessly",
+                    color: "text-purple-500",
+                  },
+                  {
+                    icon: Sparkles,
+                    title: "Custom Wrappers",
+                    description:
+                      "Add animations, special styling, or extra functionality to any field",
+                    color: "text-green-500",
+                  },
+                  {
+                    icon: Users,
+                    title: "Multi-Page Forms",
+                    description:
+                      "Built-in pagination with customizable progress indicators and navigation",
+                    color: "text-orange-500",
+                  },
+                ].map((feature, index) => (
+                  <motion.div
+                    key={feature.title}
+                    initial={{ y: 30, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 1.0 + index * 0.1 }}
+                    whileHover={{ y: -5 }}
+                  >
+                    <Card className="hover:shadow-lg transition-shadow">
+                      <CardHeader>
+                        <feature.icon className={`w-8 h-8 ${feature.color} mb-2`} />
+                        <CardTitle>{feature.title}</CardTitle>
+                        <CardDescription>{feature.description}</CardDescription>
+                      </CardHeader>
+                    </Card>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          </div>
         </motion.section>
 
         {/* Quick Links */}
@@ -323,99 +347,7 @@ export function MyForm() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
         >
-          <div className="text-center mb-12">
-            <motion.h3
-              className="text-3xl font-bold mb-4"
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-            >
-              Get Started
-            </motion.h3>
-            <motion.p
-              className="text-muted-foreground text-lg"
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.1 }}
-            >
-              Explore the interactive builder and comprehensive documentation
-            </motion.p>
-          </div>
-
-          <Tabs defaultValue="contact" className="max-w-6xl mx-auto">
-            <motion.div
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.2 }}
-            >
-              <TabsList className="grid w-full grid-cols-3 mb-8">
-                <TabsTrigger value="contact">Contact Form</TabsTrigger>
-                <TabsTrigger value="registration">Multi-Page Form</TabsTrigger>
-                <TabsTrigger value="survey">Conditional Logic</TabsTrigger>
-              </TabsList>
-            </motion.div>
-
-            <AnimatePresence mode="wait">
-              <TabsContent key="contact" value="contact">
-                <motion.div
-                  key="contact"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <DemoCard
-                    title="Contact Form"
-                    description="Simple form with validation, select options, and checkbox"
-                    preview={<ContactFormExample />}
-                    code={contactFormCode}
-                    codeTitle="Contact Form Implementation"
-                    codeDescription="Clean contact form with subject selection and urgency checkbox"
-                  />
-                </motion.div>
-              </TabsContent>
-
-              <TabsContent key="registration" value="registration">
-                <motion.div
-                  key="registration"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <DemoCard
-                    title="Multi-Page Registration"
-                    description="3-step registration form with progress tracking and page validation"
-                    preview={<RegistrationFormExample />}
-                    code={registrationFormCode}
-                    codeTitle="Multi-Page Form Implementation"
-                    codeDescription="Registration form split across multiple pages with progress indicator"
-                  />
-                </motion.div>
-              </TabsContent>
-
-
-              <TabsContent key="survey" value="survey">
-                <motion.div
-                  key="survey"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  <DemoCard
-                    title="Smart Survey Form"
-                    description="Dynamic form with conditional fields and smart option filtering"
-                    preview={<SurveyFormExample />}
-                    code={surveyFormCode}
-                    codeTitle="Conditional Logic Implementation"
-                    codeDescription="Survey form showcasing conditional fields and dynamic options based on user input"
-                  />
-                </motion.div>
-              </TabsContent>
-
-            </AnimatePresence>
-          </Tabs>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto p-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             <motion.div
               initial={{ y: 30, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -468,7 +400,7 @@ export function MyForm() {
                 className="flex items-center gap-3"
                 whileHover={{ scale: 1.02 }}
               >
-                <div className="w-6 h-6 bg-gradient-to-br from-primary to-accent rounded-md flex items-center justify-center">
+                <div className="w-6 h-6 bg-gradient-to-br from-primary to-muted-foreground rounded-md flex items-center justify-center">
                   <Blocks className="w-4 h-4 text-primary-foreground" />
                 </div>
                 <span className="font-semibold">Formedible</span>

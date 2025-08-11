@@ -89,7 +89,7 @@ export function ContactForm() {
                 <Rocket className="w-3 h-3 mr-1" />
                 Getting Started
               </Badge>
-              <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-muted-foreground bg-clip-text text-transparent">
                 Build Your First Form
               </h1>
               <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
@@ -98,7 +98,7 @@ export function ContactForm() {
               </p>
             </div>
 
-            <div className="bg-gradient-to-r from-secondary to-accent/20 p-6 rounded-xl border">
+            <div className="bg-gradient-to-r from-primary/5 to-muted-foreground/5 p-6 rounded-xl border">
               <div className="flex items-center gap-2 mb-2">
                 <Zap className="w-5 h-5 text-primary" />
                 <span className="font-semibold text-primary">Quick Start</span>
@@ -113,7 +113,7 @@ export function ContactForm() {
           <div className="space-y-12">
             {steps.map((step, index) => (
               <Card key={index} className="overflow-hidden">
-                <CardHeader className="bg-gradient-to-r from-secondary to-muted">
+                <CardHeader className="bg-gradient-to-r from-primary/5 to-muted-foreground/5">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold text-sm">
                       {index + 1}
@@ -156,7 +156,7 @@ export function ContactForm() {
 
           {/* Next Steps */}
           <div className="mt-16">
-            <Card className="bg-gradient-to-r from-secondary to-accent/20 border">
+            <Card className="bg-gradient-to-r from-primary/5 to-muted-foreground/5 border">
               <CardHeader className="text-center">
                 <CardTitle className="text-2xl text-primary">
                   🎉 Congratulations!

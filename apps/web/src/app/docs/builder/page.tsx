@@ -276,7 +276,7 @@ export default function BuilderPage() {
   const currentExample = examples.find(ex => ex.id === activeExample);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
+    <div className="min-h-screen bg-gradient-to-br from-primary/3 to-muted-foreground/3">
       {/* Header */}
       <div className="border-b bg-background/60 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-6 py-4">
@@ -289,7 +289,7 @@ export default function BuilderPage() {
                 </Button>
               </Link>
               <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-muted-foreground bg-clip-text text-transparent">
                   Form Builder
                 </h1>
                 <p className="text-muted-foreground">
