@@ -3,7 +3,6 @@ import React from "react";
 import { cn } from "@/lib/utils";
 import type { FormGridProps } from "@/lib/formedible/types";
 
-
 export const FormGrid: React.FC<FormGridProps> = ({
   children,
   columns = 2,
@@ -11,6 +10,17 @@ export const FormGrid: React.FC<FormGridProps> = ({
   responsive = true,
   className,
 }) => {
+  // Filter out null, undefined, and false children to prevent empty grid cells
+  const validChildren = React.Children.toArray(children).filter(Boolean);
+
+  // If no valid children, render nothing
+  if (validChildren.length === 0) {
+    return null;
+  }
+
+  // Determine the actual columns to use based on available children
+  const actualColumns = Math.min(columns, validChildren.length);
+
   const gapClasses = {
     '0': 'gap-0', '1': 'gap-1', '2': 'gap-2', '3': 'gap-3', '4': 'gap-4',
     '5': 'gap-5', '6': 'gap-6', '7': 'gap-7', '8': 'gap-8', '9': 'gap-9',
@@ -28,16 +38,16 @@ export const FormGrid: React.FC<FormGridProps> = ({
     gapClasses[gap as keyof typeof gapClasses],
     responsive ? {
       "grid-cols-1": true,
-      "md:grid-cols-2": columns >= 2,
-      "lg:grid-cols-3": columns >= 3,
-      "xl:grid-cols-4": columns >= 4,
-    } : gridColsClasses[columns as keyof typeof gridColsClasses],
+      "md:grid-cols-2": actualColumns >= 2,
+      "lg:grid-cols-3": actualColumns >= 3,
+      "xl:grid-cols-4": actualColumns >= 4 && columns >= 4,
+    } : gridColsClasses[actualColumns as keyof typeof gridColsClasses],
     className
   );
 
   return (
     <div className={gridClasses}>
-      {children}
+      {validChildren}
     </div>
   );
 };

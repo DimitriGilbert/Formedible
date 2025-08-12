@@ -15,6 +15,8 @@ import type {
   FieldConditionalRendererProps,
   UseFormedibleOptions,
   SectionRendererProps,
+  LayoutConfig,
+  FormGridProps,
 } from "@/lib/formedible/types";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -41,6 +43,7 @@ import { MaskedInputField } from "@/components/formedible/fields/masked-input-fi
 import { ObjectField } from "@/components/formedible/fields/object-field";
 import { InlineValidationWrapper } from "@/components/formedible/fields/inline-validation-wrapper";
 import { FieldHelp } from "@/components/formedible/fields/field-help";
+import { FormGrid } from "@/components/formedible/layout/form-grid";
 
 // Utility function to scroll to top of a specific form
 const scrollToTop = (
@@ -191,7 +194,12 @@ const DefaultPageComponent: React.FC<{
 
 
 const SectionRenderer: React.FC<
-  SectionRendererProps & { collapseLabel?: string; expandLabel?: string; form?: AnyFormApi }
+  SectionRendererProps & { 
+    collapseLabel?: string; 
+    expandLabel?: string; 
+    form?: AnyFormApi;
+    layout?: LayoutConfig;
+  }
 > = ({
   sectionKey,
   sectionData,
@@ -199,6 +207,7 @@ const SectionRenderer: React.FC<
   collapseLabel = "Collapse",
   expandLabel = "Expand",
   form,
+  layout,
 }) => {
   const { section, groups } = sectionData;
   const [isExpanded, setIsExpanded] = React.useState(
@@ -221,41 +230,90 @@ const SectionRenderer: React.FC<
     );
   }, [groups, form?.state.values, form]);
 
-  const sectionContent = (
-    <div className="space-y-4">
-      {Object.entries(groups).map(([groupKey, groupFields]) => {
-        // Filter out fields that won't render due to conditionals
-        const visibleGroupFields = (groupFields as FieldConfig[]).filter((field) => {
-          if (!form) return true;
-          const currentValues = form.state.values;
-          return !field.conditional || field.conditional(currentValues);
-        });
+  const renderSectionContent = () => {
+    const allVisibleFields = Object.entries(groups).flatMap(([groupKey, groupFields]) => {
+      // Filter out fields that won't render due to conditionals
+      const visibleGroupFields = (groupFields as FieldConfig[]).filter((field) => {
+        if (!form) return true;
+        const currentValues = form.state.values;
+        return !field.conditional || field.conditional(currentValues);
+      });
 
-        // Don't render empty groups
-        if (visibleGroupFields.length === 0) return null;
+      return visibleGroupFields.map((field) => ({ ...field, groupKey }));
+    });
 
-        return (
-          <div
-            key={groupKey}
-            className={cn(
-              groupKey !== "default" ? "p-4 border rounded-lg bg-muted/20" : ""
-            )}
-          >
-            {groupKey !== "default" && (
-              <h4 className="font-medium text-sm text-muted-foreground mb-3 uppercase tracking-wide">
-                {groupKey}
-              </h4>
-            )}
-            <div
-              className={cn(groupKey !== "default" ? "space-y-3" : "space-y-4")}
-            >
-              {visibleGroupFields.map((field) => renderField(field))}
+    // If layout is specified and is grid, use FormGrid
+    if (layout && layout.type === "grid") {
+      return (
+        <FormGrid 
+          columns={layout.columns as FormGridProps['columns']}
+          gap={layout.gap as FormGridProps['gap']}
+          responsive={layout.responsive}
+          className={layout.className}
+        >
+          {allVisibleFields.map((field) => (
+            <div key={field.name}>
+              {renderField(field)}
             </div>
-          </div>
-        );
-      })}
-    </div>
-  );
+          ))}
+        </FormGrid>
+      );
+    }
+    
+    // For flex layouts, use simple flex wrapper
+    if (layout && layout.type === "flex") {
+      return (
+        <div className={cn(
+          "flex flex-wrap",
+          layout.gap ? `gap-${layout.gap}` : "gap-4",
+          layout.className
+        )}>
+          {allVisibleFields.map((field) => (
+            <div key={field.name}>
+              {renderField(field)}
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    // For vertical layouts or no layout, use the original group structure
+    return (
+      <div className="space-y-4">
+        {Object.entries(groups).map(([groupKey, groupFields]) => {
+          // Filter out fields that won't render due to conditionals
+          const visibleGroupFields = (groupFields as FieldConfig[]).filter((field) => {
+            if (!form) return true;
+            const currentValues = form.state.values;
+            return !field.conditional || field.conditional(currentValues);
+          });
+
+          // Don't render empty groups
+          if (visibleGroupFields.length === 0) return null;
+
+          return (
+            <div
+              key={groupKey}
+              className={cn(
+                groupKey !== "default" ? "p-4 border rounded-lg bg-muted/20" : ""
+              )}
+            >
+              {groupKey !== "default" && (
+                <h4 className="font-medium text-sm text-muted-foreground mb-3 uppercase tracking-wide">
+                  {groupKey}
+                </h4>
+              )}
+              <div className={groupKey !== "default" ? "space-y-3" : "space-y-4"}>
+                {visibleGroupFields.map((field) => renderField(field))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const sectionContent = renderSectionContent();
 
   if (section && sectionKey !== "default") {
     // Don't render section if no fields are visible
@@ -341,6 +399,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     analytics,
     conditionalSections = [],
     persistence,
+    layout,
   } = options;
 
   const htmlFormRef = useRef<HTMLFormElement>(null);
@@ -1474,6 +1533,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
                   collapseLabel={collapseLabel}
                   expandLabel={expandLabel}
                   form={form as unknown as AnyFormApi}
+                  layout={layout}
                 />
               );
 
@@ -1578,6 +1638,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
                 collapseLabel={collapseLabel}
                 expandLabel={expandLabel}
                 form={form as unknown as AnyFormApi}
+                layout={layout}
               />
             );
 
