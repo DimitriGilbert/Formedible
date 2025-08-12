@@ -2,18 +2,9 @@
 import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Star, Heart, ThumbsUp } from 'lucide-react';
-import type { BaseFieldProps } from '@/lib/formedible/types';
+import type { RatingFieldSpecificProps } from '@/lib/formedible/types';
 import { FieldWrapper } from './base-field-wrapper';
 
-export interface RatingFieldSpecificProps extends BaseFieldProps {
-  ratingConfig?: {
-    max?: number;
-    allowHalf?: boolean;
-    icon?: 'star' | 'heart' | 'thumbs';
-    size?: 'sm' | 'md' | 'lg';
-    showValue?: boolean;
-  };
-}
 
 const ICON_COMPONENTS = {
   star: Star,

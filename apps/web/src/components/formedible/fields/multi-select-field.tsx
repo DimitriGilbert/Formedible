@@ -6,20 +6,9 @@ import { Badge } from '@/components/ui/badge';
 
 import { cn } from '@/lib/utils';
 import { X, ChevronDown, Check } from 'lucide-react';
-import type { BaseFieldProps } from '@/lib/formedible/types';
+import type { MultiSelectFieldSpecificProps } from '@/lib/formedible/types';
 import { FieldWrapper } from './base-field-wrapper';
 
-export interface MultiSelectFieldSpecificProps extends BaseFieldProps {
-  options: Array<{ value: string; label: string }> | string[];
-  multiSelectConfig?: {
-    maxSelections?: number;
-    searchable?: boolean;
-    creatable?: boolean;
-    placeholder?: string;
-    noOptionsText?: string;
-    loadingText?: string;
-  };
-}
 
 export const MultiSelectField: React.FC<MultiSelectFieldSpecificProps> = ({
   fieldApi,

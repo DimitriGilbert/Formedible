@@ -2,18 +2,8 @@
 import React from "react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
+import type { FormAccordionProps } from "@/lib/formedible/types";
 
-interface FormAccordionProps {
-  children?: React.ReactNode;
-  sections: {
-    id: string;
-    title: string;
-    content: React.ReactNode;
-    defaultOpen?: boolean;
-  }[];
-  type?: 'single' | 'multiple';
-  className?: string;
-}
 
 export const FormAccordion: React.FC<FormAccordionProps> = ({
   children,

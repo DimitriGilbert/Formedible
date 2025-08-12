@@ -1,12 +1,9 @@
 import React from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import type { BaseFieldProps } from '@/lib/formedible/types';
+import type { TextareaFieldSpecificProps } from '@/lib/formedible/types';
 import { FieldWrapper } from './base-field-wrapper';
 
-export interface TextareaFieldSpecificProps extends BaseFieldProps {
-  rows?: number;
-}
 
 export const TextareaField: React.FC<TextareaFieldSpecificProps> = ({
   fieldApi,

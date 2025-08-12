@@ -2,14 +2,9 @@
 import React from 'react';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import type { BaseFieldProps } from '@/lib/formedible/types';
+import type { NumberFieldSpecificProps } from '@/lib/formedible/types';
 import { FieldWrapper } from './base-field-wrapper';
 
-export interface NumberFieldSpecificProps extends BaseFieldProps {
-  min?: number;
-  max?: number;
-  step?: number;
-}
 
 export const NumberField: React.FC<NumberFieldSpecificProps> = ({
   fieldApi,

@@ -4,17 +4,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { ChevronDown, Phone } from 'lucide-react';
-import type { BaseFieldProps } from '@/lib/formedible/types';
+import type { PhoneFieldSpecificProps } from '@/lib/formedible/types';
 import { FieldWrapper } from './base-field-wrapper';
 
-export interface PhoneFieldSpecificProps extends BaseFieldProps {
-  phoneConfig?: {
-    defaultCountry?: string;
-    format?: 'national' | 'international';
-    allowedCountries?: string[];
-    placeholder?: string;
-  };
-}
 
 // Common country codes and their formatting
 const COUNTRY_CODES = {

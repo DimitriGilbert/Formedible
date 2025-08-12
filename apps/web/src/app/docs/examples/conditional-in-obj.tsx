@@ -27,6 +27,10 @@ const MySchema = z.object({
           "cinemaroom",
           "other",
         ]),
+        otherRoom: z
+          .string()
+          .min(2, "Le nom de la pièce doit contenir au moins 2 caractères")
+          .optional(),
         surfaceRoom: z
           .number()
           .min(1, "La surface doit être d'au moins 1 m²")
@@ -46,7 +50,7 @@ const MySchema = z.object({
     .optional(),
 });
 
-export type MyFormValues = z.infer<typeof MySchema>;
+type MyFormValues = z.infer<typeof MySchema>;
 
 export default function MyForm() {
   const { Form } = useFormedible<MyFormValues>({
@@ -103,6 +107,23 @@ export default function MyForm() {
                   { value: "cinemaroom", label: "Salle de cinéma" },
                   { value: "other", label: "Autre" },
                 ],
+              },
+              {
+                name: "otherRoom",
+                type: "text",
+                label: "Nom de la pièce",
+                placeholder: "Ex: Salle de bowling",
+                description: "Nommez la pièce",
+                conditional: (values: any): any =>
+                  values &&
+                  values.typeRoom &&
+                  values.typeRoom.includes("other"),
+                validation: z
+                  .string()
+                  .min(
+                    2,
+                    "Le nom de la pièce doit contenir au moins 2 caractères"
+                  ),
               },
               {
                 name: "surfaceRoom",
@@ -166,6 +187,7 @@ export default function MyForm() {
         roomDetails: [
           {
             typeRoom: "hall" as const,
+            otherRoom: "",
             surfaceRoom: 0,
             equipementRoom: false,
             // equipementRoom: "no" as const,

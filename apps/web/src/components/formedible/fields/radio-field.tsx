@@ -3,13 +3,9 @@ import React from 'react';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
-import type { BaseFieldProps } from '@/lib/formedible/types';
+import type { RadioFieldSpecificProps } from '@/lib/formedible/types';
 import { FieldWrapper } from './base-field-wrapper';
 
-export interface RadioFieldSpecificProps extends BaseFieldProps {
-  options: Array<{ value: string; label: string }> | string[];
-  direction?: 'horizontal' | 'vertical';
-}
 
 export const RadioField: React.FC<RadioFieldSpecificProps> = ({
   fieldApi,

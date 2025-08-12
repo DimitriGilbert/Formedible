@@ -2,19 +2,9 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import type { BaseFieldProps } from "@/lib/formedible/types";
+import type { TextFieldSpecificProps } from "@/lib/formedible/types";
 import { FieldWrapper } from "./base-field-wrapper";
 
-export interface TextFieldSpecificProps extends BaseFieldProps {
-  type?: "text" | "email" | "password" | "url" | "tel" | "datetime-local";
-  datalist?: {
-    options?: string[];
-    asyncOptions?: (query: string) => Promise<string[]>;
-    debounceMs?: number;
-    minChars?: number;
-    maxResults?: number;
-  };
-}
 
 export const TextField: React.FC<TextFieldSpecificProps> = ({
   fieldApi,

@@ -4,17 +4,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Palette, Check } from 'lucide-react';
-import type { BaseFieldProps } from '@/lib/formedible/types';
+import type { ColorPickerFieldSpecificProps } from '@/lib/formedible/types';
 import { FieldWrapper } from './base-field-wrapper';
 
-export interface ColorPickerFieldSpecificProps extends BaseFieldProps {
-  colorConfig?: {
-    format?: 'hex' | 'rgb' | 'hsl';
-    showPreview?: boolean;
-    presetColors?: string[];
-    allowCustom?: boolean;
-  };
-}
 
 const DEFAULT_PRESETS = [
   '#FF0000', '#FF8000', '#FFFF00', '#80FF00', '#00FF00', '#00FF80',

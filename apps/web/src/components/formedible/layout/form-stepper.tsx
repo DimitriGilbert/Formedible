@@ -2,25 +2,8 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import type { FormStepperStep, FormStepperProps } from "@/lib/formedible/types";
 
-interface Step {
-  id: string;
-  title: string;
-  description?: string;
-  content: React.ReactNode;
-  optional?: boolean;
-}
-
-interface FormStepperProps {
-  children?: React.ReactNode;
-  steps: Step[];
-  currentStep?: number;
-  onStepChange?: (stepIndex: number) => void;
-  onComplete?: () => void;
-  className?: string;
-  allowSkip?: boolean;
-  showStepNumbers?: boolean;
-}
 
 export const FormStepper: React.FC<FormStepperProps> = ({
   children,

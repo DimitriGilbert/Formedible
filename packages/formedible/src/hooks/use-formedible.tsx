@@ -10,6 +10,11 @@ import type {
   FieldConfig,
   PageConfig,
   ProgressConfig,
+  FormProps,
+  ConditionalFieldsSubscriptionProps,
+  FieldConditionalRendererProps,
+  UseFormedibleOptions,
+  SectionRendererProps,
 } from "@/lib/formedible/types";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -57,57 +62,8 @@ const scrollToTop = (
   }
 };
 
-export interface FormProps {
-  className?: string;
-  children?: React.ReactNode;
-  onSubmit?: (e: React.FormEvent) => void;
-  // HTML form attributes
-  action?: string;
-  method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
-  encType?:
-    | "application/x-www-form-urlencoded"
-    | "multipart/form-data"
-    | "text/plain";
-  target?: "_blank" | "_self" | "_parent" | "_top" | string;
-  autoComplete?: "on" | "off";
-  noValidate?: boolean;
-  acceptCharset?: string;
-  // Event handlers
-  onReset?: (e: React.FormEvent) => void;
-  onInput?: (e: React.FormEvent) => void;
-  onInvalid?: (e: React.FormEvent) => void;
-  onKeyDown?: (e: React.KeyboardEvent) => void;
-  onKeyUp?: (e: React.KeyboardEvent) => void;
-
-  onFocus?: (e: React.FocusEvent) => void;
-  onBlur?: (e: React.FocusEvent) => void;
-  // Accessibility
-  role?: string;
-  "aria-label"?: string;
-  "aria-labelledby"?: string;
-  "aria-describedby"?: string;
-  tabIndex?: number;
-}
 
 // TanStack Form Best Practice: Reusable subscription component for conditional fields
-export interface ConditionalFieldsSubscriptionProps<
-  TFormValues extends Record<string, unknown> = Record<string, unknown>
-> {
-  form: any;
-  fields: FieldConfig[];
-  conditionalSections: Array<{
-    condition: (values: TFormValues) => boolean;
-    fields: string[];
-    layout?: {
-      type: "grid" | "flex" | "tabs" | "accordion" | "stepper";
-      columns?: number;
-      gap?: string;
-      responsive?: boolean;
-      className?: string;
-    };
-  }>;
-  children: (currentValues: Record<string, unknown>) => React.ReactNode;
-}
 
 const ConditionalFieldsSubscription = <
   TFormValues extends Record<string, unknown> = Record<string, unknown>
@@ -127,13 +83,6 @@ const ConditionalFieldsSubscription = <
 };
 
 // TanStack Form Best Practice: Individual field conditional renderer
-export interface FieldConditionalRendererProps<
-  TFormValues extends Record<string, unknown> = Record<string, unknown>
-> {
-  form: any;
-  fieldConfig: FieldConfig;
-  children: (shouldRender: boolean) => React.ReactNode;
-}
 
 const FieldConditionalRenderer = <
   TFormValues extends Record<string, unknown> = Record<string, unknown>
@@ -160,169 +109,6 @@ const FieldConditionalRenderer = <
 
 
 
-export interface UseFormedibleOptions<TFormValues> {
-  fields?: FieldConfig[];
-  schema?: z.ZodSchema<TFormValues>;
-  submitLabel?: string;
-  nextLabel?: string;
-  previousLabel?: string;
-  // Translation support for section buttons
-  collapseLabel?: string;
-  expandLabel?: string;
-  formClassName?: string;
-  fieldClassName?: string;
-  labelClassName?: string;
-  buttonClassName?: string;
-  submitButtonClassName?: string;
-  // Auto scroll configuration
-  autoScroll?: boolean;
-  submitButton?: React.ComponentType<
-    React.ButtonHTMLAttributes<HTMLButtonElement> & {
-      children?: React.ReactNode;
-    }
-  >;
-  pages?: PageConfig[];
-  progress?: ProgressConfig;
-  tabs?: {
-    id: string;
-    label: string;
-    description?: string;
-  }[];
-  defaultComponents?: {
-    [key: string]: React.ComponentType<FieldComponentProps>;
-  };
-  globalWrapper?: React.ComponentType<{
-    children: React.ReactNode;
-    field: FieldConfig;
-  }>;
-  formOptions?: Partial<{
-    defaultValues: TFormValues;
-    onSubmit: (props: {
-      value: TFormValues;
-      formApi: FormedibleFormApi<TFormValues>;
-    }) => unknown | Promise<unknown>;
-    onSubmitInvalid: (props: {
-      value: TFormValues;
-      formApi: FormedibleFormApi<TFormValues>;
-    }) => void;
-    onChange?: (props: {
-      value: TFormValues;
-      formApi: FormedibleFormApi<TFormValues>;
-    }) => void;
-    onBlur?: (props: {
-      value: TFormValues;
-      formApi: FormedibleFormApi<TFormValues>;
-    }) => void;
-    onFocus?: (props: {
-      value: TFormValues;
-      formApi: FormedibleFormApi<TFormValues>;
-    }) => void;
-    onReset?: (props: {
-      value: TFormValues;
-      formApi: FormedibleFormApi<TFormValues>;
-    }) => void;
-    asyncDebounceMs: number;
-    canSubmitWhenInvalid: boolean;
-  }>;
-  onPageChange?: (page: number, direction: "next" | "previous") => void;
-  autoSubmitOnChange?: boolean;
-  autoSubmitDebounceMs?: number;
-  disabled?: boolean;
-  loading?: boolean;
-  resetOnSubmitSuccess?: boolean;
-  showSubmitButton?: boolean;
-  // Form-level event handlers
-  onFormReset?: (
-    e: React.FormEvent,
-    formApi: FormedibleFormApi<TFormValues>
-  ) => void;
-  onFormInput?: (
-    e: React.FormEvent,
-    formApi: FormedibleFormApi<TFormValues>
-  ) => void;
-  onFormInvalid?: (
-    e: React.FormEvent,
-    formApi: FormedibleFormApi<TFormValues>
-  ) => void;
-  onFormKeyDown?: (
-    e: React.KeyboardEvent,
-    formApi: FormedibleFormApi<TFormValues>
-  ) => void;
-  onFormKeyUp?: (
-    e: React.KeyboardEvent,
-    formApi: FormedibleFormApi<TFormValues>
-  ) => void;
-  onFormFocus?: (
-    e: React.FocusEvent,
-    formApi: FormedibleFormApi<TFormValues>
-  ) => void;
-  onFormBlur?: (
-    e: React.FocusEvent,
-    formApi: FormedibleFormApi<TFormValues>
-  ) => void;
-  // Advanced validation features
-  crossFieldValidation?: {
-    fields: (keyof TFormValues)[];
-    validator: (values: Partial<TFormValues>) => string | null;
-    message: string;
-  }[];
-  asyncValidation?: {
-    [fieldName: string]: {
-      validator: (value: unknown) => Promise<string | null>;
-      debounceMs?: number;
-      loadingMessage?: string;
-    };
-  };
-  // Form analytics and tracking
-  analytics?: {
-    onFieldFocus?: (fieldName: string, timestamp: number) => void;
-    onFieldBlur?: (fieldName: string, timeSpent: number) => void;
-    onFormAbandon?: (completionPercentage: number) => void;
-    onPageChange?: (
-      fromPage: number,
-      toPage: number,
-      timeSpent: number
-    ) => void;
-    onFieldChange?: (
-      fieldName: string,
-      value: unknown,
-      timestamp: number
-    ) => void;
-    onFormStart?: (timestamp: number) => void;
-    onFormComplete?: (
-      timeSpent: number,
-      formData: Record<string, unknown>
-    ) => void;
-  };
-  // Layout configuration
-  layout?: {
-    type: "grid" | "flex" | "tabs" | "accordion" | "stepper";
-    columns?: number;
-    gap?: string;
-    responsive?: boolean;
-    className?: string;
-  };
-  // Conditional sections
-  conditionalSections?: {
-    condition: (values: TFormValues) => boolean;
-    fields: string[];
-    layout?: {
-      type: "grid" | "flex" | "tabs" | "accordion" | "stepper";
-      columns?: number;
-      gap?: string;
-      responsive?: boolean;
-      className?: string;
-    };
-  }[];
-  // Form persistence
-  persistence?: {
-    key: string;
-    storage: "localStorage" | "sessionStorage";
-    debounceMs?: number;
-    exclude?: string[];
-    restoreOnMount?: boolean;
-  };
-}
 
 // Field components with proper typing - each component accepts FieldComponentProps
 const defaultFieldComponents: Record<string, React.ComponentType<any>> = {
@@ -403,19 +189,6 @@ const DefaultPageComponent: React.FC<{
   </div>
 );
 
-export interface SectionRendererProps {
-  sectionKey: string;
-  sectionData: {
-    section?: {
-      title?: string;
-      description?: string;
-      collapsible?: boolean;
-      defaultExpanded?: boolean;
-    };
-    groups: Record<string, FieldConfig[]>;
-  };
-  renderField: (field: FieldConfig) => React.ReactNode;
-}
 
 const SectionRenderer: React.FC<
   SectionRendererProps & { collapseLabel?: string; expandLabel?: string; form?: AnyFormApi }

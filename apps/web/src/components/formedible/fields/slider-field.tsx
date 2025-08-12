@@ -1,52 +1,9 @@
 import React from "react";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
-import type { BaseFieldProps } from "@/lib/formedible/types";
+import type { SliderFieldSpecificProps } from "@/lib/formedible/types";
 import { FieldWrapper } from "./base-field-wrapper";
 
-export interface SliderFieldSpecificProps extends BaseFieldProps {
-  sliderConfig?: {
-    min?: number;
-    max?: number;
-    step?: number;
-    // Value mapping between slider value (int) and display value (arbitrary)
-    valueMapping?: Array<{
-      sliderValue: number;
-      displayValue: string | number;
-      label?: string;
-    }>;
-    // Gradient colors for the slider
-    gradientColors?: {
-      start: string;
-      end: string;
-      direction?: "horizontal" | "vertical";
-    };
-    // Custom visualization component for each step
-    visualizationComponent?: React.ComponentType<{
-      value: number;
-      displayValue: string | number;
-      label?: string;
-      isActive: boolean;
-    }>;
-    // Legacy support
-    valueLabelPrefix?: string;
-    valueLabelSuffix?: string;
-    valueDisplayPrecision?: number;
-    showRawValue?: boolean;
-    showValue?: boolean;
-    showTooltip?: boolean;
-    orientation?: "horizontal" | "vertical";
-    marks?: Array<{ value: number; label: string }>;
-  };
-  // Direct props for backwards compatibility
-  min?: number;
-  max?: number;
-  step?: number;
-  valueLabelPrefix?: string;
-  valueLabelSuffix?: string;
-  valueDisplayPrecision?: number;
-  showRawValue?: boolean;
-}
 
 export const SliderField: React.FC<SliderFieldSpecificProps> = ({
   fieldApi,

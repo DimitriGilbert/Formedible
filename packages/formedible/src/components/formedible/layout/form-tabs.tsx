@@ -2,18 +2,8 @@
 import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import type { FormTabsProps } from "@/lib/formedible/types";
 
-interface FormTabsProps {
-  children?: React.ReactNode;
-  tabs: {
-    id: string;
-    label: string;
-    content: React.ReactNode;
-  }[];
-  activeTab: string; // CONTROLLED - NO INTERNAL STATE
-  className?: string;
-  onTabChange: (tabId: string) => void; // REQUIRED - PARENT CONTROLS STATE
-}
 
 // PURE DISPLAY COMPONENT - NO STATE, NO RERENDERS
 export const FormTabs: React.FC<FormTabsProps> = ({
