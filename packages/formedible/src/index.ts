@@ -31,10 +31,19 @@ export * from '@/components/ui/accordion';
 // Utility components
 export * from '@/components/formedible/fields/inline-validation-wrapper';
 export * from '@/components/formedible/fields/field-help';
+export { SharedFieldRenderer, NestedFieldRenderer, FIELD_TYPE_COMPONENTS } from '@/components/formedible/fields/shared-field-renderer';
 
 // Core types and hook
-export type { BaseFieldProps } from '@/lib/formedible/types';
-export { useFormedible, type FieldConfig } from '@/hooks/use-formedible';
+export type { 
+  BaseFieldProps, 
+  FieldConfig, 
+  PageConfig, 
+  ProgressConfig,
+  FieldComponentProps,
+  FormedibleFormApi,
+  ObjectConfig,
+} from '@/lib/formedible/types';
+export { useFormedible } from '@/hooks/use-formedible';
 
 // Testing utilities
 export * from './testing';

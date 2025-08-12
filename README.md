@@ -1176,6 +1176,16 @@ export function EnterpriseContactForm() {
 }
 ```
 
+## 🧠 AI-Powered Development with `.cursorrules`
+
+This project includes a `.cursorrules.json` file to enhance development with AI code assistants like Cursor. This file provides the AI with context about the project, including:
+
+-   **Core Concepts**: Key principles of the `formedible` library.
+-   **Component Structure**: How to create and use field components.
+-   **Project Guidelines**: General coding conventions and project structure.
+
+This helps the AI generate more accurate and idiomatic code, speeding up development and ensuring consistency.
+
 ## 🚀 Migration from Other Form Libraries
 
 ### From React Hook Form

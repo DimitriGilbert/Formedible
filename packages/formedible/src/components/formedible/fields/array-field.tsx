@@ -1,98 +1,12 @@
 'use client';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
-
 import { Plus, Trash2, GripVertical } from 'lucide-react';
-import type { BaseFieldProps } from '@/lib/formedible/types';
+import type { BaseFieldProps, ArrayFieldProps } from '@/lib/formedible/types';
 import { FieldWrapper } from './base-field-wrapper';
-import { TextField } from './text-field';
-import { NumberField } from './number-field';
-import { TextareaField } from './textarea-field';
-import { SelectField } from './select-field';
-import { CheckboxField } from './checkbox-field';
-import { SwitchField } from './switch-field';
-import { DateField } from './date-field';
-import { SliderField } from './slider-field';
-import { FileUploadField } from './file-upload-field';
-import { ObjectField } from './object-field';
-import { RadioField } from './radio-field';
-import { MultiSelectField } from './multi-select-field';
-import { ColorPickerField } from './color-picker-field';
-import { RatingField } from './rating-field';
-import { PhoneField } from './phone-field';
-import { LocationPickerField } from './location-picker-field';
-import { DurationPickerField } from './duration-picker-field';
-import { AutocompleteField } from './autocomplete-field';
-import { MaskedInputField } from './masked-input-field';
+import { NestedFieldRenderer } from './shared-field-renderer';
 
-// Map of field types to components
-const fieldTypeComponents: Record<string, React.ComponentType<any>> = {
-  text: TextField,
-  email: TextField,
-  password: TextField,
-  url: TextField,
-  tel: TextField,
-  number: NumberField,
-  textarea: TextareaField,
-  select: SelectField,
-  checkbox: CheckboxField,
-  switch: SwitchField,
-  date: DateField,
-  slider: SliderField,
-  file: FileUploadField,
-  object: ObjectField,
-  radio: RadioField,
-  multiSelect: MultiSelectField,
-  colorPicker: ColorPickerField,
-  rating: RatingField,
-  phone: PhoneField,
-  location: LocationPickerField,
-  duration: DurationPickerField,
-  autocomplete: AutocompleteField,
-  masked: MaskedInputField,
-};
-
-export interface ArrayFieldSpecificProps extends BaseFieldProps {
-  arrayConfig: {
-    itemType: string;
-    itemLabel?: string;
-    itemPlaceholder?: string;
-    itemValidation?: unknown;
-    minItems?: number;
-    maxItems?: number;
-    addButtonLabel?: string;
-    removeButtonLabel?: string;
-    itemComponent?: React.ComponentType<any>;
-    sortable?: boolean;
-    defaultValue?: unknown;
-    // Additional props to pass to item components
-    itemProps?: Record<string, unknown>;
-    // Object field configuration (when itemType is "object")
-    objectConfig?: {
-      title?: string;
-      description?: string;
-      fields: Array<{
-        name: string;
-        type: string;
-        label?: string;
-        placeholder?: string;
-        description?: string;
-        options?: Array<{ value: string; label: string }>;
-        min?: number;
-        max?: number;
-        step?: number;
-        [key: string]: unknown;
-      }>;
-      collapsible?: boolean;
-      defaultExpanded?: boolean;
-      showCard?: boolean;
-      layout?: "vertical" | "horizontal" | "grid";
-      columns?: number;
-    };
-  };
-}
-
-export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
+export const ArrayField: React.FC<ArrayFieldProps> = ({
   fieldApi,
   label,
   description,
@@ -122,8 +36,24 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
     objectConfig,
   } = arrayConfig || {};
 
-  // Get the component for rendering items
-  const ItemComponent = CustomItemComponent || fieldTypeComponents[itemType || 'text'] || TextField;
+  // Create field config for each item
+  const createItemFieldConfig = useCallback((index: number) => {
+    const baseConfig: any = {
+      name: `${name}[${index}]`,
+      type: itemType || 'text',
+      label: itemLabel ? `${itemLabel} ${index + 1}` : undefined,
+      placeholder: itemPlaceholder,
+      component: CustomItemComponent,
+      ...itemProps,
+    };
+
+    // Add object config if item type is object
+    if (itemType === 'object' && objectConfig) {
+      baseConfig.objectConfig = objectConfig;
+    }
+
+    return baseConfig;
+  }, [name, itemType, itemLabel, itemPlaceholder, CustomItemComponent, itemProps, objectConfig]);
 
   const addItem = useCallback(() => {
     if (value.length >= maxItems) return;
@@ -226,47 +156,11 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
                 )}
                 
                 <div className="flex-1">
-                  <ItemComponent
+                  <NestedFieldRenderer
+                    fieldConfig={createItemFieldConfig(index)}
                     fieldApi={createItemFieldApi(index)}
-                    label={itemLabel ? `${itemLabel} ${index + 1}` : undefined}
-                    placeholder={itemPlaceholder}
-                    wrapperClassName="mb-0"
-                    {...itemProps}
-                    // Pass specific props based on item type
-                    {...(itemType === 'select' && { options: itemProps.options || [] })}
-                    {...(itemType === 'number' && { 
-                      min: itemProps.min, 
-                      max: itemProps.max, 
-                      step: itemProps.step 
-                    })}
-                    {...(itemType === 'slider' && { 
-                      min: itemProps.min, 
-                      max: itemProps.max, 
-                      step: itemProps.step 
-                    })}
-                    {...(itemType === 'file' && { 
-                      accept: itemProps.accept,
-                      multiple: itemProps.multiple 
-                    })}
-                    {...(itemType === 'date' && typeof itemProps.dateProps === 'object' && itemProps.dateProps ? itemProps.dateProps : {})}
-                    {...(['text', 'email', 'password', 'url', 'tel'].includes(itemType) && {
-                      type: itemType,
-                      datalist: itemProps.datalist,
-                    })}
-                    {...(itemType === 'object' && objectConfig && { objectConfig })}
-                    {...(itemType === 'radio' && { options: itemProps.options || [] })}
-                    {...(itemType === 'multiSelect' && { 
-                      options: itemProps.options || [],
-                      multiSelectConfig: itemProps.multiSelectConfig
-                    })}
-                    {...(itemType === 'colorPicker' && { colorConfig: itemProps.colorConfig })}
-                    {...(itemType === 'rating' && { ratingConfig: itemProps.ratingConfig })}
-                    {...(itemType === 'phone' && { phoneConfig: itemProps.phoneConfig })}
-                    {...(itemType === 'location' && { locationConfig: itemProps.locationConfig })}
-                    {...(itemType === 'duration' && { durationConfig: itemProps.durationConfig })}
-                    {...(itemType === 'autocomplete' && { autocompleteConfig: itemProps.autocompleteConfig })}
-                    {...(itemType === 'masked' && { maskedInputConfig: itemProps.maskedInputConfig })}
-                    {...(itemType === 'textarea' && { textareaConfig: itemProps.textareaConfig })}
+                    form={fieldApi.form}
+                    currentValues={fieldApi.form?.state?.values || {}}
                   />
                 </div>
                 

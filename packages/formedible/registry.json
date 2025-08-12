@@ -81,6 +81,10 @@
           "type": "registry:component"
         },
         {
+          "path": "src/components/formedible/fields/shared-field-renderer.tsx",
+          "type": "registry:component"
+        },
+        {
           "path": "src/components/formedible/fields/file-upload-field.tsx",
           "type": "registry:component"
         },

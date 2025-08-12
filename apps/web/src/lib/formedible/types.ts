@@ -1,6 +1,7 @@
 import React from 'react';
 import type { AnyFieldApi } from '@tanstack/react-form';
 import type { FormApi, ValidationError, FormState } from '@tanstack/form-core';
+import { z } from 'zod';
 
 // Strict type definitions for better type safety
 export interface StrictFieldApi<T = unknown> {
@@ -91,6 +92,31 @@ export interface MultiSelectFieldProps extends BaseFieldProps {
   maxSelections?: number;
 }
 
+// Shared object configuration interface - DRY!
+export interface ObjectConfig {
+  title?: string;
+  description?: string;
+  fields: Array<{
+    name: string;
+    type: string;
+    label?: string;
+    placeholder?: string;
+    description?: string;
+    options?: Array<{ value: string; label: string }> | ((values: Record<string, unknown>) => Array<{ value: string; label: string }>);
+    min?: number;
+    max?: number;
+    step?: number;
+    [key: string]: unknown;
+  }>;
+  collapsible?: boolean;
+  defaultExpanded?: boolean;
+  showCard?: boolean;
+  layout?: "vertical" | "horizontal" | "grid";
+  columns?: number;
+  collapseLabel?: string;
+  expandLabel?: string;
+}
+
 export interface ArrayFieldProps extends BaseFieldProps {
   arrayConfig: {
     itemType: string;
@@ -105,27 +131,8 @@ export interface ArrayFieldProps extends BaseFieldProps {
     defaultValue?: unknown;
     itemComponent?: React.ComponentType<BaseFieldProps>;
     itemProps?: Record<string, unknown>;
-    objectConfig?: {
-      title?: string;
-      description?: string;
-      fields: Array<{
-        name: string;
-        type: string;
-        label?: string;
-        placeholder?: string;
-        description?: string;
-        options?: Array<{ value: string; label: string }> | ((values: Record<string, unknown>) => Array<{ value: string; label: string }>);
-        min?: number;
-        max?: number;
-        step?: number;
-        [key: string]: unknown;
-      }>;
-      collapsible?: boolean;
-      defaultExpanded?: boolean;
-      showCard?: boolean;
-      layout?: "vertical" | "horizontal" | "grid";
-      columns?: number;
-    };
+    // Use the shared ObjectConfig - DRY!
+    objectConfig?: ObjectConfig;
   };
 }
 
@@ -224,6 +231,7 @@ export interface MaskedInputFieldProps extends BaseFieldProps {
 export interface ColorPickerFieldProps extends BaseFieldProps {
   colorConfig?: {
     format?: 'hex' | 'rgb' | 'hsl';
+    showPreview?: boolean; // Show color preview
     showAlpha?: boolean;
     presetColors?: string[];
     allowCustom?: boolean;
@@ -252,27 +260,9 @@ export interface PhoneFieldProps extends BaseFieldProps {
 }
 
 export interface ObjectFieldProps extends BaseFieldProps {
-  objectConfig?: {
-    title?: string;
-    description?: string;
-    fields: Array<{
-      name: string;
-      type: string;
-      label?: string;
-      placeholder?: string;
-      description?: string;
-      options?: Array<{ value: string; label: string }> | ((values: Record<string, unknown>) => Array<{ value: string; label: string }>);
-      min?: number;
-      max?: number;
-      step?: number;
-      [key: string]: unknown;
-    }>;
-    collapsible?: boolean;
-    defaultExpanded?: boolean;
-    showCard?: boolean;
-    layout?: "vertical" | "horizontal" | "grid";
-    columns?: number;
-  };
+  objectConfig?: ObjectConfig;
+  disabled?: boolean;
+  form?: any;
 }
 
 // Union type for all possible field component props - using intersection for flexibility
@@ -280,7 +270,7 @@ export type FieldComponentProps = BaseFieldProps & {
   // Optional props that specific field types might need
   options?: FieldOptions;
   arrayConfig?: ArrayFieldProps['arrayConfig'];
-  objectConfig?: ObjectFieldProps['objectConfig'];
+  objectConfig?: ObjectConfig;
   type?: TextFieldProps['type'];
   datalist?: string[];
   dateConfig?: DateFieldProps['dateConfig'];
@@ -500,4 +490,184 @@ export interface MaskedInputConfig {
   guide?: boolean;
   keepCharPositions?: boolean;
   pipe?: (conformedValue: string, config: unknown) => false | string | { value: string; indexesOfPipedChars: number[] };
+}
+
+// Field validation configuration
+export interface FieldValidationConfig {
+  min?: number;
+  max?: number;
+  minLength?: number;
+  maxLength?: number;
+  pattern?: string;
+  custom?: string;
+  includes?: string;
+  startsWith?: string;
+  endsWith?: string;
+  email?: boolean;
+  url?: boolean;
+  uuid?: boolean;
+  transform?: string;
+  refine?: string;
+  customMessages?: Record<string, string>;
+}
+
+// Help configuration for fields
+export interface FieldHelpConfig {
+  text?: string;
+  tooltip?: string;
+  position?: 'top' | 'bottom' | 'left' | 'right';
+  link?: { url: string; text: string };
+}
+
+// Inline validation configuration
+export interface InlineValidationConfig {
+  enabled?: boolean;
+  debounceMs?: number;
+  showSuccess?: boolean;
+  asyncValidator?: (value: unknown) => Promise<string | null>;
+}
+
+// Section configuration
+export interface SectionConfig {
+  title?: string;
+  description?: string;
+  collapsible?: boolean;
+  defaultExpanded?: boolean;
+}
+
+// Datalist configuration
+export interface DatalistConfig {
+  options?: string[];
+  asyncOptions?: (query: string) => Promise<string[]>;
+  debounceMs?: number;
+  minChars?: number;
+  maxResults?: number;
+}
+
+// Textarea configuration
+export interface TextareaConfig {
+  rows?: number;
+  cols?: number;
+  resize?: 'none' | 'vertical' | 'horizontal' | 'both';
+  maxLength?: number;
+  showWordCount?: boolean;
+}
+
+// Password configuration
+export interface PasswordConfig {
+  showToggle?: boolean;
+  strengthMeter?: boolean;
+  minStrength?: number;
+  requirements?: {
+    minLength?: number;
+    requireUppercase?: boolean;
+    requireLowercase?: boolean;
+    requireNumbers?: boolean;
+    requireSymbols?: boolean;
+  };
+}
+
+// Email configuration
+export interface EmailConfig {
+  allowedDomains?: string | string[];
+  blockedDomains?: string | string[];
+  suggestions?: string | string[];
+  validateMX?: boolean;
+}
+
+// Number configuration
+export interface NumberConfig {
+  min?: number;
+  max?: number;
+  step?: number;
+  precision?: number;
+  allowNegative?: boolean;
+  showSpinButtons?: boolean;
+}
+
+// Multi-select configuration
+export interface MultiSelectConfig {
+  maxSelections?: number;
+  searchable?: boolean;
+  creatable?: boolean;
+  placeholder?: string;
+  noOptionsText?: string;
+  loadingText?: string;
+}
+
+// Main FieldConfig interface - DRY version using existing types
+export interface FieldConfig {
+  name: string;
+  type: string;
+  label?: string;
+  placeholder?: string;
+  description?: string;
+  options?: string[] | { value: string; label: string }[] | ((values: Record<string, unknown>) => string[] | { value: string; label: string }[]);
+  min?: number;
+  max?: number;
+  step?: number;
+  accept?: string;
+  multiple?: boolean;
+  component?: React.ComponentType<FieldComponentProps>;
+  wrapper?: React.ComponentType<{ children: React.ReactNode; field: FieldConfig }>;
+  page?: number;
+  tab?: string;
+  validation?: z.ZodSchema<unknown>;
+  dependencies?: string[];
+  conditional?: (values: Record<string, unknown>) => boolean;
+  group?: string;
+  
+  // Configuration objects using existing types
+  arrayConfig?: ArrayFieldProps['arrayConfig'];
+  ratingConfig?: RatingFieldProps['ratingConfig'];
+  phoneConfig?: PhoneFieldProps['phoneConfig'];
+  colorConfig?: ColorPickerFieldProps['colorConfig'];
+  multiSelectConfig?: MultiSelectConfig;
+  locationConfig?: LocationConfig;
+  durationConfig?: DurationConfig;
+  autocompleteConfig?: AutocompleteConfig;
+  maskedInputConfig?: MaskedInputConfig;
+  objectConfig?: ObjectConfig;
+  sliderConfig?: SliderFieldProps['sliderConfig'];
+  numberConfig?: NumberConfig;
+  dateConfig?: DateFieldProps['dateConfig'];
+  fileConfig?: FileUploadFieldProps['fileConfig'];
+  textareaConfig?: TextareaConfig;
+  passwordConfig?: PasswordConfig;
+  emailConfig?: EmailConfig;
+  
+  // Additional configurations
+  datalist?: DatalistConfig;
+  help?: FieldHelpConfig;
+  inlineValidation?: InlineValidationConfig;
+  section?: SectionConfig;
+  validationConfig?: FieldValidationConfig;
+}
+
+// Page configuration for multi-page forms
+export interface PageConfig {
+  page: number;
+  title?: string;
+  description?: string;
+  component?: React.ComponentType<{
+    children: React.ReactNode;
+    title?: string;
+    description?: string;
+    page: number;
+    totalPages: number;
+  }>;
+  conditional?: (values: Record<string, unknown>) => boolean;
+}
+
+// Progress configuration for multi-page forms
+export interface ProgressConfig {
+  component?: React.ComponentType<{
+    value: number;
+    currentPage: number;
+    totalPages: number;
+    className?: string;
+  }>;
+  showSteps?: boolean;
+  showPercentage?: boolean;
+  className?: string;
 } 

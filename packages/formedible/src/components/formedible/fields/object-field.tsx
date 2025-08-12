@@ -1,62 +1,15 @@
 "use client";
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-import type { BaseFieldProps } from "@/lib/formedible/types";
-// Note: Import individual field components directly to avoid circular dependency
-import { TextField } from "./text-field";
-import { NumberField } from "./number-field";
-import { TextareaField } from "./textarea-field";
-import { SelectField } from "./select-field";
-import { CheckboxField } from "./checkbox-field";
-import { SwitchField } from "./switch-field";
-import { DateField } from "./date-field";
-import { SliderField } from "./slider-field";
-import { FileUploadField } from "./file-upload-field";
-import { RadioField } from "./radio-field";
-import { MultiSelectField } from "./multi-select-field";
-import { ColorPickerField } from "./color-picker-field";
-import { RatingField } from "./rating-field";
-import { PhoneField } from "./phone-field";
-import { LocationPickerField } from "./location-picker-field";
-import { DurationPickerField } from "./duration-picker-field";
-import { AutocompleteField } from "./autocomplete-field";
-import { MaskedInputField } from "./masked-input-field";
+import type { BaseFieldProps, ObjectFieldProps } from "@/lib/formedible/types";
 import { FieldWrapper } from './base-field-wrapper';
-
-interface ObjectFieldConfig {
-  title?: string;
-  description?: string;
-  fields: Array<{
-    name: string;
-    type: string;
-    label?: string;
-    placeholder?: string;
-    description?: string;
-    options?: Array<{ value: string; label: string }>;
-    min?: number;
-    max?: number;
-    step?: number;
-    [key: string]: unknown;
-  }>;
-  collapsible?: boolean;
-  defaultExpanded?: boolean;
-  showCard?: boolean;
-  layout?: "vertical" | "horizontal" | "grid";
-  columns?: number;
-  collapseLabel?: string;
-  expandLabel?: string;
-}
-
-interface ObjectFieldProps extends BaseFieldProps {
-  objectConfig?: ObjectFieldConfig;
-  disabled?: boolean;
-}
+import { NestedFieldRenderer } from './shared-field-renderer';
 
 export const ObjectField: React.FC<ObjectFieldProps> = ({
   fieldApi,
   objectConfig,
   disabled,
+  form,
   ...wrapperProps
 }) => {
   const [isExpanded, setIsExpanded] = React.useState(
@@ -88,76 +41,18 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
     };
   };
 
-  const renderField = (fieldConfig: ObjectFieldConfig['fields'][0]) => {
-    // Map field types to components directly to avoid circular dependency
-    const fieldComponentMap = {
-      text: TextField,
-      email: TextField,
-      password: TextField,
-      url: TextField,
-      tel: TextField,
-      number: NumberField,
-      textarea: TextareaField,
-      select: SelectField,
-      checkbox: CheckboxField,
-      switch: SwitchField,
-      date: DateField,
-      slider: SliderField,
-      file: FileUploadField,
-      radio: RadioField,
-      multiSelect: MultiSelectField,
-      colorPicker: ColorPickerField,
-      rating: RatingField,
-      phone: PhoneField,
-      location: LocationPickerField,
-      duration: DurationPickerField,
-      autocomplete: AutocompleteField,
-      masked: MaskedInputField,
-    };
-    
-    const FieldComponent = fieldComponentMap[fieldConfig.type as keyof typeof fieldComponentMap];
-    
-    if (!FieldComponent) {
-      console.warn(`Object field: Unknown field type "${fieldConfig.type}"`);
-      return null;
-    }
-
-    const fieldValue = fieldApi.state?.value?.[fieldConfig.name] || '';
-    const mockFieldApi = createMockFieldApi(fieldConfig.name, fieldValue) as unknown as BaseFieldProps['fieldApi'];
-
-    // Create properly typed field props using the helper
-    const baseProps: BaseFieldProps = {
-      fieldApi: mockFieldApi,
-      label: fieldConfig.label,
-      placeholder: fieldConfig.placeholder,
-      description: fieldConfig.description,
-    };
-
-    const additionalProps: Record<string, unknown> = {
-      ...(fieldConfig.min !== undefined && { min: fieldConfig.min }),
-      ...(fieldConfig.max !== undefined && { max: fieldConfig.max }),
-      ...(fieldConfig.step !== undefined && { step: fieldConfig.step }),
-      ...(disabled !== undefined && { disabled }),
-    };
-
-    // Handle fields that require options with proper typing
-    if (['select', 'radio', 'multiselect'].includes(fieldConfig.type)) {
-      additionalProps.options = fieldConfig.options || [];
-    }
-
-    const fieldProps: any = {
-      ...baseProps,
-      ...additionalProps,
-    };
-
-    // Ensure required props are provided for each field type
-    if (fieldConfig.type === 'select') {
-      fieldProps.options = fieldConfig.options || [];
-    }
+  const renderField = (subFieldConfig: any) => {
+    const fieldValue = fieldApi.state?.value?.[subFieldConfig.name] || '';
+    const mockFieldApi = createMockFieldApi(subFieldConfig.name, fieldValue) as unknown as BaseFieldProps['fieldApi'];
 
     return (
-      <div key={fieldConfig.name}>
-        <FieldComponent {...fieldProps} />
+      <div key={subFieldConfig.name}>
+        <NestedFieldRenderer
+          fieldConfig={subFieldConfig}
+          fieldApi={mockFieldApi}
+          form={form}
+          currentValues={form?.state?.values || {}}
+        />
       </div>
     );
   };
@@ -255,9 +150,11 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
         )}
         <CardContent className="pt-0">
           {(!objectConfig?.collapsible || isExpanded) && (
-            <div className={getLayoutClasses()}>
-              {objectConfig?.fields?.map(renderField)}
-            </div>
+            <>
+              <div className={getLayoutClasses()}>
+                {objectConfig?.fields?.map(renderField)}
+              </div>
+            </>
           )}
           
           {/* Show field errors */}
