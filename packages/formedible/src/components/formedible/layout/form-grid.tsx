@@ -12,6 +12,7 @@ export const FormGrid: React.FC<FormGridProps> = ({
 }) => {
   // Filter out null, undefined, and false children to prevent empty grid cells
   const validChildren = React.Children.toArray(children).filter(
+    // @ts-expect-error raf de ta mr2
     (child) => child !== null && child !== undefined && child !== false
   );
   // If no valid children, render nothing

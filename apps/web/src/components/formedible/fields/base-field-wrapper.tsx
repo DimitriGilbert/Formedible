@@ -3,6 +3,7 @@ import React from "react";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import type { FieldWrapperProps } from "@/lib/formedible/types";
+export type { FieldWrapperProps } from "@/lib/formedible/types";
 
 // Simplified wrapper that doesn't interfere with TanStack Form's state management
 export const FieldWrapper: React.FC<FieldWrapperProps> = ({
