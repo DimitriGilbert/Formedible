@@ -45,6 +45,22 @@
           "type": "registry:lib"
         },
         {
+          "path": "src/lib/formedible/colors.ts",
+          "type": "registry:lib"
+        },
+        {
+          "path": "src/lib/location.ts",
+          "type": "registry:lib"
+        },
+        {
+          "path": "src/hooks/use-field-state.ts",
+          "type": "registry:hook"
+        },
+        {
+          "path": "src/hooks/use-dropdown.ts",
+          "type": "registry:hook"
+        },
+        {
           "path": "src/components/formedible/fields/array-field.tsx",
           "type": "registry:component"
         },
