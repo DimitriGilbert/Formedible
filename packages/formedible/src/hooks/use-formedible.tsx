@@ -1,15 +1,12 @@
 "use client";
 import React, { useState, useMemo, memo, useRef } from "react";
 import { useForm, AnyFormApi, AnyFieldApi } from "@tanstack/react-form";
-import { z } from "zod";
 import { cn } from "@/lib/utils";
 import type {
   FormedibleFormApi,
   FieldComponentProps,
   BaseFieldProps,
   FieldConfig,
-  PageConfig,
-  ProgressConfig,
   FormProps,
   ConditionalFieldsSubscriptionProps,
   FieldConditionalRendererProps,
@@ -17,10 +14,7 @@ import type {
   SectionRendererProps,
   LayoutConfig,
   FormGridProps,
-  TabAnalyticsState,
-  PageAnalyticsState,
   AnalyticsContext,
-  PerformanceMetrics,
 } from "@/lib/formedible/types";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -230,7 +224,7 @@ const SectionRenderer: React.FC<
         return true;
       })
     );
-  }, [groups, form?.state.values, form]);
+  }, [groups, form]);
 
   const renderSectionContent = () => {
     const allVisibleFields = Object.entries(groups).flatMap(([groupKey, groupFields]) => {
@@ -420,6 +414,8 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     sessionId: `session_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`,
     formId: `form_${Date.now()}`,
     userId: undefined,
+    currentPage: 1,
+    currentTab: undefined,
     startTime: Date.now(),
     pageStates: {},
     tabStates: {},
@@ -437,12 +433,17 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     fieldInteractions: {},
   });
   
+  // Form completion tracking to prevent incorrect abandonment analytics
+  const formCompletedRef = React.useRef(false);
+  
   // Legacy refs for backward compatibility
-  const formStartTime = React.useRef<number>(analyticsContextRef.current.startTime);
   const fieldFocusTimes = React.useRef<Record<string, number>>({});
   const pageStartTime = React.useRef<number>(Date.now());
   const tabStartTime = React.useRef<Record<string, number>>({});
   const tabVisitHistory = React.useRef<Set<string>>(new Set());
+  
+  // Track previous values to detect actual field changes
+  const previousValues = React.useRef<Record<string, unknown>>({});
 
   // Combine default components with user overrides
   const fieldComponents = { ...defaultFieldComponents, ...defaultComponents };
@@ -643,41 +644,44 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
             throw new Error("Cross-field validation failed");
           }
 
+          // Track submission start time for performance metrics
+          const submissionStartTime = Date.now();
+          
           // Enhanced analytics tracking for form completion
           if (analytics) {
             const context = analyticsContextRef.current;
             const timeSpent = Date.now() - context.startTime;
-            
-            // Track submission performance
-            const submissionStartTime = Date.now();
             
             // Update performance metrics
             context.performanceMetrics.submissionMetrics.totalTime = timeSpent;
             
             // Call enhanced completion analytics
             analytics.onFormComplete?.(timeSpent, props.value);
-            
-            // Track submission performance when promise resolves
-            const originalOnSubmit = formOptions.onSubmit;
-            if (originalOnSubmit) {
-              const submissionPromise = originalOnSubmit(props);
-              if (submissionPromise instanceof Promise) {
-                submissionPromise.finally(() => {
-                  const processingTime = Date.now() - submissionStartTime;
-                  context.performanceMetrics.submissionMetrics.processingTime = processingTime;
-                  analytics.onSubmissionPerformance?.(
-                    timeSpent,
-                    context.performanceMetrics.submissionMetrics.validationTime,
-                    processingTime
-                  );
-                });
-              }
-            }
           }
 
           let result: unknown;
           if (formOptions.onSubmit) {
-            result = await formOptions.onSubmit(props);
+            try {
+              result = await formOptions.onSubmit(props);
+              
+              // Mark form as completed to prevent abandonment tracking
+              formCompletedRef.current = true;
+              
+              // Track submission performance after successful completion
+              if (analytics) {
+                const processingTime = Date.now() - submissionStartTime;
+                const context = analyticsContextRef.current;
+                context.performanceMetrics.submissionMetrics.processingTime = processingTime;
+                analytics.onSubmissionPerformance?.(
+                  Date.now() - context.startTime,
+                  context.performanceMetrics.submissionMetrics.validationTime,
+                  processingTime
+                );
+              }
+            } catch (error) {
+              // Re-throw the error after analytics
+              throw error;
+            }
           }
 
           // Clear storage on successful submit
@@ -1011,6 +1015,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     }
   }, [loadFromStorage, form, totalPages]);
 
+
   // Set up form event listeners if provided
   React.useEffect(() => {
     const unsubscribers: (() => void)[] = [];
@@ -1087,32 +1092,33 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
 
       // Subscribe to field changes with optimized tracking
       const fieldChangeUnsubscribe = form.store.subscribe(() => {
-        // Performance: only track changes when form values actually change
         const values = form.state.values;
+        const context = analyticsContextRef.current;
+        
         Object.entries(values as Record<string, unknown>).forEach(([fieldName, value]) => {
-          const context = analyticsContextRef.current;
-          
-          // Initialize field tracking if needed
-          if (!context.fieldInteractions[fieldName]) {
-            context.fieldInteractions[fieldName] = {
-              focusCount: 0,
-              totalTimeSpent: 0,
-              changeCount: 0,
-              errorCount: 0,
-              isCompleted: false,
-            };
-          }
-          
-          const fieldData = context.fieldInteractions[fieldName];
-          
-          // Only track if this is a new value (prevents duplicate events)
-          if (fieldData.changeCount === 0) {
+          // Only process if the value actually changed
+          if (previousValues.current[fieldName] !== value) {
+            // Initialize field tracking if needed
+            if (!context.fieldInteractions[fieldName]) {
+              context.fieldInteractions[fieldName] = {
+                focusCount: 0,
+                totalTimeSpent: 0,
+                changeCount: 0,
+                errorCount: 0,
+                isCompleted: false,
+              };
+            }
+            
+            // Track the change
             trackFieldInteraction(fieldName, 'change', { value });
             
             // Trigger async validation if configured
             if (asyncValidation[fieldName]) {
               validateFieldAsync(fieldName, value);
             }
+            
+            // Update previous value
+            previousValues.current[fieldName] = value;
           }
         });
       });
@@ -1136,19 +1142,23 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     // Enhanced cleanup with form abandonment tracking
     unsubscribers.push(() => {
       // Track form abandonment if analytics is enabled and form wasn't completed
-      if (analytics?.onFormAbandon) {
+      if (analytics?.onFormAbandon && !formCompletedRef.current && analyticsContextRef.current) {
         const context = analyticsContextRef.current;
+        
+        // Ensure context properties exist before accessing
+        if (!context.fieldInteractions) return;
+        
         const totalFields = fields.length;
         const completedFields = Object.values(context.fieldInteractions).filter(
-          field => field.isCompleted
+          field => field && field.isCompleted
         ).length;
         const completionPercentage = totalFields > 0 ? (completedFields / totalFields) * 100 : 0;
         
         // Only track abandonment if form had some interaction
         if (completedFields > 0 || Object.keys(context.fieldInteractions).length > 0) {
           analytics.onFormAbandon(completionPercentage, {
-            currentPage: analyticsContextRef.current.currentPage,
-            currentTab: analyticsContextRef.current.currentTab,
+            currentPage: context.currentPage,
+            currentTab: context.currentTab,
             lastActiveField: Object.keys(context.fieldInteractions).pop(),
           });
         }
@@ -1188,6 +1198,8 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     persistence,
     saveToStorage,
     validateCrossFields,
+    fields.length,
+    trackFieldInteraction,
   ]);
 
   const getCurrentPageFields = () => {
@@ -1238,6 +1250,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
       }
 
       setCurrentPage(newPage);
+      analyticsContextRef.current.currentPage = newPage;
       pageStartTime.current = Date.now();
       onPageChange?.(newPage, "next");
       scrollToTop(htmlFormRef, true, autoScroll);
@@ -1254,6 +1267,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
       }
 
       setCurrentPage(newPage);
+      analyticsContextRef.current.currentPage = newPage;
       pageStartTime.current = Date.now();
       onPageChange?.(newPage, "previous");
       scrollToTop(htmlFormRef, true, autoScroll);
@@ -1309,6 +1323,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
 
     // If validation passes or going backward, allow navigation
     setCurrentPage(targetPage);
+    analyticsContextRef.current.currentPage = targetPage;
     onPageChange?.(targetPage, targetPage > currentPage ? "next" : "previous");
     scrollToTop(htmlFormRef, true, autoScroll);
   };
@@ -1406,6 +1421,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
       return "";
     });
 
+
     // Enhanced tab change handler with analytics
     const handleTabChange = React.useCallback((newTabId: string) => {
       const previousTab = activeTab;
@@ -1421,7 +1437,8 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
       }
       
       setActiveTab(newTabId);
-    }, [activeTab, analytics, trackTabChange]);
+      analyticsContextRef.current.currentTab = newTabId;
+    }, [activeTab]);
 
     // Initialize first tab start time
     React.useEffect(() => {
@@ -1432,7 +1449,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
           analytics.onTabFirstVisit(activeTab, Date.now());
         }
       }
-    }, [activeTab, analytics]);
+    }, [activeTab]);
 
     const handleFocus = (e: React.FocusEvent) => {
       if (onFocus) {
@@ -1932,7 +1949,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
           }}
         </form.Subscribe>
       );
-    }, [renderTabContent, renderField, activeTab]);
+    }, [renderTabContent, renderField, activeTab, handleTabChange]);
 
     const renderProgress = () => {
       if (!hasPages || !progress) return null;
