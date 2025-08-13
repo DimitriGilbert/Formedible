@@ -1,4 +1,10 @@
 import type { Metadata } from "next";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, Database, Save, Settings, Shield, Clock, HardDrive, RefreshCcw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CodeBlock } from "@/components/ui/code-block";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Form Persistence - Formedible",
@@ -7,28 +13,77 @@ export const metadata: Metadata = {
 
 export default function PersistencePage() {
   return (
-    <div className="container mx-auto py-8 px-4 max-w-4xl">
-      <div className="space-y-8">
-        <div>
-          <h1 className="text-4xl font-bold mb-4">Form Persistence</h1>
-          <p className="text-lg text-muted-foreground">
-            Automatically save form data to browser storage and restore it when users return. 
-            Perfect for long forms, multi-step wizards, and improving user experience.
-          </p>
-        </div>
-
-        <div className="space-y-6">
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">Basic Setup</h2>
-            <p className="mb-4">
-              Enable form persistence by adding a <code>persistence</code> configuration to your form. 
-              The form data will be automatically saved as users type and restored when they return.
-            </p>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto">
+          {/* Header */}
+          <div className="mb-12">
+            <div className="flex items-center gap-4 mb-6">
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/docs">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Docs
+                </Link>
+              </Button>
+            </div>
             
-            <div className="bg-muted p-4 rounded-lg">
-              <h3 className="font-semibold mb-2">Basic Example</h3>
-              <pre className="text-sm overflow-x-auto">
-{`const { Form } = useFormedible({
+            <div className="text-center mb-8">
+              <Badge variant="secondary" className="mb-4">
+                <Database className="w-3 h-3 mr-1" />
+                Form Persistence
+              </Badge>
+              <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-muted-foreground bg-clip-text text-transparent">
+                Auto-Save & Data Recovery
+              </h1>
+              <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+                Automatically save form data to browser storage and restore it when users return. 
+                Perfect for long forms, multi-step wizards, and improving user experience.
+              </p>
+            </div>
+
+            {/* Feature Pills */}
+            <div className="flex flex-wrap justify-center gap-4 mb-8">
+              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary/8 to-muted-foreground/8 rounded-full border">
+                <Save className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium">Auto-save</span>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary/8 to-muted-foreground/8 rounded-full border">
+                <HardDrive className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium">localStorage</span>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary/8 to-muted-foreground/8 rounded-full border">
+                <RefreshCcw className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium">Restoration</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-12">
+
+            <Card className="overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-muted-foreground/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-primary/8 to-muted-foreground/8 border">
+                    <Save className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Basic Setup</CardTitle>
+                    <CardDescription className="text-base">
+                      Enable form persistence with a simple configuration to automatically save user data.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                <p className="text-muted-foreground">
+                  Enable form persistence by adding a <code>persistence</code> configuration to your form. 
+                  The form data will be automatically saved as users type and restored when they return.
+                </p>
+                
+                <div>
+                  <h3 className="font-semibold text-lg mb-3">Basic Example</h3>
+                  <CodeBlock
+                    code={`const { Form } = useFormedible({
   fields: [
     { name: 'firstName', type: 'text', label: 'First Name' },
     { name: 'lastName', type: 'text', label: 'Last Name' },
@@ -40,56 +95,82 @@ export default function PersistencePage() {
     restoreOnMount: true
   }
 });`}
-              </pre>
-            </div>
-          </section>
+                    language="tsx"
+                  />
+                </div>
+              </CardContent>
+            </Card>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">Configuration Options</h2>
-            
-            <div className="space-y-4">
-              <div className="bg-muted p-4 rounded-lg">
-                <h3 className="font-semibold mb-2">Complete Configuration</h3>
-                <pre className="text-sm overflow-x-auto">
-{`persistence: {
+            <Card className="overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-muted-foreground/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-primary/8 to-muted-foreground/8 border">
+                    <Settings className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Configuration Options</CardTitle>
+                    <CardDescription className="text-base">
+                      Customize persistence behavior with storage type, debouncing, and field exclusion.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                <div>
+                  <h3 className="font-semibold text-lg mb-3">Complete Configuration</h3>
+                  <CodeBlock
+                    code={`persistence: {
   key: 'my-form-data',              // Unique storage key
   storage: 'localStorage',          // 'localStorage' or 'sessionStorage'
   debounceMs: 1000,                // Debounce save operations (default: 1000ms)
   exclude: ['password', 'ssn'],     // Fields to exclude from persistence
   restoreOnMount: true              // Restore data when component mounts
 }`}
-                </pre>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="border rounded-lg p-4">
-                  <h4 className="font-semibold mb-2">localStorage</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Data persists across browser sessions until manually cleared. 
-                    Best for forms users might return to later.
-                  </p>
+                    language="tsx"
+                  />
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="border rounded-lg p-4 bg-gradient-to-br from-primary/2 to-muted-foreground/2">
+                    <h4 className="font-semibold mb-2">localStorage</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Data persists across browser sessions until manually cleared. 
+                      Best for forms users might return to later.
+                    </p>
+                  </div>
+                  
+                  <div className="border rounded-lg p-4 bg-gradient-to-br from-accent/2 to-secondary/2">
+                    <h4 className="font-semibold mb-2">sessionStorage</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Data persists only for the current browser session. 
+                      Best for temporary data or sensitive forms.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-muted-foreground/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-primary/8 to-muted-foreground/8 border">
+                    <Shield className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Excluding Sensitive Fields</CardTitle>
+                    <CardDescription className="text-base">
+                      Prevent sensitive information from being saved to browser storage for security.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                <p className="text-muted-foreground mb-6">
+                  Use the <code>exclude</code> option to prevent sensitive fields from being saved to storage:
+                </p>
                 
-                <div className="border rounded-lg p-4">
-                  <h4 className="font-semibold mb-2">sessionStorage</h4>
-                  <p className="text-sm text-muted-foreground">
-                    Data persists only for the current browser session. 
-                    Best for temporary data or sensitive forms.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">Excluding Sensitive Fields</h2>
-            <p className="mb-4">
-              Use the <code>exclude</code> option to prevent sensitive fields from being saved to storage:
-            </p>
-            
-            <div className="bg-muted p-4 rounded-lg">
-              <pre className="text-sm overflow-x-auto">
-{`const { Form } = useFormedible({
+                <CodeBlock
+                  code={`const { Form } = useFormedible({
   fields: [
     { name: 'username', type: 'text', label: 'Username' },
     { name: 'password', type: 'password', label: 'Password' },
@@ -103,19 +184,32 @@ export default function PersistencePage() {
     restoreOnMount: true
   }
 });`}
-              </pre>
-            </div>
-          </section>
+                  language="tsx"
+                />
+              </CardContent>
+            </Card>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">Manual Storage Control</h2>
-            <p className="mb-4">
-              Access storage functions directly for manual control over when data is saved or cleared:
-            </p>
-            
-            <div className="bg-muted p-4 rounded-lg">
-              <pre className="text-sm overflow-x-auto">
-{`const { 
+            <Card className="overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-muted-foreground/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-primary/8 to-muted-foreground/8 border">
+                    <Database className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Manual Storage Control</CardTitle>
+                    <CardDescription className="text-base">
+                      Access storage functions directly for manual control over save, load, and clear operations.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                <p className="text-muted-foreground mb-6">
+                  Access storage functions directly for manual control over when data is saved or cleared:
+                </p>
+                
+                <CodeBlock
+                  code={`const { 
   Form, 
   saveToStorage, 
   loadFromStorage, 
@@ -141,19 +235,32 @@ const handleLoad = () => {
 const handleClear = () => {
   clearStorage();
 };`}
-              </pre>
-            </div>
-          </section>
+                  language="tsx"
+                />
+              </CardContent>
+            </Card>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">Multi-Page Forms</h2>
-            <p className="mb-4">
-              Persistence automatically works with multi-page forms, saving both form data and current page:
-            </p>
-            
-            <div className="bg-muted p-4 rounded-lg">
-              <pre className="text-sm overflow-x-auto">
-{`const { Form } = useFormedible({
+            <Card className="overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-muted-foreground/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-primary/8 to-muted-foreground/8 border">
+                    <RefreshCcw className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Multi-Page Forms</CardTitle>
+                    <CardDescription className="text-base">
+                      Persistence automatically works with multi-step forms, saving both data and current page.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                <p className="text-muted-foreground mb-6">
+                  Persistence automatically works with multi-page forms, saving both form data and current page:
+                </p>
+                
+                <CodeBlock
+                  code={`const { Form } = useFormedible({
   fields: [
     { name: 'firstName', type: 'text', label: 'First Name', page: 1 },
     { name: 'lastName', type: 'text', label: 'Last Name', page: 1 },
@@ -168,19 +275,32 @@ const handleClear = () => {
 });
 
 // When user returns, they'll be on the same page with their data restored`}
-              </pre>
-            </div>
-          </section>
+                  language="tsx"
+                />
+              </CardContent>
+            </Card>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">Automatic Cleanup</h2>
-            <p className="mb-4">
-              Form data is automatically cleared from storage when the form is successfully submitted:
-            </p>
-            
-            <div className="bg-muted p-4 rounded-lg">
-              <pre className="text-sm overflow-x-auto">
-{`const { Form } = useFormedible({
+            <Card className="overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-muted-foreground/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-primary/8 to-muted-foreground/8 border">
+                    <Save className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Automatic Cleanup</CardTitle>
+                    <CardDescription className="text-base">
+                      Form data is automatically cleared from storage after successful form submission.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                <p className="text-muted-foreground mb-6">
+                  Form data is automatically cleared from storage when the form is successfully submitted:
+                </p>
+                
+                <CodeBlock
+                  code={`const { Form } = useFormedible({
   fields: [
     // ... your fields
   ],
@@ -199,52 +319,32 @@ const handleClear = () => {
     }
   }
 });`}
-              </pre>
-            </div>
-          </section>
+                  language="tsx"
+                />
+              </CardContent>
+            </Card>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">Best Practices</h2>
-            <div className="space-y-4">
-              <div className="border-l-4 border-primary pl-4">
-                <h3 className="font-semibold">Unique Keys</h3>
-                <p className="text-sm text-muted-foreground">
-                  Use descriptive, unique keys for each form to avoid conflicts between different forms.
+            <Card className="overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-muted-foreground/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-primary/8 to-muted-foreground/8 border">
+                    <Settings className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Error Handling</CardTitle>
+                    <CardDescription className="text-base">
+                      Graceful error handling ensures forms work even when storage operations fail.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                <p className="text-muted-foreground mb-6">
+                  Persistence operations are wrapped in try-catch blocks and will log warnings if storage fails:
                 </p>
-              </div>
-              
-              <div className="border-l-4 border-accent pl-4">
-                <h3 className="font-semibold">Sensitive Data</h3>
-                <p className="text-sm text-muted-foreground">
-                  Always exclude passwords, credit cards, and other sensitive information from persistence.
-                </p>
-              </div>
-              
-              <div className="border-l-4 border-secondary pl-4">
-                <h3 className="font-semibold">Storage Choice</h3>
-                <p className="text-sm text-muted-foreground">
-                  Use localStorage for forms users might return to later, sessionStorage for temporary data.
-                </p>
-              </div>
-              
-              <div className="border-l-4 border-muted pl-4">
-                <h3 className="font-semibold">Debouncing</h3>
-                <p className="text-sm text-muted-foreground">
-                  Adjust debounce timing based on form complexity - longer for complex forms to reduce storage writes.
-                </p>
-              </div>
-            </div>
-          </section>
-
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">Error Handling</h2>
-            <p className="mb-4">
-              Persistence operations are wrapped in try-catch blocks and will log warnings if storage fails:
-            </p>
-            
-            <div className="bg-muted p-4 rounded-lg">
-              <pre className="text-sm overflow-x-auto">
-{`// Storage operations handle errors gracefully
+                
+                <CodeBlock
+                  code={`// Storage operations handle errors gracefully
 // If localStorage is full or disabled, the form continues to work normally
 // Check browser console for persistence warnings
 
@@ -262,9 +362,83 @@ const handleManualSave = () => {
     // Handle error (show user notification, etc.)
   }
 };`}
-              </pre>
+                  language="tsx"
+                />
+              </CardContent>
+            </Card>
+
+            <Card className="overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-muted-foreground/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-primary/8 to-muted-foreground/8 border">
+                    <Clock className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Best Practices</CardTitle>
+                    <CardDescription className="text-base">
+                      Guidelines for effective persistence implementation and optimal user experience.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <div className="border-l-4 border-primary pl-4">
+                    <h3 className="font-semibold">Unique Keys</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Use descriptive, unique keys for each form to avoid conflicts between different forms.
+                    </p>
+                  </div>
+                  
+                  <div className="border-l-4 border-accent pl-4">
+                    <h3 className="font-semibold">Sensitive Data</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Always exclude passwords, credit cards, and other sensitive information from persistence.
+                    </p>
+                  </div>
+                  
+                  <div className="border-l-4 border-secondary pl-4">
+                    <h3 className="font-semibold">Storage Choice</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Use localStorage for forms users might return to later, sessionStorage for temporary data.
+                    </p>
+                  </div>
+                  
+                  <div className="border-l-4 border-muted pl-4">
+                    <h3 className="font-semibold">Debouncing</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Adjust debounce timing based on form complexity - longer for complex forms to reduce storage writes.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Ready to Build */}
+          <div className="mt-16">
+            <div className="bg-gradient-to-r from-primary/5 to-muted-foreground/5 p-8 rounded-xl border text-center">
+              <h3 className="text-2xl font-bold mb-4">
+                Ready to Implement Form Persistence?
+              </h3>
+              <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
+                Start building forms with automatic data persistence and recovery. Create resilient 
+                user experiences that never lose user progress.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button size="lg" asChild>
+                  <Link href="/docs/getting-started">
+                    Get Started
+                  </Link>
+                </Button>
+                <Button variant="outline" size="lg" asChild>
+                  <Link href="/docs/examples">
+                    View Examples
+                  </Link>
+                </Button>
+              </div>
             </div>
-          </section>
+          </div>
         </div>
       </div>
     </div>

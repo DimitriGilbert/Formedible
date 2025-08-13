@@ -1181,15 +1181,19 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
 
   // Separate useEffect for form abandonment tracking - only runs on component unmount
   React.useEffect(() => {
+    const analyticsContextSnapshot = analyticsContextRef.current;
+    const fieldsLength = fields.length;
+    const onFormAbandon = analytics?.onFormAbandon;
+    
     return () => {
       // Track form abandonment only on component unmount if analytics is enabled and form wasn't completed
-      if (analytics?.onFormAbandon && !formCompletedRef.current && analyticsContextRef.current) {
-        const context = analyticsContextRef.current;
+      if (onFormAbandon && !formCompletedRef.current && analyticsContextSnapshot) {
+        const context = analyticsContextSnapshot;
         
         // Ensure context properties exist before accessing
         if (!context.fieldInteractions) return;
         
-        const totalFields = fields.length;
+        const totalFields = fieldsLength;
         const completedFields = Object.values(context.fieldInteractions).filter(
           field => field && field.isCompleted
         ).length;
@@ -1197,7 +1201,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
         
         // Only track abandonment if form had some interaction
         if (completedFields > 0 || Object.keys(context.fieldInteractions).length > 0) {
-          analytics.onFormAbandon(completionPercentage, {
+          onFormAbandon(completionPercentage, {
             currentPage: context.currentPage,
             currentTab: context.currentTab,
             lastActiveField: Object.keys(context.fieldInteractions).pop(),
@@ -1205,7 +1209,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
         }
       }
     };
-  }, []); // Empty dependency array - only runs on mount/unmount
+  }, [analytics?.onFormAbandon, fields.length]); // Include dependencies
 
   const getCurrentPageFields = () => {
     if (hasTabs) {

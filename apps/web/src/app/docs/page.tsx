@@ -10,6 +10,12 @@ import {
   Rocket,
   Shield,
   Layers,
+  Database,
+  TestTube,
+  CheckCircle,
+  BarChart3,
+  Wrench,
+  Settings,
 } from "lucide-react";
 import {
   Card,
@@ -45,11 +51,74 @@ export default function DocsPage() {
     {
       title: "Field Types",
       description:
-        "Explore 15+ pre-built field components with validation and styling",
+        "Explore 20+ pre-built field components with advanced features like custom visualizations",
       icon: Layers,
       href: "/docs/fields",
       color: "text-accent",
       badge: "Popular",
+    },
+    {
+      title: "Advanced Fields",
+      description:
+        "Specialized field types including location picker, duration input, and masked fields",
+      icon: Settings,
+      href: "/docs/advanced-fields",
+      color: "text-blue-600",
+      badge: "Pro",
+    },
+    {
+      title: "Validation",
+      description:
+        "Cross-field validation, async validation, and advanced validation patterns",
+      icon: CheckCircle,
+      href: "/docs/validation",
+      color: "text-green-600",
+      badge: null,
+    },
+    {
+      title: "Analytics",
+      description:
+        "Track user interactions, form completion rates, and performance metrics",
+      icon: BarChart3,
+      href: "/docs/analytics",
+      color: "text-purple-600",
+      badge: "Enhanced",
+    },
+    {
+      title: "Persistence",
+      description:
+        "Auto-save form data to browser storage with configurable options",
+      icon: Database,
+      href: "/docs/persistence",
+      color: "text-indigo-600",
+      badge: null,
+    },
+    {
+      title: "Testing",
+      description:
+        "Comprehensive testing utilities for validation, async operations, and more",
+      icon: TestTube,
+      href: "/docs/testing",
+      color: "text-orange-600",
+      badge: null,
+    },
+    {
+      title: "Builder",
+      description:
+        "Visual form builder with modular tab system for creating forms interactively",
+      icon: Wrench,
+      href: "/docs/builder",
+      color: "text-teal-600",
+      badge: "Interactive",
+    },
+    {
+      title: "Advanced Features",
+      description:
+        "Multi-page forms, conditional logic, and complex form scenarios",
+      icon: Sparkles,
+      href: "/docs/advanced-features",
+      color: "text-pink-600",
+      badge: "Overview",
     },
     {
       title: "API Reference",
@@ -57,7 +126,7 @@ export default function DocsPage() {
         "Complete documentation of hooks, props, and configuration options",
       icon: Code,
       href: "/docs/api",
-      color: "text-primary",
+      color: "text-slate-600",
       badge: null,
     },
     {
@@ -66,7 +135,7 @@ export default function DocsPage() {
         "Real-world form implementations from simple to complex use cases",
       icon: Book,
       href: "/docs/examples",
-      color: "text-accent",
+      color: "text-amber-600",
       badge: null,
     },
   ];
@@ -112,9 +181,10 @@ export default function DocsPage() {
                 Forms cooked just "A Point" for you to use
               </h1>
               <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-                Formedible combines the power of TanStack Form with beautiful
+                Formedible combines the power of TanStack Form v1 with beautiful
                 shadcn/ui components. Create schema-driven forms with
-                validation, multi-step flows, and custom styling in minutes.
+                validation, multi-step flows, analytics tracking, form persistence,
+                and advanced custom visualizations in minutes.
               </p>
             </motion.div>
 
@@ -167,7 +237,7 @@ export default function DocsPage() {
           </div>
 
           {/* Documentation Sections */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
             {docSections.map((section, index) => (
               <motion.div
                 key={section.title}

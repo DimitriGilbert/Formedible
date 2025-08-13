@@ -1,64 +1,158 @@
-import type { Metadata } from "next";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Form Analytics - Formedible",
-  description: "Track user interactions, form completion rates, and performance metrics with Formedible's built-in analytics system.",
-};
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, BarChart3, Activity, Settings, Zap, Users, TrendingUp, Clock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CodeBlock } from "@/components/ui/code-block";
+import Link from "next/link";
 
 export default function AnalyticsPage() {
   return (
-    <div className="container mx-auto py-8 px-4 max-w-4xl">
-      <div className="space-y-8">
-        <div>
-          <h1 className="text-4xl font-bold mb-4">Form Analytics</h1>
-          <p className="text-lg text-muted-foreground">
-            Track user behavior, measure form performance, and gain insights into how users interact 
-            with your forms using Formedible's comprehensive analytics system.
-          </p>
-        </div>
-
-        <div className="space-y-6">
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">Overview</h2>
-            <p className="mb-4">
-              Formedible provides built-in analytics that track various user interactions and form events. 
-              All analytics are optional and can be customized to fit your specific tracking needs.
-            </p>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto">
+          {/* Header */}
+          <div className="mb-12">
+            <div className="flex items-center gap-4 mb-6">
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/docs">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Docs
+                </Link>
+              </Button>
+            </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="border rounded-lg p-4">
-                <h3 className="font-semibold mb-2">Field Interactions</h3>
-                <p className="text-sm text-muted-foreground">
-                  Track focus, blur, and change events for individual fields with timing data.
-                </p>
+            <div className="text-center mb-8">
+              <Badge variant="secondary" className="mb-4">
+                <BarChart3 className="w-3 h-3 mr-1" />
+                Form Analytics
+              </Badge>
+              <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-muted-foreground bg-clip-text text-transparent">
+                Track User Behavior & Performance
+              </h1>
+              <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+                Track user behavior, measure form performance, and gain insights into how users interact 
+                with your forms using Formedible's comprehensive analytics system.
+              </p>
+            </div>
+
+            {/* Feature Pills */}
+            <div className="flex flex-wrap justify-center gap-4 mb-8">
+              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary/8 to-muted-foreground/8 rounded-full border">
+                <Users className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium">User Tracking</span>
               </div>
-              
-              <div className="border rounded-lg p-4">
-                <h3 className="font-semibold mb-2">Form Completion</h3>
-                <p className="text-sm text-muted-foreground">
-                  Monitor form start, completion, and abandonment with completion percentages.
-                </p>
+              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary/8 to-muted-foreground/8 rounded-full border">
+                <TrendingUp className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium">Performance Metrics</span>
               </div>
-              
-              <div className="border rounded-lg p-4">
-                <h3 className="font-semibold mb-2">Page Navigation</h3>
-                <p className="text-sm text-muted-foreground">
-                  Track page changes in multi-step forms with time spent on each page.
-                </p>
+              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary/8 to-muted-foreground/8 rounded-full border">
+                <Activity className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium">Event System</span>
               </div>
             </div>
-          </section>
+          </div>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">Basic Setup</h2>
-            <p className="mb-4">
-              Enable analytics by adding an <code>analytics</code> configuration with event handlers:
-            </p>
-            
-            <div className="bg-muted p-4 rounded-lg">
-              <h3 className="font-semibold mb-2">Basic Example</h3>
-              <pre className="text-sm overflow-x-auto">
-{`const { Form } = useFormedible({
+          <div className="space-y-12">
+
+            <Card className="overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-muted-foreground/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-primary/8 to-muted-foreground/8 border">
+                    <BarChart3 className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Overview</CardTitle>
+                    <CardDescription className="text-base">
+                      Comprehensive analytics that track user interactions and form performance.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                <p className="text-muted-foreground mb-6">
+                  Formedible provides built-in analytics that track various user interactions and form events. 
+                  All analytics are optional and can be customized to fit your specific tracking needs.
+                </p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="border rounded-lg p-4 bg-gradient-to-br from-primary/3 to-transparent">
+                    <h3 className="font-semibold mb-2 flex items-center gap-2">
+                      <Users className="w-4 h-4 text-primary" />
+                      Field Interactions
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Track focus, blur, and change events for individual fields with timing data.
+                    </p>
+                  </div>
+                  
+                  <div className="border rounded-lg p-4 bg-gradient-to-br from-primary/3 to-transparent">
+                    <h3 className="font-semibold mb-2 flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4 text-primary" />
+                      Form Completion
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Monitor form start, completion, and abandonment with completion percentages.
+                    </p>
+                  </div>
+                  
+                  <div className="border rounded-lg p-4 bg-gradient-to-br from-primary/3 to-transparent">
+                    <h3 className="font-semibold mb-2 flex items-center gap-2">
+                      <Activity className="w-4 h-4 text-primary" />
+                      Page Navigation
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Track page changes in multi-step forms with time spent and completion context.
+                    </p>
+                  </div>
+                  
+                  <div className="border rounded-lg p-4 bg-gradient-to-br from-primary/3 to-transparent">
+                    <h3 className="font-semibold mb-2 flex items-center gap-2">
+                      <Zap className="w-4 h-4 text-primary" />
+                      Performance Metrics
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Monitor form rendering and submission performance with detailed timing data.
+                    </p>
+                  </div>
+                  
+                  <div className="border rounded-lg p-4 bg-gradient-to-br from-primary/3 to-transparent">
+                    <h3 className="font-semibold mb-2 flex items-center gap-2">
+                      <Settings className="w-4 h-4 text-primary" />
+                      Enhanced Context
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      All events include rich metadata like validation errors and completion states.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-muted-foreground/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-primary/8 to-muted-foreground/8 border">
+                    <Settings className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Basic Setup</CardTitle>
+                    <CardDescription className="text-base">
+                      Enable analytics by adding an analytics configuration with event handlers.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                <p className="text-muted-foreground">
+                  Enable analytics by adding an <code className="bg-muted px-1 py-0.5 rounded text-sm">analytics</code> configuration with event handlers:
+                </p>
+                
+                <div>
+                  <h3 className="font-semibold text-lg mb-3">Basic Example</h3>
+                  <CodeBlock
+                    code={`const { Form } = useFormedible({
   fields: [
     { name: 'email', type: 'email', label: 'Email' },
     { name: 'name', type: 'text', label: 'Name' },
@@ -78,18 +172,31 @@ export default function AnalyticsPage() {
     }
   }
 });`}
-              </pre>
-            </div>
-          </section>
+                    language="tsx"
+                  />
+                </div>
+              </CardContent>
+            </Card>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">Available Events</h2>
-            
-            <div className="space-y-4">
-              <div className="bg-muted p-4 rounded-lg">
-                <h3 className="font-semibold mb-2">Complete Analytics Configuration</h3>
-                <pre className="text-sm overflow-x-auto">
-{`analytics: {
+            <Card className="overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-muted-foreground/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-primary/8 to-muted-foreground/8 border">
+                    <Activity className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Available Events</CardTitle>
+                    <CardDescription className="text-base">
+                      Complete reference of all analytics events available in Formedible.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                <div>
+                  <h3 className="font-semibold text-lg mb-3">Complete Analytics Configuration</h3>
+                  <CodeBlock
+                    code={`analytics: {
   // Form lifecycle events
   onFormStart: (timestamp: number) => {
     // Called when form is first rendered
@@ -104,10 +211,14 @@ export default function AnalyticsPage() {
     });
   },
   
-  onFormAbandon: (completionPercentage: number) => {
+  onFormAbandon: (completionPercentage: number, context?: any) => {
+    // FIXED: Only fires on actual page leave, not form navigation
     // Called when user leaves without completing
     analytics.track('form_abandoned', { 
-      completion: completionPercentage 
+      completion: completionPercentage,
+      currentPage: context?.currentPage,
+      currentTab: context?.currentTab,
+      lastActiveField: context?.lastActiveField
     });
   },
   
@@ -137,29 +248,93 @@ export default function AnalyticsPage() {
     });
   },
   
+  onFieldError: (fieldName: string, errors: string[], timestamp: number) => {
+    // Called when field validation errors occur
+    analytics.track('field_error', { 
+      field: fieldName, 
+      errorCount: errors.length,
+      firstError: errors[0],
+      timestamp 
+    });
+  },
+  
+  onFieldComplete: (fieldName: string, isValid: boolean, timeSpent: number) => {
+    // Called when field is successfully completed
+    analytics.track('field_complete', { 
+      field: fieldName, 
+      isValid, 
+      timeSpent 
+    });
+  },
+  
   // Multi-page form events
-  onPageChange: (fromPage: number, toPage: number, timeSpent: number) => {
-    // Called when navigating between pages
+  onPageChange: (fromPage: number, toPage: number, timeSpent: number, pageContext?: any) => {
+    // Called when navigating between pages with rich context
     analytics.track('page_changed', { 
       from: fromPage, 
       to: toPage, 
-      duration: timeSpent 
+      duration: timeSpent,
+      hasErrors: pageContext?.hasErrors,
+      completionPercentage: pageContext?.completionPercentage
+    });
+  },
+  
+  // Tab-based form events
+  onTabChange: (fromTab: string, toTab: string, timeSpent: number, tabContext?: any) => {
+    // Called when navigating between tabs
+    analytics.track('tab_changed', { 
+      fromTab, 
+      toTab, 
+      duration: timeSpent,
+      completionPercentage: tabContext?.completionPercentage,
+      hasErrors: tabContext?.hasErrors
+    });
+  },
+  
+  onTabFirstVisit: (tabId: string, timestamp: number) => {
+    // Called when a tab is visited for the first time
+    analytics.track('tab_first_visit', { 
+      tabId, 
+      timestamp 
+    });
+  },
+  
+  // Performance tracking
+  onSubmissionPerformance: (totalTime: number, validationTime: number, processingTime: number) => {
+    // Called after form submission to track performance
+    analytics.track('form_performance', {
+      totalTime,
+      validationTime,
+      processingTime,
+      efficiency: (processingTime / totalTime) * 100
     });
   }
 }`}
-                </pre>
-              </div>
-            </div>
-          </section>
+                    language="tsx"
+                  />
+                </div>
+              </CardContent>
+            </Card>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">Integration Examples</h2>
-            
-            <div className="space-y-4">
-              <div className="bg-muted p-4 rounded-lg">
-                <h3 className="font-semibold mb-2">Google Analytics 4</h3>
-                <pre className="text-sm overflow-x-auto">
-{`analytics: {
+            <Card className="overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-muted-foreground/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-primary/8 to-muted-foreground/8 border">
+                    <Zap className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Integration Examples</CardTitle>
+                    <CardDescription className="text-base">
+                      Real-world examples of integrating with popular analytics services.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                <div>
+                  <h3 className="font-semibold text-lg mb-3">Google Analytics 4</h3>
+                  <CodeBlock
+                    code={`analytics: {
   onFormStart: (timestamp) => {
     gtag('event', 'form_start', {
       form_name: 'contact_form',
@@ -182,13 +357,14 @@ export default function AnalyticsPage() {
     });
   }
 }`}
-                </pre>
-              </div>
+                    language="tsx"
+                  />
+                </div>
 
-              <div className="bg-muted p-4 rounded-lg">
-                <h3 className="font-semibold mb-2">Custom Analytics Service</h3>
-                <pre className="text-sm overflow-x-auto">
-{`// Custom analytics service
+                <div>
+                  <h3 className="font-semibold text-lg mb-3">Custom Analytics Service</h3>
+                  <CodeBlock
+                    code={`// Custom analytics service
 class FormAnalytics {
   static track(event: string, data: any) {
     fetch('/api/analytics', {
@@ -215,13 +391,14 @@ analytics: {
     });
   }
 }`}
-                </pre>
-              </div>
+                    language="tsx"
+                  />
+                </div>
 
-              <div className="bg-muted p-4 rounded-lg">
-                <h3 className="font-semibold mb-2">Mixpanel Integration</h3>
-                <pre className="text-sm overflow-x-auto">
-{`import mixpanel from 'mixpanel-browser';
+                <div>
+                  <h3 className="font-semibold text-lg mb-3">Mixpanel Integration</h3>
+                  <CodeBlock
+                    code={`import mixpanel from 'mixpanel-browser';
 
 analytics: {
   onFormStart: (timestamp) => {
@@ -247,20 +424,29 @@ analytics: {
     });
   }
 }`}
-                </pre>
-              </div>
-            </div>
-          </section>
+                    language="tsx"
+                  />
+                </div>
+              </CardContent>
+            </Card>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">Performance Metrics</h2>
-            <p className="mb-4">
-              Use analytics data to calculate important form performance metrics:
-            </p>
-            
-            <div className="bg-muted p-4 rounded-lg">
-              <pre className="text-sm overflow-x-auto">
-{`// Example metrics calculation
+            <Card className="overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-muted-foreground/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-primary/8 to-muted-foreground/8 border">
+                    <TrendingUp className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Performance Metrics</CardTitle>
+                    <CardDescription className="text-base">
+                      Use analytics data to calculate important form performance metrics.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                <CodeBlock
+                  code={`// Example metrics calculation
 class FormMetrics {
   private startTime: number = 0;
   private fieldTimes: Record<string, number> = {};
@@ -298,61 +484,134 @@ class FormMetrics {
     return 0.85; // 85% completion rate
   }
 }`}
-              </pre>
-            </div>
-          </section>
+                  language="tsx"
+                />
+              </CardContent>
+            </Card>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">Privacy Considerations</h2>
-            <div className="space-y-4">
-              <div className="border-l-4 border-primary pl-4">
-                <h3 className="font-semibold">Data Sensitivity</h3>
-                <p className="text-sm text-muted-foreground">
-                  Be careful not to track sensitive field values. Consider tracking field interactions without actual values.
-                </p>
-              </div>
-              
-              <div className="border-l-4 border-accent pl-4">
-                <h3 className="font-semibold">User Consent</h3>
-                <p className="text-sm text-muted-foreground">
-                  Ensure you have proper user consent before tracking form interactions, especially in GDPR regions.
-                </p>
-              </div>
-              
-              <div className="border-l-4 border-secondary pl-4">
-                <h3 className="font-semibold">Data Anonymization</h3>
-                <p className="text-sm text-muted-foreground">
-                  Consider anonymizing or hashing user data before sending to analytics services.
-                </p>
-              </div>
-            </div>
-          </section>
+            <Card className="overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-muted-foreground/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-primary/8 to-muted-foreground/8 border">
+                    <Clock className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Recent Improvements</CardTitle>
+                    <CardDescription className="text-base">
+                      Latest enhancements to the analytics system for better insights.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <div className="border-l-4 border-green-500 pl-4 bg-green-50 dark:bg-green-950 p-4 rounded-r-lg">
+                    <h3 className="font-semibold text-green-700 dark:text-green-300">Fixed Abandonment Tracking</h3>
+                    <p className="text-sm text-green-600 dark:text-green-400">
+                      The <code className="bg-muted px-1 py-0.5 rounded text-xs">onFormAbandon</code> event now only fires when users actually leave the page, 
+                      not when navigating between form pages or tabs. This provides accurate abandonment metrics.
+                    </p>
+                  </div>
+                  
+                  <div className="border-l-4 border-blue-500 pl-4 bg-blue-50 dark:bg-blue-950 p-4 rounded-r-lg">
+                    <h3 className="font-semibold text-blue-700 dark:text-blue-300">Enhanced Context Data</h3>
+                    <p className="text-sm text-blue-600 dark:text-blue-400">
+                      All analytics events now include rich contextual information like validation errors, 
+                      completion percentages, and performance metrics for better insights.
+                    </p>
+                  </div>
+                  
+                  <div className="border-l-4 border-purple-500 pl-4 bg-purple-50 dark:bg-purple-950 p-4 rounded-r-lg">
+                    <h3 className="font-semibold text-purple-700 dark:text-purple-300">Performance Tracking</h3>
+                    <p className="text-sm text-purple-600 dark:text-purple-400">
+                      New performance metrics track form rendering, validation, and submission times 
+                      to help optimize user experience.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">Best Practices</h2>
-            <div className="space-y-4">
-              <div className="border-l-4 border-muted pl-4">
-                <h3 className="font-semibold">Selective Tracking</h3>
-                <p className="text-sm text-muted-foreground">
-                  Only implement the analytics events you actually need to avoid data overload.
-                </p>
-              </div>
-              
-              <div className="border-l-4 border-destructive pl-4">
-                <h3 className="font-semibold">Error Handling</h3>
-                <p className="text-sm text-muted-foreground">
-                  Wrap analytics calls in try-catch blocks to prevent tracking errors from breaking your form.
-                </p>
-              </div>
-              
-              <div className="border-l-4 border-indigo-500 pl-4">
-                <h3 className="font-semibold">Performance</h3>
-                <p className="text-sm text-muted-foreground">
-                  Use debouncing for high-frequency events like field changes to avoid overwhelming your analytics service.
-                </p>
-              </div>
-            </div>
-          </section>
+            <Card className="overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-muted-foreground/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-primary/8 to-muted-foreground/8 border">
+                    <Settings className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Privacy Considerations</CardTitle>
+                    <CardDescription className="text-base">
+                      Important privacy guidelines when implementing form analytics.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <div className="border-l-4 border-primary pl-4">
+                    <h3 className="font-semibold">Data Sensitivity</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Be careful not to track sensitive field values. Consider tracking field interactions without actual values.
+                    </p>
+                  </div>
+                  
+                  <div className="border-l-4 border-accent pl-4">
+                    <h3 className="font-semibold">User Consent</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Ensure you have proper user consent before tracking form interactions, especially in GDPR regions.
+                    </p>
+                  </div>
+                  
+                  <div className="border-l-4 border-secondary pl-4">
+                    <h3 className="font-semibold">Data Anonymization</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Consider anonymizing or hashing user data before sending to analytics services.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-muted-foreground/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-primary/8 to-muted-foreground/8 border">
+                    <TrendingUp className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Best Practices</CardTitle>
+                    <CardDescription className="text-base">
+                      Guidelines for effective form analytics implementation.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <div className="border-l-4 border-muted pl-4">
+                    <h3 className="font-semibold">Selective Tracking</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Only implement the analytics events you actually need to avoid data overload.
+                    </p>
+                  </div>
+                  
+                  <div className="border-l-4 border-destructive pl-4">
+                    <h3 className="font-semibold">Error Handling</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Wrap analytics calls in try-catch blocks to prevent tracking errors from breaking your form.
+                    </p>
+                  </div>
+                  
+                  <div className="border-l-4 border-indigo-500 pl-4">
+                    <h3 className="font-semibold">Performance</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Use debouncing for high-frequency events like field changes to avoid overwhelming your analytics service.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>

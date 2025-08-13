@@ -273,12 +273,13 @@ export default function FieldsPage() {
                   </div>
 
                   <div>
-                    <h4 className="font-semibold text-lg mb-2">Slider Field</h4>
+                    <h4 className="font-semibold text-lg mb-2">Slider Field <Badge variant="outline" className="ml-2">Enhanced</Badge></h4>
                     <p className="text-muted-foreground text-sm mb-4">
-                      Range slider for numeric values with visual feedback.
+                      Interactive range slider with custom visualizations, click-to-select functionality, and advanced animations.
                     </p>
                     <CodeBlock 
-                      code={`{
+                      code={`// Basic slider
+{
   name: 'budget',
   type: 'slider',
   label: 'Budget Range',
@@ -286,11 +287,40 @@ export default function FieldsPage() {
     min: 0,
     max: 10000,
     step: 100,
-    formatValue: (value) => \`$\${value}\`
+    showValue: true,
+    gradientColors: {
+      start: '#ef4444', // Red
+      end: '#22c55e'    // Green
+    }
+  }
+}
+
+// Advanced slider with custom visualizations
+{
+  name: 'energyRating',
+  type: 'slider',
+  label: 'Energy Efficiency',
+  sliderConfig: {
+    min: 1,
+    max: 7,
+    step: 1,
+    valueMapping: [
+      { sliderValue: 1, displayValue: 'A', label: 'Excellent' },
+      { sliderValue: 2, displayValue: 'B', label: 'Very Good' },
+      // ... more mappings
+    ],
+    // Custom visualization component can be imported and used here
+    showValue: true
   }
 }`}
                       language="tsx"
                     />
+                    <div className="mt-4 p-3 bg-muted/30 rounded-lg">
+                      <p className="text-sm text-muted-foreground">
+                        <strong>New Features:</strong> Click any visualization to select its value • Full keyboard accessibility • 
+                        Smooth animations • Dynamic gradient colors • Floating value indicators
+                      </p>
+                    </div>
                   </div>
                 </div>
               </CardContent>

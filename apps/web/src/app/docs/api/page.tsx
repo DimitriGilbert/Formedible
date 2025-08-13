@@ -332,13 +332,25 @@ export default function ApiPage() {
               <CardContent className="p-6">
                 <CodeBlock
                   code={`interface AnalyticsConfig {
+  // Form lifecycle events
   onFormStart?: (timestamp: number) => void;
   onFormComplete?: (timeSpent: number, formData: any) => void;
-  onFormAbandon?: (completionPercentage: number) => void;
+  onFormAbandon?: (completionPercentage: number, context?: any) => void;
+  
+  // Field interaction events
   onFieldFocus?: (fieldName: string, timestamp: number) => void;
   onFieldBlur?: (fieldName: string, timeSpent: number) => void;
   onFieldChange?: (fieldName: string, value: any, timestamp: number) => void;
-  onPageChange?: (fromPage: number, toPage: number, timeSpent: number) => void;
+  onFieldError?: (fieldName: string, errors: string[], timestamp: number) => void;
+  onFieldComplete?: (fieldName: string, isValid: boolean, timeSpent: number) => void;
+  
+  // Multi-page/tab form events
+  onPageChange?: (fromPage: number, toPage: number, timeSpent: number, context?: any) => void;
+  onTabChange?: (fromTab: string, toTab: string, timeSpent: number, context?: any) => void;
+  onTabFirstVisit?: (tabId: string, timestamp: number) => void;
+  
+  // Performance tracking
+  onSubmissionPerformance?: (totalTime: number, validationTime: number, processingTime: number) => void;
 }`}
                   language="typescript"
                 />

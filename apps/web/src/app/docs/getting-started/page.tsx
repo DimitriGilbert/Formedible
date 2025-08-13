@@ -170,7 +170,7 @@ export function ContactForm() {
                   <Link href="/docs/fields">
                     <div className="p-4 bg-card rounded-lg border hover:shadow-md transition-shadow cursor-pointer">
                       <h4 className="font-semibold mb-2">Field Types</h4>
-                      <p className="text-sm text-muted-foreground">Explore 15+ field components</p>
+                      <p className="text-sm text-muted-foreground">Explore 20+ field components</p>
                     </div>
                   </Link>
                   <Link href="/docs/examples">

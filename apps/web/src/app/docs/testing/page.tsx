@@ -1,4 +1,10 @@
 import type { Metadata } from "next";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, TestTube, Play, CheckCircle, Clock, Settings, Shield, Users, FileStack } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CodeBlock } from "@/components/ui/code-block";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Testing Forms - Formedible",
@@ -7,27 +13,77 @@ export const metadata: Metadata = {
 
 export default function TestingPage() {
   return (
-    <div className="container mx-auto py-8 px-4 max-w-4xl">
-      <div className="space-y-8">
-        <div>
-          <h1 className="text-4xl font-bold mb-4">Testing Forms</h1>
-          <p className="text-lg text-muted-foreground">
-            Formedible provides comprehensive testing utilities to help you write reliable tests 
-            for your forms, including support for validation, async operations, and multi-page forms.
-          </p>
-        </div>
-
-        <div className="space-y-6">
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">Getting Started</h2>
-            <p className="mb-4">
-              Import the testing utilities from Formedible and create a form tester for your form configuration:
-            </p>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl mx-auto">
+          {/* Header */}
+          <div className="mb-12">
+            <div className="flex items-center gap-4 mb-6">
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/docs">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Docs
+                </Link>
+              </Button>
+            </div>
             
-            <div className="bg-muted p-4 rounded-lg">
-              <h3 className="font-semibold mb-2">Basic Setup</h3>
-              <pre className="text-sm overflow-x-auto">
-{`import { createFormTester } from 'formedible';
+            <div className="text-center mb-8">
+              <Badge variant="secondary" className="mb-4">
+                <TestTube className="w-3 h-3 mr-1" />
+                Testing Forms
+              </Badge>
+              <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-muted-foreground bg-clip-text text-transparent">
+                Comprehensive Testing Utilities
+              </h1>
+              <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+                Formedible provides comprehensive testing utilities to help you write reliable tests 
+                for your forms, including support for validation, async operations, and multi-page forms.
+              </p>
+            </div>
+
+            {/* Feature Pills */}
+            <div className="flex flex-wrap justify-center gap-4 mb-8">
+              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary/8 to-muted-foreground/8 rounded-full border">
+                <TestTube className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium">Test Utilities</span>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary/8 to-muted-foreground/8 rounded-full border">
+                <Play className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium">Jest/Vitest</span>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary/8 to-muted-foreground/8 rounded-full border">
+                <CheckCircle className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium">Assertions</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-12">
+
+            <Card className="overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-muted-foreground/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-primary/8 to-muted-foreground/8 border">
+                    <Play className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Getting Started</CardTitle>
+                    <CardDescription className="text-base">
+                      Import the testing utilities and create a form tester for your form configuration.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                <p className="text-muted-foreground">
+                  Import the testing utilities from Formedible and create a form tester for your form configuration.
+                  The form tester provides a comprehensive API for interacting with and testing your forms.
+                </p>
+                
+                <div>
+                  <h3 className="font-semibold text-lg mb-3">Basic Setup</h3>
+                  <CodeBlock
+                    code={`import { createFormTester } from 'formedible';
 
 const formConfig = {
   fields: [
@@ -51,21 +107,36 @@ test('form validation', async () => {
   // Submit form
   await actions.submitForm();
 });`}
-              </pre>
-            </div>
-          </section>
+                    language="tsx"
+                  />
+                </div>
+              </CardContent>
+            </Card>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">Available Actions</h2>
-            <p className="mb-4">
-              The form tester provides a comprehensive set of actions for interacting with your forms:
-            </p>
-            
-            <div className="space-y-4">
-              <div className="bg-muted p-4 rounded-lg">
-                <h3 className="font-semibold mb-2">Field Interactions</h3>
-                <pre className="text-sm overflow-x-auto">
-{`// Fill individual fields
+            <Card className="overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-muted-foreground/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-primary/8 to-muted-foreground/8 border">
+                    <Settings className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Available Actions</CardTitle>
+                    <CardDescription className="text-base">
+                      Comprehensive set of actions for interacting with your forms during tests.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                <p className="text-muted-foreground">
+                  The form tester provides a comprehensive set of actions for interacting with your forms,
+                  including field manipulation, form submission, and multi-page navigation.
+                </p>
+                
+                <div>
+                  <h3 className="font-semibold text-lg mb-3">Field Interactions</h3>
+                  <CodeBlock
+                    code={`// Fill individual fields
 await actions.fillField('email', 'user@example.com');
 await actions.fillField('age', 25);
 
@@ -79,13 +150,14 @@ await actions.fillFields({
 // Trigger focus and blur events
 await actions.triggerFieldFocus('email');
 await actions.triggerFieldBlur('email');`}
-                </pre>
-              </div>
+                    language="tsx"
+                  />
+                </div>
 
-              <div className="bg-muted p-4 rounded-lg">
-                <h3 className="font-semibold mb-2">Form Actions</h3>
-                <pre className="text-sm overflow-x-auto">
-{`// Submit the form
+                <div>
+                  <h3 className="font-semibold text-lg mb-3">Form Actions</h3>
+                  <CodeBlock
+                    code={`// Submit the form
 await actions.submitForm();
 
 // Reset the form
@@ -94,13 +166,14 @@ await actions.resetForm();
 // Get current form data
 const formData = actions.getFormData();
 console.log(formData); // { email: 'user@example.com', age: 25 }`}
-                </pre>
-              </div>
+                    language="tsx"
+                  />
+                </div>
 
-              <div className="bg-muted p-4 rounded-lg">
-                <h3 className="font-semibold mb-2">Multi-Page Navigation</h3>
-                <pre className="text-sm overflow-x-auto">
-{`// Navigate to specific page
+                <div>
+                  <h3 className="font-semibold text-lg mb-3">Multi-Page Navigation</h3>
+                  <CodeBlock
+                    code={`// Navigate to specific page
 await actions.goToPage(2);
 
 // Navigate using buttons
@@ -109,21 +182,36 @@ await actions.previousPage();
 
 // Check current page
 actions.expectCurrentPage(1);`}
-                </pre>
-              </div>
-            </div>
-          </section>
+                    language="tsx"
+                  />
+                </div>
+              </CardContent>
+            </Card>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">Validation Testing</h2>
-            <p className="mb-4">
-              Test form validation with built-in assertion methods:
-            </p>
-            
-            <div className="bg-muted p-4 rounded-lg">
-              <h3 className="font-semibold mb-2">Validation Assertions</h3>
-              <pre className="text-sm overflow-x-auto">
-{`test('form validation', async () => {
+            <Card className="overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-muted-foreground/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-primary/8 to-muted-foreground/8 border">
+                    <CheckCircle className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Validation Testing</CardTitle>
+                    <CardDescription className="text-base">
+                      Test form validation with built-in assertion methods and expect utilities.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                <p className="text-muted-foreground">
+                  Test form validation with built-in assertion methods that provide clear expectations
+                  for both field-level and form-level validation scenarios.
+                </p>
+                
+                <div>
+                  <h3 className="font-semibold text-lg mb-3">Validation Assertions</h3>
+                  <CodeBlock
+                    code={`test('form validation', async () => {
   const tester = createFormTester({
     fields: [
       { name: 'email', type: 'email', label: 'Email' },
@@ -151,19 +239,36 @@ actions.expectCurrentPage(1);`}
   actions.expectFieldValue('email', 'valid@example.com');
   actions.expectFieldValue('age', '25');
 });`}
-              </pre>
-            </div>
-          </section>
+                    language="tsx"
+                  />
+                </div>
+              </CardContent>
+            </Card>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">Cross-Field Validation Testing</h2>
-            <p className="mb-4">
-              Test cross-field validation scenarios like password confirmation:
-            </p>
-            
-            <div className="bg-muted p-4 rounded-lg">
-              <pre className="text-sm overflow-x-auto">
-{`test('password confirmation validation', async () => {
+            <Card className="overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-muted-foreground/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-primary/8 to-muted-foreground/8 border">
+                    <Shield className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Cross-Field Validation Testing</CardTitle>
+                    <CardDescription className="text-base">
+                      Test cross-field validation scenarios like password confirmation and date ranges.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                <p className="text-muted-foreground">
+                  Test cross-field validation scenarios where one field's validity depends on another field's value,
+                  such as password confirmation or date range validation.
+                </p>
+                
+                <div>
+                  <h3 className="font-semibold text-lg mb-3">Password Confirmation Example</h3>
+                  <CodeBlock
+                    code={`test('password confirmation validation', async () => {
   const tester = createFormTester({
     fields: [
       { name: 'password', type: 'password', label: 'Password' },
@@ -192,19 +297,36 @@ actions.expectCurrentPage(1);`}
   actions.expectNoError('password');
   actions.expectNoError('confirmPassword');
 });`}
-              </pre>
-            </div>
-          </section>
+                    language="tsx"
+                  />
+                </div>
+              </CardContent>
+            </Card>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">Async Validation Testing</h2>
-            <p className="mb-4">
-              Test async validation with proper waiting for completion:
-            </p>
-            
-            <div className="bg-muted p-4 rounded-lg">
-              <pre className="text-sm overflow-x-auto">
-{`test('async username validation', async () => {
+            <Card className="overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-muted-foreground/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-primary/8 to-muted-foreground/8 border">
+                    <Clock className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Async Validation Testing</CardTitle>
+                    <CardDescription className="text-base">
+                      Test async validation with proper waiting for completion and loading states.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                <p className="text-muted-foreground">
+                  Test async validation scenarios like server-side username availability checks
+                  with proper waiting for completion and loading state management.
+                </p>
+                
+                <div>
+                  <h3 className="font-semibold text-lg mb-3">Username Availability Example</h3>
+                  <CodeBlock
+                    code={`test('async username validation', async () => {
   const tester = createFormTester({
     fields: [
       { name: 'username', type: 'text', label: 'Username' },
@@ -235,19 +357,36 @@ actions.expectCurrentPage(1);`}
   
   actions.expectNoError('username');
 });`}
-              </pre>
-            </div>
-          </section>
+                    language="tsx"
+                  />
+                </div>
+              </CardContent>
+            </Card>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">Multi-Page Form Testing</h2>
-            <p className="mb-4">
-              Test multi-page forms with navigation and page-specific validation:
-            </p>
-            
-            <div className="bg-muted p-4 rounded-lg">
-              <pre className="text-sm overflow-x-auto">
-{`test('multi-page form navigation', async () => {
+            <Card className="overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-muted-foreground/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-primary/8 to-muted-foreground/8 border">
+                    <FileStack className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Multi-Page Form Testing</CardTitle>
+                    <CardDescription className="text-base">
+                      Test multi-page forms with navigation, data persistence, and page-specific validation.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                <p className="text-muted-foreground">
+                  Test multi-page forms with navigation controls, ensuring data persists across pages
+                  and page-specific validation works correctly throughout the user journey.
+                </p>
+                
+                <div>
+                  <h3 className="font-semibold text-lg mb-3">Multi-Page Navigation Example</h3>
+                  <CodeBlock
+                    code={`test('multi-page form navigation', async () => {
   const tester = createFormTester({
     fields: [
       { name: 'firstName', type: 'text', label: 'First Name', page: 1 },
@@ -286,20 +425,36 @@ actions.expectCurrentPage(1);`}
   await actions.nextPage();
   await actions.submitForm();
 });`}
-              </pre>
-            </div>
-          </section>
+                    language="tsx"
+                  />
+                </div>
+              </CardContent>
+            </Card>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">Jest/Vitest Matchers</h2>
-            <p className="mb-4">
-              Use custom matchers for more readable test assertions:
-            </p>
-            
-            <div className="bg-muted p-4 rounded-lg">
-              <h3 className="font-semibold mb-2">Setup Matchers</h3>
-              <pre className="text-sm overflow-x-auto">
-{`// In your test setup file
+            <Card className="overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-muted-foreground/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-primary/8 to-muted-foreground/8 border">
+                    <Play className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Jest/Vitest Matchers</CardTitle>
+                    <CardDescription className="text-base">
+                      Use custom matchers for more readable and expressive test assertions.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                <p className="text-muted-foreground">
+                  Formedible provides custom Jest/Vitest matchers that make your test assertions
+                  more readable and expressive, improving test maintainability.
+                </p>
+                
+                <div>
+                  <h3 className="font-semibold text-lg mb-3">Setup Custom Matchers</h3>
+                  <CodeBlock
+                    code={`// In your test setup file
 import { formMatchers } from 'formedible';
 
 expect.extend(formMatchers);
@@ -316,19 +471,36 @@ test('form validation with matchers', async () => {
   
   expect(tester).toBeValid();
 });`}
-              </pre>
-            </div>
-          </section>
+                    language="tsx"
+                  />
+                </div>
+              </CardContent>
+            </Card>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">Testing with React Testing Library</h2>
-            <p className="mb-4">
-              Integrate Formedible testing utilities with React Testing Library:
-            </p>
-            
-            <div className="bg-muted p-4 rounded-lg">
-              <pre className="text-sm overflow-x-auto">
-{`import { render, screen } from '@testing-library/react';
+            <Card className="overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-muted-foreground/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-primary/8 to-muted-foreground/8 border">
+                    <TestTube className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Testing with React Testing Library</CardTitle>
+                    <CardDescription className="text-base">
+                      Integrate Formedible testing utilities with React Testing Library for complete testing.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                <p className="text-muted-foreground">
+                  Combine Formedible's form testing utilities with React Testing Library
+                  for comprehensive component and integration testing.
+                </p>
+                
+                <div>
+                  <h3 className="font-semibold text-lg mb-3">Component Integration Example</h3>
+                  <CodeBlock
+                    code={`import { render, screen } from '@testing-library/react';
 import { createFormTester } from 'formedible';
 import MyFormComponent from './MyFormComponent';
 
@@ -349,52 +521,83 @@ test('form component integration', async () => {
   // Use RTL assertions alongside Formedible
   expect(screen.getByText('Form submitted successfully')).toBeInTheDocument();
 });`}
-              </pre>
-            </div>
-          </section>
+                    language="tsx"
+                  />
+                </div>
+              </CardContent>
+            </Card>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">Best Practices</h2>
-            <div className="space-y-4">
-              <div className="border-l-4 border-primary pl-4">
-                <h3 className="font-semibold">Test User Flows</h3>
-                <p className="text-sm text-muted-foreground">
-                  Test complete user journeys, not just individual field validation.
-                </p>
-              </div>
-              
-              <div className="border-l-4 border-accent pl-4">
-                <h3 className="font-semibold">Async Operations</h3>
-                <p className="text-sm text-muted-foreground">
-                  Always wait for async validation to complete before making assertions.
-                </p>
-              </div>
-              
-              <div className="border-l-4 border-secondary pl-4">
-                <h3 className="font-semibold">Error Scenarios</h3>
-                <p className="text-sm text-muted-foreground">
-                  Test both success and error scenarios to ensure robust error handling.
-                </p>
-              </div>
-              
-              <div className="border-l-4 border-muted pl-4">
-                <h3 className="font-semibold">Isolation</h3>
-                <p className="text-sm text-muted-foreground">
-                  Keep tests isolated and independent to avoid test interference.
-                </p>
-              </div>
-            </div>
-          </section>
+            <Card className="overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-muted-foreground/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-primary/8 to-muted-foreground/8 border">
+                    <CheckCircle className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Best Practices</CardTitle>
+                    <CardDescription className="text-base">
+                      Guidelines for effective form testing and maintainable test suites.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <div className="border-l-4 border-primary pl-4">
+                    <h3 className="font-semibold">Test User Flows</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Test complete user journeys, not just individual field validation.
+                    </p>
+                  </div>
+                  
+                  <div className="border-l-4 border-accent pl-4">
+                    <h3 className="font-semibold">Async Operations</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Always wait for async validation to complete before making assertions.
+                    </p>
+                  </div>
+                  
+                  <div className="border-l-4 border-secondary pl-4">
+                    <h3 className="font-semibold">Error Scenarios</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Test both success and error scenarios to ensure robust error handling.
+                    </p>
+                  </div>
+                  
+                  <div className="border-l-4 border-muted pl-4">
+                    <h3 className="font-semibold">Isolation</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Keep tests isolated and independent to avoid test interference.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-          <section>
-            <h2 className="text-2xl font-semibold mb-4">Example Test Suite</h2>
-            <p className="mb-4">
-              Here's a complete example of testing a registration form:
-            </p>
-            
-            <div className="bg-muted p-4 rounded-lg">
-              <pre className="text-sm overflow-x-auto">
-{`describe('Registration Form', () => {
+            <Card className="overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-primary/5 to-muted-foreground/5">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-gradient-to-br from-primary/8 to-muted-foreground/8 border">
+                    <Users className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl">Complete Test Suite Example</CardTitle>
+                    <CardDescription className="text-base">
+                      A comprehensive example of testing a registration form with all features.
+                    </CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                <p className="text-muted-foreground">
+                  Here's a complete example of testing a registration form that demonstrates
+                  all the testing capabilities including async validation, cross-field validation, and error scenarios.
+                </p>
+                
+                <div>
+                  <h3 className="font-semibold text-lg mb-3">Registration Form Test Suite</h3>
+                  <CodeBlock
+                    code={`describe('Registration Form', () => {
   const formConfig = {
     fields: [
       { name: 'username', type: 'text', label: 'Username' },
@@ -456,9 +659,37 @@ test('form component integration', async () => {
     actions.expectInvalid();
   });
 });`}
-              </pre>
+                    language="tsx"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Ready to Build */}
+          <div className="mt-16">
+            <div className="bg-gradient-to-r from-primary/5 to-muted-foreground/5 p-8 rounded-xl border text-center">
+              <h3 className="text-2xl font-bold mb-4">
+                Ready to Build Rock-Solid Forms?
+              </h3>
+              <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
+                Start testing your forms with confidence using Formedible's comprehensive testing utilities. 
+                Build reliable, well-tested forms that your users and team can depend on.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button size="lg" asChild>
+                  <Link href="/docs/getting-started">
+                    Get Started
+                  </Link>
+                </Button>
+                <Button variant="outline" size="lg" asChild>
+                  <Link href="/docs/examples">
+                    View Examples
+                  </Link>
+                </Button>
+              </div>
             </div>
-          </section>
+          </div>
         </div>
       </div>
     </div>

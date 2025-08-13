@@ -187,6 +187,63 @@ export function RegistrationWizard() {
 }
 ```
 
+### 2.1. **Enhanced Slider Field with Custom Visualizations**
+
+The slider field now supports sophisticated custom visualizations that users can click to select values:
+
+```tsx
+const ratingForm = useFormedible({
+  fields: [
+    {
+      name: "energyRating",
+      type: "slider",
+      label: "Energy Efficiency Rating",
+      sliderConfig: {
+        min: 1,
+        max: 7,
+        step: 1,
+        valueMapping: [
+          { sliderValue: 1, displayValue: "A", label: "Excellent" },
+          { sliderValue: 2, displayValue: "B", label: "Very Good" },
+          { sliderValue: 3, displayValue: "C", label: "Good" },
+          { sliderValue: 4, displayValue: "D", label: "Fair" },
+          { sliderValue: 5, displayValue: "E", label: "Poor" },
+          { sliderValue: 6, displayValue: "F", label: "Very Poor" },
+          { sliderValue: 7, displayValue: "G", label: "Terrible" },
+        ],
+        visualizationComponent: EnergyRatingComponent, // Custom React component
+        showValue: true,
+        gradientColors: {
+          start: "#22c55e", // Green
+          end: "#ef4444",   // Red
+        },
+      },
+    },
+  ],
+});
+
+// Custom visualization component
+const EnergyRatingComponent: React.FC<{
+  value: number;
+  displayValue: string | number;
+  label?: string;
+  isActive: boolean;
+}> = ({ value, displayValue, label, isActive }) => (
+  <div className={`energy-badge ${isActive ? 'active' : ''}`}>
+    <div className="rating-letter">{displayValue}</div>
+    <div className="rating-label">{label}</div>
+  </div>
+);
+```
+
+**Enhanced Slider Features:**
+- **🎯 Click-to-Select**: Click any visualization to instantly set that value
+- **⌨️ Keyboard Accessible**: Full keyboard navigation support
+- **🎨 Custom Components**: Rich visualization components with animations
+- **🌈 Dynamic Gradients**: Color-coded slider tracks based on current value
+- **📍 Value Indicators**: Floating tooltips that follow the slider thumb
+- **🔗 Visual Connections**: Connecting lines between visualizations and slider
+
 ## 🎨 Complete Field Types Reference
 
 | Field Type | Component | Description | Special Features |
@@ -200,7 +257,7 @@ export function RegistrationWizard() {
 | `checkbox` | `CheckboxField` | Boolean checkbox input | Custom styling, indeterminate state |
 | `switch` | `SwitchField` | Toggle switch | Smooth animations, custom labels |
 | `radio` | `RadioField` | Radio button group | Horizontal/vertical layout, custom styling |
-| `slider` | `SliderField` | Range slider input | Min/max, step, marks, tooltips, dual handles |
+| `slider` | `SliderField` | Interactive range slider | Min/max, step, marks, tooltips, custom visualizations, click-to-select |
 | `rating` | `RatingField` | Star rating component | Half stars, custom icons (star/heart/thumb), sizes |
 | `phone` | `PhoneField` | International phone input | Country selection, format validation, auto-format |
 | `colorPicker` | `ColorPickerField` | Color picker with preview | HEX/RGB/HSL formats, preset colors, custom palette |
@@ -407,44 +464,130 @@ const signupForm = useFormedible({
 });
 ```
 
-### 4. **Form Analytics & User Behavior Tracking**
+### 4. **Advanced Form Analytics & User Behavior Tracking**
+
+Formedible provides comprehensive analytics to understand user behavior and optimize form performance:
 
 ```tsx
 const analyticsForm = useFormedible({
   analytics: {
+    // Form lifecycle events
     onFormStart: (timestamp) => {
-      // Track form initiation
+      // Track form initiation - only fires once per session
       analytics.track("form_started", { timestamp, formId: "contact" });
     },
     
+    onFormComplete: (timeSpent, formData) => {
+      // Track successful submissions with rich context
+      analytics.track("form_completed", { 
+        timeSpent, 
+        fieldCount: Object.keys(formData).length,
+        conversionTime: timeSpent
+      });
+    },
+    
+    onFormAbandon: (completionPercentage, context) => {
+      // Track form abandonment - FIXED: Only fires on actual page leave, not navigation
+      analytics.track("form_abandoned", { 
+        completionPercentage,
+        currentPage: context.currentPage,
+        currentTab: context.currentTab,
+        lastActiveField: context.lastActiveField
+      });
+    },
+    
+    // Field interaction tracking
     onFieldFocus: (fieldName, timestamp) => {
-      // Track field interactions
+      // Track field interactions for user journey analysis
       analytics.track("field_focused", { fieldName, timestamp });
     },
     
     onFieldBlur: (fieldName, timeSpent) => {
-      // Track time spent on fields
+      // Track time spent on fields for UX optimization
       analytics.track("field_completed", { fieldName, timeSpent });
     },
     
-    onPageChange: (fromPage, toPage, timeSpent) => {
-      // Track multi-page navigation
-      analytics.track("page_changed", { fromPage, toPage, timeSpent });
+    onFieldChange: (fieldName, value, timestamp) => {
+      // Track field value changes (be mindful of PII)
+      analytics.track("field_changed", { 
+        fieldName, 
+        hasValue: !!value,
+        timestamp 
+      });
     },
     
-    onFormAbandon: (completionPercentage) => {
-      // Track form abandonment
-      analytics.track("form_abandoned", { completionPercentage });
+    onFieldError: (fieldName, errors, timestamp) => {
+      // Track validation errors for form optimization
+      analytics.track("field_error", { 
+        fieldName, 
+        errorCount: errors.length,
+        firstError: errors[0],
+        timestamp 
+      });
     },
     
-    onFormComplete: (timeSpent, formData) => {
-      // Track successful submissions
-      analytics.track("form_completed", { timeSpent, fieldCount: Object.keys(formData).length });
+    onFieldComplete: (fieldName, isValid, timeSpent) => {
+      // Track successful field completion
+      analytics.track("field_complete", { 
+        fieldName, 
+        isValid, 
+        timeSpent 
+      });
     },
+    
+    // Multi-page form tracking
+    onPageChange: (fromPage, toPage, timeSpent, pageContext) => {
+      // Track multi-page navigation with rich context
+      analytics.track("page_changed", { 
+        fromPage, 
+        toPage, 
+        timeSpent,
+        hasErrors: pageContext.hasErrors,
+        completionPercentage: pageContext.completionPercentage
+      });
+    },
+    
+    // Tab-based form tracking
+    onTabChange: (fromTab, toTab, timeSpent, tabContext) => {
+      // Track tab navigation in tabbed forms
+      analytics.track("tab_changed", { 
+        fromTab, 
+        toTab, 
+        timeSpent,
+        completionPercentage: tabContext.completionPercentage,
+        hasErrors: tabContext.hasErrors
+      });
+    },
+    
+    onTabFirstVisit: (tabId, timestamp) => {
+      // Track first-time tab visits
+      analytics.track("tab_first_visit", { tabId, timestamp });
+    },
+    
+    // Performance tracking
+    onSubmissionPerformance: (totalTime, validationTime, processingTime) => {
+      // Track form performance metrics
+      analytics.track("form_performance", {
+        totalTime,
+        validationTime,
+        processingTime,
+        efficiency: (processingTime / totalTime) * 100
+      });
+    }
   },
   // ... rest of config
 });
 ```
+
+**Key Analytics Features:**
+
+- **🔄 Fixed Abandonment Tracking**: No longer triggers on page navigation within forms
+- **📊 Rich Context**: All events include relevant metadata and timing information
+- **🎯 Field-Level Insights**: Track user behavior at the individual field level
+- **⏱️ Performance Metrics**: Monitor form rendering and submission performance
+- **🛣️ User Journey Mapping**: Understand how users navigate through complex forms
+- **🔍 Error Analytics**: Identify problematic fields and validation issues
+- **📈 Conversion Optimization**: Data-driven insights for form improvement
 
 ### 5. **Form Persistence & Auto-Save**
 

@@ -4,6 +4,7 @@ import React from "react";
 import { useFormedible } from "@/hooks/use-formedible";
 import { z } from "zod";
 import { toast } from "sonner";
+import { EnergyRatingComponent } from "@/components/examples/energy-rating-component";
 
 export const advancedFieldTypesSchema = z.object({
   satisfaction: z.number().min(1).max(5),
@@ -38,34 +39,33 @@ export const advancedFieldTypesSchema = z.object({
   overallRating: z.number().min(1).max(5),
 });
 
-// Energy Rating Visualization Component
-const EnergyRatingComponent: React.FC<{
+// Enhanced Energy Rating Visualization Component (using imported component)
+const LocalEnergyRatingComponent: React.FC<{
   value: number;
   displayValue: string | number;
   label?: string;
   isActive: boolean;
-}> = ({ value, displayValue, label, isActive }) => (
-  <div
-    className={`flex flex-col items-center p-2 rounded-lg transition-all ${
-      isActive
-        ? "bg-primary text-primary-foreground scale-110"
-        : "bg-muted text-muted-foreground hover:bg-muted/80"
-    }`}
-  >
-    <div
-      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-        value <= 2
-          ? "bg-red-500"
-          : value <= 3
-          ? "bg-yellow-500"
-          : "bg-green-500"
-      }`}
-    >
-      {displayValue}
-    </div>
-    {label && <span className="text-xs mt-1">{label}</span>}
-  </div>
-);
+}> = ({ value, displayValue, label, isActive }) => {
+  // Map numeric values to letter ratings for the DPE component
+  const mapValueToRating = (numValue: number): string => {
+    switch (numValue) {
+      case 1: return 'G';
+      case 2: return 'F';
+      case 3: return 'D';
+      case 4: return 'B';
+      case 5: return 'A';
+      default: return 'D';
+    }
+  };
+
+  return (
+    <EnergyRatingComponent
+      displayValue={mapValueToRating(value)}
+      isActive={isActive}
+      colorScheme="dpe"
+    />
+  );
+};
 
 export const advancedFieldTypesFormCode = `const advancedFieldTypesSchema = z.object({
   satisfaction: z.number().min(1).max(5),
@@ -314,7 +314,7 @@ const advancedFieldTypesForm = useFormedible({
           { sliderValue: 4, displayValue: "B", label: "Very Good" },
           { sliderValue: 5, displayValue: "A", label: "Excellent" },
         ],
-        visualizationComponent: EnergyRatingComponent,
+        visualizationComponent: LocalEnergyRatingComponent,
         showValue: true,
       },
     },
@@ -635,7 +635,7 @@ export function AdvancedFieldTypesFormExample() {
             { sliderValue: 4, displayValue: "B", label: "Very Good" },
             { sliderValue: 5, displayValue: "A", label: "Excellent" },
           ],
-          visualizationComponent: EnergyRatingComponent,
+          visualizationComponent: LocalEnergyRatingComponent,
           showValue: true,
         },
       },
