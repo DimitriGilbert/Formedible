@@ -1,17 +1,16 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Highlight } from "prism-react-renderer";
+import React, { useState } from "react";
+import { Highlight, themes } from "prism-react-renderer";
 import { motion, AnimatePresence } from "motion/react";
 import { Copy, Check } from "lucide-react";
 import { toast } from "sonner";
-import { useTheme } from "next-themes";
 
 /**
  * Unified CodeBlock component with syntax highlighting, copy functionality, and package manager tabs
- *
+ * 
  * Features:
- * - Syntax highlighting using Prism.js with Gruvbox theme (light/dark)
+ * - Syntax highlighting using Prism.js with oneDark theme
  * - Floating copy button with animation feedback
  * - Optional line numbers
  * - Package manager tabs for installation commands (npx, pnpm, yarn, bunx)
@@ -79,9 +78,6 @@ const CopyButton: React.FC<{ text: string; className?: string }> = ({
   );
 };
 
-// Empty theme to allow external CSS themes
-const emptyTheme = { plain: {}, styles: [] };
-
 export const CodeBlock: React.FC<CodeBlockProps> = ({
   code,
   language = "tsx",
@@ -92,45 +88,15 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
   title,
 }) => {
   const [selectedPM, setSelectedPM] = useState("npx");
-  const { theme } = useTheme();
-
-  useEffect(() => {
-    // Load Gruvbox theme CSS based on current theme
-    const existingLink = document.querySelector('link[data-prism-theme]');
-    if (existingLink) {
-      existingLink.remove();
-    }
-
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.setAttribute('data-prism-theme', 'true');
-    
-    if (theme === 'light') {
-      link.href = 'https://cdnjs.cloudflare.com/ajax/libs/prism-themes/1.9.0/prism-gruvbox-light.min.css';
-    } else {
-      link.href = 'https://cdnjs.cloudflare.com/ajax/libs/prism-themes/1.9.0/prism-gruvbox-dark.min.css';
-    }
-    
-    document.head.appendChild(link);
-
-    return () => {
-      const linkToRemove = document.querySelector('link[data-prism-theme]');
-      if (linkToRemove) {
-        linkToRemove.remove();
-      }
-    };
-  }, [theme]);
-
+  
   const packageManagers = {
     npx: code,
     pnpm: code.replace("npx shadcn@latest", "pnpm dlx shadcn@latest"),
     yarn: code.replace("npx shadcn@latest", "yarn dlx shadcn@latest"),
-    bunx: code.replace("npx shadcn@latest", "bun x shadcn@latest"),
+    bunx: code.replace("npx shadcn@latest", "bunx --bun shadcn@latest"),
   };
 
-  const currentCode = showPackageManagerTabs
-    ? packageManagers[selectedPM as keyof typeof packageManagers]
-    : code;
+  const currentCode = showPackageManagerTabs ? packageManagers[selectedPM as keyof typeof packageManagers] : code;
 
   return (
     <div className={`relative ${className}`}>
@@ -139,7 +105,7 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
           {title}
         </div>
       )}
-
+      
       {showPackageManagerTabs && (
         <div className="flex gap-1 mb-2">
           {Object.keys(packageManagers).map((pm) => (
@@ -157,36 +123,24 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
           ))}
         </div>
       )}
-
+      
       <div className="relative group">
         <Highlight
-          theme={emptyTheme}
+          theme={themes.oneDark}
           code={currentCode.trim()}
           language={language as any}
         >
-          {({
-            className: highlightClassName,
-            style,
-            tokens,
-            getLineProps,
-            getTokenProps,
-          }) => (
-            <pre
+          {({ className: highlightClassName, style, tokens, getLineProps, getTokenProps }) => (
+            <pre 
               className={`${highlightClassName} p-4 rounded-lg font-mono text-sm overflow-x-auto ${
-                showPackageManagerTabs ? "rounded-tl-none" : ""
-              } ${title ? "rounded-t-none" : ""}`}
+                showPackageManagerTabs ? 'rounded-tl-none' : ''
+              } ${title ? 'rounded-t-none' : ''}`}
               style={style}
             >
               {tokens.map((line, i) => (
-                <div
-                  key={i}
-                  {...getLineProps({ line })}
-                  className={showLineNumbers ? "table-row" : ""}
-                >
+                <div key={i} {...getLineProps({ line })} className={showLineNumbers ? "table-row" : ""}>
                   {showLineNumbers && (
-                    <span className="table-cell text-right pr-4 text-muted-foreground select-none text-xs">
-                      {" "}
-                      {i + 1}
+                     <span className="table-cell text-right pr-4 text-muted-foreground select-none text-xs">                      {i + 1}
                     </span>
                   )}
                   <span className={showLineNumbers ? "table-cell" : ""}>
@@ -199,7 +153,7 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
             </pre>
           )}
         </Highlight>
-
+        
         {showCopyButton && (
           <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
             <CopyButton text={currentCode} />
