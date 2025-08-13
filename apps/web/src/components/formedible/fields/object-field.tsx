@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { BaseFieldProps, ObjectFieldProps } from "@/lib/formedible/types";
+import type { BaseFieldProps, ObjectFieldProps, LayoutConfig } from "@/lib/formedible/types";
 import { FieldWrapper } from './base-field-wrapper';
 import { NestedFieldRenderer } from './shared-field-renderer';
 
@@ -58,7 +58,7 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
   };
 
   const getLayoutClasses = () => {
-    const layout = objectConfig?.layout || "vertical";
+    const layout: LayoutConfig["type"] = objectConfig?.layout || "vertical";
     const columns = objectConfig?.columns || 2;
     
     switch (layout) {

@@ -32,3 +32,4 @@
 
 ## formedible work
 - Always work on the package first then `npm run sync-components` to sync the changes to the web app.
+- NEVER RUN THE DEV SERVER ! npm run dev IS COMPLETELLY OFF LIMIT ! NEVER npm run dev ! NEVER NEVER NVER !
