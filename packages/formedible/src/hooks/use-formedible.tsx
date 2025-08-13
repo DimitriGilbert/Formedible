@@ -17,6 +17,10 @@ import type {
   SectionRendererProps,
   LayoutConfig,
   FormGridProps,
+  TabAnalyticsState,
+  PageAnalyticsState,
+  AnalyticsContext,
+  PerformanceMetrics,
 } from "@/lib/formedible/types";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -87,13 +91,11 @@ const ConditionalFieldsSubscription = <
 
 // TanStack Form Best Practice: Individual field conditional renderer
 
-const FieldConditionalRenderer = <
-  TFormValues extends Record<string, unknown> = Record<string, unknown>
->({
+const FieldConditionalRenderer = ({
   form,
   fieldConfig,
   children,
-}: FieldConditionalRendererProps<TFormValues>) => {
+}: FieldConditionalRendererProps) => {
   const { conditional } = fieldConfig;
 
   // If no conditional logic, always render
@@ -412,9 +414,35 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
   const [asyncValidationStates, setAsyncValidationStates] = useState<
     Record<string, { loading: boolean; error?: string }>
   >({});
-  const formStartTime = React.useRef<number>(Date.now());
+
+  // Enhanced analytics state management
+  const analyticsContextRef = React.useRef<AnalyticsContext>({
+    sessionId: `session_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`,
+    formId: `form_${Date.now()}`,
+    userId: undefined,
+    startTime: Date.now(),
+    pageStates: {},
+    tabStates: {},
+    performanceMetrics: {
+      renderCount: 0,
+      lastRenderTime: 0,
+      averageRenderTime: 0,
+      validationDurations: {},
+      submissionMetrics: {
+        totalTime: 0,
+        validationTime: 0,
+        processingTime: 0,
+      },
+    },
+    fieldInteractions: {},
+  });
+  
+  // Legacy refs for backward compatibility
+  const formStartTime = React.useRef<number>(analyticsContextRef.current.startTime);
   const fieldFocusTimes = React.useRef<Record<string, number>>({});
   const pageStartTime = React.useRef<number>(Date.now());
+  const tabStartTime = React.useRef<Record<string, number>>({});
+  const tabVisitHistory = React.useRef<Set<string>>(new Set());
 
   // Combine default components with user overrides
   const fieldComponents = { ...defaultFieldComponents, ...defaultComponents };
@@ -615,10 +643,36 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
             throw new Error("Cross-field validation failed");
           }
 
-          // Call analytics if provided
-          if (analytics?.onFormComplete) {
-            const timeSpent = Date.now() - formStartTime.current;
-            analytics.onFormComplete(timeSpent, props.value);
+          // Enhanced analytics tracking for form completion
+          if (analytics) {
+            const context = analyticsContextRef.current;
+            const timeSpent = Date.now() - context.startTime;
+            
+            // Track submission performance
+            const submissionStartTime = Date.now();
+            
+            // Update performance metrics
+            context.performanceMetrics.submissionMetrics.totalTime = timeSpent;
+            
+            // Call enhanced completion analytics
+            analytics.onFormComplete?.(timeSpent, props.value);
+            
+            // Track submission performance when promise resolves
+            const originalOnSubmit = formOptions.onSubmit;
+            if (originalOnSubmit) {
+              const submissionPromise = originalOnSubmit(props);
+              if (submissionPromise instanceof Promise) {
+                submissionPromise.finally(() => {
+                  const processingTime = Date.now() - submissionStartTime;
+                  context.performanceMetrics.submissionMetrics.processingTime = processingTime;
+                  analytics.onSubmissionPerformance?.(
+                    timeSpent,
+                    context.performanceMetrics.submissionMetrics.validationTime,
+                    processingTime
+                  );
+                });
+              }
+            }
           }
 
           let result: unknown;
@@ -644,6 +698,182 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
   React.useEffect(() => {
     formRef.current = form;
   }, [form]);
+
+  // Enhanced analytics helper functions with performance optimization
+  const trackFieldInteraction = React.useCallback((
+    fieldName: string, 
+    action: 'focus' | 'blur' | 'change' | 'error' | 'complete',
+    additionalData?: { timeSpent?: number; value?: unknown; errors?: string[]; isValid?: boolean }
+  ) => {
+    const context = analyticsContextRef.current;
+    const timestamp = Date.now();
+    
+    // Initialize field tracking if not exists
+    if (!context.fieldInteractions[fieldName]) {
+      context.fieldInteractions[fieldName] = {
+        focusCount: 0,
+        totalTimeSpent: 0,
+        changeCount: 0,
+        errorCount: 0,
+        isCompleted: false,
+      };
+    }
+    
+    const fieldData = context.fieldInteractions[fieldName];
+    
+    switch (action) {
+      case 'focus':
+        fieldData.focusCount++;
+        fieldFocusTimes.current[fieldName] = timestamp;
+        analytics?.onFieldFocus?.(fieldName, timestamp);
+        break;
+        
+      case 'blur':
+        if (additionalData?.timeSpent !== undefined) {
+          fieldData.totalTimeSpent += additionalData.timeSpent;
+          analytics?.onFieldBlur?.(fieldName, additionalData.timeSpent);
+        }
+        break;
+        
+      case 'change':
+        fieldData.changeCount++;
+        analytics?.onFieldChange?.(fieldName, additionalData?.value, timestamp);
+        break;
+        
+      case 'error':
+        if (additionalData?.errors?.length) {
+          fieldData.errorCount++;
+          analytics?.onFieldError?.(fieldName, additionalData.errors, timestamp);
+        }
+        break;
+        
+      case 'complete':
+        if (additionalData?.isValid !== undefined && additionalData?.timeSpent !== undefined) {
+          fieldData.isCompleted = additionalData.isValid;
+          analytics?.onFieldComplete?.(fieldName, additionalData.isValid, additionalData.timeSpent);
+        }
+        break;
+    }
+  }, [analytics]);
+
+  const trackTabChange = React.useCallback((fromTab: string, toTab: string) => {
+    const context = analyticsContextRef.current;
+    const timestamp = Date.now();
+    const timeSpent = tabStartTime.current[fromTab] ? timestamp - tabStartTime.current[fromTab] : 0;
+    
+    // Track tab visit
+    if (!tabVisitHistory.current.has(toTab)) {
+      tabVisitHistory.current.add(toTab);
+      analytics?.onTabFirstVisit?.(toTab, timestamp);
+    }
+    
+    // Initialize tab states if not exists
+    if (!context.tabStates[fromTab]) {
+      context.tabStates[fromTab] = {
+        tabId: fromTab,
+        startTime: tabStartTime.current[fromTab] || timestamp,
+        visitCount: 0,
+        fieldsCompleted: 0,
+        totalFields: 0,
+        hasErrors: false,
+        completionPercentage: 0,
+      };
+    }
+    
+    if (!context.tabStates[toTab]) {
+      context.tabStates[toTab] = {
+        tabId: toTab,
+        startTime: timestamp,
+        visitCount: 0,
+        fieldsCompleted: 0,
+        totalFields: 0,
+        hasErrors: false,
+        completionPercentage: 0,
+      };
+    }
+    
+    // Update tab states
+    const fromTabState = context.tabStates[fromTab];
+    const toTabState = context.tabStates[toTab];
+    
+    toTabState.visitCount++;
+    tabStartTime.current[toTab] = timestamp;
+    
+    // Calculate completion state for from tab
+    const tabFields = fieldsByTab[fromTab] || [];
+    fromTabState.totalFields = tabFields.length;
+    fromTabState.fieldsCompleted = tabFields.filter(field => 
+      context.fieldInteractions[field.name]?.isCompleted
+    ).length;
+    fromTabState.completionPercentage = fromTabState.totalFields > 0 
+      ? (fromTabState.fieldsCompleted / fromTabState.totalFields) * 100 
+      : 0;
+    
+    // Check for validation errors in from tab
+    const formState = form.state;
+    fromTabState.hasErrors = tabFields.some(field => {
+      const fieldState = formState.fieldMeta[field.name as keyof typeof formState.fieldMeta];
+      return fieldState && fieldState.errors && fieldState.errors.length > 0;
+    });
+    
+    analytics?.onTabChange?.(fromTab, toTab, timeSpent, {
+      completionPercentage: fromTabState.completionPercentage,
+      hasErrors: fromTabState.hasErrors,
+    });
+  }, [analytics, fieldsByTab, form]);
+
+  const trackPageChange = React.useCallback((fromPage: number, toPage: number) => {
+    const context = analyticsContextRef.current;
+    const timestamp = Date.now();
+    const timeSpent = timestamp - pageStartTime.current;
+    
+    // Initialize page states if not exists
+    if (!context.pageStates[fromPage]) {
+      context.pageStates[fromPage] = {
+        pageNumber: fromPage,
+        startTime: pageStartTime.current,
+        visitCount: 0,
+        fieldsCompleted: 0,
+        totalFields: 0,
+        hasErrors: false,
+        completionPercentage: 0,
+        validationErrors: {},
+        lastActiveField: undefined,
+      };
+    }
+    
+    const pageState = context.pageStates[fromPage];
+    const pageFields = fieldsByPage[fromPage] || [];
+    
+    // Update page completion metrics
+    pageState.totalFields = pageFields.length;
+    pageState.fieldsCompleted = pageFields.filter(field => 
+      context.fieldInteractions[field.name]?.isCompleted
+    ).length;
+    pageState.completionPercentage = pageState.totalFields > 0 
+      ? (pageState.fieldsCompleted / pageState.totalFields) * 100 
+      : 0;
+    
+    // Check for validation errors
+    const formState = form.state;
+    const validationErrors: Record<string, string[]> = {};
+    pageState.hasErrors = pageFields.some(field => {
+      const fieldState = formState.fieldMeta[field.name as keyof typeof formState.fieldMeta];
+      const hasErrors = fieldState && fieldState.errors && fieldState.errors.length > 0;
+      if (hasErrors) {
+        validationErrors[field.name] = fieldState.errors;
+      }
+      return hasErrors;
+    });
+    pageState.validationErrors = validationErrors;
+    
+    pageStartTime.current = timestamp;
+    
+    analytics?.onPageChange?.(fromPage, toPage, timeSpent, {
+      hasErrors: pageState.hasErrors,
+      completionPercentage: pageState.completionPercentage,
+    });
+  }, [analytics, fieldsByPage, form]);
 
   // Track visible pages using a ref to avoid circular dependencies
   const visiblePagesRef = React.useRef<number[]>(
@@ -788,9 +1018,9 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     let onChangeTimeout: ReturnType<typeof setTimeout>;
     let onBlurTimeout: ReturnType<typeof setTimeout>;
 
-    // Call analytics onFormStart if provided
+    // Enhanced form start analytics
     if (analytics?.onFormStart) {
-      analytics.onFormStart(formStartTime.current);
+      analytics.onFormStart(analyticsContextRef.current.startTime);
     }
 
     if (
@@ -839,81 +1069,91 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
       unsubscribers.push(unsubscribe);
     }
 
-    // Set up onBlur event listener and analytics tracking
-    if (formOptions?.onBlur || analytics) {
-      let lastFocusedField: string | null = null;
-
-      const handleBlur = (event: FocusEvent) => {
-        const target = event.target;
-        if (!target) return "";
-        const fieldName = (target as HTMLElement).getAttribute("name") || "";
-
-        if (fieldName && lastFocusedField === fieldName) {
-          // Analytics tracking
-          if (analytics?.onFieldBlur && fieldFocusTimes.current[fieldName]) {
-            const timeSpent = Date.now() - fieldFocusTimes.current[fieldName];
-            analytics.onFieldBlur(fieldName, timeSpent);
+    // Enhanced analytics using TanStack Form subscriptions instead of document event listeners
+    if (analytics) {
+      // Subscribe to form state changes for field validation analytics
+      const fieldValidationUnsubscribe = form.store.subscribe(() => {
+        const formState = form.state;
+        const fieldMeta = formState.fieldMeta;
+        
+        // Track field validation errors
+        Object.entries(fieldMeta).forEach(([fieldName, meta]) => {
+          if (meta && typeof meta === 'object' && 'errors' in meta && Array.isArray(meta.errors) && meta.errors.length > 0) {
+            trackFieldInteraction(fieldName, 'error', { errors: meta.errors });
           }
-
-          // User's onBlur handler
-          if (formOptions?.onBlur) {
-            clearTimeout(onBlurTimeout);
-            onBlurTimeout = setTimeout(() => {
-              if (!formOptions.onBlur) return;
-              const formApi = form;
-              const values = formApi.state.values;
-              formOptions.onBlur({ value: values as TFormValues, formApi });
-            }, 100); // 100ms debounce for blur
-          }
-        }
-      };
-
-      const handleFocus = (event: FocusEvent) => {
-        const target = event.target;
-        if (!target) return "";
-        const fieldName = (target as HTMLElement).getAttribute("name") || "";
-        lastFocusedField = fieldName;
-
-        // Analytics tracking
-        if (fieldName && analytics?.onFieldFocus) {
-          const timestamp = Date.now();
-          fieldFocusTimes.current[fieldName] = timestamp;
-          analytics.onFieldFocus(fieldName, timestamp);
-        }
-      };
-
-      const handleChange = (event: Event) => {
-        const target = event.target;
-        if (!target) return "";
-        const fieldName = (target as HTMLElement).getAttribute("name") || "";
-
-        if (fieldName && analytics?.onFieldChange) {
-          const value = (target as HTMLInputElement).value;
-          analytics.onFieldChange(fieldName, value, Date.now());
-
-          // Trigger async validation if configured
-          if (asyncValidation[fieldName]) {
-            validateFieldAsync(fieldName, value);
-          }
-        }
-      };
-
-      // Add event listeners to document for blur/focus/change events
-      document.addEventListener("blur", handleBlur, true);
-      document.addEventListener("focus", handleFocus, true);
-      document.addEventListener("change", handleChange, true);
-      document.addEventListener("input", handleChange, true);
-
-      unsubscribers.push(() => {
-        document.removeEventListener("blur", handleBlur, true);
-        document.removeEventListener("focus", handleFocus, true);
-        document.removeEventListener("change", handleChange, true);
-        document.removeEventListener("input", handleChange, true);
+        });
       });
+      unsubscribers.push(fieldValidationUnsubscribe);
+
+      // Subscribe to field changes with optimized tracking
+      const fieldChangeUnsubscribe = form.store.subscribe(() => {
+        // Performance: only track changes when form values actually change
+        const values = form.state.values;
+        Object.entries(values as Record<string, unknown>).forEach(([fieldName, value]) => {
+          const context = analyticsContextRef.current;
+          
+          // Initialize field tracking if needed
+          if (!context.fieldInteractions[fieldName]) {
+            context.fieldInteractions[fieldName] = {
+              focusCount: 0,
+              totalTimeSpent: 0,
+              changeCount: 0,
+              errorCount: 0,
+              isCompleted: false,
+            };
+          }
+          
+          const fieldData = context.fieldInteractions[fieldName];
+          
+          // Only track if this is a new value (prevents duplicate events)
+          if (fieldData.changeCount === 0) {
+            trackFieldInteraction(fieldName, 'change', { value });
+            
+            // Trigger async validation if configured
+            if (asyncValidation[fieldName]) {
+              validateFieldAsync(fieldName, value);
+            }
+          }
+        });
+      });
+      unsubscribers.push(fieldChangeUnsubscribe);
+
+      // User's onBlur handler using subscription
+      if (formOptions?.onBlur) {
+        const blurUnsubscribe = form.store.subscribe(() => {
+          clearTimeout(onBlurTimeout);
+          onBlurTimeout = setTimeout(() => {
+            if (!formOptions.onBlur) return;
+            const formApi = form;
+            const values = formApi.state.values;
+            formOptions.onBlur({ value: values as TFormValues, formApi });
+          }, 100); // 100ms debounce for blur
+        });
+        unsubscribers.push(blurUnsubscribe);
+      }
     }
 
-    // Clean up timeouts on unmount
+    // Enhanced cleanup with form abandonment tracking
     unsubscribers.push(() => {
+      // Track form abandonment if analytics is enabled and form wasn't completed
+      if (analytics?.onFormAbandon) {
+        const context = analyticsContextRef.current;
+        const totalFields = fields.length;
+        const completedFields = Object.values(context.fieldInteractions).filter(
+          field => field.isCompleted
+        ).length;
+        const completionPercentage = totalFields > 0 ? (completedFields / totalFields) * 100 : 0;
+        
+        // Only track abandonment if form had some interaction
+        if (completedFields > 0 || Object.keys(context.fieldInteractions).length > 0) {
+          analytics.onFormAbandon(completionPercentage, {
+            currentPage: analyticsContextRef.current.currentPage,
+            currentTab: analyticsContextRef.current.currentTab,
+            lastActiveField: Object.keys(context.fieldInteractions).pop(),
+          });
+        }
+      }
+      
       clearTimeout(autoSubmitTimeout);
       clearTimeout(onChangeTimeout);
       clearTimeout(onBlurTimeout);
@@ -992,10 +1232,9 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
 
       const newPage = currentPage + 1;
 
-      // Analytics tracking
-      if (analytics?.onPageChange) {
-        const timeSpent = Date.now() - pageStartTime.current;
-        analytics.onPageChange(currentPage, newPage, timeSpent);
+      // Enhanced analytics tracking with validation state
+      if (analytics) {
+        trackPageChange(currentPage, newPage);
       }
 
       setCurrentPage(newPage);
@@ -1009,10 +1248,9 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     if (currentPage > 1) {
       const newPage = currentPage - 1;
 
-      // Analytics tracking
-      if (analytics?.onPageChange) {
-        const timeSpent = Date.now() - pageStartTime.current;
-        analytics.onPageChange(currentPage, newPage, timeSpent);
+      // Enhanced analytics tracking with validation state
+      if (analytics) {
+        trackPageChange(currentPage, newPage);
       }
 
       setCurrentPage(newPage);
@@ -1162,11 +1400,39 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
       }
     };
 
-    // Tab state for controlled FormTabs component
+    // Tab state for controlled FormTabs component with analytics
     const [activeTab, setActiveTab] = useState(() => {
       if (tabs && tabs.length > 0) return tabs[0].id;
       return "";
     });
+
+    // Enhanced tab change handler with analytics
+    const handleTabChange = React.useCallback((newTabId: string) => {
+      const previousTab = activeTab;
+      
+      // Track tab change if analytics is enabled
+      if (analytics && previousTab && previousTab !== newTabId) {
+        trackTabChange(previousTab, newTabId);
+      }
+      
+      // Initialize tab start time for new tab
+      if (newTabId && !tabStartTime.current[newTabId]) {
+        tabStartTime.current[newTabId] = Date.now();
+      }
+      
+      setActiveTab(newTabId);
+    }, [activeTab, analytics, trackTabChange]);
+
+    // Initialize first tab start time
+    React.useEffect(() => {
+      if (activeTab && !tabStartTime.current[activeTab]) {
+        tabStartTime.current[activeTab] = Date.now();
+        // Track first tab visit
+        if (analytics?.onTabFirstVisit) {
+          analytics.onTabFirstVisit(activeTab, Date.now());
+        }
+      }
+    }, [activeTab, analytics]);
 
     const handleFocus = (e: React.FocusEvent) => {
       if (onFocus) {
@@ -1567,7 +1833,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
           <FormTabs
             tabs={tabsToRender}
             activeTab={activeTab}
-            onTabChange={setActiveTab}
+            onTabChange={handleTabChange}
           />
         );
       }

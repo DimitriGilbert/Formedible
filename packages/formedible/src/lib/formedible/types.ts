@@ -496,14 +496,96 @@ export interface AsyncValidation {
   loadingMessage?: string;
 }
 
-// Form analytics and tracking configuration
+// Enhanced form analytics and tracking configuration
 export interface FormAnalytics {
+  // Field-level analytics
   onFieldFocus?: (fieldName: string, timestamp: number) => void;
   onFieldBlur?: (fieldName: string, timeSpent: number) => void;
-  onFormAbandon?: (completionPercentage: number) => void;
-  onPageChange?: (fromPage: number, toPage: number, timeSpent: number) => void;
   onFieldChange?: (fieldName: string, value: unknown, timestamp: number) => void;
+  onFieldComplete?: (fieldName: string, isValid: boolean, timeSpent: number) => void;
+  onFieldError?: (fieldName: string, errors: string[], timestamp: number) => void;
+  
+  // Form-level analytics
+  onFormStart?: (timestamp: number) => void;
   onFormComplete?: (timeSpent: number, formData: unknown) => void;
+  onFormAbandon?: (completionPercentage: number, context?: { currentPage?: number; currentTab?: string; lastActiveField?: string }) => void;
+  onFormReset?: (timestamp: number, reason?: string) => void;
+  
+  // Page-level analytics (for multi-page forms)
+  onPageChange?: (fromPage: number, toPage: number, timeSpent: number, pageValidationState?: { hasErrors: boolean; completionPercentage: number }) => void;
+  onPageComplete?: (pageNumber: number, timeSpent: number, fieldsCompleted: number, totalFields: number) => void;
+  onPageAbandon?: (pageNumber: number, completionPercentage: number, timeSpent: number) => void;
+  onPageValidationError?: (pageNumber: number, errors: Record<string, string[]>, timestamp: number) => void;
+  
+  // Tab-level analytics (for tabbed forms)
+  onTabChange?: (fromTab: string, toTab: string, timeSpent: number, tabCompletionState?: { completionPercentage: number; hasErrors: boolean }) => void;
+  onTabComplete?: (tabId: string, timeSpent: number, fieldsCompleted: number, totalFields: number) => void;
+  onTabAbandon?: (tabId: string, completionPercentage: number, timeSpent: number) => void;
+  onTabValidationError?: (tabId: string, errors: Record<string, string[]>, timestamp: number) => void;
+  onTabFirstVisit?: (tabId: string, timestamp: number) => void;
+  
+  // Performance analytics
+  onRenderPerformance?: (componentName: string, renderTime: number, rerenderCount: number) => void;
+  onValidationPerformance?: (fieldName: string, validationType: 'sync' | 'async', duration: number) => void;
+  onSubmissionPerformance?: (submissionTime: number, validationTime: number, processingTime: number) => void;
+}
+
+// Tab analytics state tracking
+export interface TabAnalyticsState {
+  tabId: string;
+  startTime: number;
+  visitCount: number;
+  fieldsCompleted: number;
+  totalFields: number;
+  hasErrors: boolean;
+  lastActiveField?: string;
+  completionPercentage: number;
+}
+
+// Page analytics state tracking  
+export interface PageAnalyticsState {
+  pageNumber: number;
+  startTime: number;
+  visitCount: number;
+  fieldsCompleted: number;
+  totalFields: number;
+  hasErrors: boolean;
+  lastActiveField?: string;
+  completionPercentage: number;
+  validationErrors: Record<string, string[]>;
+}
+
+// Performance tracking metrics
+export interface PerformanceMetrics {
+  renderCount: number;
+  lastRenderTime: number;
+  averageRenderTime: number;
+  validationDurations: Record<string, number[]>;
+  submissionMetrics: {
+    totalTime: number;
+    validationTime: number;
+    processingTime: number;
+  };
+}
+
+// Analytics context for tracking form interaction patterns
+export interface AnalyticsContext {
+  sessionId: string;
+  formId: string;
+  userId?: string;
+  currentPage?: number;
+  currentTab?: string;
+  startTime: number;
+  pageStates: Record<number, PageAnalyticsState>;
+  tabStates: Record<string, TabAnalyticsState>;
+  performanceMetrics: PerformanceMetrics;
+  fieldInteractions: Record<string, {
+    focusCount: number;
+    totalTimeSpent: number;
+    changeCount: number;
+    errorCount: number;
+    isCompleted: boolean;
+  }>;
 }
 
 // Layout configuration for forms
@@ -838,9 +920,7 @@ export interface ConditionalFieldsSubscriptionProps<
   children: (currentValues: Record<string, unknown>) => React.ReactNode;
 }
 
-export interface FieldConditionalRendererProps<
-  TFormValues extends Record<string, unknown> = Record<string, unknown>
-> {
+export interface FieldConditionalRendererProps {
   form: any;
   fieldConfig: FieldConfig;
   children: (shouldRender: boolean) => React.ReactNode;
@@ -974,26 +1054,7 @@ export interface UseFormedibleOptions<TFormValues> {
     };
   };
   // Form analytics and tracking
-  analytics?: {
-    onFieldFocus?: (fieldName: string, timestamp: number) => void;
-    onFieldBlur?: (fieldName: string, timeSpent: number) => void;
-    onFormAbandon?: (completionPercentage: number) => void;
-    onPageChange?: (
-      fromPage: number,
-      toPage: number,
-      timeSpent: number
-    ) => void;
-    onFieldChange?: (
-      fieldName: string,
-      value: unknown,
-      timestamp: number
-    ) => void;
-    onFormStart?: (timestamp: number) => void;
-    onFormComplete?: (
-      timeSpent: number,
-      formData: Record<string, unknown>
-    ) => void;
-  };
+  analytics?: FormAnalytics;
   // Layout configuration
   layout?: {
     type: "grid" | "flex" | "tabs" | "accordion" | "stepper";
