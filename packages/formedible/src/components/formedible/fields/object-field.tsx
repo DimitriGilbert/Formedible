@@ -58,7 +58,7 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
   };
 
   const getLayoutClasses = () => {
-    const layout: LayoutConfig["type"] = objectConfig?.layout || "vertical";
+    const layout = objectConfig?.layout || "vertical";
     const columns = objectConfig?.columns || 2;
     
     switch (layout) {
