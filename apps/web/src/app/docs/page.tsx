@@ -11,7 +11,6 @@ import {
   Shield,
   Layers,
   Database,
-  TestTube,
   CheckCircle,
   BarChart3,
   Wrench,
@@ -63,7 +62,7 @@ export default function DocsPage() {
         "Specialized field types including location picker, duration input, and masked fields",
       icon: Settings,
       href: "/docs/advanced-fields",
-      color: "text-blue-600",
+      color: "text-info",
       badge: "Pro",
     },
     {
@@ -72,7 +71,7 @@ export default function DocsPage() {
         "Cross-field validation, async validation, and advanced validation patterns",
       icon: CheckCircle,
       href: "/docs/validation",
-      color: "text-green-600",
+      color: "text-success",
       badge: null,
     },
     {
@@ -81,7 +80,7 @@ export default function DocsPage() {
         "Track user interactions, form completion rates, and performance metrics",
       icon: BarChart3,
       href: "/docs/analytics",
-      color: "text-purple-600",
+      color: "text-accent",
       badge: "Enhanced",
     },
     {
@@ -90,16 +89,7 @@ export default function DocsPage() {
         "Auto-save form data to browser storage with configurable options",
       icon: Database,
       href: "/docs/persistence",
-      color: "text-indigo-600",
-      badge: null,
-    },
-    {
-      title: "Testing",
-      description:
-        "Comprehensive testing utilities for validation, async operations, and more",
-      icon: TestTube,
-      href: "/docs/testing",
-      color: "text-orange-600",
+      color: "text-info",
       badge: null,
     },
     {
@@ -108,7 +98,7 @@ export default function DocsPage() {
         "Visual form builder with modular tab system for creating forms interactively",
       icon: Wrench,
       href: "/docs/builder",
-      color: "text-teal-600",
+      color: "text-secondary",
       badge: "Interactive",
     },
     {
@@ -117,7 +107,7 @@ export default function DocsPage() {
         "Multi-page forms, conditional logic, and complex form scenarios",
       icon: Sparkles,
       href: "/docs/advanced-features",
-      color: "text-pink-600",
+      color: "text-accent",
       badge: "Overview",
     },
     {
@@ -126,7 +116,7 @@ export default function DocsPage() {
         "Complete documentation of hooks, props, and configuration options",
       icon: Code,
       href: "/docs/api",
-      color: "text-slate-600",
+      color: "text-muted-foreground",
       badge: null,
     },
     {
@@ -135,7 +125,7 @@ export default function DocsPage() {
         "Real-world form implementations from simple to complex use cases",
       icon: Book,
       href: "/docs/examples",
-      color: "text-amber-600",
+      color: "text-warning",
       badge: null,
     },
   ];

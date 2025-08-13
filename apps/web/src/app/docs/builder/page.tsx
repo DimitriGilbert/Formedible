@@ -1,64 +1,217 @@
-"use client";
-
-import React from "react";
-import { motion } from "motion/react";
-import { Settings, Eye, Code, FileText, Palette, Shield, ArrowLeft } from "lucide-react";
-import { FormBuilder } from "@/components/formedible/builder/form-builder";
-import { builderTab, previewTab, codeTab } from "@/components/formedible/builder/default-tabs";
-import type { TabConfig, TabContentProps } from "@/components/formedible/builder/types";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
+import {
+  ArrowLeft,
+  Wrench,
+  Settings,
+  Code,
+  Eye,
+  Palette,
+  Shield,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CodeBlock } from "@/components/ui/code-block";
+import { DocCard } from "@/components/doc-card";
 import Link from "next/link";
 
-// Example 1: Custom Documentation Tab
-const DocumentationTabContent: React.FC<TabContentProps> = ({ getFormMetadata, getAllFields }) => {
-  const formMetadata = getFormMetadata();
+export const metadata: Metadata = {
+  title: "Form Builder - Formedible",
+  description:
+    "Visual form builder with modular tab system for creating forms interactively.",
+};
+
+export default function BuilderPage() {
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-8">
+        <div className="max-w-4xl lg:max-w-6xl xl:max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="mb-12">
+            <div className="flex items-center gap-4 mb-6">
+              <Button variant="ghost" size="sm" asChild>
+                <Link href="/docs">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Docs
+                </Link>
+              </Button>
+            </div>
+
+            <div className="text-center mb-8">
+              <Badge variant="secondary" className="mb-4">
+                <Wrench className="w-3 h-3 mr-1" />
+                Form Builder
+              </Badge>
+              <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-muted-foreground bg-clip-text text-transparent">
+                Visual Form Builder
+              </h1>
+              <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+                Create forms visually with our interactive form builder.
+                Features a modular tab system that can be extended with custom
+                tabs for specialized workflows.
+              </p>
+            </div>
+
+            {/* Feature Pills */}
+            <div className="flex flex-wrap justify-center gap-4 mb-8">
+              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary/8 to-muted-foreground/8 rounded-full border">
+                <Eye className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium">Live Preview</span>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary/8 to-muted-foreground/8 rounded-full border">
+                <Code className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium">Code Export</span>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary/8 to-muted-foreground/8 rounded-full border">
+                <Settings className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium">Extensible</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-12">
+            <div className="mt-16">
+              <div className="bg-gradient-to-r from-primary/5 to-muted-foreground/5 p-8 rounded-xl border text-center">
+                <h3 className="text-2xl font-bold mb-4">Want to try it ?</h3>
+                <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
+                  Start using the form builder to create forms with a visual
+                  interface. Extend it with custom tabs to match your specific
+                  workflow needs.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Button size="lg" asChild>
+                    <Link href="/builder">Open Builder</Link>
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <DocCard
+              title="Basic Usage"
+              description="Get started with the form builder using the default configuration with builder, preview, and code tabs."
+              icon={Wrench}
+            >
+              <p className="text-muted-foreground mb-6">
+                The form builder provides an intuitive interface for creating
+                forms visually. It includes three main tabs by default: Builder
+                for form design, Preview for testing, and Code for export.
+              </p>
+
+              <div>
+                <h3 className="font-semibold text-lg mb-3">Default Builder</h3>
+                <CodeBlock
+                  code={`import { FormBuilder } from '@/components/formedible/builder/form-builder';
+
+export default function MyBuilderPage() {
+  return (
+    <div className="min-h-screen">
+      <FormBuilder />
+    </div>
+  );
+}`}
+                  language="tsx"
+                />
+              </div>
+            </DocCard>
+
+            <DocCard
+              title="Tab Configuration"
+              description="Control which tabs are available and customize the builder's functionality."
+              icon={Settings}
+            >
+              <p className="text-muted-foreground mb-6">
+                You can configure which tabs are enabled and set the default tab
+                that opens when the builder loads.
+              </p>
+
+              <div>
+                <h3 className="font-semibold text-lg mb-3">Enabled Tabs</h3>
+                <CodeBlock
+                  code={`// Builder and Preview only
+<FormBuilder enabledTabs={["builder", "preview"]} />
+
+// All tabs with custom default
+<FormBuilder 
+  enabledTabs={["builder", "preview", "code"]}
+  defaultTab="preview" 
+/>`}
+                  language="tsx"
+                />
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-lg mb-3">
+                  Available Tab IDs
+                </h3>
+                <div className="space-y-2">
+                  <div className="border-l-4 border-primary/20 pl-4">
+                    <code className="text-primary font-mono">builder</code>
+                    <p className="text-sm text-muted-foreground">
+                      Visual form designer with drag-and-drop fields
+                    </p>
+                  </div>
+                  <div className="border-l-4 border-primary/20 pl-4">
+                    <code className="text-primary font-mono">preview</code>
+                    <p className="text-sm text-muted-foreground">
+                      Live preview of the form as users will see it
+                    </p>
+                  </div>
+                  <div className="border-l-4 border-primary/20 pl-4">
+                    <code className="text-primary font-mono">code</code>
+                    <p className="text-sm text-muted-foreground">
+                      Generated code that can be copied and used
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </DocCard>
+
+            <DocCard
+              title="Custom Tabs"
+              description="Extend the builder with custom tabs for specialized functionality."
+              icon={Code}
+            >
+              <p className="text-muted-foreground mb-6">
+                Create custom tabs to add specialized functionality to the form
+                builder. Custom tabs receive props to access and modify form
+                data.
+              </p>
+
+              <div>
+                <h3 className="font-semibold text-lg mb-3">
+                  Creating a Custom Tab
+                </h3>
+                <CodeBlock
+                  code={`import { TabContentProps, TabConfig } from '@/components/formedible/builder/types';
+
+// 1. Create tab content component
+const DocumentationTabContent: React.FC<TabContentProps> = ({ 
+  getFormMetadata, 
+  getAllFields 
+}) => {
+  const metadata = getFormMetadata();
   const fields = getAllFields();
 
   return (
-    <div className="h-full m-0 p-8 overflow-y-auto min-h-0">
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div>
-          <h2 className="text-2xl font-bold mb-2">Form Documentation</h2>
-          <p className="text-muted-foreground">
-            Auto-generated documentation for your form
-          </p>
-        </div>
-
-        <div className="space-y-4">
-          <div className="border rounded-lg p-6">
-            <h3 className="text-lg font-semibold mb-2">Form Overview</h3>
-            <p><strong>Title:</strong> {formMetadata.title}</p>
-            <p><strong>Description:</strong> {formMetadata.description}</p>
-            <p><strong>Layout:</strong> {formMetadata.layoutType}</p>
-            <p><strong>Total Fields:</strong> {fields.length}</p>
-          </div>
-
-          <div className="border rounded-lg p-6">
-            <h3 className="text-lg font-semibold mb-4">Field Reference</h3>
-            <div className="space-y-2">
-              {fields.map((field) => (
-                <div key={field.id} className="flex justify-between items-center py-2 border-b">
-                  <div>
-                    <span className="font-medium">{field.label}</span>
-                    <span className="text-sm text-muted-foreground ml-2">({field.name})</span>
-                  </div>
-                  <div className="text-sm">
-                    <span className="bg-gray-100 px-2 py-1 rounded">{field.type}</span>
-                    {field.required && <span className="ml-2 text-red-600">Required</span>}
-                  </div>
-                </div>
-              ))}
+    <div className="p-8">
+      <h2 className="text-2xl font-bold mb-4">Form Documentation</h2>
+      <div className="space-y-4">
+        <p><strong>Title:</strong> {metadata.title}</p>
+        <p><strong>Fields:</strong> {fields.length}</p>
+        
+        <div className="space-y-2">
+          {fields.map((field) => (
+            <div key={field.id} className="border rounded p-3">
+              <span className="font-medium">{field.label}</span>
+              <span className="ml-2 text-muted-foreground">({field.type})</span>
             </div>
-          </div>
+          ))}
         </div>
       </div>
     </div>
   );
 };
 
+// 2. Define tab configuration
 const documentationTab: TabConfig = {
   id: "documentation",
   label: "Docs",
@@ -66,397 +219,144 @@ const documentationTab: TabConfig = {
   component: DocumentationTabContent,
   enabled: true,
   order: 4,
-};
-
-// Example 2: Custom Styling Tab
-const StylingTabContent: React.FC<TabContentProps> = ({ getFormMetadata, onFormMetadataChange }) => {
-  return (
-    <div className="h-full m-0 p-8 overflow-y-auto min-h-0">
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div>
-          <h2 className="text-2xl font-bold mb-2">Form Styling</h2>
-          <p className="text-muted-foreground">
-            Customize the appearance of your form
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="border rounded-lg p-6">
-            <h3 className="text-lg font-semibold mb-4">Theme</h3>
-            <div className="space-y-3">
-              <button className="w-full p-3 border rounded-lg text-left hover:bg-gray-50">
-                Default Theme
-              </button>
-              <button className="w-full p-3 border rounded-lg text-left hover:bg-gray-50">
-                Modern Theme
-              </button>
-              <button className="w-full p-3 border rounded-lg text-left hover:bg-gray-50">
-                Minimal Theme
-              </button>
-            </div>
-          </div>
-
-          <div className="border rounded-lg p-6">
-            <h3 className="text-lg font-semibold mb-4">Colors</h3>
-            <div className="grid grid-cols-4 gap-3">
-              {['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#F97316'].map((color) => (
-                <button
-                  key={color}
-                  className="h-12 w-12 rounded-lg border-2 border-gray-200"
-                  style={{ backgroundColor: color }}
+};`}
+                  language="tsx"
                 />
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const stylingTab: TabConfig = {
-  id: "styling",
-  label: "Styling",
-  icon: Palette,
-  component: StylingTabContent,
-  enabled: true,
-  order: 5,
-};
-
-// Example 3: Custom Security Tab
-const SecurityTabContent: React.FC<TabContentProps> = ({ getAllFields }) => {
-  const fields = getAllFields();
-  const sensitiveFields = fields.filter(field => 
-    field.type === 'password' || field.type === 'email' || field.name.includes('ssn')
-  );
-
-  return (
-    <div className="h-full m-0 p-8 overflow-y-auto min-h-0">
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div>
-          <h2 className="text-2xl font-bold mb-2">Security & Privacy</h2>
-          <p className="text-muted-foreground">
-            Review security settings and sensitive fields
-          </p>
-        </div>
-
-        <div className="border rounded-lg p-6">
-          <h3 className="text-lg font-semibold mb-4">Sensitive Fields</h3>
-          {sensitiveFields.length === 0 ? (
-            <p className="text-muted-foreground">No sensitive fields detected</p>
-          ) : (
-            <div className="space-y-2">
-              {sensitiveFields.map((field) => (
-                <div key={field.id} className="flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded">
-                  <div>
-                    <span className="font-medium">{field.label}</span>
-                    <span className="text-sm text-muted-foreground ml-2">({field.type})</span>
-                  </div>
-                  <span className="text-sm text-yellow-700">Sensitive</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="border rounded-lg p-6">
-          <h3 className="text-lg font-semibold mb-4">Security Settings</h3>
-          <div className="space-y-3">
-            <label className="flex items-center space-x-2">
-              <input type="checkbox" className="rounded" />
-              <span>Enable CSRF protection</span>
-            </label>
-            <label className="flex items-center space-x-2">
-              <input type="checkbox" className="rounded" />
-              <span>Require HTTPS</span>
-            </label>
-            <label className="flex items-center space-x-2">
-              <input type="checkbox" className="rounded" />
-              <span>Enable rate limiting</span>
-            </label>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const securityTab: TabConfig = {
-  id: "security",
-  label: "Security",
-  icon: Shield,
-  component: SecurityTabContent,
-  enabled: true,
-  order: 6,
-};
-
-// Main page component
-export default function BuilderPage() {
-  const [activeExample, setActiveExample] = React.useState("default");
-
-  const examples = [
-    {
-      id: "default",
-      title: "Default Builder",
-      description: "Standard builder with all three tabs",
-      component: <FormBuilder />,
-      badge: "Basic",
-    },
-    {
-      id: "builder-preview",
-      title: "Builder + Preview Only",
-      description: "Remove the code tab for simpler workflow",
-      component: <FormBuilder enabledTabs={["builder", "preview"]} />,
-      badge: "Simple",
-    },
-    {
-      id: "with-docs",
-      title: "With Documentation Tab",
-      description: "Add auto-generated form documentation",
-      component: (
-        <FormBuilder 
-          tabs={[builderTab, previewTab, codeTab, documentationTab]}
-          defaultTab="builder"
-        />
-      ),
-      badge: "Extended",
-    },
-    {
-      id: "advanced",
-      title: "Advanced Builder",
-      description: "Full featured builder with all custom tabs",
-      component: (
-        <FormBuilder 
-          tabs={[
-            builderTab,
-            previewTab,
-            documentationTab,
-            stylingTab,
-            securityTab,
-            codeTab,
-          ]}
-          defaultTab="builder"
-          onTabChange={(tabId: string) => console.log('Switched to tab:', tabId)}
-        />
-      ),
-      badge: "Pro",
-    },
-    {
-      id: "custom-order",
-      title: "Custom Tab Order",
-      description: "Reorder tabs based on your workflow",
-      component: (
-        <FormBuilder 
-          tabs={[
-            { ...stylingTab, order: 1 },
-            { ...builderTab, order: 2 },
-            { ...securityTab, order: 3 },
-            { ...previewTab, order: 4 },
-            { ...codeTab, order: 5 },
-          ]}
-          defaultTab="styling"
-        />
-      ),
-      badge: "Custom",
-    },
-    {
-      id: "minimal",
-      title: "Minimal Builder",
-      description: "Builder tab only for focused editing",
-      component: (
-        <FormBuilder 
-          tabs={[builderTab]}
-          defaultTab="builder"
-        />
-      ),
-      badge: "Minimal",
-    },
-  ];
-
-  const currentExample = examples.find(ex => ex.id === activeExample);
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/3 to-muted-foreground/3">
-      {/* Header */}
-      <div className="border-b bg-background/60 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Link href="/docs">
-                <Button variant="ghost" size="sm">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Docs
-                </Button>
-              </Link>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-muted-foreground bg-clip-text text-transparent">
-                  Form Builder
-                </h1>
-                <p className="text-muted-foreground">
-                  Visual form builder with modular tab system
-                </p>
-              </div>
-            </div>
-            <Badge variant="secondary" className="hidden sm:flex">
-              Interactive Demo
-            </Badge>
-          </div>
-        </div>
-      </div>
-
-      <div className="container mx-auto px-6 py-8">
-        {/* Example Selector */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5" />
-                Builder Examples
-              </CardTitle>
-              <CardDescription>
-                Explore different configurations of the modular form builder
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Tabs value={activeExample} onValueChange={setActiveExample} className="w-full">
-                <TabsList className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 w-full">
-                  {examples.map((example) => (
-                    <TabsTrigger
-                      key={example.id}
-                      value={example.id}
-                      className="text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                    >
-                      <div className="flex flex-col items-center gap-1">
-                        <span>{example.title}</span>
-                        <Badge variant="outline" className="text-xs px-1 py-0">
-                          {example.badge}
-                        </Badge>
-                      </div>
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-
-                {/* Example Info */}
-                {currentExample && (
-                  <motion.div
-                    key={activeExample}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mt-6 p-4 border rounded-lg bg-muted/30"
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-semibold">{currentExample.title}</h3>
-                      <Badge variant="secondary">{currentExample.badge}</Badge>
-                    </div>
-                    <p className="text-muted-foreground text-sm">
-                      {currentExample.description}
-                    </p>
-                  </motion.div>
-                )}
-              </Tabs>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Builder Demo */}
-        <motion.div
-          key={activeExample}
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.3 }}
-          className="mb-8"
-        >
-          <Card className="overflow-hidden">
-            <CardContent className="p-0">
-              <div className="min-h-[800px]">
-                {currentExample?.component}
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* How to Add Custom Tabs */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Code className="h-5 w-5" />
-                How to Add Custom Tabs
-              </CardTitle>
-              <CardDescription>
-                Create your own tabs to extend the builder functionality
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="font-semibold mb-3">1. Create Tab Content</h4>
-                  <div className="text-sm font-mono bg-muted p-3 rounded-lg">
-                    {`const MyTabContent: React.FC<TabContentProps> = ({ 
-  getFormMetadata, 
-  getAllFields 
-}) => {
-  const metadata = getFormMetadata();
-  const fields = getAllFields();
-  
-  return (
-    <div className="p-8">
-      <h2>My Custom Tab</h2>
-      <p>Form: {metadata.title}</p>
-      <p>Fields: {fields.length}</p>
-    </div>
-  );
-};`}
-                  </div>
-                </div>
-                
-                <div>
-                  <h4 className="font-semibold mb-3">2. Define Tab Config</h4>
-                  <div className="text-sm font-mono bg-muted p-3 rounded-lg">
-                    {`const myTab: TabConfig = {
-  id: "my-tab",
-  label: "My Tab",
-  icon: MyIcon,
-  component: MyTabContent,
-  enabled: true,
-  order: 4,
-};`}
-                  </div>
-                </div>
               </div>
 
               <div>
-                <h4 className="font-semibold mb-3">3. Use in FormBuilder</h4>
-                <div className="text-sm font-mono bg-muted p-3 rounded-lg">
-                  {`<FormBuilder 
-  tabs={[builderTab, previewTab, myTab, codeTab]}
+                <h3 className="font-semibold text-lg mb-3">
+                  Using Custom Tabs
+                </h3>
+                <CodeBlock
+                  code={`import { FormBuilder } from '@/components/formedible/builder/form-builder';
+import { builderTab, previewTab, codeTab } from '@/components/formedible/builder/default-tabs';
+
+<FormBuilder 
+  tabs={[builderTab, previewTab, codeTab, documentationTab]}
   defaultTab="builder"
 />`}
-                </div>
+                  language="tsx"
+                />
+              </div>
+            </DocCard>
+
+            <DocCard
+              title="Available Props"
+              description="Props available to custom tab components for accessing and modifying form data."
+              icon={Palette}
+            >
+              <div>
+                <h3 className="font-semibold text-lg mb-3">
+                  TabContentProps Interface
+                </h3>
+                <CodeBlock
+                  code={`interface TabContentProps {
+  // Form data access
+  getFormMetadata: () => FormMetadata;
+  getAllFields: () => FieldConfig[];
+  selectedFieldId?: string;
+  
+  // Form modification
+  onFormMetadataChange: (metadata: Partial<FormMetadata>) => void;
+  onAddField: (field: FieldConfig) => void;
+  onUpdateField: (id: string, updates: Partial<FieldConfig>) => void;
+  onDeleteField: (id: string) => void;
+  onSelectField: (id: string) => void;
+  onDuplicateField: (id: string) => void;
+  onReorderFields: (startIndex: number, endIndex: number) => void;
+}`}
+                  language="typescript"
+                />
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h4 className="font-semibold text-blue-800 mb-2">Available Props</h4>
-                <ul className="text-sm text-blue-700 space-y-1">
-                  <li><code className="bg-blue-100 px-1 rounded">getFormMetadata()</code> - Get current form metadata</li>
-                  <li><code className="bg-blue-100 px-1 rounded">getAllFields()</code> - Get all form fields</li>
-                  <li><code className="bg-blue-100 px-1 rounded">onFormMetadataChange()</code> - Update form metadata</li>
-                  <li><code className="bg-blue-100 px-1 rounded">selectedFieldId</code> - Currently selected field</li>
-                  <li><code className="bg-blue-100 px-1 rounded">onAddField()</code> - Add a new field</li>
-                  <li>+ many more for complete form control</li>
-                </ul>
+              <div>
+                <h3 className="font-semibold text-lg mb-3">Common Use Cases</h3>
+                <div className="space-y-2">
+                  <div className="border-l-4 border-primary/20 pl-4">
+                    <strong>Documentation Tab</strong>
+                    <p className="text-sm text-muted-foreground">
+                      Auto-generate form documentation and field references
+                    </p>
+                  </div>
+                  <div className="border-l-4 border-accent/20 pl-4">
+                    <strong>Styling Tab</strong>
+                    <p className="text-sm text-muted-foreground">
+                      Customize form themes, colors, and appearance
+                    </p>
+                  </div>
+                  <div className="border-l-4 border-secondary/20 pl-4">
+                    <strong>Security Tab</strong>
+                    <p className="text-sm text-muted-foreground">
+                      Review sensitive fields and security settings
+                    </p>
+                  </div>
+                  <div className="border-l-4 border-muted/20 pl-4">
+                    <strong>Export Tab</strong>
+                    <p className="text-sm text-muted-foreground">
+                      Export form data in different formats (JSON, YAML, etc.)
+                    </p>
+                  </div>
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        </motion.div>
+            </DocCard>
+
+            <DocCard
+              title="Tab Ordering"
+              description="Control the order of tabs and customize the builder workflow."
+              icon={Shield}
+            >
+              <p className="text-muted-foreground mb-6">
+                You can control the order in which tabs appear by setting the
+                order property or by arranging them in the tabs array.
+              </p>
+
+              <CodeBlock
+                code={`// Method 1: Using order property
+const customTabs = [
+  { ...stylingTab, order: 1 },      // First tab
+  { ...builderTab, order: 2 },      // Second tab
+  { ...previewTab, order: 3 },      // Third tab
+  { ...codeTab, order: 4 },         // Fourth tab
+];
+
+<FormBuilder 
+  tabs={customTabs}
+  defaultTab="styling"  // Start with styling tab
+/>
+
+// Method 2: Array order (simpler)
+<FormBuilder 
+  tabs={[stylingTab, builderTab, previewTab, codeTab]}
+  defaultTab="styling"
+/>`}
+                language="tsx"
+              />
+            </DocCard>
+          </div>
+
+          {/* Ready to Build */}
+          <div className="mt-16">
+            <div className="bg-gradient-to-r from-primary/5 to-muted-foreground/5 p-8 rounded-xl border text-center">
+              <h3 className="text-2xl font-bold mb-4">
+                Ready to Build Forms Visually?
+              </h3>
+              <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
+                Start using the form builder to create forms with a visual
+                interface. Extend it with custom tabs to match your specific
+                workflow needs.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button size="lg" asChild>
+                  <Link href="/builder">Open Builder</Link>
+                </Button>
+                <Button variant="outline" size="lg" asChild>
+                  <Link href="/docs/getting-started">Get Started</Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

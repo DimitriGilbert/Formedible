@@ -2,20 +2,21 @@ import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, CheckCircle, Shield, Zap, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CodeBlock } from "@/components/ui/code-block";
+import { DocCard } from "@/components/doc-card";
 import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Advanced Validation - Formedible",
-  description: "Learn about cross-field validation, async validation, and advanced validation patterns in Formedible.",
+  description:
+    "Learn about cross-field validation, async validation, and advanced validation patterns in Formedible.",
 };
 
 export default function ValidationPage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-4xl lg:max-w-6xl xl:max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-12">
             <div className="flex items-center gap-4 mb-6">
@@ -26,7 +27,7 @@ export default function ValidationPage() {
                 </Link>
               </Button>
             </div>
-            
+
             <div className="text-center mb-8">
               <Badge variant="secondary" className="mb-4">
                 <CheckCircle className="w-3 h-3 mr-1" />
@@ -36,8 +37,9 @@ export default function ValidationPage() {
                 Powerful Validation Patterns
               </h1>
               <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-                Formedible provides advanced validation capabilities including cross-field validation, 
-                async validation with loading states, and seamless integration with Zod schemas.
+                Formedible provides advanced validation capabilities including
+                cross-field validation, async validation with loading states,
+                and seamless integration with Zod schemas.
               </p>
             </div>
 
@@ -59,31 +61,24 @@ export default function ValidationPage() {
           </div>
 
           <div className="space-y-12">
+            <DocCard
+              title="Cross-Field Validation"
+              description="Validate fields based on the values of other fields for complex validation scenarios."
+              icon={Shield}
+            >
+              <p className="text-muted-foreground">
+                Cross-field validation allows you to validate fields based on
+                the values of other fields. This is useful for scenarios like
+                password confirmation, date range validation, or conditional
+                requirements.
+              </p>
 
-            <Card className="overflow-hidden">
-              <CardHeader className="bg-gradient-to-r from-primary/5 to-muted-foreground/5">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-gradient-to-br from-primary/8 to-muted-foreground/8 border">
-                    <Shield className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-xl">Cross-Field Validation</CardTitle>
-                    <CardDescription className="text-base">
-                      Validate fields based on the values of other fields for complex validation scenarios.
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="p-6 space-y-6">
-                <p className="text-muted-foreground">
-                  Cross-field validation allows you to validate fields based on the values of other fields. 
-                  This is useful for scenarios like password confirmation, date range validation, or conditional requirements.
-                </p>
-                
-                <div>
-                  <h3 className="font-semibold text-lg mb-3">Password Confirmation Example</h3>
-                  <CodeBlock
-                    code={`const { Form } = useFormedible({
+              <div>
+                <h3 className="font-semibold text-lg mb-3">
+                  Password Confirmation Example
+                </h3>
+                <CodeBlock
+                  code={`const { Form } = useFormedible({
   fields: [
     { name: 'password', type: 'password', label: 'Password' },
     { name: 'confirmPassword', type: 'password', label: 'Confirm Password' },
@@ -101,14 +96,16 @@ export default function ValidationPage() {
     }
   ]
 });`}
-                    language="tsx"
-                  />
-                </div>
+                  language="tsx"
+                />
+              </div>
 
-                <div>
-                  <h3 className="font-semibold text-lg mb-3">Date Range Validation Example</h3>
-                  <CodeBlock
-                    code={`crossFieldValidation: [
+              <div>
+                <h3 className="font-semibold text-lg mb-3">
+                  Date Range Validation Example
+                </h3>
+                <CodeBlock
+                  code={`crossFieldValidation: [
   {
     fields: ['startDate', 'endDate'],
     validator: (values) => {
@@ -124,36 +121,28 @@ export default function ValidationPage() {
     message: 'Invalid date range'
   }
 ]`}
-                    language="tsx"
-                  />
-                </div>
-              </CardContent>
-            </Card>
+                  language="tsx"
+                />
+              </div>
+            </DocCard>
 
-            <Card className="overflow-hidden">
-              <CardHeader className="bg-gradient-to-r from-primary/5 to-muted-foreground/5">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-gradient-to-br from-primary/8 to-muted-foreground/8 border">
-                    <Clock className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-xl">Async Validation</CardTitle>
-                    <CardDescription className="text-base">
-                      Server-side validation with debouncing and loading states for better UX.
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="p-6 space-y-6">
-                <p className="text-muted-foreground">
-                  Async validation enables server-side validation, such as checking username availability 
-                  or validating email addresses. It includes debouncing and loading states for better UX.
-                </p>
-                
-                <div>
-                  <h3 className="font-semibold text-lg mb-3">Username Availability Example</h3>
-                  <CodeBlock
-                    code={`const { Form } = useFormedible({
+            <DocCard
+              title="Async Validation"
+              description="Server-side validation with debouncing and loading states for better UX."
+              icon={Clock}
+            >
+              <p className="text-muted-foreground">
+                Async validation enables server-side validation, such as
+                checking username availability or validating email addresses. It
+                includes debouncing and loading states for better UX.
+              </p>
+
+              <div>
+                <h3 className="font-semibold text-lg mb-3">
+                  Username Availability Example
+                </h3>
+                <CodeBlock
+                  code={`const { Form } = useFormedible({
   fields: [
     { name: 'username', type: 'text', label: 'Username' },
   ],
@@ -173,14 +162,16 @@ export default function ValidationPage() {
     }
   }
 });`}
-                    language="tsx"
-                  />
-                </div>
+                  language="tsx"
+                />
+              </div>
 
-                <div>
-                  <h3 className="font-semibold text-lg mb-3">Email Validation Example</h3>
-                  <CodeBlock
-                    code={`asyncValidation: {
+              <div>
+                <h3 className="font-semibold text-lg mb-3">
+                  Email Validation Example
+                </h3>
+                <CodeBlock
+                  code={`asyncValidation: {
   email: {
     validator: async (value) => {
       if (!value) return null;
@@ -202,29 +193,18 @@ export default function ValidationPage() {
     loadingMessage: 'Validating email...'
   }
 }`}
-                    language="tsx"
-                  />
-                </div>
-              </CardContent>
-            </Card>
+                  language="tsx"
+                />
+              </div>
+            </DocCard>
 
-            <Card className="overflow-hidden">
-              <CardHeader className="bg-gradient-to-r from-primary/5 to-muted-foreground/5">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-gradient-to-br from-primary/8 to-muted-foreground/8 border">
-                    <Zap className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-xl">Validation States</CardTitle>
-                    <CardDescription className="text-base">
-                      Access validation states and errors through the hook's return values.
-                    </CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="p-6">
-                <CodeBlock
-                  code={`const { 
+            <DocCard
+              title="Validation States"
+              description="Access validation states and errors through the hook's return values."
+              icon={Zap}
+            >
+              <CodeBlock
+                code={`const { 
   Form, 
   crossFieldErrors, 
   asyncValidationStates 
@@ -243,57 +223,49 @@ console.log(asyncValidationStates);
 //     error: 'Username is already taken' 
 //   } 
 // }`}
-                  language="tsx"
-                />
-              </CardContent>
-            </Card>
+                language="tsx"
+              />
+            </DocCard>
 
-            <Card className="overflow-hidden">
-              <CardHeader className="bg-gradient-to-r from-primary/5 to-muted-foreground/5">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-gradient-to-br from-primary/8 to-muted-foreground/8 border">
-                    <Shield className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-xl">Best Practices</CardTitle>
-                    <CardDescription className="text-base">
-                      Guidelines for effective validation implementation and user experience.
-                    </CardDescription>
-                  </div>
+            <DocCard
+              title="Best Practices"
+              description="Guidelines for effective validation implementation and user experience."
+              icon={Shield}
+            >
+              <div className="space-y-4">
+                <div className="border-l-4 border-primary pl-4">
+                  <h3 className="font-semibold">Debouncing</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Use appropriate debounce times for async validation
+                    (300-500ms) to avoid excessive API calls.
+                  </p>
                 </div>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  <div className="border-l-4 border-primary pl-4">
-                    <h3 className="font-semibold">Debouncing</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Use appropriate debounce times for async validation (300-500ms) to avoid excessive API calls.
-                    </p>
-                  </div>
-                  
-                  <div className="border-l-4 border-accent pl-4">
-                    <h3 className="font-semibold">Error Messages</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Provide clear, actionable error messages that help users understand how to fix validation issues.
-                    </p>
-                  </div>
-                  
-                  <div className="border-l-4 border-secondary pl-4">
-                    <h3 className="font-semibold">Performance</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Cross-field validation runs on every form change, so keep validators lightweight and efficient.
-                    </p>
-                  </div>
-                  
-                  <div className="border-l-4 border-muted pl-4">
-                    <h3 className="font-semibold">Error Handling</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Always handle async validation errors gracefully and provide fallback messages.
-                    </p>
-                  </div>
+
+                <div className="border-l-4 border-accent pl-4">
+                  <h3 className="font-semibold">Error Messages</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Provide clear, actionable error messages that help users
+                    understand how to fix validation issues.
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
+
+                <div className="border-l-4 border-secondary pl-4">
+                  <h3 className="font-semibold">Performance</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Cross-field validation runs on every form change, so keep
+                    validators lightweight and efficient.
+                  </p>
+                </div>
+
+                <div className="border-l-4 border-muted pl-4">
+                  <h3 className="font-semibold">Error Handling</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Always handle async validation errors gracefully and provide
+                    fallback messages.
+                  </p>
+                </div>
+              </div>
+            </DocCard>
           </div>
 
           {/* Ready to Build */}
@@ -303,19 +275,16 @@ console.log(asyncValidationStates);
                 Ready to Implement Advanced Validation?
               </h3>
               <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
-                Start building forms with powerful validation patterns. Create robust, 
-                user-friendly validation that enhances the form experience.
+                Start building forms with powerful validation patterns. Create
+                robust, user-friendly validation that enhances the form
+                experience.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Button size="lg" asChild>
-                  <Link href="/docs/getting-started">
-                    Get Started
-                  </Link>
+                  <Link href="/docs/getting-started">Get Started</Link>
                 </Button>
                 <Button variant="outline" size="lg" asChild>
-                  <Link href="/docs/examples">
-                    View Examples
-                  </Link>
+                  <Link href="/docs/examples">View Examples</Link>
                 </Button>
               </div>
             </div>

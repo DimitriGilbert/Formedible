@@ -104,6 +104,12 @@ body {
   --sidebar-accent-foreground: oklch(0.2839 0.0734 254.5378);
   --sidebar-border: oklch(0.3741 0.0087 67.5582);
   --sidebar-ring: oklch(0.7049 0.1867 47.6044);
+  --warning: oklch(0.8 0.15 65);
+  --warning-foreground: oklch(0.2 0.08 65);
+  --success: oklch(0.7 0.14 145);
+  --success-foreground: oklch(0.98 0.02 145);
+  --info: oklch(0.65 0.12 250);
+  --info-foreground: oklch(0.98 0.02 250);
   --font-sans: Oxanium, sans-serif;
   --font-serif: Merriweather, serif;
   --font-mono: Fira Code, monospace;
@@ -156,6 +162,12 @@ body {
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
 
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
