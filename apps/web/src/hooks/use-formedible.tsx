@@ -1139,31 +1139,8 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
       }
     }
 
-    // Enhanced cleanup with form abandonment tracking
+    // Enhanced cleanup - only handle timeouts and cancellations
     unsubscribers.push(() => {
-      // Track form abandonment if analytics is enabled and form wasn't completed
-      if (analytics?.onFormAbandon && !formCompletedRef.current && analyticsContextRef.current) {
-        const context = analyticsContextRef.current;
-        
-        // Ensure context properties exist before accessing
-        if (!context.fieldInteractions) return;
-        
-        const totalFields = fields.length;
-        const completedFields = Object.values(context.fieldInteractions).filter(
-          field => field && field.isCompleted
-        ).length;
-        const completionPercentage = totalFields > 0 ? (completedFields / totalFields) * 100 : 0;
-        
-        // Only track abandonment if form had some interaction
-        if (completedFields > 0 || Object.keys(context.fieldInteractions).length > 0) {
-          analytics.onFormAbandon(completionPercentage, {
-            currentPage: context.currentPage,
-            currentTab: context.currentTab,
-            lastActiveField: Object.keys(context.fieldInteractions).pop(),
-          });
-        }
-      }
-      
       clearTimeout(autoSubmitTimeout);
       clearTimeout(onChangeTimeout);
       clearTimeout(onBlurTimeout);
@@ -1201,6 +1178,34 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     fields.length,
     trackFieldInteraction,
   ]);
+
+  // Separate useEffect for form abandonment tracking - only runs on component unmount
+  React.useEffect(() => {
+    return () => {
+      // Track form abandonment only on component unmount if analytics is enabled and form wasn't completed
+      if (analytics?.onFormAbandon && !formCompletedRef.current && analyticsContextRef.current) {
+        const context = analyticsContextRef.current;
+        
+        // Ensure context properties exist before accessing
+        if (!context.fieldInteractions) return;
+        
+        const totalFields = fields.length;
+        const completedFields = Object.values(context.fieldInteractions).filter(
+          field => field && field.isCompleted
+        ).length;
+        const completionPercentage = totalFields > 0 ? (completedFields / totalFields) * 100 : 0;
+        
+        // Only track abandonment if form had some interaction
+        if (completedFields > 0 || Object.keys(context.fieldInteractions).length > 0) {
+          analytics.onFormAbandon(completionPercentage, {
+            currentPage: context.currentPage,
+            currentTab: context.currentTab,
+            lastActiveField: Object.keys(context.fieldInteractions).pop(),
+          });
+        }
+      }
+    };
+  }, []); // Empty dependency array - only runs on mount/unmount
 
   const getCurrentPageFields = () => {
     if (hasTabs) {
