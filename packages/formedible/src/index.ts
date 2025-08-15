@@ -40,7 +40,6 @@ export type {
   PageConfig, 
   ProgressConfig,
   FieldComponentProps,
-  FormedibleFormApi,
   ObjectConfig,
 } from '@/lib/formedible/types';
 export { useFormedible } from '@/hooks/use-formedible';

@@ -36,6 +36,12 @@ export type FieldValidationError = string | Error | ValidationError;
 // Array of validation errors for a field
 export type FieldValidationErrors = FieldValidationError[];
 
+// Dynamic text types for template interpolation
+export type DynamicText =
+  | string
+  | ((values: Record<string, unknown>) => string);
+export type OptionalDynamicText = DynamicText | undefined;
+
 // Type alias for our FormApi - use the core FormApi type which is what useForm actually returns
 export type FormedibleFormApi<TFormData = Record<string, unknown>> = FormApi<
   TFormData,
@@ -99,9 +105,9 @@ export interface ObjectConfig {
   fields: Array<{
     name: string;
     type: string;
-    label?: string;
-    placeholder?: string;
-    description?: string;
+    label?: DynamicText;
+    placeholder?: DynamicText;
+    description?: DynamicText;
     options?: Array<{ value: string; label: string }> | ((values: Record<string, unknown>) => Array<{ value: string; label: string }>);
     min?: number;
     max?: number;
@@ -1089,9 +1095,9 @@ export interface UseFormedibleOptions<TFormValues> {
 export interface FieldConfig {
   name: string;
   type: string;
-  label?: string;
-  placeholder?: string;
-  description?: string;
+  label?: DynamicText;
+  placeholder?: DynamicText;
+  description?: DynamicText;
   options?: string[] | { value: string; label: string }[] | ((values: Record<string, unknown>) => string[] | { value: string; label: string }[]);
   min?: number;
   max?: number;
