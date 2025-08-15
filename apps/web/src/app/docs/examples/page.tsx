@@ -44,6 +44,9 @@ import {
   AdvancedFieldTypesFormExample,
   advancedFieldTypesFormCode,
 } from "./advanced-field-types-form";
+import {
+  RentalCarFlowForm,
+} from "./rental-car-flow-form";
 
 // import MyForm from "./conditional-in-obj";
 
@@ -100,7 +103,10 @@ export default function ExamplesPage() {
                   <h2 className="text-2xl font-semibold mb-4">
                     Advanced Examples
                   </h2>
-                  <TabsList className="grid w-full grid-cols-5">
+                  <TabsList className="grid w-full grid-cols-6">
+                    <TabsTrigger value="rental-flow">
+                      Flow Form
+                    </TabsTrigger>
                     <TabsTrigger value="analytics">
                       Analytics & Tracking
                     </TabsTrigger>
@@ -225,6 +231,28 @@ export default function ExamplesPage() {
                     code={tabbedFormCode}
                     codeTitle="Tabbed Form Implementation"
                     codeDescription="Form with tabs for organizing related fields into logical groups"
+                  />
+                </motion.div>
+              </TabsContent>
+
+              <TabsContent value="rental-flow">
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <DemoCard
+                    title="Rental Car Flow Form"
+                    description="A personalized one-field-per-page flow form for choosing a rental car. Features heavy use of dynamic text and conditional logic to create a very personal experience."
+                    badges={[
+                      { text: "Flow Form", variant: "secondary" },
+                      { text: "Dynamic Text", variant: "outline" },
+                      { text: "Personal", variant: "default" },
+                    ]}
+                    preview={<RentalCarFlowForm />}
+                    code={``}
+                    codeTitle="Rental Car Flow Form"
+                    codeDescription="Comprehensive flow form with 19 personalized pages, dynamic text throughout, and conditional navigation based on user choices"
                   />
                 </motion.div>
               </TabsContent>

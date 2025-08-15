@@ -188,7 +188,7 @@ export default function AdvancedFeaturesPage() {
                           Dynamic Text System
                         </CardTitle>
                         <CardDescription className="text-base">
-                          Template strings with {{fieldName}} syntax for personalized forms
+                          Template strings with double curly brace syntax for personalized forms
                         </CardDescription>
                       </div>
                     </div>

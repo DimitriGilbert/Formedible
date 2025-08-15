@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { ArrowLeft, Zap, Code2, Star, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -55,7 +56,7 @@ export default function DynamicTextPage() {
             {/* Basic Template Strings */}
             <DocCard
               title="Template String Syntax"
-              description="Use {{fieldName}} syntax to reference form values in any text field."
+              description="Use double curly brace syntax to reference form values in any text field."
               icon={Code2}
             >
               <div className="space-y-6">
@@ -93,7 +94,7 @@ export default function DynamicTextPage() {
                 <div className="bg-gradient-to-r from-info/10 to-info/20 p-4 rounded-lg border border-info/30">
                   <h4 className="font-semibold text-info-foreground mb-2">✨ What happens:</h4>
                   <ul className="space-y-1 text-sm text-info-foreground/80">
-                    <li>• When user types "John" in firstName, all {{"{"}firstName{"}"}} references update to "John"</li>
+                    <li>• When user types "John" in firstName, all firstName references update to "John"</li>
                     <li>• Description becomes: "We'll send updates to this address, John"</li>
                     <li>• Page 2 description becomes: "How can we reach you John?"</li>
                     <li>• Updates happen instantly as the user types</li>
@@ -114,15 +115,15 @@ export default function DynamicTextPage() {
                   <div className="space-y-3">
                     <div className="border-l-4 border-primary pl-4">
                       <h4 className="font-medium">Labels</h4>
-                      <code className="text-xs text-muted-foreground">label: "Welcome {{firstName}}"</code>
+                      <code className="text-xs text-muted-foreground">label: "Welcome &#123;&#123;firstName&#125;&#125;"</code>
                     </div>
                     <div className="border-l-4 border-primary pl-4">
                       <h4 className="font-medium">Descriptions</h4>
-                      <code className="text-xs text-muted-foreground">description: "We'll contact {{firstName}} at {{email}}"</code>
+                      <code className="text-xs text-muted-foreground">description: "We'll contact &#123;&#123;firstName&#125;&#125; at &#123;&#123;email&#125;&#125;"</code>
                     </div>
                     <div className="border-l-4 border-primary pl-4">
                       <h4 className="font-medium">Placeholders</h4>
-                      <code className="text-xs text-muted-foreground">placeholder: "{{company}} department"</code>
+                      <code className="text-xs text-muted-foreground">placeholder: "&#123;&#123;company&#125;&#125; department"</code>
                     </div>
                   </div>
                 </div>
@@ -132,15 +133,15 @@ export default function DynamicTextPage() {
                   <div className="space-y-3">
                     <div className="border-l-4 border-accent pl-4">
                       <h4 className="font-medium">Page Titles</h4>
-                      <code className="text-xs text-muted-foreground">title: "Settings for {{firstName}}"</code>
+                      <code className="text-xs text-muted-foreground">title: "Settings for &#123;&#123;firstName&#125;&#125;"</code>
                     </div>
                     <div className="border-l-4 border-accent pl-4">
                       <h4 className="font-medium">Section Titles</h4>
-                      <code className="text-xs text-muted-foreground">section: {"{"} title: "{{company}} Details" {"}"}</code>
+                      <code className="text-xs text-muted-foreground">section: &#123; title: "&#123;&#123;company&#125;&#125; Details" &#125;</code>
                     </div>
                     <div className="border-l-4 border-accent pl-4">
                       <h4 className="font-medium">Object Field Titles</h4>
-                      <code className="text-xs text-muted-foreground">objectConfig: {"{"} title: "{{firstName}}'s Address" {"}"}</code>
+                      <code className="text-xs text-muted-foreground">objectConfig: &#123; title: "&#123;&#123;firstName&#125;&#125;'s Address" &#125;</code>
                     </div>
                   </div>
                 </div>
@@ -278,7 +279,7 @@ const comprehensiveForm = useFormedible({
                     <div className="bg-gradient-to-r from-success/5 to-success/10 p-4 rounded-lg border border-success/20">
                       <h4 className="font-medium text-success-foreground mb-2">✅ Do:</h4>
                       <ul className="text-sm text-success-foreground/80 space-y-1">
-                        <li>• Keep template references simple: {{"{"}fieldName{"}"}} </li>
+                        <li>• Keep template references simple: double curly braces with field name</li>
                         <li>• Use meaningful fallback text</li>
                         <li>• Test with empty and populated forms</li>
                         <li>• Consider mobile screen space with dynamic text</li>
