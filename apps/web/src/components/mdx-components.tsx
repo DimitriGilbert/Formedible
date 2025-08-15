@@ -1,7 +1,12 @@
 import type { MDXComponents } from 'mdx/types';
 import { CodeBlock } from '@/components/ui/code-block';
+import { useTheme } from 'next-themes';
 
 export function useMDXComponents(components: MDXComponents): MDXComponents {
+  const { theme, systemTheme } = useTheme();
+  const currentTheme = theme === 'system' ? systemTheme : theme;
+  const darkMode = currentTheme === 'dark';
+
   return {
     h1: ({ children }) => (
        <h1 className="text-4xl font-bold mb-6 bg-gradient-to-r from-primary to-muted-foreground bg-clip-text text-transparent">        {children}
@@ -22,7 +27,7 @@ export function useMDXComponents(components: MDXComponents): MDXComponents {
     code: ({ children, className }) => {
       const language = className?.replace('language-', '') || 'tsx';
       if (typeof children === 'string' && children.includes('\n')) {
-        return <CodeBlock code={children} language={language} showLineNumbers={true} />;
+        return <CodeBlock code={children} language={language} showLineNumbers={true} darkMode={darkMode} />;
       }
       return (
          <code className="bg-muted px-2 py-1 rounded text-sm font-mono">          {children}

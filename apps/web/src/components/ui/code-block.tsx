@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Highlight, themes } from "prism-react-renderer";
 import { motion, AnimatePresence } from "motion/react";
 import { Copy, Check } from "lucide-react";
@@ -26,6 +26,7 @@ interface CodeBlockProps {
   showPackageManagerTabs?: boolean;
   className?: string;
   title?: string;
+  darkMode?: boolean;
 }
 
 // Copy Button Component
@@ -78,6 +79,25 @@ const CopyButton: React.FC<{ text: string; className?: string }> = ({
   );
 };
 
+// Function to load external CSS theme
+const loadPrismTheme = (themeUrl: string, themeId: string) => {
+  // Remove existing theme if present
+  const existingLink = document.getElementById(themeId);
+  if (existingLink) {
+    existingLink.remove();
+  }
+  
+  // Add new theme
+  const link = document.createElement('link');
+  link.id = themeId;
+  link.rel = 'stylesheet';
+  link.href = themeUrl;
+  document.head.appendChild(link);
+};
+
+// Empty theme object to disable built-in styling and let external CSS take control
+const emptyTheme = { plain: {}, styles: [] };
+
 export const CodeBlock: React.FC<CodeBlockProps> = ({
   code,
   language = "tsx",
@@ -86,8 +106,24 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
   showPackageManagerTabs = false,
   className = "",
   title,
+  darkMode = false,
 }) => {
   const [selectedPM, setSelectedPM] = useState("npx");
+  
+  // Load appropriate Gruvbox theme based on darkMode prop
+  useEffect(() => {
+    if (darkMode) {
+      loadPrismTheme(
+        'https://cdnjs.cloudflare.com/ajax/libs/prism-themes/1.9.0/prism-gruvbox-dark.min.css',
+        'prism-gruvbox-theme'
+      );
+    } else {
+      loadPrismTheme(
+        'https://cdnjs.cloudflare.com/ajax/libs/prism-themes/1.9.0/prism-gruvbox-light.min.css',
+        'prism-gruvbox-theme'
+      );
+    }
+  }, [darkMode]);
   
   const packageManagers = {
     npx: code,
@@ -126,7 +162,7 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
       
       <div className="relative group">
         <Highlight
-          theme={themes.oneDark}
+          theme={emptyTheme}
           code={currentCode.trim()}
           language={language as any}
         >

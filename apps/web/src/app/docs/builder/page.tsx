@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { CodeBlock } from "@/components/ui/code-block";
 import { DocCard } from "@/components/doc-card";
 import Link from "next/link";
+import { useTheme } from "next-themes";
 
 export const metadata: Metadata = {
   title: "Form Builder - Formedible",
@@ -21,6 +22,10 @@ export const metadata: Metadata = {
 };
 
 export default function BuilderPage() {
+  const { theme, systemTheme } = useTheme();
+  const currentTheme = theme === 'system' ? systemTheme : theme;
+  const darkMode = currentTheme === 'dark';
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
@@ -109,6 +114,7 @@ export default function MyBuilderPage() {
   );
 }`}
                   language="tsx"
+                  darkMode={darkMode}
                 />
               </div>
             </DocCard>
@@ -135,6 +141,7 @@ export default function MyBuilderPage() {
   defaultTab="preview" 
 />`}
                   language="tsx"
+                  darkMode={darkMode}
                 />
               </div>
 
@@ -221,6 +228,7 @@ const documentationTab: TabConfig = {
   order: 4,
 };`}
                   language="tsx"
+                  darkMode={darkMode}
                 />
               </div>
 
@@ -237,6 +245,7 @@ import { builderTab, previewTab, codeTab } from '@/components/formedible/builder
   defaultTab="builder"
 />`}
                   language="tsx"
+                  darkMode={darkMode}
                 />
               </div>
             </DocCard>
@@ -267,6 +276,7 @@ import { builderTab, previewTab, codeTab } from '@/components/formedible/builder
   onReorderFields: (startIndex: number, endIndex: number) => void;
 }`}
                   language="typescript"
+                  darkMode={darkMode}
                 />
               </div>
 
@@ -331,6 +341,7 @@ const customTabs = [
   defaultTab="styling"
 />`}
                 language="tsx"
+                darkMode={darkMode}
               />
             </DocCard>
           </div>

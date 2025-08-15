@@ -25,9 +25,13 @@ import {
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { CodeBlock } from "@/components/ui/code-block";
+import { useTheme } from "next-themes";
 
 export default function DocsPage() {
   const [origin, setOrigin] = React.useState("");
+  const { theme, systemTheme } = useTheme();
+  const currentTheme = theme === 'system' ? systemTheme : theme;
+  const darkMode = currentTheme === 'dark';
 
   React.useEffect(() => {
     setOrigin(window.location.origin);
@@ -227,6 +231,7 @@ export default function DocsPage() {
                   code={installCommand}
                   language="bash"
                   showPackageManagerTabs={true}
+                  darkMode={darkMode}
                 />
               </div>
               <p className="text-sm text-foreground mt-3">

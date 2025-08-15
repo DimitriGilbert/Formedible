@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { CodeBlock } from "@/components/ui/code-block";
 import { DocCard } from "@/components/doc-card";
 import Link from "next/link";
+import { useTheme } from "next-themes";
 
 export const metadata: Metadata = {
   title: "Form Persistence - Formedible",
@@ -22,6 +23,10 @@ export const metadata: Metadata = {
 };
 
 export default function PersistencePage() {
+  const { theme, systemTheme } = useTheme();
+  const currentTheme = theme === 'system' ? systemTheme : theme;
+  const darkMode = currentTheme === 'dark';
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
@@ -97,6 +102,7 @@ export default function PersistencePage() {
   }
 });`}
                   language="tsx"
+                  darkMode={darkMode}
                 />
               </div>
             </DocCard>
@@ -119,6 +125,7 @@ export default function PersistencePage() {
   restoreOnMount: true              // Restore data when component mounts
 }`}
                   language="tsx"
+                  darkMode={darkMode}
                 />
               </div>
 
@@ -167,6 +174,7 @@ export default function PersistencePage() {
   }
 });`}
                 language="tsx"
+                darkMode={darkMode}
               />
             </DocCard>
 
@@ -208,6 +216,7 @@ const handleClear = () => {
   clearStorage();
 };`}
                 language="tsx"
+                darkMode={darkMode}
               />
             </DocCard>
 
@@ -238,6 +247,7 @@ const handleClear = () => {
 
 // When user returns, they'll be on the same page with their data restored`}
                 language="tsx"
+                darkMode={darkMode}
               />
             </DocCard>
 
@@ -272,6 +282,7 @@ const handleClear = () => {
   }
 });`}
                 language="tsx"
+                darkMode={darkMode}
               />
             </DocCard>
 
@@ -305,6 +316,7 @@ const handleManualSave = () => {
   }
 };`}
                 language="tsx"
+                darkMode={darkMode}
               />
             </DocCard>
 

@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { CodeBlock } from "@/components/ui/code-block";
+import { useTheme } from "next-themes";
 
 interface DemoCardProps {
   title: string;
@@ -22,7 +23,14 @@ export const DemoCard: React.FC<DemoCardProps> = ({
   codeTitle,
   codeDescription,
   badges,
-}) => (
+}) => {
+  const { theme, systemTheme } = useTheme();
+  
+  // Determine the current theme - handle 'system' theme by falling back to systemTheme
+  const currentTheme = theme === 'system' ? systemTheme : theme;
+  const darkMode = currentTheme === 'dark';
+
+  return (
   <Tabs defaultValue="preview" className="w-full">
     <TabsList className="grid w-full grid-cols-2 mb-0">
       <TabsTrigger value="preview">Preview</TabsTrigger>
@@ -57,9 +65,10 @@ export const DemoCard: React.FC<DemoCardProps> = ({
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
-          <CodeBlock code={code} />
+          <CodeBlock code={code} darkMode={darkMode} />
         </CardContent>
       </Card>
     </TabsContent>
   </Tabs>
-);
+  );
+};

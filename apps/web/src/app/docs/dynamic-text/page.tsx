@@ -5,10 +5,17 @@ import { ArrowLeft, Zap, Code2, Star, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CodeBlock } from "@/components/ui/code-block";
+import { useTheme } from "next-themes";
 import { DocCard } from "@/components/doc-card";
 import Link from "next/link";
 
 export default function DynamicTextPage() {
+  const { theme, systemTheme } = useTheme();
+  
+  // Determine the current theme - handle 'system' theme by falling back to systemTheme
+  const currentTheme = theme === 'system' ? systemTheme : theme;
+  const darkMode = currentTheme === 'dark';
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
@@ -63,6 +70,7 @@ export default function DynamicTextPage() {
                 <div>
                   <h3 className="text-lg font-semibold mb-3">Basic Usage</h3>
                   <CodeBlock
+                    darkMode={darkMode}
                     code={`const personalizedForm = useFormedible({
   fields: [
     // Collect user information
@@ -149,6 +157,7 @@ export default function DynamicTextPage() {
 
               <div className="mt-6">
                 <CodeBlock
+                  darkMode={darkMode}
                   code={`// All of these support dynamic text:
 const comprehensiveForm = useFormedible({
   fields: [
@@ -195,6 +204,7 @@ const comprehensiveForm = useFormedible({
             >
               <div className="space-y-6">
                 <CodeBlock
+                  darkMode={darkMode}
                   code={`const advancedDynamicForm = useFormedible({
   fields: [
     { name: "userType", type: "select", options: ["individual", "business"] },
@@ -310,6 +320,7 @@ const comprehensiveForm = useFormedible({
                 <div>
                   <h3 className="text-lg font-semibold mb-3">Multi-Step Registration</h3>
                   <CodeBlock
+                    darkMode={darkMode}
                     code={`const registrationForm = useFormedible({
   fields: [
     // Step 1: Basic Info
@@ -349,6 +360,7 @@ const comprehensiveForm = useFormedible({
                 <div>
                   <h3 className="text-lg font-semibold mb-3">E-commerce Checkout</h3>
                   <CodeBlock
+                    darkMode={darkMode}
                     code={`const checkoutForm = useFormedible({
   fields: [
     { name: "customerName", type: "text", label: "Full Name" },
@@ -378,6 +390,7 @@ const comprehensiveForm = useFormedible({
                 <div>
                   <h3 className="text-lg font-semibold mb-3">Customer Support Form</h3>
                   <CodeBlock
+                    darkMode={darkMode}
                     code={`const supportForm = useFormedible({
   fields: [
     { name: "customerName", type: "text", label: "Your Name" },

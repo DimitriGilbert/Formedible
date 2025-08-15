@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { CodeBlock } from "@/components/ui/code-block";
 import { DocCard } from "@/components/doc-card";
 import Link from "next/link";
+import { useTheme } from "next-themes";
 
 export const metadata: Metadata = {
   title: "Advanced Field Types - Formedible",
@@ -22,6 +23,10 @@ export const metadata: Metadata = {
 };
 
 export default function AdvancedFieldsPage() {
+  const { theme, systemTheme } = useTheme();
+  const currentTheme = theme === 'system' ? systemTheme : theme;
+  const darkMode = currentTheme === 'dark';
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
@@ -104,6 +109,7 @@ export default function AdvancedFieldsPage() {
   }
 }`}
                     language="tsx"
+                    darkMode={darkMode}
                   />
                 </div>
 
@@ -176,6 +182,7 @@ export default function AdvancedFieldsPage() {
   }
 }`}
                     language="tsx"
+                    darkMode={darkMode}
                   />
                 </div>
 
@@ -244,6 +251,7 @@ export default function AdvancedFieldsPage() {
   }
 }`}
                     language="tsx"
+                    darkMode={darkMode}
                   />
                 </div>
 
@@ -271,6 +279,7 @@ export default function AdvancedFieldsPage() {
   }
 }`}
                     language="tsx"
+                    darkMode={darkMode}
                   />
                 </div>
               </div>
@@ -331,6 +340,7 @@ export default function AdvancedFieldsPage() {
   }
 }`}
                     language="tsx"
+                    darkMode={darkMode}
                   />
                 </div>
 
@@ -361,6 +371,7 @@ export default function AdvancedFieldsPage() {
   }
 }`}
                     language="tsx"
+                    darkMode={darkMode}
                   />
                 </div>
 
@@ -466,6 +477,7 @@ export default function AdvancedFieldsPage() {
   }
 });`}
                 language="tsx"
+                darkMode={darkMode}
               />
             </DocCard>
 
@@ -490,6 +502,7 @@ export default function AdvancedFieldsPage() {
   }
 }`}
                 language="tsx"
+                darkMode={darkMode}
               />
             </DocCard>
 

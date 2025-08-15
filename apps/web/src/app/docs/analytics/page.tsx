@@ -15,8 +15,13 @@ import { Button } from "@/components/ui/button";
 import { DocCard } from "@/components/doc-card";
 import { CodeBlock } from "@/components/ui/code-block";
 import Link from "next/link";
+import { useTheme } from "next-themes";
 
 export default function AnalyticsPage() {
+  const { theme, systemTheme } = useTheme();
+  const currentTheme = theme === 'system' ? systemTheme : theme;
+  const darkMode = currentTheme === 'dark';
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
@@ -172,6 +177,7 @@ export default function AnalyticsPage() {
   }
 });`}
                     language="tsx"
+                    darkMode={darkMode}
                   />
                 </div>
               </div>
@@ -303,6 +309,7 @@ export default function AnalyticsPage() {
   }
 }`}
                     language="tsx"
+                    darkMode={darkMode}
                   />
                 </div>
               </div>
@@ -343,6 +350,7 @@ export default function AnalyticsPage() {
   }
 }`}
                     language="tsx"
+                    darkMode={darkMode}
                   />
                 </div>
 
@@ -379,6 +387,7 @@ analytics: {
   }
 }`}
                     language="tsx"
+                    darkMode={darkMode}
                   />
                 </div>
 
@@ -414,6 +423,7 @@ analytics: {
   }
 }`}
                     language="tsx"
+                    darkMode={darkMode}
                   />
                 </div>
               </div>
@@ -464,6 +474,7 @@ class FormMetrics {
   }
 }`}
                 language="tsx"
+                darkMode={darkMode}
               />
             </DocCard>
 

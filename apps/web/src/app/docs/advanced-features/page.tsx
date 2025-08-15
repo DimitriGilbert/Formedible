@@ -11,10 +11,17 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CodeBlock } from "@/components/ui/code-block";
+import { useTheme } from "next-themes";
 import { DocCard } from "@/components/doc-card";
 import Link from "next/link";
 
 export default function AdvancedFeaturesPage() {
+  const { theme, systemTheme } = useTheme();
+  
+  // Determine the current theme - handle 'system' theme by falling back to systemTheme
+  const currentTheme = theme === 'system' ? systemTheme : theme;
+  const darkMode = currentTheme === 'dark';
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
@@ -323,6 +330,7 @@ export default function AdvancedFeaturesPage() {
               icon={Code2}
             >
               <CodeBlock
+                darkMode={darkMode}
                 code={`import { useFormedible } from 'formedible';
 
 const { Form } = useFormedible({

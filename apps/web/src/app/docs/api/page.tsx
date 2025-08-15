@@ -12,6 +12,7 @@ import {
   Layers,
 } from "lucide-react";
 import Link from "next/link";
+import { useTheme } from "next-themes";
 
 export const metadata: Metadata = {
   title: "API Reference - Formedible",
@@ -20,6 +21,10 @@ export const metadata: Metadata = {
 };
 
 export default function ApiPage() {
+  const { theme, systemTheme } = useTheme();
+  const currentTheme = theme === 'system' ? systemTheme : theme;
+  const darkMode = currentTheme === 'dark';
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
@@ -82,6 +87,7 @@ export default function ApiPage() {
   config: FormedibleConfig<TFormValues>
 ): FormedibleReturn<TFormValues>`}
                     language="typescript"
+                    darkMode={darkMode}
                   />
                 </div>
 
@@ -114,6 +120,7 @@ export default function ApiPage() {
   layout?: LayoutConfig;
 }`}
                     language="typescript"
+                    darkMode={darkMode}
                   />
                 </div>
 
@@ -149,6 +156,7 @@ export default function ApiPage() {
   validateFieldAsync: (fieldName: string, value: any) => Promise<void>;
 }`}
                     language="typescript"
+                    darkMode={darkMode}
                   />
                 </div>
               </div>
@@ -195,6 +203,7 @@ export default function ApiPage() {
   validation?: ZodSchema;
 }`}
                     language="typescript"
+                    darkMode={darkMode}
                   />
                 </div>
 
@@ -312,6 +321,7 @@ export default function ApiPage() {
   message: string;
 }`}
                     language="typescript"
+                    darkMode={darkMode}
                   />
                 </div>
 
@@ -326,6 +336,7 @@ export default function ApiPage() {
   loadingMessage?: string;
 }`}
                     language="typescript"
+                    darkMode={darkMode}
                   />
                 </div>
               </div>
@@ -345,6 +356,7 @@ export default function ApiPage() {
   restoreOnMount?: boolean;
 }`}
                 language="typescript"
+                darkMode={darkMode}
               />
             </DocCard>
 
@@ -376,6 +388,7 @@ export default function ApiPage() {
   onSubmissionPerformance?: (totalTime: number, validationTime: number, processingTime: number) => void;
 }`}
                 language="typescript"
+                darkMode={darkMode}
               />
             </DocCard>
 
@@ -412,6 +425,7 @@ export type {
   MaskedInputFieldConfig
 };`}
                 language="typescript"
+                darkMode={darkMode}
               />
             </DocCard>
           </div>

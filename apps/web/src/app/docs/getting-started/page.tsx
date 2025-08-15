@@ -6,8 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { CodeBlock } from "@/components/ui/code-block";
 import { DocCard } from "@/components/doc-card";
 import Link from "next/link";
+import { useTheme } from "next-themes";
 
 export default function GettingStartedPage() {
+  const { theme, systemTheme } = useTheme();
+  const currentTheme = theme === 'system' ? systemTheme : theme;
+  const darkMode = currentTheme === 'dark';
+
   const steps = [
     {
       title: "Install Formedible",
@@ -123,6 +128,7 @@ export function ContactForm() {
                     code="npx shadcn@latest add formedible.dev/r/use-formedible.json"
                     language="bash"
                     showPackageManagerTabs={true}
+                    darkMode={darkMode}
                   />
                 </div>
                 <div>
@@ -166,6 +172,7 @@ const contactSchema = z.object({
   message: z.string().min(10, "Message must be at least 10 characters"),
 });`}
                     language="tsx"
+                    darkMode={darkMode}
                   />
                 </div>
                 <div>
@@ -222,6 +229,7 @@ export function ContactForm() {
   return <Form />;
 }`}
                     language="tsx"
+                    darkMode={darkMode}
                   />
                 </div>
                 <div>

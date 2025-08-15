@@ -25,16 +25,22 @@ import { Toaster } from "@/components/ui/sonner";
 import { motion, AnimatePresence } from "motion/react";
 import Link from "next/link";
 import { CodeBlock } from "@/components/ui/code-block";
+import { useTheme } from "next-themes";
 
 // Components
 import { HeroExamples } from "@/components/demo/hero-examples";
 
 export default function Home() {
   const [origin, setOrigin] = React.useState("");
+  const { theme, systemTheme } = useTheme();
 
   React.useEffect(() => {
     setOrigin(window.location.origin);
   }, []);
+
+  // Determine the current theme - handle 'system' theme by falling back to systemTheme
+  const currentTheme = theme === 'system' ? systemTheme : theme;
+  const darkMode = currentTheme === 'dark';
 
   const installCommand = `npx shadcn@latest add ${
     origin || "https://formedible.dev"
@@ -188,6 +194,7 @@ export default function Home() {
                     code={installCommand}
                     language="bash"
                     showPackageManagerTabs={true}
+                    darkMode={darkMode}
                   />
                 </CardContent>
               </Card>
@@ -202,6 +209,7 @@ export default function Home() {
                 <CardContent>
                   <CodeBlock
                     language="tsx"
+                    darkMode={darkMode}
                     code={`import { useFormedible } from "@/hooks/use-formedible";
 import { z } from "zod";
 
