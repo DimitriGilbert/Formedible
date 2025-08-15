@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { BaseFieldProps, ObjectFieldProps, LayoutConfig } from "@/lib/formedible/types";
 import { FieldWrapper } from './base-field-wrapper';
 import { NestedFieldRenderer } from './shared-field-renderer';
+import { resolveDynamicText } from "@/lib/formedible/template-interpolation";
 
 export const ObjectField: React.FC<ObjectFieldProps> = ({
   fieldApi,
@@ -15,6 +16,17 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
   const [isExpanded, setIsExpanded] = React.useState(
     objectConfig?.defaultExpanded !== false
   );
+
+  // Subscribe to form values for dynamic text resolution
+  const [subscribedValues, setSubscribedValues] = React.useState(fieldApi.form?.state?.values || {});
+  
+  React.useEffect(() => {
+    if (!fieldApi.form) return;
+    const unsubscribe = fieldApi.form.store.subscribe((state) => {
+      setSubscribedValues((state as any).values);
+    });
+    return unsubscribe;
+  }, [fieldApi.form]);
 
   // Create a properly typed mockFieldApi that includes the form property
   const createMockFieldApi = (fieldName: string, fieldValue: unknown) => {
@@ -80,7 +92,7 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
             {objectConfig?.title && (
               <div className="flex items-center justify-between">
                 <h4 className="text-sm font-medium text-muted-foreground">
-                  {objectConfig.title}
+                  {resolveDynamicText(objectConfig.title, subscribedValues)}
                 </h4>
                 {objectConfig?.collapsible && (
                   <button
@@ -88,14 +100,17 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
                     onClick={() => setIsExpanded(!isExpanded)}
                     className="text-xs text-muted-foreground hover:text-foreground"
                   >
-                    {isExpanded ? (objectConfig?.collapseLabel || "Collapse") : (objectConfig?.expandLabel || "Expand")}
+                    {isExpanded 
+                      ? resolveDynamicText(objectConfig?.collapseLabel || "Collapse", subscribedValues)
+                      : resolveDynamicText(objectConfig?.expandLabel || "Expand", subscribedValues)
+                    }
                   </button>
                 )}
               </div>
             )}
             {objectConfig?.description && (
               <p className="text-xs text-muted-foreground">
-                {objectConfig.description}
+                {resolveDynamicText(objectConfig.description, subscribedValues)}
               </p>
             )}
           </div>
@@ -129,21 +144,24 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
           <CardHeader className="pb-3">
             {objectConfig?.title && (
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base">{objectConfig.title}</CardTitle>
+                <CardTitle className="text-base">{resolveDynamicText(objectConfig.title, subscribedValues)}</CardTitle>
                 {objectConfig?.collapsible && (
                   <button
                     type="button"
                     onClick={() => setIsExpanded(!isExpanded)}
                     className="text-xs text-muted-foreground hover:text-foreground"
                   >
-                    {isExpanded ? (objectConfig?.collapseLabel || "Collapse") : (objectConfig?.expandLabel || "Expand")}
+                    {isExpanded 
+                      ? resolveDynamicText(objectConfig?.collapseLabel || "Collapse", subscribedValues)
+                      : resolveDynamicText(objectConfig?.expandLabel || "Expand", subscribedValues)
+                    }
                   </button>
                 )}
               </div>
             )}
             {objectConfig?.description && (
               <p className="text-sm text-muted-foreground mt-1">
-                {objectConfig.description}
+                {resolveDynamicText(objectConfig.description, subscribedValues)}
               </p>
             )}
           </CardHeader>

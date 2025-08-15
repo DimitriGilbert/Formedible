@@ -76,7 +76,7 @@ const registrationForm = useFormedible({
     {
       page: 2,
       title: "Contact Details",
-      description: "How can we reach you?",
+      description: "How can we reach you {{firstName}}?",
     },
     {
       page: 3,
@@ -154,7 +154,7 @@ export function RegistrationFormExample() {
       {
         page: 2,
         title: "Contact Details",
-        description: "How can we reach you?",
+        description: "How can we reach you {{firstName}} ?",
       },
       {
         page: 3,

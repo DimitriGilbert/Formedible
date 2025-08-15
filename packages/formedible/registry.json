@@ -105,10 +105,6 @@
           "type": "registry:lib"
         },
         {
-          "path": "src/components/formedible/dynamic-text-renderer.tsx",
-          "type": "registry:component"
-        },
-        {
           "path": "src/components/formedible/fields/file-upload-field.tsx",
           "type": "registry:component"
         },

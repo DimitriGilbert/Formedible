@@ -318,12 +318,25 @@ const SectionRenderer: React.FC<
       return null;
     }
 
+    // Subscribe to form values for dynamic text resolution
+    const [subscribedValues, setSubscribedValues] = React.useState(form?.state?.values || {});
+    
+    React.useEffect(() => {
+      if (!form) return;
+      const unsubscribe = form.store.subscribe((state) => {
+        setSubscribedValues((state as any).values);
+      });
+      return unsubscribe;
+    }, [form]);
+
     return (
       <div key={sectionKey} className="space-y-4">
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             {section.title && (
-              <h3 className="text-lg font-semibold">{section.title}</h3>
+              <h3 className="text-lg font-semibold">
+                {resolveDynamicText(section.title, subscribedValues)}
+              </h3>
             )}
             {section.collapsible && (
               <Button
@@ -333,13 +346,16 @@ const SectionRenderer: React.FC<
                 onClick={() => setIsExpanded(!isExpanded)}
                 className="text-muted-foreground hover:text-foreground"
               >
-                {isExpanded ? collapseLabel : expandLabel}
+                {isExpanded 
+                  ? resolveDynamicText(collapseLabel, subscribedValues)
+                  : resolveDynamicText(expandLabel, subscribedValues)
+                }
               </Button>
             )}
           </div>
           {section.description && (
             <p className="text-muted-foreground text-sm">
-              {section.description}
+              {resolveDynamicText(section.description, subscribedValues)}
             </p>
           )}
         </div>
@@ -1580,6 +1596,11 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
                           const resolvedLabel = resolveDynamicText(label, currentValues);
                           const resolvedPlaceholder = resolveDynamicText(placeholder, currentValues);
                           const resolvedDescription = resolveDynamicText(description, currentValues);
+                          
+                          // Debug log for description
+                          if (description && typeof description === 'string' && description.includes('{{')) {
+                            console.log('DEBUG - Field:', name, 'Original description:', description, 'Resolved:', resolvedDescription, 'Values:', currentValues);
+                          }
 
                           const baseProps = {
                             fieldApi: field as unknown as AnyFieldApi,
@@ -1944,10 +1965,17 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
 
             const PageComponent = pageConfig?.component || DefaultPageComponent;
 
+            // Debug logging for page description
+            if (pageConfig?.description && pageConfig.description.includes('{{')) {
+              console.log('DEBUG - Page description:', pageConfig.description);
+              console.log('DEBUG - Current values:', currentValues);
+              console.log('DEBUG - Resolved description:', resolveDynamicText(pageConfig.description, currentValues));
+            }
+
             return (
               <PageComponent
-                title={pageConfig?.title}
-                description={pageConfig?.description}
+                title={pageConfig?.title ? resolveDynamicText(pageConfig.title, currentValues) : undefined}
+                description={pageConfig?.description ? resolveDynamicText(pageConfig.description, currentValues) : undefined}
                 page={currentPage}
                 totalPages={totalPages}
               >

@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import type { FormTabsProps, DynamicText } from "@/lib/formedible/types";
 import type { FormedibleFormApi } from "@/lib/formedible/types";
-import { DynamicTextRenderer } from "@/components/formedible/dynamic-text-renderer";
+import { resolveDynamicText } from "@/lib/formedible/template-interpolation";
 import type { TemplateOptions } from "@/lib/formedible/template-interpolation";
 
 
@@ -64,6 +64,18 @@ export const EnhancedFormTabs = <TFormValues extends Record<string, unknown>>({
   form,
   templateOptions,
 }: EnhancedFormTabsProps<TFormValues>) => {
+  const [formValues, setFormValues] = React.useState<TFormValues>(
+    (form?.state?.values || {}) as TFormValues
+  );
+
+  React.useEffect(() => {
+    if (!form) return;
+    const unsubscribe = form.store.subscribe((state) => {
+      setFormValues((state as any).values as TFormValues);
+    });
+    return unsubscribe;
+  }, [form]);
+
   return (
     <div className={cn("space-y-4", className)}>
       {children}
@@ -72,15 +84,9 @@ export const EnhancedFormTabs = <TFormValues extends Record<string, unknown>>({
         <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${tabs.length}, 1fr)` }}>
           {tabs.map((tab) => (
             <TabsTrigger key={tab.id} value={tab.id}>
-              {form ? (
-                <DynamicTextRenderer<TFormValues>
-                  text={tab.label}
-                  form={form!}
-                  templateOptions={templateOptions}
-                >
-                  {(text) => text}
-                </DynamicTextRenderer>
-              ) : (
+              {form ? 
+                resolveDynamicText(tab.label, formValues as Record<string, unknown>, templateOptions) || ''
+              : (
                 typeof tab.label === 'string' ? tab.label : ''
               )}
             </TabsTrigger>
