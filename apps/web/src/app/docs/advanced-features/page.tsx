@@ -176,6 +176,33 @@ export default function AdvancedFeaturesPage() {
                 </Card>
               </Link>
 
+              <Link href="/docs/dynamic-text" className="group">
+                <Card className="h-full hover:shadow-lg transition-all duration-300 hover:border-primary/50">
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-gradient-to-br from-primary/10 to-primary/10 border border-primary/30">
+                        <Code2 className="w-6 h-6 text-primary" />
+                      </div>
+                      <div>
+                        <CardTitle className="text-xl group-hover:text-primary transition-colors">
+                          Dynamic Text System
+                        </CardTitle>
+                        <CardDescription className="text-base">
+                          Template strings with {{fieldName}} syntax for personalized forms
+                        </CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="secondary">Templates</Badge>
+                      <Badge variant="secondary">Real-time</Badge>
+                      <Badge variant="secondary">Functions</Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+
               <Card className="h-full bg-muted/30 border-dashed">
                 <CardHeader>
                   <div className="flex items-center gap-3">
@@ -246,6 +273,7 @@ export default function AdvancedFeaturesPage() {
                       <h4 className="font-medium mb-2">Developer Experience</h4>
                       <ul className="space-y-1 text-muted-foreground">
                         <li>• TypeScript support</li>
+                        <li>• Dynamic text templates</li>
                         <li>• Layout components</li>
                         <li>• Multi-page forms</li>
                       </ul>
@@ -299,8 +327,16 @@ export default function AdvancedFeaturesPage() {
 
 const { Form } = useFormedible({
   fields: [
-    { name: 'email', type: 'email', label: 'Email' },
+    { name: 'firstName', type: 'text', label: 'First Name', page: 1 },
+    { name: 'email', type: 'email', label: 'Email', page: 2,
+      description: 'We'll send updates to {{firstName}}' },
     { name: 'location', type: 'location', label: 'Location' },
+  ],
+  
+  // Dynamic text in pages
+  pages: [
+    { page: 1, title: 'Personal Info', description: 'Tell us about yourself' },
+    { page: 2, title: 'Contact Details', description: 'How can we reach you {{firstName}}?' }
   ],
   
   // Cross-field validation

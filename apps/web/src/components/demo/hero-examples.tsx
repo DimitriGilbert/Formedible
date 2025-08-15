@@ -4,17 +4,39 @@ import { DemoCard } from "@/components/demo/demo-card";
 import { AnimatePresence, motion } from "motion/react";
 
 // Import examples from docs/examples
-import { ContactFormExample, contactFormCode } from "@/app/docs/examples/contact-form";
-import { RegistrationFormExample, registrationFormCode } from "@/app/docs/examples/registration-form";
-import { SurveyFormExample, surveyFormCode } from "@/app/docs/examples/survey-form";
+import {
+  ContactFormExample,
+  contactFormCode,
+} from "@/app/docs/examples/contact-form";
+import {
+  RegistrationFormExample,
+  registrationFormCode,
+} from "@/app/docs/examples/registration-form";
+import {
+  SurveyFormExample,
+  surveyFormCode,
+} from "@/app/docs/examples/survey-form";
+import {
+  VacationCarRentalFormExample,
+  vacationCarRentalFormCode,
+} from "@/app/docs/examples/flow-form";
 
 export const HeroExamples: React.FC = () => {
   return (
     <Tabs defaultValue="contact" className="w-full">
-      <TabsList className="grid w-full grid-cols-3 mb-6">
-        <TabsTrigger value="contact" className="text-xs">Contact</TabsTrigger>
-        <TabsTrigger value="registration" className="text-xs">Multi-Page</TabsTrigger>
-        <TabsTrigger value="survey" className="text-xs">Conditional</TabsTrigger>
+      <TabsList className="grid w-full grid-cols-4 mb-6">
+        <TabsTrigger value="Flow" className="text-xs">
+          Flow
+        </TabsTrigger>
+        <TabsTrigger value="contact" className="text-xs">
+          Contact
+        </TabsTrigger>
+        <TabsTrigger value="registration" className="text-xs">
+          Multi-Page
+        </TabsTrigger>
+        <TabsTrigger value="survey" className="text-xs">
+          Conditional
+        </TabsTrigger>
       </TabsList>
 
       <AnimatePresence mode="wait">
@@ -33,6 +55,24 @@ export const HeroExamples: React.FC = () => {
               code={contactFormCode}
               codeTitle="Contact Form Implementation"
               codeDescription="Clean contact form with subject selection and urgency checkbox"
+            />
+          </motion.div>
+        </TabsContent>
+        <TabsContent key="Flow" value="Flow">
+          <motion.div
+            key="Flow-form"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+          >
+            <DemoCard
+              title="Flow Form"
+              description="Simple form with validation, select options, and checkbox"
+              preview={<VacationCarRentalFormExample />}
+              code={vacationCarRentalFormCode}
+              codeTitle="Flow Form Implementation"
+              codeDescription="Flow form with conditional fields and smart option filtering"
             />
           </motion.div>
         </TabsContent>

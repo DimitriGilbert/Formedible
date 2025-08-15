@@ -29,15 +29,7 @@ import { CodeBlock } from "@/components/ui/code-block";
 // Components
 import { HeroExamples } from "@/components/demo/hero-examples";
 
-
-
-
-
-
-
-
 export default function Home() {
-
   const [origin, setOrigin] = React.useState("");
 
   React.useEffect(() => {
@@ -51,7 +43,7 @@ export default function Home() {
   return (
     <>
       <Toaster position="top-right" richColors />
-       <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-background">
         {/* Hero Section */}
         <section className="container mx-auto px-4 py-16">
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-16 xl:gap-24 items-start max-w-7xl mx-auto">
@@ -131,7 +123,6 @@ export default function Home() {
                   </Button>
                 </motion.div>
               </motion.div>
-
             </motion.div>
 
             {/* Right Examples */}
@@ -177,22 +168,26 @@ export default function Home() {
                   animate={{ y: 0, opacity: 1 }}
                   transition={{ delay: 0.1 }}
                 >
-                  Get the use-formedible hook installed in your project that uses shadcn/ui
+                  Get the use-formedible hook installed in your project that
+                  uses shadcn/ui
                 </motion.p>
               </div>
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-xl">Install via shadcn CLI</CardTitle>
+                  <CardTitle className="text-xl">
+                    Install via shadcn CLI
+                  </CardTitle>
                   <CardDescription>
-                    This installs the hook, all field components, and their dependencies automatically.
+                    This installs the hook, all field components, and their
+                    dependencies automatically.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <CodeBlock 
-                    code={installCommand} 
+                  <CodeBlock
+                    code={installCommand}
                     language="bash"
-                    showPackageManagerTabs={true} 
+                    showPackageManagerTabs={true}
                   />
                 </CardContent>
               </Card>
@@ -205,7 +200,7 @@ export default function Home() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <CodeBlock 
+                  <CodeBlock
                     language="tsx"
                     code={`import { useFormedible } from "@/hooks/use-formedible";
 import { z } from "zod";
@@ -236,7 +231,9 @@ export function MyForm() {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-xl">📦 What Gets Installed</CardTitle>
+                  <CardTitle className="text-xl">
+                    📦 What Gets Installed
+                  </CardTitle>
                   <CardDescription>
                     Complete package includes everything you need
                   </CardDescription>
@@ -245,19 +242,28 @@ export function MyForm() {
                   <ul className="text-sm text-foreground space-y-2">
                     <li className="flex items-start gap-2">
                       <span className="text-primary">•</span>
-                      <span><code>hooks/use-formedible.tsx</code> - Main form hook</span>
+                      <span>
+                        <code>hooks/use-formedible.tsx</code> - Main form hook
+                      </span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-primary">•</span>
-                      <span><code>components/fields/*</code> - All field components (text, select, date, etc.)</span>
+                      <span>
+                        <code>components/fields/*</code> - All field components
+                        (text, select, date, etc.)
+                      </span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-primary">•</span>
-                      <span>All required shadcn/ui components and dependencies</span>
+                      <span>
+                        All required shadcn/ui components and dependencies
+                      </span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-primary">•</span>
-                      <span>TypeScript definitions and component interfaces</span>
+                      <span>
+                        TypeScript definitions and component interfaces
+                      </span>
                     </li>
                   </ul>
                 </CardContent>
@@ -328,7 +334,9 @@ export function MyForm() {
                   >
                     <Card className="hover:shadow-lg transition-shadow">
                       <CardHeader>
-                        <feature.icon className={`w-8 h-8 ${feature.color} mb-2`} />
+                        <feature.icon
+                          className={`w-8 h-8 ${feature.color} mb-2`}
+                        />
                         <CardTitle>{feature.title}</CardTitle>
                         <CardDescription>{feature.description}</CardDescription>
                       </CardHeader>
@@ -357,7 +365,8 @@ export function MyForm() {
               <Link href="/builder">
                 <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer">
                   <CardHeader>
-                     <Blocks className="w-8 h-8 text-primary mb-2" />                    <CardTitle>Interactive Builder</CardTitle>
+                    <Blocks className="w-8 h-8 text-primary mb-2" />{" "}
+                    <CardTitle>Interactive Builder</CardTitle>
                     <CardDescription>
                       Build forms visually with our interface. Create,
                       customize, and export your forms with ease.
@@ -375,7 +384,8 @@ export function MyForm() {
               <Link href="/docs">
                 <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer">
                   <CardHeader>
-                     <Code className="w-8 h-8 text-accent mb-2" />                    <CardTitle>Documentation</CardTitle>
+                    <Code className="w-8 h-8 text-accent mb-2" />{" "}
+                    <CardTitle>Documentation</CardTitle>
                     <CardDescription>
                       Comprehensive guides, API reference, and examples to help
                       you master Formedible.

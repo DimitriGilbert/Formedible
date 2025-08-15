@@ -75,6 +75,15 @@ export default function DocsPage() {
       badge: null,
     },
     {
+      title: "Dynamic Text",
+      description:
+        "Template strings with {{fieldName}} syntax for personalized form experiences",
+      icon: Sparkles,
+      href: "/docs/dynamic-text",
+      color: "text-primary",
+      badge: "New",
+    },
+    {
       title: "Analytics",
       description:
         "Track user interactions, form completion rates, and performance metrics",

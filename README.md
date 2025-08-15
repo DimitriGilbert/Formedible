@@ -42,6 +42,7 @@ While TanStack Form provides the robust foundation, **Formedible transforms it i
 - **Enhanced Event System** - Comprehensive event handling through fieldApi.eventHandlers
 - **Component Override System** - Replace any field with custom implementations
 - **Global & Field-Level Wrappers** - Add animations, styling, or functionality
+- **Dynamic Text System** - Template strings with {{fieldName}} syntax for labels, descriptions, and titles
 - **Sectioned Forms** - Organize fields into collapsible sections and groups
 - **Layout Engine** - Grid, flex, tabs, accordion, and stepper layouts
 - **Analytics & Tracking** - Built-in form behavior analytics
@@ -156,7 +157,7 @@ export function RegistrationWizard() {
     ],
     pages: [
       { page: 1, title: "Personal Information", description: "Tell us about yourself" },
-      { page: 2, title: "Contact Details", description: "How can we reach you?" },
+      { page: 2, title: "Contact Details", description: "How can we reach you {{firstName}}?" },
       { page: 3, title: "Preferences", description: "Customize your experience" },
     ],
     progress: { showSteps: true, showPercentage: true },
@@ -310,7 +311,108 @@ const dynamicForm = useFormedible({
 });
 ```
 
-### 1.1. **Dynamic Options Based on Form State**
+### 1.1. **Dynamic Text with Template Strings**
+
+Formedible supports dynamic text that updates in real-time based on form values. Use `{{fieldName}}` syntax in any user-facing text:
+
+```tsx
+const dynamicTextForm = useFormedible({
+  fields: [
+    // Page 1: Collect user info
+    { name: "firstName", type: "text", label: "First Name", page: 1 },
+    { name: "lastName", type: "text", label: "Last Name", page: 1 },
+    { name: "company", type: "text", label: "Company Name", page: 1 },
+    
+    // Page 2: Personalized content
+    { 
+      name: "email", 
+      type: "email", 
+      label: "Email Address", 
+      description: "We'll send updates to this address, {{firstName}}",
+      page: 2 
+    },
+    { 
+      name: "phone", 
+      type: "phone", 
+      label: "Phone Number",
+      placeholder: "{{company}} main number",
+      page: 2 
+    }
+  ],
+  pages: [
+    { 
+      page: 1, 
+      title: "Personal Information", 
+      description: "Tell us about yourself" 
+    },
+    { 
+      page: 2, 
+      title: "Contact Details", 
+      description: "How can we reach you {{firstName}}?" 
+    }
+  ],
+  // Sections also support dynamic text
+  fields: [
+    {
+      name: "preferences",
+      type: "checkbox",
+      label: "Marketing Preferences",
+      section: {
+        title: "Preferences for {{firstName}} {{lastName}}",
+        description: "Customize your {{company}} experience"
+      }
+    }
+  ]
+});
+```
+
+**Dynamic Text Works With:**
+- ✅ **Field Labels** - `label: "Welcome {{firstName}}"`
+- ✅ **Field Descriptions** - `description: "We'll contact you at {{email}}"`
+- ✅ **Field Placeholders** - `placeholder: "{{company}} department"`
+- ✅ **Page Titles** - `title: "Settings for {{firstName}}"`
+- ✅ **Page Descriptions** - `description: "Review your info {{firstName}}"`
+- ✅ **Section Titles** - `section: { title: "{{company}} Details" }`
+- ✅ **Section Descriptions** - `section: { description: "Info about {{company}}" }`
+- ✅ **Object Field Titles** - `objectConfig: { title: "{{firstName}}'s Address" }`
+- ✅ **Button Labels** - `collapseLabel: "Hide {{section}} details"`
+
+**Function-Based Dynamic Text:**
+
+For more complex logic, use functions instead of template strings:
+
+```tsx
+const advancedDynamicForm = useFormedible({
+  fields: [
+    { name: "userType", type: "select", options: ["individual", "business"] },
+    { name: "name", type: "text", label: "Full Name" },
+    { name: "companyName", type: "text", label: "Company Name" },
+    {
+      name: "contactMethod",
+      type: "select",
+      label: (values) => {
+        const entity = values.userType === "business" ? values.companyName : values.name;
+        return `How should we contact ${entity || "you"}?`;
+      },
+      description: (values) => {
+        if (values.userType === "business") {
+          return `Choose the best way to reach ${values.companyName || "your company"}`;
+        }
+        return `Choose your preferred contact method, ${values.name || "there"}`;
+      },
+      options: ["email", "phone", "mail"]
+    }
+  ]
+});
+```
+
+**Performance Optimized:**
+- Uses efficient TanStack Form subscriptions
+- Only updates when referenced field values change
+- Minimal re-renders with targeted subscriptions
+- Fallback to literal text when values are empty
+
+### 1.2. **Dynamic Options Based on Form State**
 
 ```tsx
 const locationForm = useFormedible({
@@ -1508,7 +1610,14 @@ npm run lint
 
 ## 📝 Changelog
 
-### v0.2.7 (Latest)
+### v0.2.8 (Latest)
+- **✨ Major**: Dynamic Text System - Template strings with {{fieldName}} syntax for all user-facing text
+- **🎯 Added**: Dynamic text support for labels, descriptions, placeholders, page titles, section titles
+- **⚡ Enhanced**: Function-based dynamic text for complex logic
+- **🏗️ Improved**: Performance-optimized with TanStack Form subscriptions
+- **📦 Updated**: All components support dynamic text with fallback to literal strings
+
+### v0.2.7
 - **🚀 Major**: Unified Field Wrapper System - All 22+ field types now use consistent BaseFieldWrapper
 - **⚡ Enhanced**: Event handling moved to fieldApi.eventHandlers for better architecture
 - **🎯 Added**: Enhanced event access (onFocus, onBlur, onChange, onKeyDown, onKeyUp) across all fields

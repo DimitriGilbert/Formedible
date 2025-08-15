@@ -54,7 +54,7 @@ const scrollToTop = (
     // Check if form is already in view to prevent unnecessary jumping
     const rect = htmlFormRef.current.getBoundingClientRect();
     const isInView = rect.top >= 0 && rect.top <= window.innerHeight * 0.3;
-    
+
     if (!isInView) {
       htmlFormRef.current.scrollIntoView({
         behavior: smooth ? "smooth" : "auto",
@@ -63,7 +63,6 @@ const scrollToTop = (
     }
   }
 };
-
 
 // TanStack Form Best Practice: Reusable subscription component for conditional fields
 
@@ -106,9 +105,6 @@ const FieldConditionalRenderer = ({
     </form.Subscribe>
   );
 };
-
-
-
 
 // Field components with proper typing - each component accepts FieldComponentProps
 const defaultFieldComponents: Record<string, React.ComponentType<any>> = {
@@ -189,11 +185,10 @@ const DefaultPageComponent: React.FC<{
   </div>
 );
 
-
 const SectionRenderer: React.FC<
-  SectionRendererProps & { 
-    collapseLabel?: string; 
-    expandLabel?: string; 
+  SectionRendererProps & {
+    collapseLabel?: string;
+    expandLabel?: string;
     form?: AnyFormApi;
     layout?: LayoutConfig;
   }
@@ -211,10 +206,23 @@ const SectionRenderer: React.FC<
     section?.defaultExpanded !== false
   );
 
+  // Subscribe to form values for dynamic text resolution - always at top level
+  const [subscribedValues, setSubscribedValues] = React.useState<Record<string, unknown>>(
+    form?.state?.values || {}
+  );
+
+  React.useEffect(() => {
+    if (!form) return;
+    const unsubscribe = form.store.subscribe((state) => {
+      setSubscribedValues((state as any).values);
+    });
+    return unsubscribe;
+  }, [form]);
+
   // Check if any fields in this section will actually render
   const hasVisibleFields = React.useMemo(() => {
     if (!form) return true; // Fallback to showing section if form is not available
-    
+
     const currentValues = form.state.values;
     return Object.values(groups).some((groupFields) =>
       (groupFields as FieldConfig[]).some((field) => {
@@ -228,47 +236,49 @@ const SectionRenderer: React.FC<
   }, [groups, form]);
 
   const renderSectionContent = () => {
-    const allVisibleFields = Object.entries(groups).flatMap(([groupKey, groupFields]) => {
-      // Filter out fields that won't render due to conditionals
-      const visibleGroupFields = (groupFields as FieldConfig[]).filter((field) => {
-        if (!form) return true;
-        const currentValues = form.state.values;
-        return !field.conditional || field.conditional(currentValues);
-      });
+    const allVisibleFields = Object.entries(groups).flatMap(
+      ([groupKey, groupFields]) => {
+        // Filter out fields that won't render due to conditionals
+        const visibleGroupFields = (groupFields as FieldConfig[]).filter(
+          (field) => {
+            if (!form) return true;
+            const currentValues = form.state.values;
+            return !field.conditional || field.conditional(currentValues);
+          }
+        );
 
-      return visibleGroupFields.map((field) => ({ ...field, groupKey }));
-    });
+        return visibleGroupFields.map((field) => ({ ...field, groupKey }));
+      }
+    );
 
     // If layout is specified and is grid, use FormGrid
     if (layout && layout.type === "grid") {
       return (
-        <FormGrid 
-          columns={layout.columns as FormGridProps['columns']}
-          gap={layout.gap as FormGridProps['gap']}
+        <FormGrid
+          columns={layout.columns as FormGridProps["columns"]}
+          gap={layout.gap as FormGridProps["gap"]}
           responsive={layout.responsive}
           className={layout.className}
         >
           {allVisibleFields.map((field) => (
-            <div key={field.name}>
-              {renderField(field)}
-            </div>
+            <div key={field.name}>{renderField(field)}</div>
           ))}
         </FormGrid>
       );
     }
-    
+
     // For flex layouts, use simple flex wrapper
     if (layout && layout.type === "flex") {
       return (
-        <div className={cn(
-          "flex flex-wrap",
-          layout.gap ? `gap-${layout.gap}` : "gap-4",
-          layout.className
-        )}>
+        <div
+          className={cn(
+            "flex flex-wrap",
+            layout.gap ? `gap-${layout.gap}` : "gap-4",
+            layout.className
+          )}
+        >
           {allVisibleFields.map((field) => (
-            <div key={field.name}>
-              {renderField(field)}
-            </div>
+            <div key={field.name}>{renderField(field)}</div>
           ))}
         </div>
       );
@@ -279,11 +289,13 @@ const SectionRenderer: React.FC<
       <div className="space-y-4">
         {Object.entries(groups).map(([groupKey, groupFields]) => {
           // Filter out fields that won't render due to conditionals
-          const visibleGroupFields = (groupFields as FieldConfig[]).filter((field) => {
-            if (!form) return true;
-            const currentValues = form.state.values;
-            return !field.conditional || field.conditional(currentValues);
-          });
+          const visibleGroupFields = (groupFields as FieldConfig[]).filter(
+            (field) => {
+              if (!form) return true;
+              const currentValues = form.state.values;
+              return !field.conditional || field.conditional(currentValues);
+            }
+          );
 
           // Don't render empty groups
           if (visibleGroupFields.length === 0) return null;
@@ -292,7 +304,9 @@ const SectionRenderer: React.FC<
             <div
               key={groupKey}
               className={cn(
-                groupKey !== "default" ? "p-4 border rounded-lg bg-muted/20" : ""
+                groupKey !== "default"
+                  ? "p-4 border rounded-lg bg-muted/20"
+                  : ""
               )}
             >
               {groupKey !== "default" && (
@@ -300,7 +314,9 @@ const SectionRenderer: React.FC<
                   {groupKey}
                 </h4>
               )}
-              <div className={groupKey !== "default" ? "space-y-3" : "space-y-4"}>
+              <div
+                className={groupKey !== "default" ? "space-y-3" : "space-y-4"}
+              >
                 {visibleGroupFields.map((field) => renderField(field))}
               </div>
             </div>
@@ -317,17 +333,6 @@ const SectionRenderer: React.FC<
     if (!hasVisibleFields) {
       return null;
     }
-
-    // Subscribe to form values for dynamic text resolution
-    const [subscribedValues, setSubscribedValues] = React.useState(form?.state?.values || {});
-    
-    React.useEffect(() => {
-      if (!form) return;
-      const unsubscribe = form.store.subscribe((state) => {
-        setSubscribedValues((state as any).values);
-      });
-      return unsubscribe;
-    }, [form]);
 
     return (
       <div key={sectionKey} className="space-y-4">
@@ -346,10 +351,9 @@ const SectionRenderer: React.FC<
                 onClick={() => setIsExpanded(!isExpanded)}
                 className="text-muted-foreground hover:text-foreground"
               >
-                {isExpanded 
+                {isExpanded
                   ? resolveDynamicText(collapseLabel, subscribedValues)
-                  : resolveDynamicText(expandLabel, subscribedValues)
-                }
+                  : resolveDynamicText(expandLabel, subscribedValues)}
               </Button>
             )}
           </div>
@@ -428,7 +432,9 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
 
   // Enhanced analytics state management
   const analyticsContextRef = React.useRef<AnalyticsContext>({
-    sessionId: `session_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`,
+    sessionId: `session_${Date.now()}_${Math.random()
+      .toString(36)
+      .substring(2, 15)}`,
     formId: `form_${Date.now()}`,
     userId: undefined,
     currentPage: 1,
@@ -449,16 +455,16 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     },
     fieldInteractions: {},
   });
-  
+
   // Form completion tracking to prevent incorrect abandonment analytics
   const formCompletedRef = React.useRef(false);
-  
+
   // Legacy refs for backward compatibility
   const fieldFocusTimes = React.useRef<Record<string, number>>({});
   const pageStartTime = React.useRef<number>(Date.now());
   const tabStartTime = React.useRef<Record<string, number>>({});
   const tabVisitHistory = React.useRef<Set<string>>(new Set());
-  
+
   // Track previous values to detect actual field changes
   const previousValues = React.useRef<Record<string, unknown>>({});
 
@@ -663,15 +669,15 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
 
           // Track submission start time for performance metrics
           const submissionStartTime = Date.now();
-          
+
           // Enhanced analytics tracking for form completion
           if (analytics) {
             const context = analyticsContextRef.current;
             const timeSpent = Date.now() - context.startTime;
-            
+
             // Update performance metrics
             context.performanceMetrics.submissionMetrics.totalTime = timeSpent;
-            
+
             // Call enhanced completion analytics
             analytics.onFormComplete?.(timeSpent, props.value);
           }
@@ -680,15 +686,16 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
           if (formOptions.onSubmit) {
             try {
               result = await formOptions.onSubmit(props);
-              
+
               // Mark form as completed to prevent abandonment tracking
               formCompletedRef.current = true;
-              
+
               // Track submission performance after successful completion
               if (analytics) {
                 const processingTime = Date.now() - submissionStartTime;
                 const context = analyticsContextRef.current;
-                context.performanceMetrics.submissionMetrics.processingTime = processingTime;
+                context.performanceMetrics.submissionMetrics.processingTime =
+                  processingTime;
                 analytics.onSubmissionPerformance?.(
                   Date.now() - context.startTime,
                   context.performanceMetrics.submissionMetrics.validationTime,
@@ -721,180 +728,216 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
   }, [form]);
 
   // Enhanced analytics helper functions with performance optimization
-  const trackFieldInteraction = React.useCallback((
-    fieldName: string, 
-    action: 'focus' | 'blur' | 'change' | 'error' | 'complete',
-    additionalData?: { timeSpent?: number; value?: unknown; errors?: string[]; isValid?: boolean }
-  ) => {
-    const context = analyticsContextRef.current;
-    const timestamp = Date.now();
-    
-    // Initialize field tracking if not exists
-    if (!context.fieldInteractions[fieldName]) {
-      context.fieldInteractions[fieldName] = {
-        focusCount: 0,
-        totalTimeSpent: 0,
-        changeCount: 0,
-        errorCount: 0,
-        isCompleted: false,
-      };
-    }
-    
-    const fieldData = context.fieldInteractions[fieldName];
-    
-    switch (action) {
-      case 'focus':
-        fieldData.focusCount++;
-        fieldFocusTimes.current[fieldName] = timestamp;
-        analytics?.onFieldFocus?.(fieldName, timestamp);
-        break;
-        
-      case 'blur':
-        if (additionalData?.timeSpent !== undefined) {
-          fieldData.totalTimeSpent += additionalData.timeSpent;
-          analytics?.onFieldBlur?.(fieldName, additionalData.timeSpent);
-        }
-        break;
-        
-      case 'change':
-        fieldData.changeCount++;
-        analytics?.onFieldChange?.(fieldName, additionalData?.value, timestamp);
-        break;
-        
-      case 'error':
-        if (additionalData?.errors?.length) {
-          fieldData.errorCount++;
-          analytics?.onFieldError?.(fieldName, additionalData.errors, timestamp);
-        }
-        break;
-        
-      case 'complete':
-        if (additionalData?.isValid !== undefined && additionalData?.timeSpent !== undefined) {
-          fieldData.isCompleted = additionalData.isValid;
-          analytics?.onFieldComplete?.(fieldName, additionalData.isValid, additionalData.timeSpent);
-        }
-        break;
-    }
-  }, [analytics]);
-
-  const trackTabChange = React.useCallback((fromTab: string, toTab: string) => {
-    const context = analyticsContextRef.current;
-    const timestamp = Date.now();
-    const timeSpent = tabStartTime.current[fromTab] ? timestamp - tabStartTime.current[fromTab] : 0;
-    
-    // Track tab visit
-    if (!tabVisitHistory.current.has(toTab)) {
-      tabVisitHistory.current.add(toTab);
-      analytics?.onTabFirstVisit?.(toTab, timestamp);
-    }
-    
-    // Initialize tab states if not exists
-    if (!context.tabStates[fromTab]) {
-      context.tabStates[fromTab] = {
-        tabId: fromTab,
-        startTime: tabStartTime.current[fromTab] || timestamp,
-        visitCount: 0,
-        fieldsCompleted: 0,
-        totalFields: 0,
-        hasErrors: false,
-        completionPercentage: 0,
-      };
-    }
-    
-    if (!context.tabStates[toTab]) {
-      context.tabStates[toTab] = {
-        tabId: toTab,
-        startTime: timestamp,
-        visitCount: 0,
-        fieldsCompleted: 0,
-        totalFields: 0,
-        hasErrors: false,
-        completionPercentage: 0,
-      };
-    }
-    
-    // Update tab states
-    const fromTabState = context.tabStates[fromTab];
-    const toTabState = context.tabStates[toTab];
-    
-    toTabState.visitCount++;
-    tabStartTime.current[toTab] = timestamp;
-    
-    // Calculate completion state for from tab
-    const tabFields = fieldsByTab[fromTab] || [];
-    fromTabState.totalFields = tabFields.length;
-    fromTabState.fieldsCompleted = tabFields.filter(field => 
-      context.fieldInteractions[field.name]?.isCompleted
-    ).length;
-    fromTabState.completionPercentage = fromTabState.totalFields > 0 
-      ? (fromTabState.fieldsCompleted / fromTabState.totalFields) * 100 
-      : 0;
-    
-    // Check for validation errors in from tab
-    const formState = form.state;
-    fromTabState.hasErrors = tabFields.some(field => {
-      const fieldState = formState.fieldMeta[field.name as keyof typeof formState.fieldMeta];
-      return fieldState && fieldState.errors && fieldState.errors.length > 0;
-    });
-    
-    analytics?.onTabChange?.(fromTab, toTab, timeSpent, {
-      completionPercentage: fromTabState.completionPercentage,
-      hasErrors: fromTabState.hasErrors,
-    });
-  }, [analytics, fieldsByTab, form]);
-
-  const trackPageChange = React.useCallback((fromPage: number, toPage: number) => {
-    const context = analyticsContextRef.current;
-    const timestamp = Date.now();
-    const timeSpent = timestamp - pageStartTime.current;
-    
-    // Initialize page states if not exists
-    if (!context.pageStates[fromPage]) {
-      context.pageStates[fromPage] = {
-        pageNumber: fromPage,
-        startTime: pageStartTime.current,
-        visitCount: 0,
-        fieldsCompleted: 0,
-        totalFields: 0,
-        hasErrors: false,
-        completionPercentage: 0,
-        validationErrors: {},
-        lastActiveField: undefined,
-      };
-    }
-    
-    const pageState = context.pageStates[fromPage];
-    const pageFields = fieldsByPage[fromPage] || [];
-    
-    // Update page completion metrics
-    pageState.totalFields = pageFields.length;
-    pageState.fieldsCompleted = pageFields.filter(field => 
-      context.fieldInteractions[field.name]?.isCompleted
-    ).length;
-    pageState.completionPercentage = pageState.totalFields > 0 
-      ? (pageState.fieldsCompleted / pageState.totalFields) * 100 
-      : 0;
-    
-    // Check for validation errors
-    const formState = form.state;
-    const validationErrors: Record<string, string[]> = {};
-    pageState.hasErrors = pageFields.some(field => {
-      const fieldState = formState.fieldMeta[field.name as keyof typeof formState.fieldMeta];
-      const hasErrors = fieldState && fieldState.errors && fieldState.errors.length > 0;
-      if (hasErrors) {
-        validationErrors[field.name] = fieldState.errors;
+  const trackFieldInteraction = React.useCallback(
+    (
+      fieldName: string,
+      action: "focus" | "blur" | "change" | "error" | "complete",
+      additionalData?: {
+        timeSpent?: number;
+        value?: unknown;
+        errors?: string[];
+        isValid?: boolean;
       }
-      return hasErrors;
-    });
-    pageState.validationErrors = validationErrors;
-    
-    pageStartTime.current = timestamp;
-    
-    analytics?.onPageChange?.(fromPage, toPage, timeSpent, {
-      hasErrors: pageState.hasErrors,
-      completionPercentage: pageState.completionPercentage,
-    });
-  }, [analytics, fieldsByPage, form]);
+    ) => {
+      const context = analyticsContextRef.current;
+      const timestamp = Date.now();
+
+      // Initialize field tracking if not exists
+      if (!context.fieldInteractions[fieldName]) {
+        context.fieldInteractions[fieldName] = {
+          focusCount: 0,
+          totalTimeSpent: 0,
+          changeCount: 0,
+          errorCount: 0,
+          isCompleted: false,
+        };
+      }
+
+      const fieldData = context.fieldInteractions[fieldName];
+
+      switch (action) {
+        case "focus":
+          fieldData.focusCount++;
+          fieldFocusTimes.current[fieldName] = timestamp;
+          analytics?.onFieldFocus?.(fieldName, timestamp);
+          break;
+
+        case "blur":
+          if (additionalData?.timeSpent !== undefined) {
+            fieldData.totalTimeSpent += additionalData.timeSpent;
+            analytics?.onFieldBlur?.(fieldName, additionalData.timeSpent);
+          }
+          break;
+
+        case "change":
+          fieldData.changeCount++;
+          analytics?.onFieldChange?.(
+            fieldName,
+            additionalData?.value,
+            timestamp
+          );
+          break;
+
+        case "error":
+          if (additionalData?.errors?.length) {
+            fieldData.errorCount++;
+            analytics?.onFieldError?.(
+              fieldName,
+              additionalData.errors,
+              timestamp
+            );
+          }
+          break;
+
+        case "complete":
+          if (
+            additionalData?.isValid !== undefined &&
+            additionalData?.timeSpent !== undefined
+          ) {
+            fieldData.isCompleted = additionalData.isValid;
+            analytics?.onFieldComplete?.(
+              fieldName,
+              additionalData.isValid,
+              additionalData.timeSpent
+            );
+          }
+          break;
+      }
+    },
+    [analytics]
+  );
+
+  const trackTabChange = React.useCallback(
+    (fromTab: string, toTab: string) => {
+      const context = analyticsContextRef.current;
+      const timestamp = Date.now();
+      const timeSpent = tabStartTime.current[fromTab]
+        ? timestamp - tabStartTime.current[fromTab]
+        : 0;
+
+      // Track tab visit
+      if (!tabVisitHistory.current.has(toTab)) {
+        tabVisitHistory.current.add(toTab);
+        analytics?.onTabFirstVisit?.(toTab, timestamp);
+      }
+
+      // Initialize tab states if not exists
+      if (!context.tabStates[fromTab]) {
+        context.tabStates[fromTab] = {
+          tabId: fromTab,
+          startTime: tabStartTime.current[fromTab] || timestamp,
+          visitCount: 0,
+          fieldsCompleted: 0,
+          totalFields: 0,
+          hasErrors: false,
+          completionPercentage: 0,
+        };
+      }
+
+      if (!context.tabStates[toTab]) {
+        context.tabStates[toTab] = {
+          tabId: toTab,
+          startTime: timestamp,
+          visitCount: 0,
+          fieldsCompleted: 0,
+          totalFields: 0,
+          hasErrors: false,
+          completionPercentage: 0,
+        };
+      }
+
+      // Update tab states
+      const fromTabState = context.tabStates[fromTab];
+      const toTabState = context.tabStates[toTab];
+
+      toTabState.visitCount++;
+      tabStartTime.current[toTab] = timestamp;
+
+      // Calculate completion state for from tab
+      const tabFields = fieldsByTab[fromTab] || [];
+      fromTabState.totalFields = tabFields.length;
+      fromTabState.fieldsCompleted = tabFields.filter(
+        (field) => context.fieldInteractions[field.name]?.isCompleted
+      ).length;
+      fromTabState.completionPercentage =
+        fromTabState.totalFields > 0
+          ? (fromTabState.fieldsCompleted / fromTabState.totalFields) * 100
+          : 0;
+
+      // Check for validation errors in from tab
+      const formState = form.state;
+      fromTabState.hasErrors = tabFields.some((field) => {
+        const fieldState =
+          formState.fieldMeta[field.name as keyof typeof formState.fieldMeta];
+        return fieldState && fieldState.errors && fieldState.errors.length > 0;
+      });
+
+      analytics?.onTabChange?.(fromTab, toTab, timeSpent, {
+        completionPercentage: fromTabState.completionPercentage,
+        hasErrors: fromTabState.hasErrors,
+      });
+    },
+    [analytics, fieldsByTab, form]
+  );
+
+  const trackPageChange = React.useCallback(
+    (fromPage: number, toPage: number) => {
+      const context = analyticsContextRef.current;
+      const timestamp = Date.now();
+      const timeSpent = timestamp - pageStartTime.current;
+
+      // Initialize page states if not exists
+      if (!context.pageStates[fromPage]) {
+        context.pageStates[fromPage] = {
+          pageNumber: fromPage,
+          startTime: pageStartTime.current,
+          visitCount: 0,
+          fieldsCompleted: 0,
+          totalFields: 0,
+          hasErrors: false,
+          completionPercentage: 0,
+          validationErrors: {},
+          lastActiveField: undefined,
+        };
+      }
+
+      const pageState = context.pageStates[fromPage];
+      const pageFields = fieldsByPage[fromPage] || [];
+
+      // Update page completion metrics
+      pageState.totalFields = pageFields.length;
+      pageState.fieldsCompleted = pageFields.filter(
+        (field) => context.fieldInteractions[field.name]?.isCompleted
+      ).length;
+      pageState.completionPercentage =
+        pageState.totalFields > 0
+          ? (pageState.fieldsCompleted / pageState.totalFields) * 100
+          : 0;
+
+      // Check for validation errors
+      const formState = form.state;
+      const validationErrors: Record<string, string[]> = {};
+      pageState.hasErrors = pageFields.some((field) => {
+        const fieldState =
+          formState.fieldMeta[field.name as keyof typeof formState.fieldMeta];
+        const hasErrors =
+          fieldState && fieldState.errors && fieldState.errors.length > 0;
+        if (hasErrors) {
+          validationErrors[field.name] = fieldState.errors;
+        }
+        return hasErrors;
+      });
+      pageState.validationErrors = validationErrors;
+
+      pageStartTime.current = timestamp;
+
+      analytics?.onPageChange?.(fromPage, toPage, timeSpent, {
+        hasErrors: pageState.hasErrors,
+        completionPercentage: pageState.completionPercentage,
+      });
+    },
+    [analytics, fieldsByPage, form]
+  );
 
   // Track visible pages using a ref to avoid circular dependencies
   const visiblePagesRef = React.useRef<number[]>(
@@ -1032,7 +1075,6 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     }
   }, [loadFromStorage, form, totalPages]);
 
-
   // Set up form event listeners if provided
   React.useEffect(() => {
     const unsubscribers: (() => void)[] = [];
@@ -1097,11 +1139,17 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
       const fieldValidationUnsubscribe = form.store.subscribe(() => {
         const formState = form.state;
         const fieldMeta = formState.fieldMeta;
-        
+
         // Track field validation errors
         Object.entries(fieldMeta).forEach(([fieldName, meta]) => {
-          if (meta && typeof meta === 'object' && 'errors' in meta && Array.isArray(meta.errors) && meta.errors.length > 0) {
-            trackFieldInteraction(fieldName, 'error', { errors: meta.errors });
+          if (
+            meta &&
+            typeof meta === "object" &&
+            "errors" in meta &&
+            Array.isArray(meta.errors) &&
+            meta.errors.length > 0
+          ) {
+            trackFieldInteraction(fieldName, "error", { errors: meta.errors });
           }
         });
       });
@@ -1111,33 +1159,35 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
       const fieldChangeUnsubscribe = form.store.subscribe(() => {
         const values = form.state.values;
         const context = analyticsContextRef.current;
-        
-        Object.entries(values as Record<string, unknown>).forEach(([fieldName, value]) => {
-          // Only process if the value actually changed
-          if (previousValues.current[fieldName] !== value) {
-            // Initialize field tracking if needed
-            if (!context.fieldInteractions[fieldName]) {
-              context.fieldInteractions[fieldName] = {
-                focusCount: 0,
-                totalTimeSpent: 0,
-                changeCount: 0,
-                errorCount: 0,
-                isCompleted: false,
-              };
+
+        Object.entries(values as Record<string, unknown>).forEach(
+          ([fieldName, value]) => {
+            // Only process if the value actually changed
+            if (previousValues.current[fieldName] !== value) {
+              // Initialize field tracking if needed
+              if (!context.fieldInteractions[fieldName]) {
+                context.fieldInteractions[fieldName] = {
+                  focusCount: 0,
+                  totalTimeSpent: 0,
+                  changeCount: 0,
+                  errorCount: 0,
+                  isCompleted: false,
+                };
+              }
+
+              // Track the change
+              trackFieldInteraction(fieldName, "change", { value });
+
+              // Trigger async validation if configured
+              if (asyncValidation[fieldName]) {
+                validateFieldAsync(fieldName, value);
+              }
+
+              // Update previous value
+              previousValues.current[fieldName] = value;
             }
-            
-            // Track the change
-            trackFieldInteraction(fieldName, 'change', { value });
-            
-            // Trigger async validation if configured
-            if (asyncValidation[fieldName]) {
-              validateFieldAsync(fieldName, value);
-            }
-            
-            // Update previous value
-            previousValues.current[fieldName] = value;
           }
-        });
+        );
       });
       unsubscribers.push(fieldChangeUnsubscribe);
 
@@ -1201,23 +1251,31 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     const analyticsContextSnapshot = analyticsContextRef.current;
     const fieldsLength = fields.length;
     const onFormAbandon = analytics?.onFormAbandon;
-    
+
     return () => {
       // Track form abandonment only on component unmount if analytics is enabled and form wasn't completed
-      if (onFormAbandon && !formCompletedRef.current && analyticsContextSnapshot) {
+      if (
+        onFormAbandon &&
+        !formCompletedRef.current &&
+        analyticsContextSnapshot
+      ) {
         const context = analyticsContextSnapshot;
-        
+
         // Ensure context properties exist before accessing
         if (!context.fieldInteractions) return;
-        
+
         const totalFields = fieldsLength;
         const completedFields = Object.values(context.fieldInteractions).filter(
-          field => field && field.isCompleted
+          (field) => field && field.isCompleted
         ).length;
-        const completionPercentage = totalFields > 0 ? (completedFields / totalFields) * 100 : 0;
-        
+        const completionPercentage =
+          totalFields > 0 ? (completedFields / totalFields) * 100 : 0;
+
         // Only track abandonment if form had some interaction
-        if (completedFields > 0 || Object.keys(context.fieldInteractions).length > 0) {
+        if (
+          completedFields > 0 ||
+          Object.keys(context.fieldInteractions).length > 0
+        ) {
           onFormAbandon(completionPercentage, {
             currentPage: context.currentPage,
             currentTab: context.currentTab,
@@ -1447,24 +1505,26 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
       return "";
     });
 
-
     // Enhanced tab change handler with analytics
-    const handleTabChange = React.useCallback((newTabId: string) => {
-      const previousTab = activeTab;
-      
-      // Track tab change if analytics is enabled
-      if (analytics && previousTab && previousTab !== newTabId) {
-        trackTabChange(previousTab, newTabId);
-      }
-      
-      // Initialize tab start time for new tab
-      if (newTabId && !tabStartTime.current[newTabId]) {
-        tabStartTime.current[newTabId] = Date.now();
-      }
-      
-      setActiveTab(newTabId);
-      analyticsContextRef.current.currentTab = newTabId;
-    }, [activeTab]);
+    const handleTabChange = React.useCallback(
+      (newTabId: string) => {
+        const previousTab = activeTab;
+
+        // Track tab change if analytics is enabled
+        if (analytics && previousTab && previousTab !== newTabId) {
+          trackTabChange(previousTab, newTabId);
+        }
+
+        // Initialize tab start time for new tab
+        if (newTabId && !tabStartTime.current[newTabId]) {
+          tabStartTime.current[newTabId] = Date.now();
+        }
+
+        setActiveTab(newTabId);
+        analyticsContextRef.current.currentTab = newTabId;
+      },
+      [activeTab]
+    );
 
     // Initialize first tab start time
     React.useEffect(() => {
@@ -1593,14 +1653,23 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
                           );
 
                           // Resolve dynamic text properties
-                          const resolvedLabel = resolveDynamicText(label, currentValues);
-                          const resolvedPlaceholder = resolveDynamicText(placeholder, currentValues);
-                          const resolvedDescription = resolveDynamicText(description, currentValues);
-                          
+                          const resolvedLabel = resolveDynamicText(
+                            label,
+                            currentValues
+                          );
+                          const resolvedPlaceholder = resolveDynamicText(
+                            placeholder,
+                            currentValues
+                          );
+                          const resolvedDescription = resolveDynamicText(
+                            description,
+                            currentValues
+                          );
+
                           // Debug log for description
-                          if (description && typeof description === 'string' && description.includes('{{')) {
-                            console.log('DEBUG - Field:', name, 'Original description:', description, 'Resolved:', resolvedDescription, 'Values:', currentValues);
-                          }
+                          // if (description && typeof description === 'string' && description.includes('{{')) {
+                          //   console.log('DEBUG - Field:', name, 'Original description:', description, 'Resolved:', resolvedDescription, 'Values:', currentValues);
+                          // }
 
                           const baseProps = {
                             fieldApi: field as unknown as AnyFieldApi,
@@ -1966,16 +2035,30 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
             const PageComponent = pageConfig?.component || DefaultPageComponent;
 
             // Debug logging for page description
-            if (pageConfig?.description && pageConfig.description.includes('{{')) {
-              console.log('DEBUG - Page description:', pageConfig.description);
-              console.log('DEBUG - Current values:', currentValues);
-              console.log('DEBUG - Resolved description:', resolveDynamicText(pageConfig.description, currentValues));
-            }
+            // if (
+            //   pageConfig?.description &&
+            //   pageConfig.description.includes("{{")
+            // ) {
+            //   console.log("DEBUG - Page description:", pageConfig.description);
+            //   console.log("DEBUG - Current values:", currentValues);
+            //   console.log(
+            //     "DEBUG - Resolved description:",
+            //     resolveDynamicText(pageConfig.description, currentValues)
+            //   );
+            // }
 
             return (
               <PageComponent
-                title={pageConfig?.title ? resolveDynamicText(pageConfig.title, currentValues) : undefined}
-                description={pageConfig?.description ? resolveDynamicText(pageConfig.description, currentValues) : undefined}
+                title={
+                  pageConfig?.title
+                    ? resolveDynamicText(pageConfig.title, currentValues)
+                    : undefined
+                }
+                description={
+                  pageConfig?.description
+                    ? resolveDynamicText(pageConfig.description, currentValues)
+                    : undefined
+                }
                 page={currentPage}
                 totalPages={totalPages}
               >
@@ -2036,11 +2119,11 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
                     disabled={!canSubmit || isSubmitting || disabled || loading}
                     className={cn("px-8", submitButtonClassName)}
                   >
-                  {loading
-                    ? "Loading..."
-                    : isSubmitting
-                    ? "Submitting..."
-                    : submitLabel}
+                    {loading
+                      ? "Loading..."
+                      : isSubmitting
+                      ? "Submitting..."
+                      : submitLabel}
                   </SubmitButton>
                 </div>
               );
