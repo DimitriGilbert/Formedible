@@ -1,28 +1,27 @@
-'use client';
-import React from 'react';
-import type { FieldComponentProps, FieldConfig } from '@/lib/formedible/types';
-import { TextField } from './text-field';
-import { TextareaField } from './textarea-field';
-import { SelectField } from './select-field';
-import { CheckboxField } from './checkbox-field';
-import { SwitchField } from './switch-field';
-import { NumberField } from './number-field';
-import { DateField } from './date-field';
-import { SliderField } from './slider-field';
-import { FileUploadField } from './file-upload-field';
-import { RadioField } from './radio-field';
-import { MultiSelectField } from './multi-select-field';
-import { ColorPickerField } from './color-picker-field';
-import { RatingField } from './rating-field';
-import { PhoneField } from './phone-field';
-import { LocationPickerField } from './location-picker-field';
-import { DurationPickerField } from './duration-picker-field';
-import { AutocompleteField } from './autocomplete-field';
-import { MaskedInputField } from './masked-input-field';
+"use client";
+import type { AnyFieldApi, AnyFormApi } from "@tanstack/react-form";
+import React from "react";
+import type { FieldComponentProps, FieldConfig } from "@/lib/formedible/types";
+import { resolveDynamicText } from "@/lib/formedible/template-interpolation";
+import { TextField } from "./text-field";
+import { TextareaField } from "./textarea-field";
+import { SelectField } from "./select-field";
+import { CheckboxField } from "./checkbox-field";
+import { SwitchField } from "./switch-field";
+import { NumberField } from "./number-field";
+import { DateField } from "./date-field";
+import { SliderField } from "./slider-field";
+import { FileUploadField } from "./file-upload-field";
+import { RadioField } from "./radio-field";
+import { MultiSelectField } from "./multi-select-field";
+import { ColorPickerField } from "./color-picker-field";
+import { RatingField } from "./rating-field";
+import { PhoneField } from "./phone-field";
+import { LocationPickerField } from "./location-picker-field";
+import { DurationPickerField } from "./duration-picker-field";
+import { AutocompleteField } from "./autocomplete-field";
+import { MaskedInputField } from "./masked-input-field";
 
-// Single source of truth for field type mapping - used everywhere!
-// NOTE: ArrayField and ObjectField are not included here to avoid circular dependencies
-// They handle their own nested field rendering using this shared renderer
 export const FIELD_TYPE_COMPONENTS: Record<string, React.ComponentType<any>> = {
   text: TextField,
   email: TextField,
@@ -48,30 +47,37 @@ export const FIELD_TYPE_COMPONENTS: Record<string, React.ComponentType<any>> = {
   masked: MaskedInputField,
 };
 
-/**
- * Nested Field Renderer - for use inside array and object fields
- * This properly respects TanStack Form's architecture by using form.Subscribe
- * for conditional logic instead of breaking the reactivity system
- */
-export const NestedFieldRenderer: React.FC<SharedFieldRendererProps> = ({
+export const NestedFieldRenderer = <
+  TFormValues extends Record<string, unknown>
+>({
   fieldConfig,
   fieldApi,
   form,
-  currentValues = {},
+  currentValues,
   resolveOptions,
-}) => {
+}: SharedFieldRendererProps<TFormValues>) => {
+  const formState = form?.state;
+  const safeValues: TFormValues = (currentValues ??
+    formState?.values ??
+    {}) as TFormValues;
+
+  const [subscribedValues, setSubscribedValues] =
+    React.useState<TFormValues>(safeValues);
+
+  React.useEffect(() => {
+    if (!form) return;
+    const unsubscribe = form.store.subscribe((state) => {
+      setSubscribedValues((state as any).values as TFormValues);
+    });
+    return unsubscribe;
+  }, [form]);
+
   const {
-    name,
     type,
-    label,
-    placeholder,
-    description,
+    label: rawLabel,
+    placeholder: rawPlaceholder,
+    description: rawDescription,
     options,
-    min,
-    max,
-    step,
-    accept,
-    multiple,
     component: CustomComponent,
     conditional,
     arrayConfig,
@@ -92,106 +98,72 @@ export const NestedFieldRenderer: React.FC<SharedFieldRendererProps> = ({
     textareaConfig,
     passwordConfig,
     emailConfig,
+    min,
+    max,
+    step,
+    accept,
+    multiple,
   } = fieldConfig;
 
-  // If there's conditional logic and we have form access, use TanStack Form's subscription pattern
-  if (conditional && form) {
-    return (
-      <form.Subscribe selector={(state: any) => state.values}>
-        {(formValues: any) => {
-          // For nested fields (array items or object fields), we need to determine the correct context
-          let contextValues = formValues;
-          
-          if (fieldApi.name.includes('[') && fieldApi.name.includes(']')) {
-            // This is an array field - get the parent array item values
-            const parentPath = fieldApi.name.split('.')[0]; // e.g., "roomDetails[0]"
-            const pathParts = parentPath.match(/(.+)\[(\d+)\]/);
-            if (pathParts) {
-              const [, arrayName, index] = pathParts;
-              const arrayValue = formValues[arrayName];
-              if (arrayValue && arrayValue[parseInt(index)]) {
-                contextValues = arrayValue[parseInt(index)];
-              }
-            }
-          } else if (fieldApi.name.includes('.')) {
-            // This is a nested object field - get the parent object values
-            const parentPath = fieldApi.name.split('.').slice(0, -1).join('.');
-            const parentValue = parentPath.split('.').reduce((obj: Record<string, unknown> | null | undefined, key: string) => obj?.[key] as Record<string, unknown> | null | undefined, formValues as Record<string, unknown>);
-            if (parentValue && typeof parentValue === 'object') {
-              contextValues = parentValue;
-            }
-          }
-            
-          const shouldRender = conditional(contextValues);
-          if (!shouldRender) {
-            return null;
-          }
-          
-          // Render the actual field
-          return renderActualField();
-        }}
-      </form.Subscribe>
-    );
+  const resolvedLabel = rawLabel
+    ? resolveDynamicText(rawLabel, subscribedValues)
+    : undefined;
+  const resolvedPlaceholder = rawPlaceholder
+    ? resolveDynamicText(rawPlaceholder, subscribedValues)
+    : undefined;
+  const resolvedDescription = rawDescription
+    ? resolveDynamicText(rawDescription, subscribedValues)
+    : undefined;
+
+  if (conditional && !conditional(subscribedValues)) {
+    return null;
   }
 
-  // No conditional logic - render directly
-  return renderActualField();
-
   function renderActualField() {
-    // For nested rendering, we need to handle array and object types recursively
-    // Import them dynamically to avoid circular dependencies
-    if (type === 'array') {
-      // Import ArrayField dynamically
-      const ArrayField = require('./array-field').ArrayField;
+    if (type === "array") {
+      const ArrayField = require("./array-field").ArrayField;
       return (
         <ArrayField
           fieldApi={fieldApi}
-          label={label}
-          description={description}
-          placeholder={placeholder}
+          label={resolvedLabel}
+          description={resolvedDescription}
+          placeholder={resolvedPlaceholder}
           arrayConfig={arrayConfig}
         />
       );
     }
 
-    if (type === 'object') {
-      // Import ObjectField dynamically
-      const ObjectField = require('./object-field').ObjectField;
+    if (type === "object") {
+      const ObjectField = require("./object-field").ObjectField;
       return (
         <ObjectField
           fieldApi={fieldApi}
           objectConfig={objectConfig}
           form={form}
-          label={label}
-          description={description}
-          placeholder={placeholder}
+          label={resolvedLabel}
+          description={resolvedDescription}
+          placeholder={resolvedPlaceholder}
         />
       );
     }
 
-    // Select the component to use
     const FieldComponent =
-      CustomComponent ||
-      FIELD_TYPE_COMPONENTS[type] ||
-      TextField;
+      CustomComponent || FIELD_TYPE_COMPONENTS[type] || TextField;
 
-    // Resolve options (static or dynamic)
-    const resolvedOptions = options && resolveOptions 
-      ? resolveOptions(options, currentValues)
-      : Array.isArray(options) 
-        ? options.map((opt: any) =>
-            typeof opt === 'string'
-              ? { value: opt, label: opt }
-              : opt
+    const resolvedOptionsList =
+      options && resolveOptions
+        ? resolveOptions(options, subscribedValues)
+        : Array.isArray(options)
+        ? options.map((opt) =>
+            typeof opt === "string" ? { value: opt, label: opt } : opt
           )
         : [];
 
-    // Build base props
     const baseProps: FieldComponentProps = {
       fieldApi,
-      label,
-      placeholder,
-      description,
+      label: resolvedLabel,
+      placeholder: resolvedPlaceholder,
+      description: resolvedDescription,
       min,
       max,
       step,
@@ -199,81 +171,100 @@ export const NestedFieldRenderer: React.FC<SharedFieldRendererProps> = ({
       multiple,
     };
 
-    // Add type-specific props
     let props: FieldComponentProps = { ...baseProps };
 
-    if (type === 'select' || type === 'radio' || type === 'multiSelect') {
-      props.options = resolvedOptions;
+    if (type === "select" || type === "radio" || type === "multiSelect") {
+      props.options = resolvedOptionsList;
     }
 
-    if (['text', 'email', 'password', 'url', 'tel'].includes(type)) {
+    if (["text", "email", "password", "url", "tel"].includes(type)) {
       props.type = type as any;
       props.datalist = datalist?.options;
     }
 
-    // Add all the config objects
-    if (type === 'rating') props.ratingConfig = ratingConfig;
-    if (type === 'phone') props.phoneConfig = phoneConfig;
-    if (type === 'colorPicker') props.colorConfig = colorConfig;
-    if (type === 'multiSelect') props.multiSelectConfig = multiSelectConfig;
-    if (type === 'location') props.locationConfig = locationConfig;
-    if (type === 'duration') props.durationConfig = durationConfig;
-    if (type === 'autocomplete') {
-      props.autocompleteConfig = autocompleteConfig && resolveOptions 
-        ? {
-            ...autocompleteConfig,
-            options: resolveOptions(autocompleteConfig.options, currentValues),
-          }
-        : autocompleteConfig;
+    if (type === "rating") props.ratingConfig = ratingConfig;
+    if (type === "phone") props.phoneConfig = phoneConfig;
+    if (type === "colorPicker") props.colorConfig = colorConfig;
+    if (type === "multiSelect") props.multiSelectConfig = multiSelectConfig;
+    if (type === "location") props.locationConfig = locationConfig;
+    if (type === "duration") props.durationConfig = durationConfig;
+    if (type === "autocomplete") {
+      props.autocompleteConfig =
+        autocompleteConfig && resolveOptions
+          ? {
+              ...autocompleteConfig,
+              options: resolveOptions(
+                autocompleteConfig.options,
+                subscribedValues
+              ),
+            }
+          : autocompleteConfig;
     }
-    if (type === 'masked') props.maskedInputConfig = maskedInputConfig;
-    if (type === 'slider') props.sliderConfig = sliderConfig;
-    if (type === 'number') props.numberConfig = numberConfig;
-    if (type === 'date') props.dateConfig = dateConfig;
-    if (type === 'file') props.fileConfig = fileConfig;
-    if (type === 'textarea') props.textareaConfig = textareaConfig;
-    if (type === 'password') props.passwordConfig = passwordConfig;
-    if (type === 'email') props.emailConfig = emailConfig;
+    if (type === "masked") props.maskedInputConfig = maskedInputConfig;
+    if (type === "slider") props.sliderConfig = sliderConfig;
+    if (type === "number") props.numberConfig = numberConfig;
+    if (type === "date") props.dateConfig = dateConfig;
+    if (type === "file") props.fileConfig = fileConfig;
+    if (type === "textarea") props.textareaConfig = textareaConfig;
+    if (type === "password") props.passwordConfig = passwordConfig;
+    if (type === "email") props.emailConfig = emailConfig;
 
     return <FieldComponent {...props} />;
   }
+
+  return renderActualField();
 };
 
-export interface SharedFieldRendererProps {
-  fieldConfig: FieldConfig;
-  fieldApi: any;
-  form?: any;
-  currentValues?: Record<string, unknown>;
+export interface SharedFieldRendererProps<
+  TFormValues extends Record<string, unknown>
+> {
+  fieldConfig: FieldConfig & {
+    crossFieldError?: string;
+    asyncValidationState?: any;
+    wrapperClassName?: string;
+    labelClassName?: string;
+    disabled?: boolean;
+  };
+  fieldApi: AnyFieldApi;
+  form?: AnyFormApi;
+  currentValues?: TFormValues;
   resolveOptions?: (
-    options: FieldConfig['options'],
-    currentValues: Record<string, unknown>
+    options: FieldConfig["options"],
+    currentValues: TFormValues
   ) => { value: string; label: string }[];
 }
 
-/**
- * Shared field renderer - THE SINGLE SOURCE OF TRUTH
- * This is used by use-formedible, array-field, and object-field
- * NO MORE DUPLICATION!
- */
-export const SharedFieldRenderer: React.FC<SharedFieldRendererProps> = ({
+export const SharedFieldRenderer = <
+  TFormValues extends Record<string, unknown>
+>({
   fieldConfig,
   fieldApi,
   form,
-  currentValues = {},
+  currentValues,
   resolveOptions,
-}) => {
+}: SharedFieldRendererProps<TFormValues>) => {
+  const formState = form?.state;
+  const safeValues: TFormValues = (currentValues ??
+    formState?.values ??
+    {}) as TFormValues;
+
+  const [subscribedValues, setSubscribedValues] =
+    React.useState<TFormValues>(safeValues);
+
+  React.useEffect(() => {
+    if (!form) return;
+    const unsubscribe = form.store.subscribe((state) => {
+      setSubscribedValues((state as any).values as TFormValues);
+    });
+    return unsubscribe;
+  }, [form]);
+
   const {
-    name,
     type,
-    label,
-    placeholder,
-    description,
+    label: rawLabel,
+    placeholder: rawPlaceholder,
+    description: rawDescription,
     options,
-    min,
-    max,
-    step,
-    accept,
-    multiple,
     component: CustomComponent,
     conditional,
     arrayConfig,
@@ -294,46 +285,51 @@ export const SharedFieldRenderer: React.FC<SharedFieldRendererProps> = ({
     textareaConfig,
     passwordConfig,
     emailConfig,
+    min,
+    max,
+    step,
+    accept,
+    multiple,
   } = fieldConfig;
 
-  // Check conditional logic first - if field should not render, return null
-  if (conditional && form?.state?.values) {
-    const shouldRender = conditional(form.state.values);
-    if (!shouldRender) {
-      return null;
-    }
-  }
+  const resolvedLabel = rawLabel
+    ? resolveDynamicText(rawLabel, subscribedValues)
+    : undefined;
+  const resolvedPlaceholder = rawPlaceholder
+    ? resolveDynamicText(rawPlaceholder, subscribedValues)
+    : undefined;
+  const resolvedDescription = rawDescription
+    ? resolveDynamicText(rawDescription, subscribedValues)
+    : undefined;
 
-  // Handle special cases - array and object fields are NOT rendered by this component
-  // They have their own components to avoid circular dependencies
-  if (type === 'array' || type === 'object') {
-    console.warn(`SharedFieldRenderer: ${type} fields should handle their own rendering to avoid circular dependencies`);
+  if (conditional && !conditional(subscribedValues)) {
     return null;
   }
 
-  // Select the component to use
-  const FieldComponent =
-    CustomComponent ||
-    FIELD_TYPE_COMPONENTS[type] ||
-    TextField;
+  if (type === "array" || type === "object") {
+    console.warn(
+      `SharedFieldRenderer: ${type} fields should handle their own rendering to avoid circular dependencies`
+    );
+    return null;
+  }
 
-  // Resolve options (static or dynamic)
-  const resolvedOptions = options && resolveOptions 
-    ? resolveOptions(options, currentValues)
-    : Array.isArray(options) 
-      ? options.map((opt: any) =>
-          typeof opt === 'string'
-            ? { value: opt, label: opt }
-            : opt
+  const FieldComponent =
+    CustomComponent || FIELD_TYPE_COMPONENTS[type] || TextField;
+
+  const resolvedOptionsList =
+    options && resolveOptions
+      ? resolveOptions(options, subscribedValues)
+      : Array.isArray(options)
+      ? options.map((opt) =>
+          typeof opt === "string" ? { value: opt, label: opt } : opt
         )
       : [];
 
-  // Build base props
   const baseProps: FieldComponentProps = {
     fieldApi,
-    label,
-    placeholder,
-    description,
+    label: resolvedLabel,
+    placeholder: resolvedPlaceholder,
+    description: resolvedDescription,
     min,
     max,
     step,
@@ -341,49 +337,43 @@ export const SharedFieldRenderer: React.FC<SharedFieldRendererProps> = ({
     multiple,
   };
 
-  // Add type-specific props
   let props: FieldComponentProps = { ...baseProps };
 
-  if (type === 'select' || type === 'radio' || type === 'multiSelect') {
-    props.options = resolvedOptions;
+  if (type === "select" || type === "radio" || type === "multiSelect") {
+    props.options = resolvedOptionsList;
   }
 
-  if (type === 'array' && arrayConfig) {
-    props.arrayConfig = arrayConfig;
-  }
-
-  if (['text', 'email', 'password', 'url', 'tel'].includes(type)) {
+  if (["text", "email", "password", "url", "tel"].includes(type)) {
     props.type = type as any;
     props.datalist = datalist?.options;
   }
 
-  // Add all the config objects
-  if (type === 'rating') props.ratingConfig = ratingConfig;
-  if (type === 'phone') props.phoneConfig = phoneConfig;
-  if (type === 'colorPicker') props.colorConfig = colorConfig;
-  if (type === 'multiSelect') props.multiSelectConfig = multiSelectConfig;
-  if (type === 'location') props.locationConfig = locationConfig;
-  if (type === 'duration') props.durationConfig = durationConfig;
-  if (type === 'autocomplete') {
-    props.autocompleteConfig = autocompleteConfig && resolveOptions 
-      ? {
-          ...autocompleteConfig,
-          options: resolveOptions(autocompleteConfig.options, currentValues),
-        }
-      : autocompleteConfig;
+  if (type === "rating") props.ratingConfig = ratingConfig;
+  if (type === "phone") props.phoneConfig = phoneConfig;
+  if (type === "colorPicker") props.colorConfig = colorConfig;
+  if (type === "multiSelect") props.multiSelectConfig = multiSelectConfig;
+  if (type === "location") props.locationConfig = locationConfig;
+  if (type === "duration") props.durationConfig = durationConfig;
+  if (type === "autocomplete") {
+    props.autocompleteConfig =
+      autocompleteConfig && resolveOptions
+        ? {
+            ...autocompleteConfig,
+            options: resolveOptions(
+              autocompleteConfig.options,
+              subscribedValues
+            ),
+          }
+        : autocompleteConfig;
   }
-  if (type === 'masked') props.maskedInputConfig = maskedInputConfig;
-  if (type === 'object') {
-    props.objectConfig = objectConfig;
-    props.form = form; // Pass form for conditional logic!
-  }
-  if (type === 'slider') props.sliderConfig = sliderConfig;
-  if (type === 'number') props.numberConfig = numberConfig;
-  if (type === 'date') props.dateConfig = dateConfig;
-  if (type === 'file') props.fileConfig = fileConfig;
-  if (type === 'textarea') props.textareaConfig = textareaConfig;
-  if (type === 'password') props.passwordConfig = passwordConfig;
-  if (type === 'email') props.emailConfig = emailConfig;
+  if (type === "masked") props.maskedInputConfig = maskedInputConfig;
+  if (type === "slider") props.sliderConfig = sliderConfig;
+  if (type === "number") props.numberConfig = numberConfig;
+  if (type === "date") props.dateConfig = dateConfig;
+  if (type === "file") props.fileConfig = fileConfig;
+  if (type === "textarea") props.textareaConfig = textareaConfig;
+  if (type === "password") props.passwordConfig = passwordConfig;
+  if (type === "email") props.emailConfig = emailConfig;
 
   return <FieldComponent {...props} />;
 };

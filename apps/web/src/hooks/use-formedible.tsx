@@ -42,6 +42,7 @@ import { ObjectField } from "@/components/formedible/fields/object-field";
 import { InlineValidationWrapper } from "@/components/formedible/fields/inline-validation-wrapper";
 import { FieldHelp } from "@/components/formedible/fields/field-help";
 import { FormGrid } from "@/components/formedible/layout/form-grid";
+import { resolveDynamicText } from "@/lib/formedible/template-interpolation";
 
 // Utility function to scroll to top of a specific form
 const scrollToTop = (
@@ -1575,11 +1576,16 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
                             currentValues
                           );
 
+                          // Resolve dynamic text properties
+                          const resolvedLabel = resolveDynamicText(label, currentValues);
+                          const resolvedPlaceholder = resolveDynamicText(placeholder, currentValues);
+                          const resolvedDescription = resolveDynamicText(description, currentValues);
+
                           const baseProps = {
                             fieldApi: field as unknown as AnyFieldApi,
-                            label,
-                            placeholder,
-                            description,
+                            label: resolvedLabel,
+                            placeholder: resolvedPlaceholder,
+                            description: resolvedDescription,
                             wrapperClassName: fieldClassName,
                             labelClassName,
                             min,

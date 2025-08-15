@@ -158,7 +158,7 @@ export const ArrayField: React.FC<ArrayFieldProps> = ({
                 <div className="flex-1">
                   <NestedFieldRenderer
                     fieldConfig={createItemFieldConfig(index)}
-                    fieldApi={createItemFieldApi(index)}
+                    fieldApi={createItemFieldApi(index) as any}
                     form={fieldApi.form}
                     currentValues={fieldApi.form?.state?.values || {}}
                   />

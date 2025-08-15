@@ -1,5 +1,5 @@
+"use client";
 import type { AnyFieldApi, AnyFormApi } from "@tanstack/react-form";
-("use client");
 import React from "react";
 import type { FieldComponentProps, FieldConfig } from "@/lib/formedible/types";
 import { resolveDynamicText } from "@/lib/formedible/template-interpolation";
