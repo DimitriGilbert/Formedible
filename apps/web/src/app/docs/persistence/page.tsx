@@ -1,3 +1,5 @@
+"use client";
+
 import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -16,11 +18,11 @@ import { DocCard } from "@/components/doc-card";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 
-export const metadata: Metadata = {
-  title: "Form Persistence - Formedible",
-  description:
-    "Learn how to implement auto-save and form state persistence in Formedible using localStorage and sessionStorage.",
-};
+// export const metadata: Metadata = {
+//   title: "Form Persistence - Formedible",
+//   description:
+//     "Learn how to implement auto-save and form state persistence in Formedible using localStorage and sessionStorage.",
+// };
 
 export default function PersistencePage() {
   const { theme, systemTheme } = useTheme();

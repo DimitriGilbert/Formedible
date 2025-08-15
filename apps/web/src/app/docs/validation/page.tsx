@@ -1,3 +1,5 @@
+"use client";
+
 import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, CheckCircle, Shield, Zap, Clock } from "lucide-react";
@@ -7,11 +9,11 @@ import { DocCard } from "@/components/doc-card";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 
-export const metadata: Metadata = {
-  title: "Advanced Validation - Formedible",
-  description:
-    "Learn about cross-field validation, async validation, and advanced validation patterns in Formedible.",
-};
+// export const metadata: Metadata = {
+//   title: "Advanced Validation - Formedible",
+//   description:
+//     "Learn about cross-field validation, async validation, and advanced validation patterns in Formedible.",
+// };
 
 export default function ValidationPage() {
   const { theme, systemTheme } = useTheme();

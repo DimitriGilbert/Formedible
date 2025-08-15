@@ -17,6 +17,7 @@ import {
   surveyFormCode,
 } from "@/app/docs/examples/survey-form";
 import {
+  RentalCarFlowCode,
   RentalCarFlowForm,
 } from "@/app/docs/examples/rental-car-flow-form";
 
@@ -69,7 +70,7 @@ export const HeroExamples: React.FC = () => {
               title="Rental Car Flow Form"
               description="Personalized one-field-per-page flow with conditional logic and dynamic text"
               preview={<RentalCarFlowForm />}
-              code=""
+              code={RentalCarFlowCode}
               codeTitle="Rental Car Flow Form"
               codeDescription="19-page personalized flow form with heavy dynamic text usage and conditional pages"
             />

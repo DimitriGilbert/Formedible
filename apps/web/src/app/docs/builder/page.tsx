@@ -1,3 +1,5 @@
+"use client";
+
 import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -15,11 +17,11 @@ import { DocCard } from "@/components/doc-card";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 
-export const metadata: Metadata = {
-  title: "Form Builder - Formedible",
-  description:
-    "Visual form builder with modular tab system for creating forms interactively.",
-};
+// export const metadata: Metadata = {
+//   title: "Form Builder - Formedible",
+//   description:
+//     "Visual form builder with modular tab system for creating forms interactively.",
+// };
 
 export default function BuilderPage() {
   const { theme, systemTheme } = useTheme();

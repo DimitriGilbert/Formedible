@@ -1,3 +1,5 @@
+"use client";
+
 import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Layers, Palette, Shield, Sparkles } from "lucide-react";
@@ -7,11 +9,11 @@ import { DocCard } from "@/components/doc-card";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 
-export const metadata: Metadata = {
-  title: "Field Types - Formedible",
-  description:
-    "Complete guide to all available field types and their configurations in Formedible.",
-};
+// export const metadata: Metadata = {
+//   title: "Field Types - Formedible",
+//   description:
+//     "Complete guide to all available field types and their configurations in Formedible.",
+// };
 
 export default function FieldsPage() {
   const { theme, systemTheme } = useTheme();

@@ -1,3 +1,5 @@
+"use client";
+
 import type { Metadata } from "next";
 import { CodeBlock } from "@/components/ui/code-block";
 import { Button } from "@/components/ui/button";
@@ -14,11 +16,11 @@ import {
 import Link from "next/link";
 import { useTheme } from "next-themes";
 
-export const metadata: Metadata = {
-  title: "API Reference - Formedible",
-  description:
-    "Complete API documentation for Formedible hooks, components, and utilities.",
-};
+// export const metadata: Metadata = {
+//   title: "API Reference - Formedible",
+//   description:
+//     "Complete API documentation for Formedible hooks, components, and utilities.",
+// };
 
 export default function ApiPage() {
   const { theme, systemTheme } = useTheme();

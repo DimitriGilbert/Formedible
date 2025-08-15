@@ -1,3 +1,5 @@
+"use client";
+
 import type { Metadata } from "next";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -16,11 +18,11 @@ import { DocCard } from "@/components/doc-card";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 
-export const metadata: Metadata = {
-  title: "Advanced Field Types - Formedible",
-  description:
-    "Explore advanced field types in Formedible including location picker, duration picker, autocomplete, and masked input fields.",
-};
+// export const metadata: Metadata = {
+//   title: "Advanced Field Types - Formedible",
+//   description:
+//     "Explore advanced field types in Formedible including location picker, duration picker, autocomplete, and masked input fields.",
+// };
 
 export default function AdvancedFieldsPage() {
   const { theme, systemTheme } = useTheme();
