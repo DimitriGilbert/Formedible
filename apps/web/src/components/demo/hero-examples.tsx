@@ -17,13 +17,12 @@ import {
   surveyFormCode,
 } from "@/app/docs/examples/survey-form";
 import {
-  VacationCarRentalFormExample,
-  vacationCarRentalFormCode,
-} from "@/app/docs/examples/flow-form";
+  RentalCarFlowForm,
+} from "@/app/docs/examples/rental-car-flow-form";
 
 export const HeroExamples: React.FC = () => {
   return (
-    <Tabs defaultValue="contact" className="w-full">
+    <Tabs defaultValue="Flow" className="w-full">
       <TabsList className="grid w-full grid-cols-4 mb-6">
         <TabsTrigger value="Flow" className="text-xs">
           Flow
@@ -67,12 +66,12 @@ export const HeroExamples: React.FC = () => {
             transition={{ duration: 0.2 }}
           >
             <DemoCard
-              title="Flow Form"
-              description="Simple form with validation, select options, and checkbox"
-              preview={<VacationCarRentalFormExample />}
-              code={vacationCarRentalFormCode}
-              codeTitle="Flow Form Implementation"
-              codeDescription="Flow form with conditional fields and smart option filtering"
+              title="Rental Car Flow Form"
+              description="Personalized one-field-per-page flow with conditional logic and dynamic text"
+              preview={<RentalCarFlowForm />}
+              code=""
+              codeTitle="Rental Car Flow Form"
+              codeDescription="19-page personalized flow form with heavy dynamic text usage and conditional pages"
             />
           </motion.div>
         </TabsContent>
