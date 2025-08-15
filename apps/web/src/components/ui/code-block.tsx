@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Highlight, themes } from "prism-react-renderer";
 import { motion, AnimatePresence } from "motion/react";
 import { Copy, Check } from "lucide-react";
 import { toast } from "sonner";
+import { useTheme } from "next-themes";
 
 /**
  * Unified CodeBlock component with syntax highlighting, copy functionality, and package manager tabs
@@ -78,6 +79,25 @@ const CopyButton: React.FC<{ text: string; className?: string }> = ({
   );
 };
 
+// Function to load external CSS theme
+const loadPrismTheme = (themeUrl: string, themeId: string) => {
+  // Remove existing theme if present
+  const existingLink = document.getElementById(themeId);
+  if (existingLink) {
+    existingLink.remove();
+  }
+  
+  // Add new theme
+  const link = document.createElement('link');
+  link.id = themeId;
+  link.rel = 'stylesheet';
+  link.href = themeUrl;
+  document.head.appendChild(link);
+};
+
+// Empty theme object to disable built-in styling and let external CSS take control
+const emptyTheme = { plain: {}, styles: [] };
+
 export const CodeBlock: React.FC<CodeBlockProps> = ({
   code,
   language = "tsx",
@@ -88,6 +108,25 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
   title,
 }) => {
   const [selectedPM, setSelectedPM] = useState("npx");
+  const { theme, systemTheme } = useTheme();
+  
+  // Determine the current theme - handle 'system' theme by falling back to systemTheme
+  const currentTheme = theme === 'system' ? systemTheme : theme;
+  
+  // Load appropriate Gruvbox theme based on current theme
+  useEffect(() => {
+    if (currentTheme === 'dark') {
+      loadPrismTheme(
+        'https://cdnjs.cloudflare.com/ajax/libs/prism-themes/1.9.0/prism-gruvbox-dark.min.css',
+        'prism-gruvbox-theme'
+      );
+    } else {
+      loadPrismTheme(
+        'https://cdnjs.cloudflare.com/ajax/libs/prism-themes/1.9.0/prism-gruvbox-light.min.css',
+        'prism-gruvbox-theme'
+      );
+    }
+  }, [currentTheme]);
   
   const packageManagers = {
     npx: code,
@@ -126,7 +165,7 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
       
       <div className="relative group">
         <Highlight
-          theme={themes.oneDark}
+          theme={emptyTheme}
           code={currentCode.trim()}
           language={language as any}
         >
