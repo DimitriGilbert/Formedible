@@ -1,65 +1,25 @@
 'use client';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { cn } from '@/lib/utils';
 import { Plus, Trash2, GripVertical } from 'lucide-react';
-import type { BaseFieldProps } from '@/lib/formedible/types';
-import { TextField } from './text-field';
-import { NumberField } from './number-field';
-import { TextareaField } from './textarea-field';
-import { SelectField } from './select-field';
-import { CheckboxField } from './checkbox-field';
-import { SwitchField } from './switch-field';
-import { DateField } from './date-field';
-import { SliderField } from './slider-field';
-import { FileUploadField } from './file-upload-field';
+import type { BaseFieldProps, ArrayFieldProps } from '@/lib/formedible/types';
+import { FieldWrapper } from './base-field-wrapper';
+import { NestedFieldRenderer } from './shared-field-renderer';
 
-// Map of field types to components
-const fieldTypeComponents: Record<string, React.ComponentType<any>> = {
-  text: TextField,
-  email: TextField,
-  password: TextField,
-  url: TextField,
-  tel: TextField,
-  number: NumberField,
-  textarea: TextareaField,
-  select: SelectField,
-  checkbox: CheckboxField,
-  switch: SwitchField,
-  date: DateField,
-  slider: SliderField,
-  file: FileUploadField,
-};
-
-export interface ArrayFieldSpecificProps extends BaseFieldProps {
-  arrayConfig: {
-    itemType: string;
-    itemLabel?: string;
-    itemPlaceholder?: string;
-    itemValidation?: unknown;
-    minItems?: number;
-    maxItems?: number;
-    addButtonLabel?: string;
-    removeButtonLabel?: string;
-    itemComponent?: React.ComponentType<any>;
-    sortable?: boolean;
-    defaultValue?: unknown;
-    // Additional props to pass to item components
-    itemProps?: Record<string, unknown>;
-  };
-}
-
-export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
+export const ArrayField: React.FC<ArrayFieldProps> = ({
   fieldApi,
   label,
   description,
-  wrapperClassName,
+  placeholder,
+  inputClassName,
   labelClassName,
+  wrapperClassName,
   arrayConfig,
 }) => {
-  const { name, state, handleChange, handleBlur } = fieldApi;
-  const value = useMemo(() => (state.value as unknown[]) || [], [state.value]);
+  const name = fieldApi.name;
+  const isDisabled = fieldApi.form?.state?.isSubmitting ?? false;
+  
+  const value = useMemo(() => (fieldApi.state?.value as unknown[]) || [], [fieldApi.state?.value]);
   
   const {
     itemType,
@@ -73,31 +33,48 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
     sortable = false,
     defaultValue = '',
     itemProps = {},
+    objectConfig,
   } = arrayConfig || {};
 
-  // Get the component for rendering items
-  const ItemComponent = CustomItemComponent || fieldTypeComponents[itemType || 'text'] || TextField;
+  // Create field config for each item
+  const createItemFieldConfig = useCallback((index: number) => {
+    const baseConfig: any = {
+      name: `${name}[${index}]`,
+      type: itemType || 'text',
+      label: itemLabel ? `${itemLabel} ${index + 1}` : undefined,
+      placeholder: itemPlaceholder,
+      component: CustomItemComponent,
+      ...itemProps,
+    };
+
+    // Add object config if item type is object
+    if (itemType === 'object' && objectConfig) {
+      baseConfig.objectConfig = objectConfig;
+    }
+
+    return baseConfig;
+  }, [name, itemType, itemLabel, itemPlaceholder, CustomItemComponent, itemProps, objectConfig]);
 
   const addItem = useCallback(() => {
     if (value.length >= maxItems) return;
     
     const newValue = [...value, defaultValue];
-    handleChange(newValue);
-  }, [value, maxItems, defaultValue, handleChange]);
+    fieldApi.handleChange(newValue);
+  }, [value, maxItems, defaultValue, fieldApi]);
 
   const removeItem = useCallback((index: number) => {
     if (value.length <= minItems) return;
     
     const newValue = value.filter((_, i) => i !== index);
-    handleChange(newValue);
-    handleBlur();
-  }, [value, minItems, handleChange, handleBlur]);
+    fieldApi.handleChange(newValue);
+    fieldApi.handleBlur();
+  }, [value, minItems, fieldApi]);
 
   const updateItem = useCallback((index: number, newItemValue: unknown) => {
     const newValue = [...value];
     newValue[index] = newItemValue;
-    handleChange(newValue);
-  }, [value, handleChange]);
+    fieldApi.handleChange(newValue);
+  }, [value, fieldApi]);
 
   const moveItem = useCallback((fromIndex: number, toIndex: number) => {
     if (!sortable) return;
@@ -106,8 +83,8 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
     const newValue = [...value];
     const [movedItem] = newValue.splice(fromIndex, 1);
     newValue.splice(toIndex, 0, movedItem);
-    handleChange(newValue);
-  }, [value, handleChange, sortable]);
+    fieldApi.handleChange(newValue);
+  }, [value, fieldApi, sortable]);
 
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
@@ -126,141 +103,110 @@ export const ArrayField: React.FC<ArrayFieldSpecificProps> = ({
         },
       },
       handleChange: (newValue: unknown) => updateItem(index, newValue),
-      handleBlur: () => handleBlur(),
+      handleBlur: () => fieldApi.handleBlur(),
       form: fieldApi.form,
     };
-  }, [name, value, updateItem, handleBlur, fieldApi.form]);
+  }, [name, value, updateItem, fieldApi]);
 
   const canAddMore = value.length < maxItems;
   const canRemove = value.length > minItems;
 
   return (
-    <div className={cn("space-y-4", wrapperClassName)}>
-      {label && (
-        <Label className={cn("text-sm font-medium", labelClassName)}>
-          {label}
-          {value.length > 0 && (
-            <span className="ml-2 text-xs text-muted-foreground">
-              ({value.length}{maxItems < Infinity ? `/${maxItems}` : ''} items)
-            </span>
+    <FieldWrapper
+      fieldApi={fieldApi}
+      label={label}
+      description={description}
+      inputClassName={inputClassName}
+      labelClassName={labelClassName}
+      wrapperClassName={wrapperClassName}
+    >
+      <div className="space-y-4">
+        <div className="space-y-3">
+          {value.map((_, index) => (
+              <div
+                key={index}
+                className="flex items-start gap-2 p-3 border rounded-lg bg-card"
+                onDragOver={sortable ? (e) => {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = 'move';
+                } : undefined}
+                onDrop={sortable ? (e) => {
+                  e.preventDefault();
+                  if (draggedIndex !== null && draggedIndex !== index) {
+                    moveItem(draggedIndex, index);
+                  }
+                } : undefined}
+              >
+                {sortable && (
+                  <button
+                    type="button"
+                    className="mt-2 p-1 hover:bg-muted rounded cursor-grab active:cursor-grabbing"
+                    draggable
+                    onDragStart={(e) => {
+                      setDraggedIndex(index);
+                      e.dataTransfer.effectAllowed = 'move';
+                    }}
+                    onDragEnd={() => {
+                      setDraggedIndex(null);
+                    }}
+                    disabled={isDisabled}
+                  >
+                    <GripVertical className="h-4 w-4 text-muted-foreground" />
+                  </button>
+                )}
+                
+                <div className="flex-1">
+                  <NestedFieldRenderer
+                    fieldConfig={createItemFieldConfig(index)}
+                    fieldApi={createItemFieldApi(index) as any}
+                    form={fieldApi.form}
+                    currentValues={fieldApi.form?.state?.values || {}}
+                  />
+                </div>
+                
+                {canRemove && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => removeItem(index)}
+                    className="mt-2 h-8 w-8 p-0 text-destructive hover:text-destructive"
+                    title={removeButtonLabel}
+                    disabled={isDisabled}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            ))}
+            
+            {value.length === 0 && (
+              <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
+                <p className="text-sm">No items added yet</p>
+                <p className="text-xs mt-1">Click &quot;{addButtonLabel}&quot; to add your first item</p>
+              </div>
+            )}
+          </div>
+          
+          {canAddMore && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={addItem}
+              className="w-full"
+              disabled={isDisabled}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              {addButtonLabel}
+            </Button>
           )}
-        </Label>
-      )}
-      {description && <p className="text-xs text-muted-foreground">{description}</p>}
-      
-      <div className="space-y-3">
-        {value.map((_, index) => (
-          <div
-            key={index}
-            className="flex items-start gap-2 p-3 border rounded-lg bg-card"
-            onDragOver={sortable ? (e) => {
-              e.preventDefault();
-              e.dataTransfer.dropEffect = 'move';
-            } : undefined}
-            onDrop={sortable ? (e) => {
-              e.preventDefault();
-              if (draggedIndex !== null && draggedIndex !== index) {
-                moveItem(draggedIndex, index);
-              }
-            } : undefined}
-          >
-            {sortable && (
-              <button
-                type="button"
-                className="mt-2 p-1 hover:bg-muted rounded cursor-grab active:cursor-grabbing"
-                draggable
-                onDragStart={(e) => {
-                  setDraggedIndex(index);
-                  e.dataTransfer.effectAllowed = 'move';
-                }}
-                onDragEnd={() => {
-                  setDraggedIndex(null);
-                }}
-              >
-                <GripVertical className="h-4 w-4 text-muted-foreground" />
-              </button>
-            )}
-            
-            <div className="flex-1">
-              <ItemComponent
-                fieldApi={createItemFieldApi(index)}
-                label={itemLabel ? `${itemLabel} ${index + 1}` : undefined}
-                placeholder={itemPlaceholder}
-                wrapperClassName="mb-0"
-                {...itemProps}
-                // Pass specific props based on item type
-                {...(itemType === 'select' && { options: itemProps.options || [] })}
-                {...(itemType === 'number' && { 
-                  min: itemProps.min, 
-                  max: itemProps.max, 
-                  step: itemProps.step 
-                })}
-                {...(itemType === 'slider' && { 
-                  min: itemProps.min, 
-                  max: itemProps.max, 
-                  step: itemProps.step 
-                })}
-                {...(itemType === 'file' && { 
-                  accept: itemProps.accept,
-                  multiple: itemProps.multiple 
-                })}
-                {...(itemType === 'date' && typeof itemProps.dateProps === 'object' && itemProps.dateProps ? itemProps.dateProps : {})}
-                {...(['text', 'email', 'password', 'url', 'tel'].includes(itemType) && {
-                  type: itemType,
-                  datalist: itemProps.datalist,
-                })}
-              />
-            </div>
-            
-            {canRemove && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => removeItem(index)}
-                className="mt-2 h-8 w-8 p-0 text-destructive hover:text-destructive"
-                title={removeButtonLabel}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-        ))}
-        
-        {value.length === 0 && (
-          <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-lg">
-            <p className="text-sm">No items added yet</p>
-            <p className="text-xs mt-1">Click &quot;{addButtonLabel}&quot; to add your first item</p>
-          </div>
-        )}
-      </div>
-      
-      {canAddMore && (
-        <Button
-          type="button"
-          variant="outline"
-          onClick={addItem}
-          className="w-full"
-          disabled={fieldApi.form.state.isSubmitting}
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          {addButtonLabel}
-        </Button>
-      )}
-      
-      {minItems > 0 && value.length < minItems && (
-        <p className="text-xs text-muted-foreground">
-          Minimum {minItems} item{minItems !== 1 ? 's' : ''} required
-        </p>
-      )}
-      
-      {state.meta.isTouched && state.meta.errors.length > 0 && (
-        <div className="text-xs text-destructive pt-1">
-          {state.meta.errors.map((err: string | Error, index: number) => (
-            <p key={index}>{typeof err === 'string' ? err : (err as Error)?.message || 'Invalid'}</p>
-          ))}
+          
+          {minItems > 0 && value.length < minItems && (
+            <p className="text-xs text-muted-foreground">
+              Minimum {minItems} item{minItems !== 1 ? 's' : ''} required
+            </p>
+          )}
         </div>
-      )}
-    </div>
+    </FieldWrapper>
   );
 }; 

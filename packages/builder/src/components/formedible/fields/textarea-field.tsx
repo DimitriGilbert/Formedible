@@ -1,49 +1,58 @@
 import React from 'react';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import type { BaseFieldProps } from '@/lib/formedible/types';
+import type { TextareaFieldSpecificProps } from '@/lib/formedible/types';
+import { FieldWrapper } from './base-field-wrapper';
 
-export interface TextareaFieldSpecificProps extends BaseFieldProps {
-  rows?: number;
-}
 
 export const TextareaField: React.FC<TextareaFieldSpecificProps> = ({
   fieldApi,
   label,
-  placeholder,
   description,
-  rows = 3,
+  placeholder,
   inputClassName,
   labelClassName,
   wrapperClassName,
+  rows = 3,
 }) => {
+  const name = fieldApi.name;
+  const value = (fieldApi.state?.value as string) || '';
+  const isDisabled = fieldApi.form?.state?.isSubmitting ?? false;
+  const hasErrors = fieldApi.state?.meta?.isTouched && fieldApi.state?.meta?.errors?.length > 0;
+
+  const onChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    fieldApi.handleChange(e.target.value);
+  };
+
+  const onBlur = () => {
+    fieldApi.handleBlur();
+  };
+
+  const computedInputClassName = cn(
+    inputClassName,
+    hasErrors ? "border-destructive" : ""
+  );
+
   return (
-    <div className={cn("space-y-1.5", wrapperClassName)}>
-      {label && (
-        <Label htmlFor={fieldApi.name} className={cn("text-sm font-medium", labelClassName)}>
-          {label}
-        </Label>
-      )}
-      {description && <p className="text-xs text-muted-foreground">{description}</p>}
+    <FieldWrapper
+      fieldApi={fieldApi}
+      label={label}
+      description={description}
+      inputClassName={inputClassName}
+      labelClassName={labelClassName}
+      wrapperClassName={wrapperClassName}
+    >
       <Textarea
-        id={fieldApi.name}
-        name={fieldApi.name}
-        value={(fieldApi.state.value as string) || ''}
-        onBlur={fieldApi.handleBlur}
-        onChange={(e) => fieldApi.handleChange(e.target.value)}
+        id={name}
+        name={name}
+        value={value}
+        onBlur={onBlur}
+        onChange={onChange}
         placeholder={placeholder}
         rows={rows}
-        className={cn(inputClassName, fieldApi.state.meta.errors.length ? "border-destructive" : "")}
-        disabled={fieldApi.form.state.isSubmitting}
+        className={computedInputClassName}
+        disabled={isDisabled}
       />
-      {fieldApi.state.meta.isTouched && fieldApi.state.meta.errors.length > 0 && (
-        <div className="text-xs text-destructive pt-1">
-          {fieldApi.state.meta.errors.map((err: string, index: number) => (
-            <p key={index}>{String(err)}</p>
-          ))}
-        </div>
-      )}
-    </div>
+    </FieldWrapper>
   );
 };

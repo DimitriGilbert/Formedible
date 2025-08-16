@@ -1,129 +1,70 @@
 "use client";
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import type { BaseFieldProps } from "@/lib/formedible/types";
-import { TextField } from "./text-field";
-import { TextareaField } from "./textarea-field";
-import { NumberField } from "./number-field";
-import { SelectField } from "./select-field";
-import { MultiSelectField } from "./multi-select-field";
-import { CheckboxField } from "./checkbox-field";
-import { SwitchField } from "./switch-field";
-import { RadioField } from "./radio-field";
-import { SliderField } from "./slider-field";
-import { DateField } from "./date-field";
-import { RatingField } from "./rating-field";
-import { PhoneField } from "./phone-field";
-import { ColorPickerField } from "./color-picker-field";
-import { FileUploadField } from "./file-upload-field";
-
-interface ObjectFieldConfig {
-  title?: string;
-  description?: string;
-  fields: Array<{
-    name: string;
-    type: string;
-    label?: string;
-    placeholder?: string;
-    description?: string;
-    options?: Array<{ value: string; label: string }>;
-    min?: number;
-    max?: number;
-    step?: number;
-    [key: string]: any;
-  }>;
-  collapsible?: boolean;
-  defaultExpanded?: boolean;
-  showCard?: boolean;
-  layout?: "vertical" | "horizontal" | "grid";
-  columns?: number;
-}
-
-interface ObjectFieldProps extends BaseFieldProps {
-  objectConfig?: ObjectFieldConfig;
-  disabled?: boolean;
-}
+import type { BaseFieldProps, ObjectFieldProps, LayoutConfig } from "@/lib/formedible/types";
+import { FieldWrapper } from './base-field-wrapper';
+import { NestedFieldRenderer } from './shared-field-renderer';
+import { resolveDynamicText } from "@/lib/formedible/template-interpolation";
 
 export const ObjectField: React.FC<ObjectFieldProps> = ({
   fieldApi,
-  label,
-  description,
-  wrapperClassName,
-  disabled,
   objectConfig,
-  ...props
+  disabled,
+  form,
+  ...wrapperProps
 }) => {
   const [isExpanded, setIsExpanded] = React.useState(
     objectConfig?.defaultExpanded !== false
   );
 
-  const fieldComponents = {
-    text: TextField,
-    email: TextField,
-    password: TextField,
-    url: TextField,
-    tel: TextField,
-    textarea: TextareaField,
-    number: NumberField,
-    select: SelectField,
-    multiselect: MultiSelectField,
-    checkbox: CheckboxField,
-    switch: SwitchField,
-    radio: RadioField,
-    slider: SliderField,
-    date: DateField,
-    rating: RatingField,
-    phone: PhoneField,
-    color: ColorPickerField,
-    file: FileUploadField,
-    // Add more as needed
-  };
+  // Subscribe to form values for dynamic text resolution
+  const [subscribedValues, setSubscribedValues] = React.useState(fieldApi.form?.state?.values || {});
+  
+  React.useEffect(() => {
+    if (!fieldApi.form) return;
+    const unsubscribe = fieldApi.form.store.subscribe((state) => {
+      setSubscribedValues((state as any).values);
+    });
+    return unsubscribe;
+  }, [fieldApi.form]);
 
-  const renderField = (fieldConfig: ObjectFieldConfig['fields'][0]) => {
-    const FieldComponent = fieldComponents[fieldConfig.type as keyof typeof fieldComponents];
-    
-    if (!FieldComponent) {
-      console.warn(`Object field: Unknown field type "${fieldConfig.type}"`);
-      return null;
-    }
-
-    // Create a mock field API for object subfields
-    const mockFieldApi = {
-      name: `${fieldApi.name}.${fieldConfig.name}`,
+  // Create a properly typed mockFieldApi that includes the form property
+  const createMockFieldApi = (fieldName: string, fieldValue: unknown) => {
+    return {
+      name: `${fieldApi.name}.${fieldName}`,
+      form: fieldApi.form, // Include the form property to fix the bug
       state: {
         ...fieldApi.state,
-        value: fieldApi.state.value?.[fieldConfig.name] || ''
+        value: fieldValue,
+        meta: {
+          ...fieldApi.state.meta,
+          errors: [], // Reset errors for subfield
+          isTouched: false, // Reset touched state for subfield
+        }
       },
-      handleChange: (value: any) => {
-        const currentValue = fieldApi.state.value || {};
+      handleChange: (value: unknown) => {
+        const currentValue = fieldApi.state?.value || {};
         fieldApi.handleChange({
           ...currentValue,
-          [fieldConfig.name]: value
+          [fieldName]: value
         });
       },
-      handleBlur: fieldApi.handleBlur
-    } as any;
-
-    const fieldProps: any = {
-      fieldApi: mockFieldApi,
-      label: fieldConfig.label,
-      placeholder: fieldConfig.placeholder,
-      description: fieldConfig.description,
-      ...(fieldConfig.min !== undefined && { min: fieldConfig.min }),
-      ...(fieldConfig.max !== undefined && { max: fieldConfig.max }),
-      ...(fieldConfig.step !== undefined && { step: fieldConfig.step }),
-      ...(disabled !== undefined && { disabled }),
+      handleBlur: fieldApi.handleBlur,
     };
+  };
 
-    // Handle fields that require options
-    if (['select', 'radio', 'multiselect'].includes(fieldConfig.type)) {
-      fieldProps.options = fieldConfig.options || [];
-    }
+  const renderField = (subFieldConfig: any) => {
+    const fieldValue = fieldApi.state?.value?.[subFieldConfig.name] || '';
+    const mockFieldApi = createMockFieldApi(subFieldConfig.name, fieldValue) as unknown as BaseFieldProps['fieldApi'];
 
     return (
-      <div key={fieldConfig.name}>
-        <FieldComponent {...fieldProps} />
+      <div key={subFieldConfig.name}>
+        <NestedFieldRenderer
+          fieldConfig={subFieldConfig}
+          fieldApi={mockFieldApi}
+          form={form}
+          currentValues={form?.state?.values || {}}
+        />
       </div>
     );
   };
@@ -143,67 +84,56 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
   };
 
   const content = (
-    <div className={cn("space-y-4", wrapperClassName)}>
-      {/* Main label and description */}
-      {(label || description) && (
-        <div className="space-y-1">
-          {label && (
-            <label className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-              {label}
-            </label>
-          )}
-          {description && (
-            <p className="text-sm text-muted-foreground">
-              {description}
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* Object title and description */}
-      {(objectConfig?.title || objectConfig?.description) && (
-        <div className="space-y-1">
-          {objectConfig?.title && (
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-medium text-muted-foreground">
-                {objectConfig.title}
-              </h4>
-              {objectConfig?.collapsible && (
-                <button
-                  type="button"
-                  onClick={() => setIsExpanded(!isExpanded)}
-                  className="text-xs text-muted-foreground hover:text-foreground"
-                >
-                  {isExpanded ? "Collapse" : "Expand"}
-                </button>
-              )}
-            </div>
-          )}
-          {objectConfig?.description && (
-            <p className="text-xs text-muted-foreground">
-              {objectConfig.description}
-            </p>
-          )}
-        </div>
-      )}
-
-      {/* Fields */}
-      {(!objectConfig?.collapsible || isExpanded) && (
-        <>
-          {objectConfig?.title && <div className="border-t my-4" />}
-          <div className={getLayoutClasses()}>
-            {objectConfig?.fields?.map(renderField)}
+    <FieldWrapper fieldApi={fieldApi} {...wrapperProps}>
+      <div className="space-y-4">
+        {/* Object title and description */}
+        {(objectConfig?.title || objectConfig?.description) && (
+          <div className="space-y-1">
+            {objectConfig?.title && (
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-medium text-muted-foreground">
+                  {resolveDynamicText(objectConfig.title, subscribedValues)}
+                </h4>
+                {objectConfig?.collapsible && (
+                  <button
+                    type="button"
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    {isExpanded 
+                      ? resolveDynamicText(objectConfig?.collapseLabel || "Collapse", subscribedValues)
+                      : resolveDynamicText(objectConfig?.expandLabel || "Expand", subscribedValues)
+                    }
+                  </button>
+                )}
+              </div>
+            )}
+            {objectConfig?.description && (
+              <p className="text-xs text-muted-foreground">
+                {resolveDynamicText(objectConfig.description, subscribedValues)}
+              </p>
+            )}
           </div>
-        </>
-      )}
+        )}
 
-      {/* Show field errors */}
-      {fieldApi.state.meta.errors && fieldApi.state.meta.errors.length > 0 && (
-        <div className="text-sm text-destructive">
-          {fieldApi.state.meta.errors.join(", ")}
-        </div>
-      )}
-    </div>
+        {/* Fields */}
+        {(!objectConfig?.collapsible || isExpanded) && (
+          <>
+            {objectConfig?.title && <div className="border-t my-4" />}
+            <div className={getLayoutClasses()}>
+              {objectConfig?.fields?.map(renderField)}
+            </div>
+          </>
+        )}
+
+        {/* Show field errors */}
+        {fieldApi.state?.meta?.errors && fieldApi.state?.meta?.errors.length > 0 && (
+          <div className="text-sm text-destructive">
+            {fieldApi.state?.meta?.errors.join(", ")}
+          </div>
+        )}
+      </div>
+    </FieldWrapper>
   );
 
   // Wrap in card if specified
@@ -214,36 +144,41 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
           <CardHeader className="pb-3">
             {objectConfig?.title && (
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base">{objectConfig.title}</CardTitle>
+                <CardTitle className="text-base">{resolveDynamicText(objectConfig.title, subscribedValues)}</CardTitle>
                 {objectConfig?.collapsible && (
                   <button
                     type="button"
                     onClick={() => setIsExpanded(!isExpanded)}
                     className="text-xs text-muted-foreground hover:text-foreground"
                   >
-                    {isExpanded ? "Collapse" : "Expand"}
+                    {isExpanded 
+                      ? resolveDynamicText(objectConfig?.collapseLabel || "Collapse", subscribedValues)
+                      : resolveDynamicText(objectConfig?.expandLabel || "Expand", subscribedValues)
+                    }
                   </button>
                 )}
               </div>
             )}
             {objectConfig?.description && (
               <p className="text-sm text-muted-foreground mt-1">
-                {objectConfig.description}
+                {resolveDynamicText(objectConfig.description, subscribedValues)}
               </p>
             )}
           </CardHeader>
         )}
         <CardContent className="pt-0">
           {(!objectConfig?.collapsible || isExpanded) && (
-            <div className={getLayoutClasses()}>
-              {objectConfig?.fields?.map(renderField)}
-            </div>
+            <>
+              <div className={getLayoutClasses()}>
+                {objectConfig?.fields?.map(renderField)}
+              </div>
+            </>
           )}
           
           {/* Show field errors */}
-          {fieldApi.state.meta.errors && fieldApi.state.meta.errors.length > 0 && (
+          {fieldApi.state?.meta?.errors && fieldApi.state?.meta?.errors.length > 0 && (
             <div className="text-sm text-destructive mt-4">
-              {fieldApi.state.meta.errors.join(", ")}
+              {fieldApi.state?.meta?.errors.join(", ")}
             </div>
           )}
         </CardContent>

@@ -1,20 +1,12 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { ChevronDown, Phone } from 'lucide-react';
-import type { BaseFieldProps } from '@/lib/formedible/types';
+import type { PhoneFieldSpecificProps } from '@/lib/formedible/types';
+import { FieldWrapper } from './base-field-wrapper';
 
-export interface PhoneFieldSpecificProps extends BaseFieldProps {
-  phoneConfig?: {
-    defaultCountry?: string;
-    format?: 'national' | 'international';
-    allowedCountries?: string[];
-    placeholder?: string;
-  };
-}
 
 // Common country codes and their formatting
 const COUNTRY_CODES = {
@@ -65,10 +57,11 @@ export const PhoneField: React.FC<PhoneFieldSpecificProps> = ({
   fieldApi,
   label,
   description,
-  phoneConfig = {},
+  placeholder: fieldPlaceholder,
   inputClassName,
   labelClassName,
   wrapperClassName,
+  phoneConfig = {},
 }) => {
   const {
     defaultCountry = 'US',
@@ -77,8 +70,10 @@ export const PhoneField: React.FC<PhoneFieldSpecificProps> = ({
     placeholder,
   } = phoneConfig;
 
-  const { state, handleChange, handleBlur } = fieldApi;
-  const value = (state.value as string) || '';
+  const name = fieldApi.name;
+  const value = (fieldApi.state?.value as string) || '';
+  const isDisabled = fieldApi.form?.state?.isSubmitting ?? false;
+  const hasErrors = fieldApi.state?.meta?.isTouched && fieldApi.state?.meta?.errors?.length > 0;
   
   const [selectedCountry, setSelectedCountry] = useState(defaultCountry);
   const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
@@ -128,7 +123,7 @@ export const PhoneField: React.FC<PhoneFieldSpecificProps> = ({
       ? `${currentCountry.code} ${formatted}`.trim()
       : formatted;
     
-    handleChange(finalValue);
+    fieldApi.handleChange(finalValue);
   };
 
   const handleCountryChange = (countryCode: string) => {
@@ -144,7 +139,7 @@ export const PhoneField: React.FC<PhoneFieldSpecificProps> = ({
       ? `${newCountry.code} ${formatted}`.trim()
       : formatted;
     
-    handleChange(finalValue);
+    fieldApi.handleChange(finalValue);
   };
 
   const getPlaceholder = (): string => {
@@ -157,96 +152,88 @@ export const PhoneField: React.FC<PhoneFieldSpecificProps> = ({
   };
 
   return (
-    <div className={cn("space-y-2", wrapperClassName)}>
-      {label && (
-        <Label className={cn("text-sm font-medium", labelClassName)}>
-          {label}
-        </Label>
-      )}
-      {description && (
-        <p className="text-xs text-muted-foreground">{description}</p>
-      )}
-
-      <div className="flex">
-        {/* Country selector */}
-        <div className="relative">
-          <Button
-            type="button"
-            variant="outline"
-            className={cn(
-              "rounded-r-none border-r-0 px-3 h-10 min-w-[80px]",
-              state.meta.errors.length ? "border-destructive" : ""
-            )}
-            onClick={() => setIsCountryDropdownOpen(!isCountryDropdownOpen)}
-            disabled={fieldApi.form.state.isSubmitting}
-          >
-            <span className="flex items-center gap-2">
-              <span className="text-base">{currentCountry.flag}</span>
-              {format === 'international' && (
-                <span className="text-xs text-muted-foreground">
-                  {currentCountry.code}
-                </span>
+    <FieldWrapper
+      fieldApi={fieldApi}
+      label={label}
+      description={description}
+      inputClassName={inputClassName}
+      labelClassName={labelClassName}
+      wrapperClassName={wrapperClassName}
+    >
+      <div className="space-y-2">
+        <div className="flex">
+          {/* Country selector */}
+          <div className="relative">
+            <Button
+              type="button"
+              variant="outline"
+              className={cn(
+                "rounded-r-none border-r-0 px-3 h-10 min-w-[80px]",
+                hasErrors ? "border-destructive" : ""
               )}
-              <ChevronDown className="h-3 w-3" />
-            </span>
-          </Button>
+              onClick={() => setIsCountryDropdownOpen(!isCountryDropdownOpen)}
+              disabled={isDisabled}
+            >
+              <span className="flex items-center gap-2">
+                <span className="text-base">{currentCountry.flag}</span>
+                {format === 'international' && (
+                  <span className="text-xs text-muted-foreground">
+                    {currentCountry.code}
+                  </span>
+                )}
+                <ChevronDown className="h-3 w-3" />
+              </span>
+            </Button>
 
-          {/* Country dropdown */}
-          {isCountryDropdownOpen && (
-            <div className="absolute z-50 top-full left-0 mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-y-auto min-w-[200px]">
-              {availableCountries.map(([code, country]) => (
-                <button
-                  key={code}
-                  type="button"
-                  className={cn(
-                    "w-full px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground",
-                    "flex items-center gap-3",
-                    selectedCountry === code ? "bg-accent" : ""
-                  )}
-                  onClick={() => handleCountryChange(code)}
-                >
-                  <span className="text-base">{country.flag}</span>
-                  <div className="flex-1">
-                    <div className="font-medium">{country.name}</div>
-                    <div className="text-xs text-muted-foreground">{country.code}</div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
+            {/* Country dropdown */}
+            {isCountryDropdownOpen && (
+              <div className="absolute z-50 top-full left-0 mt-1 bg-popover border rounded-md shadow-lg max-h-60 overflow-y-auto min-w-[200px]">
+                {availableCountries.map(([code, country]) => (
+                  <button
+                    key={code}
+                    type="button"
+                    className={cn(
+                      "w-full px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground",
+                      "flex items-center gap-3",
+                      selectedCountry === code ? "bg-accent" : ""
+                    )}
+                    onClick={() => handleCountryChange(code)}
+                  >
+                    <span className="text-base">{country.flag}</span>
+                    <div className="flex-1">
+                      <div className="font-medium">{country.name}</div>
+                      <div className="text-xs text-muted-foreground">{country.code}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Phone number input */}
+          <Input
+            value={phoneNumber}
+            onChange={handlePhoneNumberChange}
+            onBlur={() => fieldApi.handleBlur()}
+            placeholder={getPlaceholder()}
+            className={cn(
+              "rounded-l-none flex-1",
+              hasErrors ? "border-destructive" : "",
+              inputClassName
+            )}
+            disabled={isDisabled}
+          />
         </div>
 
-        {/* Phone number input */}
-        <Input
-          value={phoneNumber}
-          onChange={handlePhoneNumberChange}
-          onBlur={handleBlur}
-          placeholder={getPlaceholder()}
-          className={cn(
-            "rounded-l-none flex-1",
-            state.meta.errors.length ? "border-destructive" : "",
-            inputClassName
-          )}
-          disabled={fieldApi.form.state.isSubmitting}
-        />
-      </div>
-
-      {/* Format hint */}
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <Phone className="h-3 w-3" />
-        <span>
-          Format: {currentCountry.format.replace(/#/g, '0')}
-          {format === 'international' && ` (${currentCountry.code})`}
-        </span>
-      </div>
-
-      {state.meta.isTouched && state.meta.errors.length > 0 && (
-        <div className="text-xs text-destructive pt-1">
-          {state.meta.errors.map((err: string | Error, index: number) => (
-            <p key={index}>{typeof err === 'string' ? err : (err as Error)?.message || 'Invalid'}</p>
-          ))}
+        {/* Format hint */}
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <Phone className="h-3 w-3" />
+          <span>
+            Format: {currentCountry.format.replace(/#/g, '0')}
+            {format === 'international' && ` (${currentCountry.code})`}
+          </span>
         </div>
-      )}
-    </div>
+      </div>
+    </FieldWrapper>
   );
 }; 

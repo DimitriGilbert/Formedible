@@ -1,11 +1,11 @@
 "use client";
 import React, { useState, useEffect, useRef } from "react";
 import type { BaseFieldProps } from "@/lib/formedible/types";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { FieldWrapper } from './base-field-wrapper';
 
 interface AutocompleteOption {
   value: string;
@@ -28,13 +28,10 @@ interface AutocompleteFieldProps extends BaseFieldProps {
 
 export const AutocompleteField: React.FC<AutocompleteFieldProps> = ({
   fieldApi,
-  label,
-  description,
   placeholder,
-  wrapperClassName,
-  labelClassName,
   inputClassName,
   autocompleteConfig = {},
+  ...wrapperProps
 }) => {
   const {
     options = [],
@@ -47,7 +44,9 @@ export const AutocompleteField: React.FC<AutocompleteFieldProps> = ({
     loadingText = "Loading..."
   } = autocompleteConfig;
 
-  const [inputValue, setInputValue] = useState(fieldApi.state.value || "");
+  const name = fieldApi.name;
+
+  const [inputValue, setInputValue] = useState(fieldApi.state?.value || "");
   const [filteredOptions, setFilteredOptions] = useState<AutocompleteOption[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -181,7 +180,7 @@ export const AutocompleteField: React.FC<AutocompleteFieldProps> = ({
     }
   };
 
-  const handleBlur = () => {
+  const handleInputBlur = () => {
     // Delay closing to allow option clicks
     setTimeout(() => {
       if (!listRef.current?.contains(document.activeElement)) {
@@ -206,18 +205,10 @@ export const AutocompleteField: React.FC<AutocompleteFieldProps> = ({
 
   const showDropdown = isOpen && (filteredOptions.length > 0 || isLoading || (inputValue.length >= minChars && !isLoading));
 
-  return (
-    <div className={cn("space-y-2", wrapperClassName)}>
-      {label && (
-        <Label htmlFor={fieldApi.name} className={labelClassName}>
-          {label}
-        </Label>
-      )}
-      
-      {description && (
-        <p className="text-sm text-muted-foreground">{description}</p>
-      )}
+  const isDisabled = fieldApi.form.state.isSubmitting;
 
+  return (
+    <FieldWrapper fieldApi={fieldApi} {...wrapperProps}>
       <div className="relative">
         <Input
           ref={inputRef}
@@ -227,10 +218,14 @@ export const AutocompleteField: React.FC<AutocompleteFieldProps> = ({
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
           onFocus={handleFocus}
-          onBlur={handleBlur}
+          onBlur={(e) => {
+            handleInputBlur();
+            fieldApi.handleBlur();
+          }}
           placeholder={placeholder || autocompleteConfig.placeholder || "Type to search..."}
           className={cn(inputClassName, isOpen && "rounded-b-none")}
           autoComplete="off"
+          disabled={isDisabled}
         />
 
         {showDropdown && (
@@ -255,6 +250,7 @@ export const AutocompleteField: React.FC<AutocompleteFieldProps> = ({
                         fieldApi.handleChange(inputValue);
                         setIsOpen(false);
                       }}
+                      disabled={isDisabled}
                     >
                       Use "{inputValue}"
                     </Button>
@@ -273,6 +269,7 @@ export const AutocompleteField: React.FC<AutocompleteFieldProps> = ({
                   )}
                   onClick={() => handleOptionSelect(option)}
                   onMouseEnter={() => setHighlightedIndex(index)}
+                  disabled={isDisabled}
                 >
                   <div className="font-medium">{option.label}</div>
                   {option.value !== option.label && (
@@ -284,12 +281,6 @@ export const AutocompleteField: React.FC<AutocompleteFieldProps> = ({
           </Card>
         )}
       </div>
-
-      {fieldApi.state.meta.errors && fieldApi.state.meta.errors.length > 0 && (
-        <p className="text-sm text-destructive">
-          {fieldApi.state.meta.errors[0]}
-        </p>
-      )}
-    </div>
+    </FieldWrapper>
   );
 };

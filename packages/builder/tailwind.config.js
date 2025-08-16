@@ -38,7 +38,7 @@ export default {
   				to: {
   					height: '0'
   				}
-  			},
+  			}
   		},
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',

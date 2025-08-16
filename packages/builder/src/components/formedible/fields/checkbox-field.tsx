@@ -3,39 +3,58 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import type { BaseFieldProps } from '@/lib/formedible/types';
+import { FieldWrapper } from './base-field-wrapper';
 
 export const CheckboxField: React.FC<BaseFieldProps> = ({
   fieldApi,
   label,
   description,
+  placeholder,
+  inputClassName,
   labelClassName,
   wrapperClassName,
 }) => {
+  const name = fieldApi.name;
+  const value = fieldApi.state?.value as boolean | undefined;
+  const isDisabled = fieldApi.form?.state?.isSubmitting ?? false;
+
+  const onCheckedChange = (checked: boolean) => {
+    fieldApi.handleChange(checked);
+  };
+
+  const onBlur = () => {
+    fieldApi.handleBlur();
+  };
+
   return (
-    <div className={cn("space-y-1.5", wrapperClassName)}>
+    // Note: We pass label={undefined} to FieldWrapper and render the label manually
+    // because Checkbox components need the label positioned next to (not above) the control
+    <FieldWrapper 
+      fieldApi={fieldApi} 
+      label={undefined}
+      description={description}
+      inputClassName={inputClassName}
+      labelClassName={labelClassName}
+      wrapperClassName={wrapperClassName}
+    >
       <div className="flex items-center space-x-2">
         <Checkbox
-          id={fieldApi.name}
-          checked={!!fieldApi.state.value}
-          onCheckedChange={(checked) => fieldApi.handleChange(Boolean(checked))}
-          onBlur={fieldApi.handleBlur}
-          disabled={fieldApi.form.state.isSubmitting}
-          aria-describedby={description ? `${fieldApi.name}-description` : undefined}
+          id={name}
+          checked={!!value}
+          onCheckedChange={onCheckedChange}
+          onBlur={onBlur}
+          disabled={isDisabled}
+          aria-describedby={description ? `${name}-description` : undefined}
         />
         {label && (
-          <Label htmlFor={fieldApi.name} className={cn("text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70", labelClassName)}>
+          <Label 
+            htmlFor={name} 
+            className={cn("text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70", labelClassName)}
+          >
             {label}
           </Label>
         )}
       </div>
-      {description && <p id={`${fieldApi.name}-description`} className="text-xs text-muted-foreground">{description}</p>}
-      {fieldApi.state.meta.isTouched && fieldApi.state.meta.errors.length > 0 && (
-        <div className="text-xs text-destructive pt-1">
-          {fieldApi.state.meta.errors.map((err: string, index: number) => (
-            <p key={index}>{String(err)}</p>
-          ))}
-        </div>
-      )}
-    </div>
+    </FieldWrapper>
   );
 };

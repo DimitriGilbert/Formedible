@@ -1,15 +1,10 @@
 'use client';
 import React from 'react';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import type { BaseFieldProps } from '@/lib/formedible/types';
+import type { NumberFieldSpecificProps } from '@/lib/formedible/types';
+import { FieldWrapper } from './base-field-wrapper';
 
-export interface NumberFieldSpecificProps extends BaseFieldProps {
-  min?: number;
-  max?: number;
-  step?: number;
-}
 
 export const NumberField: React.FC<NumberFieldSpecificProps> = ({
   fieldApi,
@@ -23,17 +18,27 @@ export const NumberField: React.FC<NumberFieldSpecificProps> = ({
   max,
   step,
 }) => {
-  const { name, state, handleChange, handleBlur } = fieldApi;
-  const value = state.value as number | string | undefined;
+  const name = fieldApi.name;
+  const value = fieldApi.state?.value as number | string | undefined;
+  const isDisabled = fieldApi.form?.state?.isSubmitting ?? false;
+  const hasErrors = fieldApi.state?.meta?.isTouched && fieldApi.state?.meta?.errors?.length > 0;
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
+    let parsedValue: number | string | undefined;
+    
     if (val === '') {
-      handleChange(undefined);
+      parsedValue = undefined;
     } else {
       const num = parseFloat(val);
-      handleChange(isNaN(num) ? val : num);
+      parsedValue = isNaN(num) ? val : num;
     }
+    
+    fieldApi.handleChange(parsedValue);
+  };
+
+  const onBlur = () => {
+    fieldApi.handleBlur();
   };
 
   let displayValue: string | number = '';
@@ -43,35 +48,34 @@ export const NumberField: React.FC<NumberFieldSpecificProps> = ({
     displayValue = value;
   }
 
+  const computedInputClassName = cn(
+    inputClassName,
+    hasErrors ? "border-destructive" : ""
+  );
+
   return (
-    <div className={cn("space-y-1.5", wrapperClassName)}>
-      {label && (
-        <Label htmlFor={name} className={cn("text-sm font-medium", labelClassName)}>
-          {label}
-        </Label>
-      )}
-      {description && <p className="text-xs text-muted-foreground">{description}</p>}
+    <FieldWrapper
+      fieldApi={fieldApi}
+      label={label}
+      description={description}
+      inputClassName={inputClassName}
+      labelClassName={labelClassName}
+      wrapperClassName={wrapperClassName}
+    >
       <Input
         id={name}
         name={name}
         type="number"
         value={displayValue}
-        onBlur={handleBlur}
+        onBlur={onBlur}
         onChange={onChange}
         placeholder={placeholder}
+        className={computedInputClassName}
+        disabled={isDisabled}
         min={min}
         max={max}
         step={step}
-        className={cn(inputClassName, state.meta.errors.length ? "border-destructive" : "")}
-        disabled={fieldApi.form.state.isSubmitting}
       />
-      {state.meta.isTouched && state.meta.errors.length > 0 && (
-        <div className="text-xs text-destructive pt-1">
-          {state.meta.errors.map((err: string | Error, index: number) => (
-            <p key={index}>{typeof err === 'string' ? err : (err as Error)?.message || 'Invalid'}</p>
-          ))}
-        </div>
-      )}
-    </div>
+    </FieldWrapper>
   );
 };

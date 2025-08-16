@@ -6,9 +6,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import type { BaseFieldProps } from '@/lib/formedible/types';
+import { FieldWrapper } from './base-field-wrapper';
 
 interface SelectFieldSpecificProps extends BaseFieldProps {
   options: Array<{ value: string; label: string }> | string[];
@@ -17,52 +17,64 @@ interface SelectFieldSpecificProps extends BaseFieldProps {
 export const SelectField: React.FC<SelectFieldSpecificProps> = ({
   fieldApi,
   label,
-  placeholder,
   description,
-  options = [],
+  placeholder,
   inputClassName,
   labelClassName,
   wrapperClassName,
+  options = [],
 }) => {
+  const name = fieldApi.name;
+  const value = (fieldApi.state?.value as string) || '';
+  const isDisabled = fieldApi.form?.state?.isSubmitting ?? false;
+  const hasErrors = fieldApi.state?.meta?.isTouched && fieldApi.state?.meta?.errors?.length > 0;
+
+  const onValueChange = (value: string) => {
+    fieldApi.handleChange(value);
+  };
+
+  const onBlur = () => {
+    fieldApi.handleBlur();
+  };
+
+  const computedInputClassName = cn(
+    inputClassName,
+    hasErrors ? "border-destructive" : ""
+  );
+
   return (
-    <div className={cn("space-y-1.5", wrapperClassName)}>
-      {label && (
-        <Label htmlFor={fieldApi.name + "-trigger"} className={cn("text-sm font-medium", labelClassName)}>
-          {label}
-        </Label>
-      )}
-      {description && <p className="text-xs text-muted-foreground">{description}</p>}
+    <FieldWrapper
+      fieldApi={fieldApi}
+      label={label}
+      description={description}
+      inputClassName={inputClassName}
+      labelClassName={labelClassName}
+      wrapperClassName={wrapperClassName}
+    >
       <Select
-        value={(fieldApi.state.value as string) || ''}
-        onValueChange={(value) => fieldApi.handleChange(value)}
-        disabled={fieldApi.form.state.isSubmitting}
+        value={value}
+        onValueChange={onValueChange}
+        disabled={isDisabled}
       >
         <SelectTrigger
-          id={fieldApi.name + "-trigger"}
-          onBlur={fieldApi.handleBlur}
-          className={cn(inputClassName, fieldApi.state.meta.errors.length ? "border-destructive" : "")}
+          id={name + "-trigger"}
+          onBlur={onBlur}
+          className={computedInputClassName}
         >
           <SelectValue placeholder={placeholder || "Select an option"} />
         </SelectTrigger>
         <SelectContent>
           {options.map((option, index) => {
-            const value = typeof option === 'string' ? option : option.value;
-            const label = typeof option === 'string' ? option : option.label;
+            const optionValue = typeof option === 'string' ? option : option.value;
+            const optionLabel = typeof option === 'string' ? option : option.label;
             return (
-              <SelectItem key={value + index} value={value}>
-                {label}
+              <SelectItem key={optionValue + index} value={optionValue}>
+                {optionLabel}
               </SelectItem>
             );
           })}
         </SelectContent>
       </Select>
-      {fieldApi.state.meta.isTouched && fieldApi.state.meta.errors.length > 0 && (
-        <div className="text-xs text-destructive pt-1">
-          {fieldApi.state.meta.errors.map((err: string | Error, index: number) => (
-            <p key={index}>{String(err)}</p>
-          ))}
-        </div>
-      )}
-    </div>
+    </FieldWrapper>
   );
 };

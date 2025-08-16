@@ -1,35 +1,21 @@
 'use client';
 import React, { useState, useRef, useEffect } from 'react';
-import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 
 import { cn } from '@/lib/utils';
 import { X, ChevronDown, Check } from 'lucide-react';
-import type { BaseFieldProps } from '@/lib/formedible/types';
+import type { MultiSelectFieldSpecificProps } from '@/lib/formedible/types';
+import { FieldWrapper } from './base-field-wrapper';
 
-export interface MultiSelectFieldSpecificProps extends BaseFieldProps {
-  options: Array<{ value: string; label: string }> | string[];
-  multiSelectConfig?: {
-    maxSelections?: number;
-    searchable?: boolean;
-    creatable?: boolean;
-    placeholder?: string;
-    noOptionsText?: string;
-    loadingText?: string;
-  };
-}
 
 export const MultiSelectField: React.FC<MultiSelectFieldSpecificProps> = ({
   fieldApi,
-  label,
-  description,
   options = [],
   multiSelectConfig = {},
-  inputClassName,
-  labelClassName,
-  wrapperClassName,
+  
+  ...wrapperProps
 }) => {
   const {
     maxSelections = Infinity,
@@ -39,8 +25,8 @@ export const MultiSelectField: React.FC<MultiSelectFieldSpecificProps> = ({
     noOptionsText = 'No options found',
   } = multiSelectConfig;
 
-  const { state, handleChange, handleBlur } = fieldApi;
-  const selectedValues = Array.isArray(state.value) ? (state.value as string[]) : [];
+  const name = fieldApi.name;
+  const selectedValues = Array.isArray(fieldApi.state?.value) ? fieldApi.state?.value : [];
   
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -94,11 +80,11 @@ export const MultiSelectField: React.FC<MultiSelectFieldSpecificProps> = ({
     if (selectedValues.includes(optionValue)) {
       // Remove if already selected
       const newValues = selectedValues.filter(v => v !== optionValue);
-      handleChange(newValues);
+      fieldApi.handleChange(newValues);
     } else if (selectedValues.length < maxSelections) {
       // Add if not at max selections
       const newValues = [...selectedValues, optionValue];
-      handleChange(newValues);
+      fieldApi.handleChange(newValues);
     }
     
     setSearchQuery('');
@@ -110,8 +96,8 @@ export const MultiSelectField: React.FC<MultiSelectFieldSpecificProps> = ({
 
   const handleRemove = (valueToRemove: string) => {
     const newValues = selectedValues.filter(v => v !== valueToRemove);
-    handleChange(newValues);
-    handleBlur();
+    fieldApi.handleChange(newValues);
+    fieldApi.handleBlur();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -134,39 +120,33 @@ export const MultiSelectField: React.FC<MultiSelectFieldSpecificProps> = ({
     });
   };
 
-  return (
-    <div className={cn("space-y-2", wrapperClassName)} ref={containerRef}>
-      {label && (
-        <Label className={cn("text-sm font-medium", labelClassName)}>
-          {label}
-          {maxSelections < Infinity && (
-            <span className="ml-2 text-xs text-muted-foreground">
-              ({selectedValues.length}/{maxSelections})
-            </span>
-          )}
-        </Label>
-      )}
-      {description && (
-        <p className="text-xs text-muted-foreground">{description}</p>
-      )}
+  const isDisabled = fieldApi.form.state.isSubmitting;
 
-      <div className="relative">
-        {/* Selected items display */}
-        <div
-          className={cn(
-            "min-h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background",
-            "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
-            state.meta.errors.length ? "border-destructive" : "",
-            fieldApi.form.state.isSubmitting ? "opacity-50 cursor-not-allowed" : "cursor-text",
-            inputClassName
-          )}
-          onClick={() => {
-            if (!fieldApi.form.state.isSubmitting) {
-              setIsOpen(true);
-              inputRef.current?.focus();
-            }
-          }}
-        >
+  return (
+    <FieldWrapper fieldApi={fieldApi} {...wrapperProps}>
+      <div className="space-y-2" ref={containerRef}>
+        {wrapperProps.label && maxSelections < Infinity && (
+          <div className="text-sm text-muted-foreground">
+            ({selectedValues.length}/{maxSelections})
+          </div>
+        )}
+
+        <div className="relative">
+          {/* Selected items display */}
+          <div
+            className={cn(
+              "min-h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background",
+              "focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2",
+              fieldApi.state?.meta?.errors.length ? "border-destructive" : "",
+              isDisabled ? "opacity-50 cursor-not-allowed" : "cursor-text"
+            )}
+            onClick={() => {
+              if (!isDisabled) {
+                setIsOpen(true);
+                inputRef.current?.focus();
+              }
+            }}
+          >
           <div className="flex flex-wrap gap-1 items-center">
             {/* Selected tags */}
             {selectedValues.map((value, index) => {
@@ -187,7 +167,7 @@ export const MultiSelectField: React.FC<MultiSelectFieldSpecificProps> = ({
                       e.stopPropagation();
                       handleRemove(value);
                     }}
-                    disabled={fieldApi.form.state.isSubmitting}
+                    disabled={isDisabled}
                   >
                     <X className="h-2 w-2" />
                   </Button>
@@ -203,10 +183,10 @@ export const MultiSelectField: React.FC<MultiSelectFieldSpecificProps> = ({
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
                 onFocus={() => setIsOpen(true)}
-                onBlur={handleBlur}
+                onBlur={fieldApi.handleBlur}
                 placeholder={selectedValues.length === 0 ? placeholder : ''}
                 className="border-0 p-0 h-6 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
-                disabled={fieldApi.form.state.isSubmitting || selectedValues.length >= maxSelections}
+                disabled={isDisabled || selectedValues.length >= maxSelections}
               />
             )}
             
@@ -256,13 +236,7 @@ export const MultiSelectField: React.FC<MultiSelectFieldSpecificProps> = ({
         )}
       </div>
 
-      {state.meta.isTouched && state.meta.errors.length > 0 && (
-        <div className="text-xs text-destructive pt-1">
-          {state.meta.errors.map((err: string | Error, index: number) => (
-            <p key={index}>{typeof err === 'string' ? err : (err as Error)?.message || 'Invalid'}</p>
-          ))}
-        </div>
-      )}
-    </div>
+      </div>
+    </FieldWrapper>
   );
 }; 

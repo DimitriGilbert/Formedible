@@ -3,25 +3,25 @@ import React from 'react';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
-import type { BaseFieldProps } from '@/lib/formedible/types';
+import type { RadioFieldSpecificProps } from '@/lib/formedible/types';
+import { FieldWrapper } from './base-field-wrapper';
 
-export interface RadioFieldSpecificProps extends BaseFieldProps {
-  options: Array<{ value: string; label: string }> | string[];
-  direction?: 'horizontal' | 'vertical';
-}
 
 export const RadioField: React.FC<RadioFieldSpecificProps> = ({
   fieldApi,
   label,
   description,
-  options = [],
-  direction = 'vertical',
+  placeholder,
   inputClassName,
   labelClassName,
   wrapperClassName,
+  options = [],
+  direction = 'vertical',
 }) => {
-  const { name, state, handleChange, handleBlur } = fieldApi;
-  const value = state.value as string;
+  const name = fieldApi.name;
+  const value = fieldApi.state?.value as string | undefined;
+  const isDisabled = fieldApi.form?.state?.isSubmitting ?? false;
+  const hasErrors = fieldApi.state?.meta?.isTouched && fieldApi.state?.meta?.errors?.length > 0;
 
   const normalizedOptions = options.map(option => 
     typeof option === 'string' 
@@ -29,22 +29,28 @@ export const RadioField: React.FC<RadioFieldSpecificProps> = ({
       : option
   );
 
+  const onValueChange = (value: string) => {
+    fieldApi.handleChange(value);
+  };
+
+  const onBlur = () => {
+    fieldApi.handleBlur();
+  };
+
   return (
-    <div className={cn("space-y-3", wrapperClassName)}>
-      {label && (
-        <Label className={cn("text-sm font-medium", labelClassName)}>
-          {label}
-        </Label>
-      )}
-      {description && (
-        <p className="text-xs text-muted-foreground">{description}</p>
-      )}
-      
+    <FieldWrapper
+      fieldApi={fieldApi}
+      label={label}
+      description={description}
+      inputClassName={inputClassName}
+      labelClassName={labelClassName}
+      wrapperClassName={wrapperClassName}
+    >
       <RadioGroup
         value={value || ''}
-        onValueChange={handleChange}
-        onBlur={handleBlur}
-        disabled={fieldApi.form.state.isSubmitting}
+        onValueChange={onValueChange}
+        onBlur={onBlur}
+        disabled={isDisabled}
         className={cn(
           direction === 'horizontal' 
             ? "flex flex-wrap gap-6" 
@@ -58,7 +64,7 @@ export const RadioField: React.FC<RadioFieldSpecificProps> = ({
               value={option.value}
               id={`${name}-${option.value}`}
               className={cn(
-                state.meta.errors.length ? "border-destructive" : ""
+                hasErrors ? "border-destructive" : ""
               )}
             />
             <Label
@@ -70,14 +76,6 @@ export const RadioField: React.FC<RadioFieldSpecificProps> = ({
           </div>
         ))}
       </RadioGroup>
-      
-      {state.meta.isTouched && state.meta.errors.length > 0 && (
-        <div className="text-xs text-destructive pt-1">
-          {state.meta.errors.map((err: string | Error, index: number) => (
-            <p key={index}>{typeof err === 'string' ? err : (err as Error)?.message || 'Invalid'}</p>
-          ))}
-        </div>
-      )}
-    </div>
+    </FieldWrapper>
   );
 }; 
