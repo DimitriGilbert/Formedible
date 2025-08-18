@@ -63,7 +63,7 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
           fieldConfig={subFieldConfig}
           fieldApi={mockFieldApi}
           form={form}
-          currentValues={form?.state?.values || {}}
+          currentValues={(fieldApi.state?.value || {}) as Record<string, unknown>}
         />
       </div>
     );

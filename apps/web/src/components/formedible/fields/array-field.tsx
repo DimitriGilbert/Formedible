@@ -160,7 +160,7 @@ export const ArrayField: React.FC<ArrayFieldProps> = ({
                     fieldConfig={createItemFieldConfig(index)}
                     fieldApi={createItemFieldApi(index) as any}
                     form={fieldApi.form}
-                    currentValues={fieldApi.form?.state?.values || {}}
+                    currentValues={(value[index] || {}) as Record<string, unknown>}
                   />
                 </div>
                 

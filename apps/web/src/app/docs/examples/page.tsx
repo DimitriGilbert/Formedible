@@ -44,9 +44,7 @@ import {
   AdvancedFieldTypesFormExample,
   advancedFieldTypesFormCode,
 } from "./advanced-field-types-form";
-import {
-  RentalCarFlowForm,
-} from "./rental-car-flow-form";
+import { RentalCarFlowForm } from "./rental-car-flow-form";
 
 // import MyForm from "./conditional-in-obj";
 
@@ -104,9 +102,7 @@ export default function ExamplesPage() {
                     Advanced Examples
                   </h2>
                   <TabsList className="grid w-full grid-cols-6">
-                    <TabsTrigger value="rental-flow">
-                      Flow Form
-                    </TabsTrigger>
+                    <TabsTrigger value="rental-flow">Flow Form</TabsTrigger>
                     <TabsTrigger value="analytics">
                       Analytics & Tracking
                     </TabsTrigger>

@@ -4,7 +4,6 @@ import "../index.css";
 import Providers from "@/components/providers";
 import Header from "@/components/header";
 
-
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -17,7 +16,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Formedible - Schema-Driven Forms Made Simple",
-  description: "A powerful React hook that wraps TanStack Form with shadcn/ui components. Features schema validation, multi-page support, component overrides, and custom wrappers.",
+  description:
+    "A powerful React hook that wraps TanStack Form with shadcn/ui components. Features schema validation, multi-page support, component overrides, and custom wrappers.",
 };
 
 export default function RootLayout({
@@ -28,7 +28,19 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <script async src="https://cdn.counter.dev/script.js" data-id="154c6878-7558-4eff-90f9-bd4904015df1" data-utcoffset="1"></script>
+        <script
+          async
+          src="https://cdn.counter.dev/script.js"
+          data-id="154c6878-7558-4eff-90f9-bd4904015df1"
+          data-utcoffset="1"
+        ></script>
+        <script
+          src="https://cdn.databuddy.cc/databuddy.js"
+          data-client-id="jIFbt2Gic1qWpMO1W16OO"
+          data-enable-batching="true"
+          crossOrigin="anonymous"
+          async
+        ></script>
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
