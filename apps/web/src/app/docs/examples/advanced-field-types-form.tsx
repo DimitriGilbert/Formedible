@@ -29,6 +29,7 @@ export const advancedFieldTypesSchema = z.object({
   experienceLevel: z.number().min(1).max(10),
   energyRating: z.number().min(1).max(5),
   performanceLevel: z.number().min(0).max(100),
+  speedometer: z.number().min(0).max(200),
   birthDate: z.date(),
   resume: z.any().optional(),
   aboutMe: z
@@ -38,6 +39,79 @@ export const advancedFieldTypesSchema = z.object({
   workEmail: z.string().email("Valid work email required"),
   overallRating: z.number().min(1).max(5),
 });
+
+// Beautiful Speedometer Visualization Component
+const SpeedometerComponent: React.FC<{
+  value: number;
+  displayValue: string | number;
+  label?: string;
+  isActive: boolean;
+}> = ({ value, displayValue, isActive }) => {
+  // Calculate the rotation angle (0-200 range mapped to -90 to +90 degrees)
+  const angle = ((value / 200) * 180) - 90;
+  
+  // Get color based on speed
+  const getColor = (speed: number) => {
+    if (speed < 60) return "#22c55e"; // Green
+    if (speed < 120) return "#eab308"; // Yellow
+    return "#ef4444"; // Red
+  };
+
+  return (
+    <div className={`relative w-16 h-12 transition-all duration-300 ${isActive ? 'scale-110' : ''}`}>
+      {/* Speedometer Arc */}
+      <div className="absolute inset-0">
+        <svg viewBox="0 0 64 32" className="w-full h-full">
+          {/* Background arc */}
+          <path
+            d="M 8 24 A 24 24 0 0 1 56 24"
+            fill="none"
+            stroke="#e5e7eb"
+            strokeWidth="3"
+            className="opacity-30"
+          />
+          {/* Active arc */}
+          <path
+            d="M 8 24 A 24 24 0 0 1 56 24"
+            fill="none"
+            stroke={getColor(value)}
+            strokeWidth="3"
+            strokeDasharray={`${(value / 200) * 75.4} 75.4`}
+            className="transition-all duration-300"
+          />
+          {/* Needle */}
+          <line
+            x1="32"
+            y1="24"
+            x2="32"
+            y2="8"
+            stroke={getColor(value)}
+            strokeWidth="2"
+            transform={`rotate(${angle} 32 24)`}
+            className="transition-transform duration-300"
+          />
+          {/* Center dot */}
+          <circle cx="32" cy="24" r="2" fill={getColor(value)} />
+        </svg>
+      </div>
+      
+      {/* Speed value */}
+      <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2">
+        <span className="text-xs font-bold" style={{ color: getColor(value) }}>
+          {displayValue}
+        </span>
+      </div>
+      
+      {/* Glow effect when active */}
+      {isActive && (
+        <div 
+          className="absolute inset-0 -m-1 rounded-lg opacity-20 animate-pulse" 
+          style={{ backgroundColor: getColor(value) }} 
+        />
+      )}
+    </div>
+  );
+};
 
 // Enhanced Energy Rating Visualization Component (using imported component)
 const LocalEnergyRatingComponent: React.FC<{
@@ -341,6 +415,32 @@ const advancedFieldTypesForm = useFormedible({
       },
     },
     {
+      name: "speedometer",
+      type: "slider", 
+      label: "Speed Test",
+      description: "Interactive speedometer with custom visualization",
+      section: {
+        title: "Advanced Sliders",
+        description: "Enhanced slider examples with custom visualizations",
+      },
+      sliderConfig: {
+        min: 0,
+        max: 200,
+        step: 10,
+        valueMapping: [
+          { sliderValue: 0, displayValue: "0", label: "Idle" },
+          { sliderValue: 40, displayValue: "40", label: "Slow" },
+          { sliderValue: 80, displayValue: "80", label: "Cruise" },
+          { sliderValue: 120, displayValue: "120", label: "Fast" },
+          { sliderValue: 160, displayValue: "160", label: "Speed" },
+          { sliderValue: 200, displayValue: "200", label: "MAX!" },
+        ],
+        visualizationComponent: SpeedometerComponent,
+        valueLabelSuffix: " km/h",
+        showValue: true,
+      },
+    },
+    {
       name: "birthDate",
       type: "date",
       label: "Date of Birth",
@@ -404,6 +504,7 @@ const advancedFieldTypesForm = useFormedible({
       experienceLevel: 5,
       energyRating: 3,
       performanceLevel: 50,
+      speedometer: 80,
       birthDate: new Date(),
       resume: null,
       aboutMe: "",
@@ -662,6 +763,32 @@ export function AdvancedFieldTypesFormExample() {
         },
       },
       {
+        name: "speedometer",
+        type: "slider", 
+        label: "Speed Test",
+        description: "Interactive speedometer with custom visualization",
+        section: {
+          title: "Advanced Sliders",
+          description: "Enhanced slider examples with custom visualizations",
+        },
+        sliderConfig: {
+          min: 0,
+          max: 200,
+          step: 10,
+          valueMapping: [
+            { sliderValue: 0, displayValue: "0", label: "Idle" },
+            { sliderValue: 40, displayValue: "40", label: "Slow" },
+            { sliderValue: 80, displayValue: "80", label: "Cruise" },
+            { sliderValue: 120, displayValue: "120", label: "Fast" },
+            { sliderValue: 160, displayValue: "160", label: "Speed" },
+            { sliderValue: 200, displayValue: "200", label: "MAX!" },
+          ],
+          visualizationComponent: SpeedometerComponent,
+          valueLabelSuffix: " km/h",
+          showValue: true,
+        },
+      },
+      {
         name: "birthDate",
         type: "date",
         label: "Date of Birth",
@@ -725,6 +852,7 @@ export function AdvancedFieldTypesFormExample() {
         experienceLevel: 5,
         energyRating: 3,
         performanceLevel: 50,
+        speedometer: 80,
         birthDate: new Date(),
         resume: null,
         aboutMe: "",
