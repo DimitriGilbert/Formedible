@@ -14,9 +14,9 @@
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.4",
     "@ai-sdk/google": "^2.0.6",
-    "@ai-sdk/mistral": "^2.0.5",
+    "@ai-sdk/mistral": "^2.0.6",
     "@ai-sdk/openai": "^2.0.15",
-    "@ai-sdk/openai-compatible": "^1.0.7",
+    "@ai-sdk/openai-compatible": "^1.0.8",
     "@mdx-js/loader": "^3.1.0",
     "@mdx-js/react": "^3.1.0",
     "@next/mdx": "^15.3.5",

@@ -43,7 +43,6 @@ export function ChatInterface({ onFormGenerated, apiEndpoint = "/api/chat", clas
   });
 
   const isLoading = status !== "ready";
-  const isConfigured = !!providerConfig;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -82,14 +81,10 @@ export function ChatInterface({ onFormGenerated, apiEndpoint = "/api/chat", clas
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
               <Bot className="h-12 w-12 mb-4 opacity-50" />
-              <h3 className="text-lg font-medium mb-2">
-                {isConfigured ? "Welcome to AI Form Builder" : "AI Form Builder"}
-              </h3>
+              <h3 className="text-lg font-medium mb-2">Welcome to AI Form Builder</h3>
               <p className="text-sm max-w-md">
-                {isConfigured 
-                  ? "Describe the form you want to create and I'll generate it for you. Try something like 'Create a contact form with name, email, and message fields'"
-                  : "Configure your AI provider above to start building forms with AI assistance. Once configured, you can describe the form you want and I'll generate it for you."
-                }
+                Describe the form you want to create and I'll generate it for you. 
+                Try something like "Create a contact form with name, email, and message fields"
               </p>
             </div>
           )}
@@ -163,26 +158,14 @@ export function ChatInterface({ onFormGenerated, apiEndpoint = "/api/chat", clas
           </Alert>
         )}
 
-        {!isConfigured && (
-          <Alert className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              Please configure your AI provider above to enable the chat interface.
-            </AlertDescription>
-          </Alert>
-        )}
-
         <form onSubmit={handleSubmit} className="flex gap-2">
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={isConfigured 
-              ? "Describe the form you want to create..." 
-              : "Configure AI provider to enable chat..."
-            }
-            disabled={isLoading || !isConfigured}
-            className={cn("flex-1", !isConfigured && "opacity-60")}
+            placeholder="Describe the form you want to create..."
+            disabled={isLoading}
+            className="flex-1"
           />
           
           {isLoading ? (
@@ -192,7 +175,6 @@ export function ChatInterface({ onFormGenerated, apiEndpoint = "/api/chat", clas
               size="icon"
               onClick={stop}
               className="shrink-0"
-              disabled={!isConfigured}
             >
               <StopCircle className="h-4 w-4" />
               <span className="sr-only">Stop generation</span>
@@ -200,9 +182,9 @@ export function ChatInterface({ onFormGenerated, apiEndpoint = "/api/chat", clas
           ) : (
             <Button
               type="submit"
-              disabled={!input.trim() || !isConfigured}
+              disabled={!input.trim()}
               size="icon"
-              className={cn("shrink-0", !isConfigured && "opacity-60")}
+              className="shrink-0"
             >
               <Send className="h-4 w-4" />
               <span className="sr-only">Send message</span>

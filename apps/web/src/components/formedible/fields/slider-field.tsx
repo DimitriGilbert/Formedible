@@ -139,13 +139,18 @@ export const SliderField: React.FC<SliderFieldSpecificProps> = ({
         {VisualizationComponent && valueMapping && (
           <div className="flex justify-between items-center mb-2">
             {valueMapping.map((mapping, index) => (
-              <VisualizationComponent
+              <div
                 key={index}
-                value={mapping.sliderValue}
-                displayValue={mapping.displayValue}
-                label={mapping.label}
-                isActive={fieldValue === mapping.sliderValue}
-              />
+                className="cursor-pointer"
+                onClick={() => fieldApi.handleChange(mapping.sliderValue)}
+              >
+                <VisualizationComponent
+                  value={mapping.sliderValue}
+                  displayValue={mapping.displayValue}
+                  label={mapping.label}
+                  isActive={fieldValue === mapping.sliderValue}
+                />
+              </div>
             ))}
           </div>
         )}

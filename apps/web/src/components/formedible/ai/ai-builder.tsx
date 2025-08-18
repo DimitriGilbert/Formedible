@@ -48,25 +48,36 @@ export function AIBuilder({ className, onFormGenerated, onFormSubmit }: AIBuilde
         className="shrink-0"
       />
 
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-0">
-        <div className="flex flex-col min-h-0">
-          <ChatInterface
-            onFormGenerated={handleFormGenerated}
-            apiEndpoint="/api/chat"
-            providerConfig={providerConfig}
-            className="flex-1"
-          />
+      {!isConfigured && (
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Please configure your AI provider above to start building forms with AI assistance.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {isConfigured && (
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 min-h-0">
+          <div className="flex flex-col min-h-0">
+            <ChatInterface
+              onFormGenerated={handleFormGenerated}
+              apiEndpoint="/api/chat"
+              providerConfig={providerConfig}
+              className="flex-1"
+            />
+          </div>
+          
+          <div className="flex flex-col min-h-0">
+            <FormPreview
+              formCode={generatedFormCode}
+              isStreaming={isGenerating}
+              onFormSubmit={handleFormSubmit}
+              className="flex-1"
+            />
+          </div>
         </div>
-        
-        <div className="flex flex-col min-h-0">
-          <FormPreview
-            formCode={generatedFormCode}
-            isStreaming={isGenerating}
-            onFormSubmit={handleFormSubmit}
-            className="flex-1"
-          />
-        </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -30,8 +30,8 @@ import { useTheme } from "next-themes";
 export default function DocsPage() {
   const [origin, setOrigin] = React.useState("");
   const { theme, systemTheme } = useTheme();
-  const currentTheme = theme === 'system' ? systemTheme : theme;
-  const darkMode = currentTheme === 'dark';
+  const currentTheme = theme === "system" ? systemTheme : theme;
+  const darkMode = currentTheme === "dark";
 
   React.useEffect(() => {
     setOrigin(window.location.origin);
@@ -40,7 +40,7 @@ export default function DocsPage() {
   const installCommand = `npx shadcn@latest add ${
     origin || "https://formedible.dev"
   }/r/use-formedible.json`;
-  
+
   const docSections = [
     {
       title: "Getting Started",
@@ -186,8 +186,8 @@ export default function DocsPage() {
               <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
                 Formedible combines the power of TanStack Form v1 with beautiful
                 shadcn/ui components. Create schema-driven forms with
-                validation, multi-step flows, analytics tracking, form persistence,
-                and advanced custom visualizations in minutes.
+                validation, multi-step flows, analytics tracking, form
+                persistence, and advanced custom visualizations in minutes.
               </p>
             </motion.div>
 
@@ -252,7 +252,9 @@ export default function DocsPage() {
                 className="group"
               >
                 <Link href={section.href}>
-                    <Card className="h-full hover:shadow-xl transition-all duration-300 cursor-pointer border-2 hover:border-primary/20 relative overflow-hidden">                    {section.badge && (
+                  <Card className="h-full hover:shadow-xl transition-all duration-300 cursor-pointer border-2 hover:border-primary/20 relative overflow-hidden">
+                    {" "}
+                    {section.badge && (
                       <Badge className="absolute top-4 right-4 bg-primary hover:bg-primary/80">
                         {section.badge}
                       </Badge>
