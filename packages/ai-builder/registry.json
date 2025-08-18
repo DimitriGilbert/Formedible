@@ -1,0 +1,72 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "formedible-ai-builder",
+  "homepage": "https://github.com/DimitriGilbert/Formedible",
+  "items": [
+    {
+      "name": "ai-builder",
+      "type": "registry:block",
+      "title": "Formedible AI Builder",
+      "description": "An AI-powered form builder component that generates forms from natural language descriptions. Features chat interface, real-time form generation, and multiple AI provider support.",
+      "registryDependencies": [
+        "button",
+        "input",
+        "textarea",
+        "select",
+        "checkbox",
+        "switch",
+        "label",
+        "card",
+        "tabs",
+        "dialog",
+        "dropdown-menu",
+        "scroll-area",
+        "badge",
+        "alert",
+        "skeleton",
+        "https://formedible.dev/r/use-formedible.json"
+      ],
+      "dependencies": [
+        "react",
+        "lucide-react",
+        "clsx",
+        "tailwind-merge",
+        "@ai-sdk/openai",
+        "@ai-sdk/anthropic",
+        "@ai-sdk/google",
+        "@ai-sdk/mistral",
+        "@ai-sdk/openai-compatible",
+        "@openrouter/ai-sdk-provider",
+        "ai",
+        "zod"
+      ],
+      "files": [
+        {
+          "path": "src/components/formedible/ai/ai-builder.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/ai/ai-builder.tsx"
+        },
+        {
+          "path": "src/components/formedible/ai/provider-selection.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/ai/provider-selection.tsx"
+        },
+        {
+          "path": "src/components/formedible/ai/chat-interface.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/ai/chat-interface.tsx"
+        },
+        {
+          "path": "src/components/formedible/ai/form-preview.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/ai/form-preview.tsx"
+        },
+        {
+          "path": "src/components/formedible/ai/ai-form-renderer.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/ai/ai-form-renderer.tsx"
+        }
+      ]
+    }
+  ]
+}

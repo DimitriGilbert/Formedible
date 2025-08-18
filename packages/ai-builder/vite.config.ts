@@ -1,0 +1,36 @@
+/// <reference types="vitest" />
+/// <reference types="node" />
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import tailwindcss from "@tailwindcss/vite"
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+export default defineConfig({
+  plugins: [react(), tailwindcss()],
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
+  },
+  server: {
+    port: process.env.PORT ? parseInt(process.env.PORT) : process.env.VITE_PORT ? parseInt(process.env.VITE_PORT) : 5174,
+    open: true,
+  },
+  publicDir: 'public',
+  build: {
+    outDir: 'out',
+    rollupOptions: {
+      input: {
+        main: path.resolve(__dirname, 'index.html'),
+      },
+    },
+  },
+});

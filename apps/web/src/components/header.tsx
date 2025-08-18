@@ -10,6 +10,7 @@ export default function Header() {
     { to: "/", label: "Home" },
     { to: "/docs", label: "Documentation" },
     { to: "/builder", label: "Form Builder" },
+    { to: "/ai-builder", label: "AI Builder" },
     { to: "https://github.com/DimitriGilbert/FormEdible", label: "Github", target: "_blank" },
   ];
 

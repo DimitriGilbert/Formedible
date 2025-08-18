@@ -1,6 +1,7 @@
 # Agent Guidelines for Formedible
 
 ## Build/Test Commands
+
 - `npm run check-types` - Check types in all packages
 - `npm run check-types:pkg` - Check types in formedible package only
 - `npm run check-types:builder` - Check types in builder package only
@@ -10,11 +11,9 @@
 - `npm run build:pkg` - Build formedible package only
 - `npm run build:builder` - Build builder package only
 - `npm run sync-components` - Sync components from formedible package to web app
-- `npm run lint` - Run ESLint
-- `npm run lint:web` - Lint web app
-- `npm run lint:pkg` - Lint package only
 
 ## Code Style
+
 - Use TypeScript with strict mode enabled
 - React functional components with hooks (no class components)
 - Import paths: Use `@/` alias for src directory imports
@@ -31,6 +30,7 @@
 - NEVER USE confirm OR alert ! anti pattern terrible UX ! NEVER !
 
 ## formedible work
-- Always work on the package first then `npm run sync-components` to sync the changes to the web app.
+
+- Always work on the packages first then `npm run sync-components` to sync the changes to the web app.
 - NEVER RUN THE DEV SERVER ! npm run dev IS COMPLETELLY OFF LIMIT ! NEVER npm run dev ! NEVER NEVER NVER !
-- NEVER USE ANY IF YOU DO NOT HAVE TO ! THIS IS LAZY AND SHIT !
+- NEVER USE "any" IF YOU DO NOT HAVE TO ! THIS IS LAZY AND SHIT ! NEVER ! NEVER ! NEVER !
