@@ -117,7 +117,7 @@ export interface ObjectConfig {
   collapsible?: boolean;
   defaultExpanded?: boolean;
   showCard?: boolean;
-  layout?: "grid" | "vertical" | "horizontal";
+  layout?: "grid" | "vertical" | "horizontal" | (string & {});
   columns?: number;
   collapseLabel?: string;
   expandLabel?: string;
