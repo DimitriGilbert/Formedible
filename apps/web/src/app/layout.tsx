@@ -53,6 +53,7 @@ export default function RootLayout({
           src="https://tasu.ai/widget/v1.js"
           data-company="formedible-dev"
           data-color="#F7931A"
+          async
         ></script>
       </body>
     </html>
