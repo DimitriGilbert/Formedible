@@ -9,40 +9,8 @@ const MySchema = z.object({
   roomDetails: z
     .array(
       z.object({
-        typeRoom: z.enum([
-          "hall",
-          "livingroom",
-          "eatroom",
-          "kitchen",
-          "bathroom",
-          "watterroom",
-          "wc",
-          "bedroom",
-          "office",
-          "dressing",
-          "laundry",
-          "playroom",
-          "library",
-          "sportroom",
-          "cinemaroom",
-          "other",
-        ]),
-        otherRoom: z
-          .string()
-          .min(2, "Le nom de la pièce doit contenir au moins 2 caractères")
-          .optional(),
-        surfaceRoom: z
-          .number()
-          .min(1, "La surface doit être d'au moins 1 m²")
-          .optional(),
         equipementRoom: z.boolean(),
-        // equipementRoom: z.enum(['yes', 'no']),
         equipementListRoom: z.string().min(10).optional(),
-        descriptionRoom: z
-          .string()
-          .min(10, "La description doit contenir au moins 10 caractères")
-          .max(500, "La description ne peut pas dépasser 500 caractères")
-          .optional(),
       })
     )
     .min(1, "Vous devez ajouter au moins une pièce")
@@ -57,6 +25,7 @@ export default function MyForm() {
     schema: MySchema,
 
     fields: [
+      // Pièces du logement
       {
         section: {
           title: "🛋️ Pièces du logement",
@@ -73,6 +42,10 @@ export default function MyForm() {
           sortable: true,
           addButtonLabel: "Ajouter une pièce",
           removeButtonLabel: "Supprimer une pièce",
+          defaultValue: {
+            equipementRoom: false,
+            equipementListRoom: "",
+          },
           // Define the structure of each array item
           objectConfig: {
             collapseLabel: "Réduire",
@@ -82,70 +55,16 @@ export default function MyForm() {
             collapsible: true,
             defaultExpanded: true,
             showCard: false,
+            columns: 2,
+            layout: "grid",
             fields: [
-              {
-                name: "typeRoom",
-                type: "select",
-                label: "Type de pièce *",
-                placeholder: "Sélectionner un type",
-                description: "Choisissez le type de pièce",
-                options: [
-                  { value: "hall", label: "Entrée" },
-                  { value: "livingroom", label: "Salon" },
-                  { value: "eatroom", label: "Salle à manger" },
-                  { value: "kitchen", label: "Cuisine" },
-                  { value: "bathroom", label: "Salle de bains" },
-                  { value: "watterroom", label: "Salle d’eau" },
-                  { value: "wc", label: "WC" },
-                  { value: "bedroom", label: "Chambre" },
-                  { value: "office", label: "Bureau" },
-                  { value: "dressing", label: "Dressing" },
-                  { value: "laundry", label: "Buanderie" },
-                  { value: "playroom", label: "Salle de jeux / multimédia" },
-                  { value: "library", label: "Bibliothèque" },
-                  { value: "sportroom", label: "Salle de sport" },
-                  { value: "cinemaroom", label: "Salle de cinéma" },
-                  { value: "other", label: "Autre" },
-                ],
-              },
-              {
-                name: "otherRoom",
-                type: "text",
-                label: "Nom de la pièce",
-                placeholder: "Ex: Salle de bowling",
-                description: "Nommez la pièce",
-                conditional: (values: any): any =>
-                  values &&
-                  values.typeRoom &&
-                  values.typeRoom.includes("other"),
-                validation: z
-                  .string()
-                  .min(
-                    2,
-                    "Le nom de la pièce doit contenir au moins 2 caractères"
-                  ),
-              },
-              {
-                name: "surfaceRoom",
-                type: "number",
-                label: "Surface (m²)",
-                placeholder: "Ex: 25.5",
-                description: "Surface de la pièce en mètres carrés",
-                min: 0.1,
-                step: 0.1,
-              },
               {
                 name: "equipementRoom",
                 type: "switch",
-                // type: "select",
                 label: "Équipement spécifique *",
                 placeholder: "Activez pour ajouter des équipements",
                 description:
                   "Cette pièce dispose-t-elle d'équipements particuliers ?",
-                // options: [
-                //   { value: "yes", label: "Oui" },
-                //   { value: "no", label: "Non" }
-                // ],
               },
               {
                 name: "equipementListRoom",
@@ -154,21 +73,10 @@ export default function MyForm() {
                 placeholder: "Ex: Meubles, électroménager, rangements.",
                 description:
                   "Décrivez les équipements spécifiques de cette pièce",
-                // conditional: (values : any) => values.equipementRoom === "oui",
-                conditional: (values: any) => values.equipementRoom === true,
-                validation: z
-                  .string()
-                  .max(
-                    1000,
-                    "Les descriptions ne peuvent pas dépasser 1000 caractères"
-                  ),
-              },
-              {
-                name: "descriptionRoom",
-                type: "textarea",
-                label: "Description",
-                placeholder: "Description générale de la pièce...",
-                description: "Informations complémentaires sur la pièce",
+                conditional: (values: any): any =>
+                  values &&
+                  values.equipementRoom &&
+                  values.equipementRoom === true,
                 validation: z
                   .string()
                   .max(
@@ -186,13 +94,8 @@ export default function MyForm() {
       defaultValues: {
         roomDetails: [
           {
-            typeRoom: "hall" as const,
-            otherRoom: "",
-            surfaceRoom: 0,
             equipementRoom: false,
-            // equipementRoom: "no" as const,
             equipementListRoom: "",
-            descriptionRoom: "",
           },
         ],
       },

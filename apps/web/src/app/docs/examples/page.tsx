@@ -44,16 +44,14 @@ import {
   AdvancedFieldTypesFormExample,
   advancedFieldTypesFormCode,
 } from "./advanced-field-types-form";
-import {
-  RentalCarFlowForm,
-} from "./rental-car-flow-form";
+import { RentalCarFlowForm } from "./rental-car-flow-form";
 
-// import MyForm from "./conditional-in-obj";
+import MyForm from "./conditional-in-obj";
 
 export default function ExamplesPage() {
   return (
     <>
-      {/* <MyForm /> */}
+      <MyForm />
       <Toaster position="top-right" richColors />
       <div className="min-h-screen bg-background">
         <div className="container mx-auto py-8 px-4 max-w-6xl">
@@ -104,9 +102,7 @@ export default function ExamplesPage() {
                     Advanced Examples
                   </h2>
                   <TabsList className="grid w-full grid-cols-6">
-                    <TabsTrigger value="rental-flow">
-                      Flow Form
-                    </TabsTrigger>
+                    <TabsTrigger value="rental-flow">Flow Form</TabsTrigger>
                     <TabsTrigger value="analytics">
                       Analytics & Tracking
                     </TabsTrigger>
