@@ -210,6 +210,8 @@ export default function Home() {
                   <CodeBlock
                     language="tsx"
                     darkMode={darkMode}
+                    scrollable={true}
+                    maxHeight="67vh"
                     code={`import { useFormedible } from "@/hooks/use-formedible";
 import { z } from "zod";
 
