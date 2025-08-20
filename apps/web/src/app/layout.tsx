@@ -18,6 +18,19 @@ export const metadata: Metadata = {
   title: "Formedible - Schema-Driven Forms Made Simple",
   description:
     "A powerful React hook that wraps TanStack Form with shadcn/ui components. Features schema validation, multi-page support, component overrides, and custom wrappers.",
+  openGraph: {
+    title: "Formedible - Schema-Driven Forms Made Simple",
+    description:
+      "A powerful React hook that wraps TanStack Form with shadcn/ui components. Features schema validation, multi-page support, component overrides, and custom wrappers.",
+    images: ["/og.jpg"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Formedible - Schema-Driven Forms Made Simple",
+    description:
+      "A powerful React hook that wraps TanStack Form with shadcn/ui components. Features schema validation, multi-page support, component overrides, and custom wrappers.",
+    images: ["/og.jpg"],
+  },
 };
 
 export default function RootLayout({

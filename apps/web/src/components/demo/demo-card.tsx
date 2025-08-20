@@ -65,7 +65,10 @@ export const DemoCard: React.FC<DemoCardProps> = ({
           </CardDescription>
         </CardHeader>
         <CardContent className="p-0">
-          <CodeBlock code={code} darkMode={darkMode} />
+          <CodeBlock 
+            code={code} 
+            darkMode={darkMode} 
+          />
         </CardContent>
       </Card>
     </TabsContent>
