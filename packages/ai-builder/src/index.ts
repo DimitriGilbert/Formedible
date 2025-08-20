@@ -5,4 +5,8 @@ export { builderTab, previewTab, codeTab, defaultTabs } from './components/forme
 export type { TabConfig, TabContentProps, FormBuilderProps } from './components/formedible/builder/types';
 export { AiFormRenderer, parseAiToFormedible } from './components/formedible/ai/ai-form-renderer';
 export type { AiFormParseResult, AiParserConfig, AiFormRendererProps } from './components/formedible/ai/ai-form-renderer';
+export { AIBuilder } from './components/formedible/ai/ai-builder';
+export type { AIBuilderProps } from './components/formedible/ai/ai-builder';
+export { ProviderSelection } from './components/formedible/ai/provider-selection';
+export type { ProviderConfig, AIProvider, ProviderSelectionProps } from './components/formedible/ai/provider-selection';
 export { cn } from './lib/utils';

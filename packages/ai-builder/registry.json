@@ -65,6 +65,11 @@
           "path": "src/components/formedible/ai/ai-form-renderer.tsx",
           "type": "registry:component",
           "target": "components/formedible/ai/ai-form-renderer.tsx"
+        },
+        {
+          "path": "src/components/formedible/ai/conversation-history.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/ai/conversation-history.tsx"
         }
       ]
     }

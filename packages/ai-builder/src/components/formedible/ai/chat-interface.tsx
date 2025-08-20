@@ -1,8 +1,13 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { useChat, type UIMessage } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
+import { streamText } from "ai";
+import { createOpenAI } from "@ai-sdk/openai";
+import { createAnthropic } from "@ai-sdk/anthropic";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { createMistral } from "@ai-sdk/mistral";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,38 +16,28 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import type { ProviderConfig } from "./provider-selection";
 
+export interface Message {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+}
+
 export interface ChatInterfaceProps {
   onFormGenerated?: (formCode: string) => void;
-  apiEndpoint?: string;
+  onStreamingStateChange?: (isStreaming: boolean) => void;
   className?: string;
   providerConfig?: ProviderConfig | null;
 }
 
-export function ChatInterface({ onFormGenerated, apiEndpoint = "/api/chat", className, providerConfig }: ChatInterfaceProps) {
+export function ChatInterface({ onFormGenerated, onStreamingStateChange, className, providerConfig }: ChatInterfaceProps) {
   const [input, setInput] = useState("");
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  const { messages, sendMessage, status, error, stop } = useChat({
-    transport: new DefaultChatTransport({
-      api: apiEndpoint,
-      body: providerConfig ? {
-        provider: providerConfig.provider,
-        apiKey: providerConfig.apiKey,
-        ...(providerConfig.endpoint && { endpoint: providerConfig.endpoint }),
-      } : {},
-    }),
-    onFinish: ({ message }: { message: UIMessage }) => {
-      const textContent = message.parts
-        .filter((part: any) => part.type === 'text')
-        .map((part: any) => part.text)
-        .join('');
-      if (textContent && onFormGenerated) {
-        onFormGenerated(textContent);
-      }
-    },
-  });
-
-  const isLoading = status !== "ready";
+  // Remove the automatic conversation completion
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -52,12 +47,157 @@ export function ChatInterface({ onFormGenerated, apiEndpoint = "/api/chat", clas
     scrollToBottom();
   }, [messages]);
 
+  const createModel = (config: ProviderConfig) => {
+    const { provider, apiKey, model, endpoint } = config;
+    
+    switch (provider) {
+      case 'openai':
+        const openaiProvider = createOpenAI({ apiKey });
+        return openaiProvider(model || 'gpt-4o');
+      
+      case 'anthropic':
+        const anthropicProvider = createAnthropic({ apiKey });
+        return anthropicProvider(model || 'claude-3-5-sonnet-20241022');
+      
+      case 'google':
+        const googleProvider = createGoogleGenerativeAI({ apiKey });
+        return googleProvider(model || 'gemini-1.5-pro');
+      
+      case 'mistral':
+        const mistralProvider = createMistral({ apiKey });
+        return mistralProvider(model || 'mistral-large-latest');
+      
+      case 'openrouter':
+        const openrouterProvider = createOpenRouter({ apiKey });
+        return openrouterProvider.chat(model || 'meta-llama/llama-3.2-3b-instruct:free');
+      
+      case 'openai-compatible':
+        if (!endpoint) throw new Error('Endpoint required for OpenAI-compatible providers');
+        const openaiCompatible = createOpenAICompatible({
+          name: 'openai-compatible',
+          baseURL: endpoint,
+          ...(apiKey && { apiKey }),
+        });
+        return openaiCompatible(model || 'gpt-3.5-turbo');
+      
+      default:
+        throw new Error('Unsupported provider');
+    }
+  };
+
+  const generateResponse = async (userMessage: string) => {
+    if (!providerConfig) {
+      setError(new Error('Provider configuration required'));
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setError(null);
+      onStreamingStateChange?.(true);
+
+      const userMsg: Message = {
+        id: Date.now().toString(),
+        role: 'user',
+        content: userMessage,
+      };
+
+      setMessages(prev => [...prev, userMsg]);
+
+      const model = createModel(providerConfig);
+      
+      const systemPrompt = `You are a helpful AI assistant for form creation. You can chat naturally with users about forms, answer questions, and help them design forms.
+
+**IMPORTANT: Only show formedible code blocks when the user specifically asks to create, build, generate, or show a form.**
+
+When creating forms, use formedible code blocks like this:
+
+\`\`\`formedible
+{
+  "fields": [
+    {
+      "name": "firstName",
+      "type": "text",
+      "label": "First Name",
+      "placeholder": "Enter your first name"
+    }
+  ]
+}
+\`\`\`
+
+Available field types: text, email, password, tel, textarea, select, checkbox, switch, number, date, slider, file, rating, phone, colorPicker, location, duration, multiSelect, autocomplete, masked, object, array, radio
+
+Chat naturally. Ask clarifying questions. Suggest improvements. Only output formedible blocks when specifically requested.`;
+
+      const abortController = new AbortController();
+      abortControllerRef.current = abortController;
+
+      const result = await streamText({
+        model,
+        system: systemPrompt,
+        messages: [...messages, userMsg].map(msg => ({
+          role: msg.role,
+          content: msg.content,
+        })),
+        temperature: providerConfig.temperature || 0.7,
+        maxOutputTokens: providerConfig.maxTokens || 2000,
+        abortSignal: abortController.signal,
+      });
+
+      const assistantMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: '',
+      };
+
+      setMessages(prev => [...prev, assistantMsg]);
+
+      let fullResponse = '';
+      for await (const textPart of result.textStream) {
+        if (abortController.signal.aborted) break;
+        
+        fullResponse += textPart;
+        setMessages(prev => prev.map(msg => 
+          msg.id === assistantMsg.id 
+            ? { ...msg, content: fullResponse }
+            : msg
+        ));
+      }
+
+      // Extract and send formedible code blocks to preview
+      if (fullResponse && onFormGenerated) {
+        const formedibleMatch = fullResponse.match(/```formedible\s*\n([\s\S]*?)\n```/);
+        if (formedibleMatch && formedibleMatch[1]) {
+          onFormGenerated(formedibleMatch[1].trim());
+        }
+      }
+
+      onStreamingStateChange?.(false);
+
+    } catch (err) {
+      console.error('AI Generation Error:', err);
+      setError(err instanceof Error ? err : new Error('Unknown error occurred'));
+    } finally {
+      setIsLoading(false);
+      onStreamingStateChange?.(false);
+      abortControllerRef.current = null;
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || !providerConfig) return;
     
-    sendMessage({ text: input });
+    const userInput = input;
     setInput("");
+    generateResponse(userInput);
+  };
+
+  const stop = () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      setIsLoading(false);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -68,16 +208,18 @@ export function ChatInterface({ onFormGenerated, apiEndpoint = "/api/chat", clas
   };
 
   return (
-    <Card className={cn("flex flex-col h-full", className)}>
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2">
-          <MessageSquare className="h-5 w-5" />
-          AI Form Builder Chat
+    <Card className={cn("flex flex-col h-full border-2 border-accent/30 shadow-lg", className)}>
+      <CardHeader className="pb-4 bg-gradient-to-r from-accent/10 to-transparent">
+        <CardTitle className="flex items-center gap-3 text-lg">
+          <div className="p-2 bg-accent/20 rounded-lg">
+            <MessageSquare className="h-5 w-5 text-accent-foreground" />
+          </div>
+          <span className="text-foreground font-semibold">AI Form Builder Chat</span>
         </CardTitle>
       </CardHeader>
       
-      <CardContent className="flex flex-col flex-1 min-h-0">
-        <div className="flex-1 overflow-y-auto space-y-4 mb-4 min-h-0">
+      <CardContent className="flex flex-col flex-1 p-6 min-h-0">
+        <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2 min-h-0 max-h-full">
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
               <Bot className="h-12 w-12 mb-4 opacity-50" />
@@ -89,7 +231,7 @@ export function ChatInterface({ onFormGenerated, apiEndpoint = "/api/chat", clas
             </div>
           )}
 
-          {messages.map((message: UIMessage) => (
+          {messages.map((message: Message) => (
             <div
               key={message.id}
               className={cn(
@@ -120,16 +262,9 @@ export function ChatInterface({ onFormGenerated, apiEndpoint = "/api/chat", clas
                     : "bg-muted"
                 )}
               >
-                {message.parts.map((part: any, index: number) => {
-                  if (part.type === "text") {
-                    return (
-                      <div key={index} className="whitespace-pre-wrap break-words">
-                        {part.text}
-                      </div>
-                    );
-                  }
-                  return null;
-                })}
+                <div className="whitespace-pre-wrap break-words">
+                  {message.content}
+                </div>
               </div>
             </div>
           ))}

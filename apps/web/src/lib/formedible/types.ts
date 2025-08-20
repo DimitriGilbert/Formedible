@@ -1113,6 +1113,13 @@ export interface FieldConfig {
   conditional?: (values: Record<string, unknown>) => boolean;
   group?: string;
   
+  // Grid positioning properties
+  gridColumn?: number; // Specific column to place this field (1-based)
+  gridRow?: number; // Specific row to place this field (1-based)
+  gridColumnSpan?: number; // How many columns this field should span
+  gridRowSpan?: number; // How many rows this field should span
+  gridArea?: string; // CSS grid-area value for advanced positioning
+  
   // Configuration objects using existing types
   arrayConfig?: ArrayFieldProps['arrayConfig'];
   ratingConfig?: RatingFieldProps['ratingConfig'];

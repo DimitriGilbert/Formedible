@@ -115,7 +115,7 @@ export const NestedFieldRenderer = <
     ? resolveDynamicText(rawDescription, subscribedValues)
     : undefined;
 
-  if (conditional && !conditional(subscribedValues)) {
+  if (conditional && !conditional(currentValues || subscribedValues)) {
     return null;
   }
 
@@ -302,7 +302,7 @@ export const SharedFieldRenderer = <
     ? resolveDynamicText(rawDescription, subscribedValues)
     : undefined;
 
-  if (conditional && !conditional(subscribedValues)) {
+  if (conditional && !conditional(currentValues || subscribedValues)) {
     return null;
   }
 

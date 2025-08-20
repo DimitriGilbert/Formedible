@@ -41,7 +41,7 @@ import { MaskedInputField } from "@/components/formedible/fields/masked-input-fi
 import { ObjectField } from "@/components/formedible/fields/object-field";
 import { InlineValidationWrapper } from "@/components/formedible/fields/inline-validation-wrapper";
 import { FieldHelp } from "@/components/formedible/fields/field-help";
-import { FormGrid } from "@/components/formedible/layout/form-grid";
+import { FormGrid, GridItem } from "@/components/formedible/layout/form-grid";
 import { resolveDynamicText } from "@/lib/formedible/template-interpolation";
 
 // Utility function to scroll to top of a specific form
@@ -261,7 +261,16 @@ const SectionRenderer: React.FC<
           className={layout.className}
         >
           {allVisibleFields.map((field) => (
-            <div key={field.name}>{renderField(field)}</div>
+            <GridItem 
+              key={field.name}
+              gridColumn={field.gridColumn}
+              gridRow={field.gridRow}
+              gridColumnSpan={field.gridColumnSpan}
+              gridRowSpan={field.gridRowSpan}
+              gridArea={field.gridArea}
+            >
+              {renderField(field)}
+            </GridItem>
           ))}
         </FormGrid>
       );

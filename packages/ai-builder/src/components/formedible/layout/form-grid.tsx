@@ -3,6 +3,57 @@ import React from "react";
 import { cn } from "@/lib/utils";
 import type { FormGridProps } from "@/lib/formedible/types";
 
+export interface GridItemProps {
+  gridColumn?: number;
+  gridRow?: number;
+  gridColumnSpan?: number;
+  gridRowSpan?: number;
+  gridArea?: string;
+  children: React.ReactNode;
+}
+
+export const GridItem: React.FC<GridItemProps> = ({
+  gridColumn,
+  gridRow,
+  gridColumnSpan,
+  gridRowSpan,
+  gridArea,
+  children,
+}) => {
+  const gridStyles: React.CSSProperties = {};
+  
+  if (gridArea) {
+    gridStyles.gridArea = gridArea;
+  } else {
+    if (gridColumn) {
+      if (gridColumnSpan) {
+        gridStyles.gridColumn = `${gridColumn} / span ${gridColumnSpan}`;
+      } else {
+        gridStyles.gridColumnStart = gridColumn;
+      }
+    }
+    if (gridRow) {
+      if (gridRowSpan) {
+        gridStyles.gridRow = `${gridRow} / span ${gridRowSpan}`;
+      } else {
+        gridStyles.gridRowStart = gridRow;
+      }
+    }
+    if (gridColumnSpan && !gridColumn) {
+      gridStyles.gridColumn = `span ${gridColumnSpan}`;
+    }
+    if (gridRowSpan && !gridRow) {
+      gridStyles.gridRow = `span ${gridRowSpan}`;
+    }
+  }
+
+  return (
+    <div style={gridStyles}>
+      {children}
+    </div>
+  );
+};
+
 export const FormGrid: React.FC<FormGridProps> = ({
   children,
   columns = 2,

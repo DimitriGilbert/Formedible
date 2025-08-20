@@ -2,15 +2,15 @@
 
 ## Build/Test Commands
 
+FROM THE ROOT OF THE PROJECT !!! **ALWAYS**
+
 - `npm run check-types` - Check types in all packages
-- `npm run check-types:pkg` - Check types in formedible package only
-- `npm run check-types:builder` - Check types in builder package only
-- `npm run check-types:web` - Check types in web app only
 - `npm run build` - Build all packages (uses turbo)
 - `npm run build:web` - Build web app
 - `npm run build:pkg` - Build formedible package only
 - `npm run build:builder` - Build builder package only
-- `npm run sync-components` - Sync components from formedible package to web app
+- `scripts/quick-sync.js` - Sync components from formedible package to web app
+- `npm run sync-components` - Sync components from formedible package to web app using shadcn cli
 
 ## Code Style
 
@@ -31,6 +31,7 @@
 
 ## formedible work
 
-- Always work on the packages first then `npm run sync-components` to sync the changes to the web app.
+- Always work on the packages first then scripts/quick-sync.js to sync the changes to the web app.
+- use `npm run sync-components` to sync the changes before handing over to make sure shadcn install is functionning
 - NEVER RUN THE DEV SERVER ! npm run dev IS COMPLETELLY OFF LIMIT ! NEVER npm run dev ! NEVER NEVER NVER !
 - NEVER USE "any" IF YOU DO NOT HAVE TO ! THIS IS LAZY AND SHIT ! NEVER ! NEVER ! NEVER !

@@ -672,7 +672,7 @@ const AiFormRendererComponent: React.FC<AiFormRendererProps> = ({
     }
 
     return <formedibleResult.Form />;
-  }, [isLoading, parseResult, formConfig, formedibleResult.Form]);
+  }, [isLoading, parseResult, formConfig, formedibleResult]);
 
   return (
     <div className={className}>
