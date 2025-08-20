@@ -1,58 +1,14 @@
 "use client";
 
-// TypeScript interfaces for parsed form configurations
-export interface ParsedFieldConfig {
-  name: string;
-  type: string;
-  label?: string;
-  placeholder?: string;
-  description?: string;
-  required?: boolean;
-  defaultValue?: unknown;
-  options?: Array<{ value: string; label: string }>;
-  validation?: unknown;
-  objectConfig?: {
-    fields: ParsedFieldConfig[];
-    title?: string;
-    description?: string;
-    collapsible?: boolean;
-    defaultExpanded?: boolean;
-    showCard?: boolean;
-    layout?: 'vertical' | 'horizontal' | 'grid';
-    columns?: number;
-    collapseLabel?: string;
-    expandLabel?: string;
-  };
-  arrayConfig?: {
-    itemType: string;
-    itemLabel?: string;
-    minItems?: number;
-    maxItems?: number;
-    addButtonLabel?: string;
-    removeButtonLabel?: string;
-    defaultValue?: unknown;
-    objectConfig?: ParsedFieldConfig['objectConfig'];
-  };
-  // Other field-specific configs
-  min?: number;
-  max?: number;
-  step?: number;
-  multiSelectConfig?: unknown;
-  colorConfig?: unknown;
-  ratingConfig?: unknown;
-  phoneConfig?: unknown;
-  datalist?: unknown;
-  optional?: boolean;
-}
+import type { FieldConfig, PageConfig, ProgressConfig, ObjectConfig } from "@/lib/formedible/types";
+
+// Use actual formedible types - no more duplicated interfaces!
+export type ParsedFieldConfig = FieldConfig;
 
 export interface ParsedFormConfig {
   schema?: unknown;
-  fields: ParsedFieldConfig[];
-  pages?: Array<{
-    page: number;
-    title: string;
-    description?: string;
-  }>;
+  fields: FieldConfig[];
+  pages?: PageConfig[];
   title?: string;
   description?: string;
   submitLabel?: string;
@@ -60,10 +16,7 @@ export interface ParsedFormConfig {
   previousLabel?: string;
   formClassName?: string;
   fieldClassName?: string;
-  progress?: {
-    showSteps?: boolean;
-    showPercentage?: boolean;
-  };
+  progress?: ProgressConfig;
   formOptions?: {
     defaultValues?: Record<string, unknown>;
     onSubmit?: (data: { value: Record<string, unknown> }) => void | Promise<void>;
@@ -190,8 +143,8 @@ export class FormedibleParser {
       return JSON.parse(code);
     } catch (jsonError) {
       // If that fails, try to convert JS object literal to JSON
+      let processedCode = code.trim();
       try {
-        let processedCode = code.trim();
         
         // Replace Zod expressions with placeholder strings - handle nested structures
         processedCode = this.replaceZodExpressions(processedCode);
@@ -421,8 +374,9 @@ export class FormedibleParser {
       if (typeof fieldObj.step === 'number') {
         validatedField.step = fieldObj.step;
       }
-      if (typeof fieldObj.optional === 'boolean') {
-        validatedField.optional = fieldObj.optional;
+      // Handle required field
+      if (typeof fieldObj.required === 'boolean') {
+        validatedField.required = fieldObj.required;
       }
 
       // Handle array config
@@ -434,8 +388,18 @@ export class FormedibleParser {
       if (fieldObj.objectConfig && typeof fieldObj.objectConfig === 'object') {
         const objectConfig = fieldObj.objectConfig as Record<string, unknown>;
         
-        const parsedObjectConfig: ParsedFieldConfig['objectConfig'] = {
-          fields: objectConfig.fields ? this.validateFields(objectConfig.fields) : [],
+        const parsedObjectConfig: ObjectConfig = {
+          fields: objectConfig.fields ? this.validateFields(objectConfig.fields).map(field => ({
+            name: field.name,
+            type: field.type,
+            label: field.label,
+            placeholder: field.placeholder,
+            description: field.description,
+            options: field.options,
+            min: field.min,
+            max: field.max,
+            step: field.step,
+          })) : [],
         };
 
         if (objectConfig.title && typeof objectConfig.title === 'string') {
@@ -481,24 +445,24 @@ export class FormedibleParser {
         }));
       }
 
-      // Pass through other configs as-is for now
-      if (fieldObj.validation !== undefined) {
-        validatedField.validation = fieldObj.validation;
+      // Pass through other configs with proper type handling
+      if (fieldObj.validation !== undefined && fieldObj.validation !== null && typeof fieldObj.validation === 'object') {
+        validatedField.validation = fieldObj.validation as any; // Complex Zod schema handling
       }
-      if (fieldObj.multiSelectConfig !== undefined) {
-        validatedField.multiSelectConfig = fieldObj.multiSelectConfig;
+      if (fieldObj.multiSelectConfig !== undefined && fieldObj.multiSelectConfig !== null && typeof fieldObj.multiSelectConfig === 'object') {
+        validatedField.multiSelectConfig = fieldObj.multiSelectConfig as any;
       }
-      if (fieldObj.colorConfig !== undefined) {
-        validatedField.colorConfig = fieldObj.colorConfig;
+      if (fieldObj.colorConfig !== undefined && fieldObj.colorConfig !== null && typeof fieldObj.colorConfig === 'object') {
+        validatedField.colorConfig = fieldObj.colorConfig as any;
       }
-      if (fieldObj.ratingConfig !== undefined) {
-        validatedField.ratingConfig = fieldObj.ratingConfig;
+      if (fieldObj.ratingConfig !== undefined && fieldObj.ratingConfig !== null && typeof fieldObj.ratingConfig === 'object') {
+        validatedField.ratingConfig = fieldObj.ratingConfig as any;
       }
-      if (fieldObj.phoneConfig !== undefined) {
-        validatedField.phoneConfig = fieldObj.phoneConfig;
+      if (fieldObj.phoneConfig !== undefined && fieldObj.phoneConfig !== null && typeof fieldObj.phoneConfig === 'object') {
+        validatedField.phoneConfig = fieldObj.phoneConfig as any;
       }
-      if (fieldObj.datalist !== undefined) {
-        validatedField.datalist = fieldObj.datalist;
+      if (fieldObj.datalist !== undefined && fieldObj.datalist !== null && typeof fieldObj.datalist === 'object') {
+        validatedField.datalist = fieldObj.datalist as any;
       }
 
       return validatedField;

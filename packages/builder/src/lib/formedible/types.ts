@@ -108,7 +108,7 @@ export interface ObjectConfig {
     label?: DynamicText;
     placeholder?: DynamicText;
     description?: DynamicText;
-    options?: Array<{ value: string; label: string }> | ((values: Record<string, unknown>) => Array<{ value: string; label: string }>);
+    options?: string[] | Array<{ value: string; label: string }> | ((values: Record<string, unknown>) => string[] | Array<{ value: string; label: string }>);
     min?: number;
     max?: number;
     step?: number;
@@ -117,7 +117,7 @@ export interface ObjectConfig {
   collapsible?: boolean;
   defaultExpanded?: boolean;
   showCard?: boolean;
-  layout?: "grid" | "vertical" | "horizontal";
+  layout?: "grid" | "vertical" | "horizontal" | (string & {});
   columns?: number;
   collapseLabel?: string;
   expandLabel?: string;
@@ -1098,6 +1098,8 @@ export interface FieldConfig {
   label?: DynamicText;
   placeholder?: DynamicText;
   description?: DynamicText;
+  required?: boolean;
+  defaultValue?: unknown;
   options?: string[] | { value: string; label: string }[] | ((values: Record<string, unknown>) => string[] | { value: string; label: string }[]);
   min?: number;
   max?: number;
@@ -1112,6 +1114,13 @@ export interface FieldConfig {
   dependencies?: string[];
   conditional?: (values: Record<string, unknown>) => boolean;
   group?: string;
+  
+  // Grid positioning properties
+  gridColumn?: number; // Specific column to place this field (1-based)
+  gridRow?: number; // Specific row to place this field (1-based)
+  gridColumnSpan?: number; // How many columns this field should span
+  gridRowSpan?: number; // How many rows this field should span
+  gridArea?: string; // CSS grid-area value for advanced positioning
   
   // Configuration objects using existing types
   arrayConfig?: ArrayFieldProps['arrayConfig'];

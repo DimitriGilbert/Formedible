@@ -7,13 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Monitor, Tablet, Smartphone, Code, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FormPreview } from "./form-preview";
-import type { FormConfiguration } from "./form-preview-base";
+import type { ParsedFormConfig } from "./formedible-parser";
 
 export type PreviewMode = "desktop" | "tablet" | "mobile";
 export type ViewMode = "preview" | "code";
 
 interface PreviewControlsProps {
-  config: FormConfiguration;
+  config: ParsedFormConfig;
   code?: string; // Generated code for code view
   className?: string;
   showModeSelector?: boolean;

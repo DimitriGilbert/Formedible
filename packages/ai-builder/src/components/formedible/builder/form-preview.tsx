@@ -6,12 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { FormConfiguration } from './form-preview-base';
+import type { ParsedFormConfig } from './formedible-parser';
 
 // Remove duplicate interface - using FormConfiguration from form-preview-base.tsx
 
 interface FormPreviewProps {
-  config: FormConfiguration;
+  config: ParsedFormConfig;
   className?: string;
 }
 
@@ -107,12 +107,10 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
           return mappedField;
         }),
         pages: (config.pages && config.pages.length > 1) ? config.pages : [],
-        submitLabel: config.settings?.submitLabel || "Submit",
-        nextLabel: config.settings?.nextLabel || "Next",
-        previousLabel: config.settings?.previousLabel || "Previous",
-        progress: config.settings?.showProgress
-          ? { showSteps: true, showPercentage: true }
-          : undefined,
+        submitLabel: config.submitLabel || "Submit",
+        nextLabel: config.nextLabel || "Next",
+        previousLabel: config.previousLabel || "Previous",
+        progress: config.progress,
         formOptions: {
           onSubmit: async ({ value }: { value: Record<string, unknown> }) => {
             console.log('Preview form submitted:', value);
@@ -190,7 +188,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
       <CardHeader className="px-3 pt-1 pb-0">
         <CardTitle className="flex items-center justify-between">
           <div>
-            <div>{config.title}</div>
+            <div>{config.title || 'Untitled Form'}</div>
             {config.description && (
               <div className="text-sm font-normal text-muted-foreground mt-1">
                 {config.description}
@@ -269,7 +267,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
           {(config.fields.some(f => f.section) || 
             config.fields.some(f => f.group) ||
             config.fields.some(f => f.help) ||
-            config.fields.some(f => f.inlineValidation?.enabled)) && (
+            config.fields.some(f => (f as any).inlineValidationEnabled)) && (
             <div className="space-y-1">
               <h4 className="text-sm font-medium text-muted-foreground">Advanced Features</h4>
               <div className="flex flex-wrap gap-2">
@@ -293,7 +291,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                     ⚡ Inline Validation
                   </div>
                 )}
-                {config.settings?.showProgress && (
+                {config.progress && (
                   <div className="inline-flex items-center gap-1 px-2 py-1 bg-primary/20 text-primary rounded text-xs">
                     📊 Progress Indicator
                   </div>

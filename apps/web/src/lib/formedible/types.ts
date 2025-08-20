@@ -108,7 +108,7 @@ export interface ObjectConfig {
     label?: DynamicText;
     placeholder?: DynamicText;
     description?: DynamicText;
-    options?: Array<{ value: string; label: string }> | ((values: Record<string, unknown>) => Array<{ value: string; label: string }>);
+    options?: string[] | Array<{ value: string; label: string }> | ((values: Record<string, unknown>) => string[] | Array<{ value: string; label: string }>);
     min?: number;
     max?: number;
     step?: number;
@@ -1098,6 +1098,8 @@ export interface FieldConfig {
   label?: DynamicText;
   placeholder?: DynamicText;
   description?: DynamicText;
+  required?: boolean;
+  defaultValue?: unknown;
   options?: string[] | { value: string; label: string }[] | ((values: Record<string, unknown>) => string[] | { value: string; label: string }[]);
   min?: number;
   max?: number;

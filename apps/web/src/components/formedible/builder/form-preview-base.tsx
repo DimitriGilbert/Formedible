@@ -8,31 +8,7 @@ import { FormedibleParser, type ParsedFormConfig, type ParsedFieldConfig } from 
 import { Eye, AlertCircle, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export interface FormConfiguration {
-  title?: string;
-  description?: string;
-  fields: Array<ParsedFieldConfig & {
-    id?: string;
-    page?: number;
-    group?: string;
-    section?: unknown;
-    help?: unknown;
-    inlineValidation?: unknown;
-  }>;
-  pages?: Array<{
-    page: number;
-    title: string;
-    description?: string;
-  }>;
-  settings?: {
-    submitLabel?: string;
-    nextLabel?: string;
-    previousLabel?: string;
-    showProgress?: boolean;
-    allowPageNavigation?: boolean;
-    resetOnSubmit?: boolean;
-  };
-}
+// Use formedible's ParsedFormConfig directly - no more DRY violations!
 
 export interface FormPreviewBaseProps {
   formCode?: string;
@@ -52,7 +28,7 @@ export function FormPreviewBase({
   emptyStateMessage = "No form generated yet. The preview will appear here once a form is created."
 }: FormPreviewBaseProps) {
   
-  const parsedConfig = useMemo<FormConfiguration | null>(() => {
+  const parsedConfig = useMemo<ParsedFormConfig | null>(() => {
     if (!formCode) return null;
     
     try {
@@ -69,26 +45,8 @@ export function FormPreviewBase({
         title: parsed.title
       });
       
-      // Convert to builder preview format
-      const config: FormConfiguration = {
-        title: parsed.title || "Generated Form",
-        description: parsed.description,
-        fields: parsed.fields.map((field, index) => ({
-          ...field,
-          id: field.name || `field_${index}`, // Use name as ID fallback
-        })),
-        pages: parsed.pages || [],
-        settings: {
-          submitLabel: parsed.submitLabel || "Submit",
-          nextLabel: parsed.nextLabel || "Next",
-          previousLabel: parsed.previousLabel || "Previous", 
-          showProgress: parsed.progress?.showSteps || false,
-          allowPageNavigation: true,
-          resetOnSubmit: false,
-        }
-      };
-      
-      return config;
+      // Return the parsed config directly - no conversion needed!
+      return parsed;
     } catch (error) {
       console.error('Error parsing form configuration:', {
         error: error instanceof Error ? error.message : String(error),
