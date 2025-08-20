@@ -71,6 +71,11 @@
           "path": "src/components/formedible/ai/conversation-history.tsx",
           "type": "registry:component",
           "target": "components/formedible/ai/conversation-history.tsx"
+        },
+        {
+          "path": "src/lib/form-extraction-utils.ts",
+          "type": "registry:lib",
+          "target": "lib/form-extraction-utils.ts"
         }
       ]
     }

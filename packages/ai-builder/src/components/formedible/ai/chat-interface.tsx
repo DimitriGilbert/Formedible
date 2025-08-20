@@ -27,6 +27,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CodeBlock } from "@/components/ui/code-block";
 import { cn } from "@/lib/utils";
 import type { ProviderConfig } from "./provider-selection";
+import { extractFormedibleCode } from "@/lib/form-extraction-utils";
 
 // MessageContent component to handle code blocks with syntax highlighting
 interface MessageContentProps {
@@ -233,9 +234,6 @@ export function ChatInterface({
 
       const newMessages = [...messages, userMsg];
       setMessages(newMessages);
-
-      // Immediately save user message
-      onConversationUpdate?.(newMessages, false);
 
       const model = createModel(providerConfig);
 
@@ -493,24 +491,17 @@ Chat naturally. Ask clarifying questions. Suggest improvements. Only output form
 
       // Extract and send formedible code blocks to preview
       if (fullResponse && onFormGenerated) {
-        const formedibleMatch = fullResponse.match(
-          /```formedible\s*\n([\s\S]*?)\n```/
-        );
-        if (formedibleMatch && formedibleMatch[1]) {
-          onFormGenerated(formedibleMatch[1].trim());
+        const code = extractFormedibleCode(fullResponse);
+        if (code) {
+          onFormGenerated(code);
         }
       }
 
       onStreamingStateChange?.(false);
 
       // Save conversation to localStorage ONLY on stream end with complete messages
-      setMessages((currentMessages) => {
-        // Use a microtask to defer the parent update until after current render cycle
-        Promise.resolve().then(() => {
-          onConversationUpdate?.(currentMessages, true);
-        });
-        return currentMessages;
-      });
+      const finalMessages = [...messages, { ...assistantMsg, content: fullResponse }];
+      onConversationUpdate?.(finalMessages, true);
     } catch (err) {
       console.error("AI Generation Error:", err);
       setError(

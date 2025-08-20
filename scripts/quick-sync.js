@@ -71,8 +71,11 @@ function processRegistry(registryPath, sourceBase, destBase) {
 
   let copiedCount = 0;
 
-  if (registry.files && Array.isArray(registry.files)) {
-    registry.files.forEach(file => {
+  // Handle different registry formats
+  const files = registry.files || (registry.items && registry.items[0] && registry.items[0].files) || [];
+  
+  if (Array.isArray(files)) {
+    files.forEach(file => {
       if (file.path) {
         // Remove the leading "src/" from the file path since sourceBase already includes it
         const relativePath = file.path.startsWith('src/') ? file.path.substring(4) : file.path;
@@ -125,7 +128,7 @@ function main() {
   totalCopied += processRegistry(builderRegistry, builderSourceBase, aiBuilderDestBase);
 
   // Process ai-builder registry -> web app
-  const aiBuilderRegistry = 'packages/ai-builder/public/r/ai-builder.json';
+  const aiBuilderRegistry = 'packages/ai-builder/registry.json';
   const aiBuilderSourceBase = 'packages/ai-builder/src';
   totalCopied += processRegistry(aiBuilderRegistry, aiBuilderSourceBase, webDestBase);
 

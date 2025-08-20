@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Sparkles, ChevronDown, ChevronUp, Settings, History, ChevronLeft, ChevronRight, Eye, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Message } from "./chat-interface";
+import { extractFormsFromMessages } from "@/lib/form-extraction-utils";
 
 // Create a client instance outside the component to avoid recreation
 const queryClient = new QueryClient({
@@ -163,23 +164,33 @@ function AIBuilderCore({ className, onFormGenerated, onFormSubmit }: AIBuilderPr
     // Always update current messages for UI
     setCurrentMessages(messages);
     
-    // Only create/update conversations when needed
+    // Only save to localStorage when streaming is complete
+    if (!isStreamEnd) return;
+    
+    // Only create/update conversations when streaming ends
     if (messages.length > 0) {
       if (!currentConversationId) {
-        // Create new conversation ONLY on first user message
-        const newConversationId = `conversation_${Date.now()}`;
-        const newConversation: Conversation = {
-          id: newConversationId,
-          title: "", // Will be generated from first message
-          messages,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
+        // Create new conversation ONLY when stream ends and there's no current conversation
+        const newConversationId = `conversation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         
-        setConversations(prev => [...prev, newConversation]);
+        setConversations(prev => {
+          // Double check we don't already have this conversation (race condition protection)
+          const exists = prev.some(conv => conv.id === newConversationId);
+          if (exists) return prev;
+          
+          const newConversation: Conversation = {
+            id: newConversationId,
+            title: "", // Will be generated from first message
+            messages,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          };
+          
+          return [...prev, newConversation];
+        });
         setCurrentConversationId(newConversationId);
       } else {
-        // ALWAYS update existing conversation with new messages (not just on stream end)
+        // Update existing conversation only when stream ends
         setConversations(prev => prev.map(conv => 
           conv.id === currentConversationId 
             ? { ...conv, messages, updatedAt: new Date() }
@@ -203,38 +214,12 @@ function AIBuilderCore({ className, onFormGenerated, onFormSubmit }: AIBuilderPr
     setCurrentConversationId(conversation.id);
     setCurrentMessages(conversation.messages);
     
-    // Extract forms from conversation messages
-    const extractedForms: Array<{ id: string; code: string; timestamp: Date }> = [];
-    
-    conversation.messages.forEach((message, messageIndex) => {
-      if (message.role === 'assistant' && message.content) {
-        // Look for code blocks containing form definitions
-        const codeBlockRegex = /```(?:javascript|js|json)?\s*([\s\S]*?)\s*```/g;
-        let match;
-        let codeBlockIndex = 0;
-        
-        while ((match = codeBlockRegex.exec(message.content)) !== null) {
-          const code = match[1].trim();
-          
-          // Check if this looks like a form definition (has fields array)
-          if (code.includes('fields:') || code.includes('"fields"') || code.includes('fields =')) {
-            console.log('Found form code in conversation:', {
-              conversationId: conversation.id,
-              messageIndex,
-              codeBlockIndex,
-              codePreview: code.substring(0, 100) + '...'
-            });
-            
-            extractedForms.push({
-              id: `form_${conversation.id}_${messageIndex}_${codeBlockIndex}`,
-              code: code,
-              timestamp: new Date(conversation.updatedAt)
-            });
-          }
-          codeBlockIndex++;
-        }
-      }
-    });
+    // Extract forms from conversation messages using shared utility
+    const extractedForms = extractFormsFromMessages(
+      conversation.messages,
+      conversation.id,
+      new Date(conversation.updatedAt)
+    );
     
     console.log('Extracted forms from conversation:', extractedForms.length);
     
