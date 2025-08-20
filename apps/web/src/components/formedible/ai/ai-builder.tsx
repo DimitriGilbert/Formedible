@@ -7,7 +7,7 @@ import { ChatInterface } from "./chat-interface";
 import { FormPreview } from "./form-preview";
 import { ConversationHistory, type Conversation } from "./conversation-history";
 import { Button } from "@/components/ui/button";
-import { Sparkles, ChevronDown, ChevronUp, Settings, History } from "lucide-react";
+import { Sparkles, ChevronDown, ChevronUp, Settings, History, ChevronLeft, ChevronRight, Eye, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Message } from "./chat-interface";
 
@@ -36,10 +36,12 @@ const STORAGE_KEYS = {
 
 function AIBuilderCore({ className, onFormGenerated, onFormSubmit }: AIBuilderProps) {
   const [providerConfig, setProviderConfig] = useState<ProviderConfig | null>(null);
-  const [generatedFormCode, setGeneratedFormCode] = useState<string>("");
+  const [generatedForms, setGeneratedForms] = useState<Array<{ id: string; code: string; timestamp: Date }>>([]);
+  const [currentFormIndex, setCurrentFormIndex] = useState<number>(0);
   const [isGenerating, setIsGenerating] = useState(false);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<string | undefined>();
+  const [currentMessages, setCurrentMessages] = useState<Message[]>([]);
   const [isTopSectionCollapsed, setIsTopSectionCollapsed] = useState(false);
 
   // Load saved data on mount
@@ -112,7 +114,18 @@ function AIBuilderCore({ className, onFormGenerated, onFormSubmit }: AIBuilderPr
   }, []);
 
   const handleFormGenerated = useCallback((formCode: string) => {
-    setGeneratedFormCode(formCode);
+    const newForm = {
+      id: `form_${Date.now()}`,
+      code: formCode,
+      timestamp: new Date()
+    };
+    
+    setGeneratedForms(prev => {
+      const updated = [...prev, newForm];
+      setCurrentFormIndex(updated.length - 1); // Auto-navigate to newest form
+      return updated;
+    });
+    
     onFormGenerated?.(formCode);
   }, [onFormGenerated]);
 
@@ -125,11 +138,67 @@ function AIBuilderCore({ className, onFormGenerated, onFormSubmit }: AIBuilderPr
     onFormSubmit?.(formData);
   }, [onFormSubmit]);
 
+  const handleFormIndexChange = useCallback((index: number) => {
+    setCurrentFormIndex(index);
+  }, []);
+
+  const handleDeleteForm = useCallback((index: number) => {
+    setGeneratedForms(prev => {
+      const updated = prev.filter((_, i) => i !== index);
+      // Adjust current index if necessary
+      if (index <= currentFormIndex && currentFormIndex > 0) {
+        setCurrentFormIndex(currentFormIndex - 1);
+      } else if (index < currentFormIndex) {
+        // No change needed to currentFormIndex
+      } else if (updated.length === 0) {
+        setCurrentFormIndex(0);
+      } else if (currentFormIndex >= updated.length) {
+        setCurrentFormIndex(updated.length - 1);
+      }
+      return updated;
+    });
+  }, [currentFormIndex]);
+
+  const handleConversationUpdate = useCallback((messages: Message[], isStreamEnd: boolean = false) => {
+    // Always update current messages for UI
+    setCurrentMessages(messages);
+    
+    // Only create/update conversations when needed
+    if (messages.length > 0) {
+      if (!currentConversationId) {
+        // Create new conversation on first message
+        const newConversationId = `conversation_${Date.now()}`;
+        const newConversation: Conversation = {
+          id: newConversationId,
+          title: "", // Will be generated from first message
+          messages,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        
+        setConversations(prev => [...prev, newConversation]);
+        setCurrentConversationId(newConversationId);
+      } else if (isStreamEnd) {
+        // ONLY update conversations/localStorage on stream end
+        setConversations(prev => prev.map(conv => 
+          conv.id === currentConversationId 
+            ? { ...conv, messages, updatedAt: new Date() }
+            : conv
+        ));
+      }
+    }
+  }, [currentConversationId]);
+
+  const handleNewConversation = useCallback(() => {
+    setCurrentConversationId(undefined);
+    setCurrentMessages([]);
+  }, []);
+
   // Remove automatic conversation creation
 
   const handleSelectConversation = useCallback((conversation: Conversation) => {
     setCurrentConversationId(conversation.id);
-    // Here you would typically load the conversation messages into the chat
+    setCurrentMessages(conversation.messages);
   }, []);
 
   const handleDeleteConversation = useCallback((conversationId: string) => {
@@ -162,29 +231,29 @@ function AIBuilderCore({ className, onFormGenerated, onFormSubmit }: AIBuilderPr
 
       {/* Compact Collapsible Settings & History */}
       <div className="flex-shrink-0 pb-1">
-        <div className="flex items-center justify-between mb-1 p-1 bg-muted/20 rounded border">
+        <div 
+          className="flex items-center justify-between mb-1 p-2 bg-accent/10 hover:bg-accent/20 rounded-lg border-2 border-accent/20 hover:border-accent/30 transition-all duration-200 shadow-sm cursor-pointer"
+          onClick={() => setIsTopSectionCollapsed(!isTopSectionCollapsed)}
+        >
           <div className="flex items-center gap-2">
-            <Settings className="h-3 w-3 text-primary" />
-            <span className="text-xs font-medium text-foreground">Settings</span>
+            <div className="p-1.5 bg-accent/20 rounded-md">
+              <Settings className="h-4 w-4 text-accent-foreground" />
+            </div>
+            <span className="text-sm font-semibold text-foreground">Settings & History</span>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsTopSectionCollapsed(!isTopSectionCollapsed)}
-            className="flex items-center gap-1 text-xs h-5 px-2"
-          >
+          <div className="flex items-center gap-1 text-sm h-7 px-3">
             {isTopSectionCollapsed ? (
               <>
-                <ChevronDown className="h-3 w-3" />
-                Show
+                <ChevronDown className="h-4 w-4" />
+                <span className="font-medium">Show</span>
               </>
             ) : (
               <>
-                <ChevronUp className="h-3 w-3" />
-                Hide
+                <ChevronUp className="h-4 w-4" />
+                <span className="font-medium">Hide</span>
               </>
             )}
-          </Button>
+          </div>
         </div>
 
         {!isTopSectionCollapsed && (
@@ -209,12 +278,18 @@ function AIBuilderCore({ className, onFormGenerated, onFormSubmit }: AIBuilderPr
         <ChatInterface
           onFormGenerated={handleFormGenerated}
           onStreamingStateChange={handleStreamingStateChange}
+          onConversationUpdate={handleConversationUpdate}
+          onNewConversation={handleNewConversation}
+          messages={currentMessages}
           providerConfig={providerConfig}
           className="h-full overflow-hidden"
         />
 
         <FormPreview
-          formCode={generatedFormCode}
+          forms={generatedForms}
+          currentFormIndex={currentFormIndex}
+          onFormIndexChange={handleFormIndexChange}
+          onDeleteForm={handleDeleteForm}
           isStreaming={isGenerating}
           onFormSubmit={handleFormSubmit}
           className="h-full overflow-hidden"

@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { History, MessageSquare, Trash2, Download } from "lucide-react";
+import { History, MessageSquare, Trash2, Download, Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Message } from "./chat-interface";
 
@@ -20,6 +20,7 @@ export interface ConversationHistoryProps {
   currentConversationId?: string;
   onSelectConversation: (conversation: Conversation) => void;
   onDeleteConversation: (conversationId: string) => void;
+  onNewConversation?: () => void;
   onExportConversation?: (conversation: Conversation) => void;
   className?: string;
 }
@@ -29,6 +30,7 @@ export function ConversationHistory({
   currentConversationId,
   onSelectConversation,
   onDeleteConversation,
+  onNewConversation,
   onExportConversation,
   className,
 }: ConversationHistoryProps) {
@@ -62,13 +64,26 @@ export function ConversationHistory({
   return (
     <Card className={cn("h-full", className)}>
       <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2">
-          <History className="h-5 w-5" />
-          Conversation History
-          <Badge variant="secondary" className="ml-auto">
-            {conversations.length}
-          </Badge>
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <History className="h-5 w-5" />
+            Conversation History
+            <Badge variant="secondary">
+              {conversations.length}
+            </Badge>
+          </CardTitle>
+          {onNewConversation && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onNewConversation}
+              className="h-8 w-8 p-0"
+            >
+              <Plus className="h-4 w-4" />
+              <span className="sr-only">New conversation</span>
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="p-4">
         <div className="h-[300px] overflow-y-auto">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { streamText } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createAnthropic } from "@ai-sdk/anthropic";
@@ -10,11 +10,67 @@ import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, MessageSquare, Send, StopCircle, User, Bot, Loader2 } from "lucide-react";
+import { AlertCircle, MessageSquare, Send, StopCircle, User, Bot, Loader2, ArrowDown, Plus } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { CodeBlock } from "@/components/ui/code-block";
 import { cn } from "@/lib/utils";
 import type { ProviderConfig } from "./provider-selection";
+
+// MessageContent component to handle code blocks with syntax highlighting
+interface MessageContentProps {
+  content: string;
+}
+
+function MessageContent({ content }: MessageContentProps) {
+  // Detect and render code blocks with syntax highlighting
+  const codeBlockRegex = /```(\w+)?\s*\n([\s\S]*?)\n```/g;
+  const parts = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = codeBlockRegex.exec(content)) !== null) {
+    // Add text before code block
+    if (match.index > lastIndex) {
+      parts.push(
+        <span key={`text-${lastIndex}`} className="whitespace-pre-wrap break-words leading-relaxed">
+          {content.slice(lastIndex, match.index)}
+        </span>
+      );
+    }
+
+    // Add code block with syntax highlighting
+    const language = match[1] || 'text';
+    const code = match[2];
+    parts.push(
+      <div key={`code-${match.index}`} className="my-2">
+        <CodeBlock
+          code={code}
+          language={language}
+          showLineNumbers={false}
+          showCopyButton={true}
+          className="text-xs"
+          darkMode={true}
+          scrollable={false}
+        />
+      </div>
+    );
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Add remaining text
+  if (lastIndex < content.length) {
+    parts.push(
+      <span key={`text-${lastIndex}`} className="whitespace-pre-wrap break-words leading-relaxed">
+        {content.slice(lastIndex)}
+      </span>
+    );
+  }
+
+  return <div className="space-y-1">{parts.length > 0 ? parts : <span className="whitespace-pre-wrap break-words leading-relaxed">{content}</span>}</div>;
+}
 
 export interface Message {
   id: string;
@@ -25,27 +81,58 @@ export interface Message {
 export interface ChatInterfaceProps {
   onFormGenerated?: (formCode: string) => void;
   onStreamingStateChange?: (isStreaming: boolean) => void;
+  onConversationUpdate?: (messages: Message[], isStreamEnd?: boolean) => void;
+  onNewConversation?: () => void;
+  messages?: Message[];
   className?: string;
   providerConfig?: ProviderConfig | null;
 }
 
-export function ChatInterface({ onFormGenerated, onStreamingStateChange, className, providerConfig }: ChatInterfaceProps) {
+export function ChatInterface({ onFormGenerated, onStreamingStateChange, onConversationUpdate, onNewConversation, messages: externalMessages, className, providerConfig }: ChatInterfaceProps) {
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>(externalMessages || []);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // Remove the automatic conversation completion
 
-  const scrollToBottom = () => {
+  const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    if (!messagesContainerRef.current) return;
+    
+    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 100;
+    
+    setShowScrollToBottom(!isAtBottom && messages.length > 0);
+  }, [messages.length]);
+
+  // Sync with external messages
+  useEffect(() => {
+    if (externalMessages && externalMessages.length !== messages.length) {
+      setMessages(externalMessages);
+    }
+  }, [externalMessages, messages.length]);
+
+  // Remove the useEffect that was causing multiple updates
+
+  // Removed auto-scroll - let users control scrolling manually
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    container.addEventListener('scroll', handleScroll);
+    handleScroll(); // Check initial state
+
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [handleScroll]);
 
   const createModel = (config: ProviderConfig) => {
     const { provider, apiKey, model, endpoint } = config;
@@ -174,6 +261,11 @@ Chat naturally. Ask clarifying questions. Suggest improvements. Only output form
 
       onStreamingStateChange?.(false);
 
+      // Save conversation to localStorage ONLY on stream end
+      setTimeout(() => {
+        onConversationUpdate?.(messages, true);
+      }, 0);
+
     } catch (err) {
       console.error('AI Generation Error:', err);
       setError(err instanceof Error ? err : new Error('Unknown error occurred'));
@@ -210,16 +302,32 @@ Chat naturally. Ask clarifying questions. Suggest improvements. Only output form
   return (
     <Card className={cn("flex flex-col h-full border-2 border-accent/30 shadow-lg", className)}>
       <CardHeader className="pb-4 bg-gradient-to-r from-accent/10 to-transparent">
-        <CardTitle className="flex items-center gap-3 text-lg">
-          <div className="p-2 bg-accent/20 rounded-lg">
-            <MessageSquare className="h-5 w-5 text-accent-foreground" />
+        <CardTitle className="flex items-center justify-between text-lg">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-accent/20 rounded-lg">
+              <MessageSquare className="h-5 w-5 text-accent-foreground" />
+            </div>
+            <span className="text-foreground font-semibold">AI Form Builder Chat</span>
           </div>
-          <span className="text-foreground font-semibold">AI Form Builder Chat</span>
+          {onNewConversation && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onNewConversation}
+              className="h-8 w-8 p-0"
+            >
+              <Plus className="h-4 w-4" />
+              <span className="sr-only">New conversation</span>
+            </Button>
+          )}
         </CardTitle>
       </CardHeader>
       
-      <CardContent className="flex flex-col flex-1 p-6 min-h-0">
-        <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2 min-h-0 max-h-full">
+      <CardContent className="flex flex-col flex-1 p-6 min-h-0 relative">
+        <div
+          ref={messagesContainerRef}
+          className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2 min-h-0 max-h-full"
+        >
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
               <Bot className="h-12 w-12 mb-4 opacity-50" />
@@ -241,10 +349,10 @@ Chat naturally. Ask clarifying questions. Suggest improvements. Only output form
             >
               <div
                 className={cn(
-                  "flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-full border shadow-sm",
+                  "flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-full border-2 shadow-md",
                   message.role === "user"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted"
+                    ? "bg-primary text-primary-foreground border-primary/30"
+                    : "bg-muted text-foreground border-border"
                 )}
               >
                 {message.role === "user" ? (
@@ -256,33 +364,44 @@ Chat naturally. Ask clarifying questions. Suggest improvements. Only output form
               
               <div
                 className={cn(
-                  "flex flex-col gap-2 rounded-lg px-3 py-2 text-sm shadow-sm",
+                  "flex flex-col gap-2 rounded-lg px-4 py-3 text-sm shadow-md border max-w-[85%]",
                   message.role === "user"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted"
+                    ? "bg-primary text-primary-foreground border-primary/30"
+                    : "bg-background text-foreground border-border"
                 )}
               >
-                <div className="whitespace-pre-wrap break-words">
-                  {message.content}
-                </div>
+                <MessageContent content={message.content} />
               </div>
             </div>
           ))}
 
           {isLoading && (
             <div className="flex gap-3 max-w-4xl mr-auto">
-              <div className="flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-full border shadow-sm bg-muted">
+              <div className="flex h-8 w-8 shrink-0 select-none items-center justify-center rounded-full border-2 shadow-md bg-muted text-foreground border-border">
                 <Bot className="h-4 w-4" />
               </div>
-              <div className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm shadow-sm bg-muted">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Generating form...</span>
+              <div className="flex items-center gap-2 rounded-lg px-4 py-3 text-sm shadow-md border bg-background text-foreground border-border">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                <span>Generating response...</span>
               </div>
             </div>
           )}
 
           <div ref={messagesEndRef} />
         </div>
+
+        {/* Scroll to bottom button */}
+        {showScrollToBottom && (
+          <Button
+            onClick={scrollToBottom}
+            className="absolute bottom-20 right-4 rounded-full w-10 h-10 p-0 shadow-lg z-10"
+            variant="secondary"
+            size="sm"
+          >
+            <ArrowDown className="h-4 w-4" />
+            <span className="sr-only">Scroll to bottom</span>
+          </Button>
+        )}
 
         {error && (
           <Alert variant="destructive" className="mb-4">
@@ -294,13 +413,14 @@ Chat naturally. Ask clarifying questions. Suggest improvements. Only output form
         )}
 
         <form onSubmit={handleSubmit} className="flex gap-2">
-          <Input
+          <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Describe the form you want to create..."
+            placeholder="Describe the form you want to create... (Shift+Enter for new line)"
             disabled={isLoading}
-            className="flex-1"
+            className="flex-1 min-h-[80px] resize-none"
+            rows={3}
           />
           
           {isLoading ? (

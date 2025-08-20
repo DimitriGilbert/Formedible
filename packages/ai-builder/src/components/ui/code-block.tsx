@@ -27,6 +27,8 @@ interface CodeBlockProps {
   className?: string;
   title?: string;
   darkMode?: boolean;
+  scrollable?: boolean;
+  maxHeight?: string;
 }
 
 // Copy Button Component
@@ -107,6 +109,8 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
   className = "",
   title,
   darkMode = false,
+  scrollable = false,
+  maxHeight,
 }) => {
   const [selectedPM, setSelectedPM] = useState("npx");
   
@@ -170,8 +174,13 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({
             <pre 
               className={`${highlightClassName} p-4 rounded-lg font-mono text-sm overflow-x-auto ${
                 showPackageManagerTabs ? 'rounded-tl-none' : ''
-              } ${title ? 'rounded-t-none' : ''}`}
-              style={style}
+              } ${title ? 'rounded-t-none' : ''} ${
+                scrollable ? 'overflow-y-auto' : ''
+              }`}
+              style={{
+                ...style,
+                ...(scrollable && maxHeight && { maxHeight })
+              }}
             >
               {tokens.map((line, i) => (
                 <div key={i} {...getLineProps({ line })} className={showLineNumbers ? "table-row" : ""}>

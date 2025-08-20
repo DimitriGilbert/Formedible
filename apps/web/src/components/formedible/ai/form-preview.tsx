@@ -1,46 +1,114 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { AiFormRenderer } from "./ai-form-renderer";
-import { Eye, AlertCircle, Code2, Copy, Check, FileText } from "lucide-react";
+import { PreviewControls } from "../builder/preview-controls";
+import { Eye, AlertCircle, ChevronLeft, ChevronRight, FileText, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+export interface GeneratedForm {
+  id: string;
+  code: string;
+  timestamp: Date;
+}
+
 export interface FormPreviewProps {
-  formCode?: string;
+  forms: GeneratedForm[];
+  currentFormIndex: number;
+  onFormIndexChange: (index: number) => void;
+  onDeleteForm?: (index: number) => void;
   isStreaming?: boolean;
   onFormSubmit?: (formData: Record<string, unknown>) => void;
   className?: string;
 }
 
-export function FormPreview({ formCode, isStreaming = false, onFormSubmit, className }: FormPreviewProps) {
-  const [showCode, setShowCode] = useState(false);
-  const [copied, setCopied] = useState(false);
+interface FormConfiguration {
+  title?: string;
+  description?: string;
+  fields: Array<{
+    id?: string;
+    name: string;
+    type: string;
+    label: string;
+    placeholder?: string;
+    description?: string;
+    required?: boolean;
+    options?: Array<{ value: string; label: string }>;
+    validation?: any;
+    page?: number;
+    group?: string;
+    section?: any;
+    help?: any;
+    inlineValidation?: any;
+    arrayConfig?: any;
+    datalist?: any;
+    multiSelectConfig?: any;
+    colorConfig?: any;
+    ratingConfig?: any;
+    phoneConfig?: any;
+  }>;
+  pages?: Array<{
+    page: number;
+    title: string;
+    description?: string;
+  }>;
+  settings?: {
+    submitLabel?: string;
+    nextLabel?: string;
+    previousLabel?: string;
+    showProgress?: boolean;
+    allowPageNavigation?: boolean;
+    resetOnSubmit?: boolean;
+  };
+}
 
-  const hasContent = formCode && formCode.trim().length > 0;
-
-  const handleCopyCode = async () => {
-    if (!formCode) return;
+export function FormPreview({ 
+  forms, 
+  currentFormIndex, 
+  onFormIndexChange,
+  onDeleteForm,
+  isStreaming = false, 
+  onFormSubmit, 
+  className 
+}: FormPreviewProps) {
+  const currentForm = forms[currentFormIndex];
+  
+  const parsedConfig = useMemo<FormConfiguration | null>(() => {
+    if (!currentForm?.code) return null;
     
     try {
-      await navigator.clipboard.writeText(formCode);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error("Failed to copy code:", err);
+      const parsed = JSON.parse(currentForm.code);
+      
+      // Convert to builder preview format
+      const config: FormConfiguration = {
+        title: parsed.title || "Generated Form",
+        description: parsed.description,
+        fields: (parsed.fields || []).map((field: any, index: number) => ({
+          ...field,
+          id: field.id || `field_${index}`,
+        })),
+        pages: parsed.pages || [],
+        settings: {
+          submitLabel: parsed.submitLabel || "Submit",
+          nextLabel: parsed.nextLabel || "Next",
+          previousLabel: parsed.previousLabel || "Previous", 
+          showProgress: parsed.progress?.showSteps || false,
+          allowPageNavigation: true,
+          resetOnSubmit: false,
+          ...parsed.settings
+        }
+      };
+      
+      return config;
+    } catch (error) {
+      console.error('Error parsing form configuration:', error);
+      return null;
     }
-  };
+  }, [currentForm?.code]);
 
-  useEffect(() => {
-    if (copied) {
-      const timer = setTimeout(() => setCopied(false), 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [copied]);
-
-  if (!hasContent && !isStreaming) {
+  if (forms.length === 0 && !isStreaming) {
     return (
       <Card className={cn("flex flex-col h-full", className)}>
         <CardHeader>
@@ -52,7 +120,7 @@ export function FormPreview({ formCode, isStreaming = false, onFormSubmit, class
         <CardContent className="flex-1 flex items-center justify-center">
           <div className="text-center text-muted-foreground">
             <FileText className="h-12 w-12 mb-4 opacity-50 mx-auto" />
-            <h3 className="text-lg font-medium mb-2">No Form Generated Yet</h3>
+            <h3 className="text-lg font-medium mb-2">No Forms Generated Yet</h3>
             <p className="text-sm max-w-md">
               Start a conversation in the chat to generate your first form. 
               The preview will appear here once the AI creates your form.
@@ -70,38 +138,46 @@ export function FormPreview({ formCode, isStreaming = false, onFormSubmit, class
           <CardTitle className="flex items-center gap-2">
             <Eye className="h-5 w-5" />
             Form Preview
+            {forms.length > 0 && (
+              <span className="text-sm font-normal text-muted-foreground">
+                ({currentFormIndex + 1} of {forms.length})
+              </span>
+            )}
           </CardTitle>
           
-          {hasContent && (
-            <div className="flex items-center gap-2">
+          {forms.length > 1 && (
+            <div className="flex items-center gap-1">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowCode(!showCode)}
-                className="gap-2"
+                onClick={() => onFormIndexChange(Math.max(0, currentFormIndex - 1))}
+                disabled={currentFormIndex === 0}
+                className="h-8 w-8 p-0"
               >
-                <Code2 className="h-4 w-4" />
-                {showCode ? "Preview" : "Code"}
+                <ChevronLeft className="h-4 w-4" />
+                <span className="sr-only">Previous form</span>
               </Button>
               
-              {showCode && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onFormIndexChange(Math.min(forms.length - 1, currentFormIndex + 1))}
+                disabled={currentFormIndex === forms.length - 1}
+                className="h-8 w-8 p-0"
+              >
+                <ChevronRight className="h-4 w-4" />
+                <span className="sr-only">Next form</span>
+              </Button>
+
+              {onDeleteForm && forms.length > 1 && (
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleCopyCode}
-                  className="gap-2"
+                  onClick={() => onDeleteForm(currentFormIndex)}
+                  className="h-8 w-8 p-0 text-destructive hover:text-destructive"
                 >
-                  {copied ? (
-                    <>
-                      <Check className="h-4 w-4" />
-                      Copied
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-4 w-4" />
-                      Copy
-                    </>
-                  )}
+                  <Trash2 className="h-4 w-4" />
+                  <span className="sr-only">Delete form</span>
                 </Button>
               )}
             </div>
@@ -109,38 +185,38 @@ export function FormPreview({ formCode, isStreaming = false, onFormSubmit, class
         </div>
       </CardHeader>
       
-      <CardContent className="flex-1 overflow-hidden">
-        <div className="h-full overflow-y-auto">
-          {showCode ? (
-            <div className="space-y-4">
-              <div className="text-sm text-muted-foreground">
-                Generated form configuration:
-              </div>
-              <pre className="bg-muted p-4 rounded-lg text-sm overflow-x-auto whitespace-pre-wrap break-words">
-                <code>{formCode}</code>
-              </pre>
+      <CardContent className="flex-1 overflow-hidden p-0">
+        <div className="h-full">
+          {isStreaming && !currentForm && (
+            <div className="p-6">
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Form is being generated... Please wait for the AI to complete.
+                </AlertDescription>
+              </Alert>
             </div>
-          ) : (
-            <div className="space-y-4">
-              {isStreaming && (
-                <Alert>
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
-                    Form is being generated... Please wait for the AI to complete.
-                  </AlertDescription>
-                </Alert>
-              )}
-              
-              {hasContent && (
-                <div className="border rounded-lg p-4 bg-background">
-                  <AiFormRenderer
-                    code={formCode}
-                    isStreaming={isStreaming}
-                    onSubmit={onFormSubmit}
-                    debug={process.env.NODE_ENV === "development"}
-                  />
-                </div>
-              )}
+          )}
+          
+          {currentForm && parsedConfig && (
+            <PreviewControls
+              config={parsedConfig}
+              code={currentForm.code}
+              showModeSelector={true}
+              showDeviceSelector={true}
+              onFormSubmit={onFormSubmit}
+              className="border-0 h-full"
+            />
+          )}
+
+          {currentForm && !parsedConfig && (
+            <div className="p-6">
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Failed to parse the form configuration. The generated form may have invalid JSON.
+                </AlertDescription>
+              </Alert>
             </div>
           )}
         </div>

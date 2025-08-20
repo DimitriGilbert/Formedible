@@ -96,6 +96,11 @@
           "target": "components/formedible/builder/tabs/CodeTabContent.tsx"
         },
         {
+          "path": "src/components/formedible/builder/preview-controls.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/builder/preview-controls.tsx"
+        },
+        {
           "path": "src/lib/utils.ts",
           "type": "registry:lib",
           "target": "lib/utils.ts"

@@ -105,23 +105,29 @@ function main() {
   }
 
   const webDestBase = 'apps/web/src';
+  const aiBuilderDestBase = 'packages/ai-builder/src';
+  let totalCopied = 0;
 
-  // Process formedible registry
+  // Process formedible registry -> web app
   const formedibleRegistry = 'packages/formedible/public/r/use-formedible.json';
   const formedibleSourceBase = 'packages/formedible/src';
-  const formedibleCount = processRegistry(formedibleRegistry, formedibleSourceBase, webDestBase);
+  totalCopied += processRegistry(formedibleRegistry, formedibleSourceBase, webDestBase);
 
-  // Process builder registry
+  // Process formedible registry -> ai-builder
+  totalCopied += processRegistry(formedibleRegistry, formedibleSourceBase, aiBuilderDestBase);
+
+  // Process builder registry -> web app  
   const builderRegistry = 'packages/builder/public/r/form-builder.json';
   const builderSourceBase = 'packages/builder/src';
-  const builderCount = processRegistry(builderRegistry, builderSourceBase, webDestBase);
+  totalCopied += processRegistry(builderRegistry, builderSourceBase, webDestBase);
 
-  // Process ai-builder registry
+  // Process builder registry -> ai-builder
+  totalCopied += processRegistry(builderRegistry, builderSourceBase, aiBuilderDestBase);
+
+  // Process ai-builder registry -> web app
   const aiBuilderRegistry = 'packages/ai-builder/public/r/ai-builder.json';
   const aiBuilderSourceBase = 'packages/ai-builder/src';
-  const aiBuilderCount = processRegistry(aiBuilderRegistry, aiBuilderSourceBase, webDestBase);
-
-  const totalCopied = formedibleCount + builderCount + aiBuilderCount;
+  totalCopied += processRegistry(aiBuilderRegistry, aiBuilderSourceBase, webDestBase);
 
   logSuccess(`Quick sync complete! ${totalCopied} files copied. 🎉`);
 }
