@@ -35,3 +35,24 @@ FROM THE ROOT OF THE PROJECT !!! **ALWAYS**
 - use `npm run sync-components` to sync the changes before handing over to make sure shadcn install is functionning
 - NEVER RUN THE DEV SERVER ! npm run dev IS COMPLETELLY OFF LIMIT ! NEVER npm run dev ! NEVER NEVER NVER !
 - NEVER USE "any" IF YOU DO NOT HAVE TO ! THIS IS LAZY AND SHIT ! NEVER ! NEVER ! NEVER !
+
+## CRITICAL WORKFLOW RULES - NEVER BREAK THESE
+
+**PACKAGES ARE THE SOURCE OF TRUTH - WEB APP IS SYNCED FROM PACKAGES**
+
+1. **NEVER EDIT WEB APP FILES DIRECTLY** - ONLY EDIT PACKAGE FILES
+   - ❌ WRONG: Edit /apps/web/src/components/formedible/ai/chat-interface.tsx 
+   - ✅ RIGHT: Edit /packages/ai-builder/src/components/formedible/ai/chat-interface.tsx
+
+2. **WORKFLOW IS ALWAYS:**
+   - Step 1: Edit PACKAGE files only
+   - Step 2: Run scripts/quick-sync.js OR npm run sync-components  
+   - Step 3: Done - web app now has the updated files
+
+3. **NEVER UPDATE BOTH PACKAGE AND WEB APP** - This creates duplicates and sync conflicts
+
+4. **PACKAGES MUST BE SELF-CONTAINED** - They bring ALL their dependencies through registry.json
+
+5. **WEB APP GETS EVERYTHING FROM PACKAGES** - Never create duplicate files in web app
+
+**IF YOU BREAK THESE RULES YOU ARE A FUCKING MORON AND NOT RESPECTING THE ARCHITECTURE**

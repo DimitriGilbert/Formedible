@@ -12,7 +12,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertCircle, MessageSquare, Send, StopCircle, User, Bot, Loader2, ArrowDown, Plus } from "lucide-react";
+import {
+  AlertCircle,
+  MessageSquare,
+  Send,
+  StopCircle,
+  User,
+  Bot,
+  Loader2,
+  ArrowDown,
+  Plus,
+} from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CodeBlock } from "@/components/ui/code-block";
 import { cn } from "@/lib/utils";
@@ -34,14 +44,17 @@ function MessageContent({ content }: MessageContentProps) {
     // Add text before code block
     if (match.index > lastIndex) {
       parts.push(
-        <span key={`text-${lastIndex}`} className="whitespace-pre-wrap break-words leading-relaxed">
+        <span
+          key={`text-${lastIndex}`}
+          className="whitespace-pre-wrap break-words leading-relaxed"
+        >
           {content.slice(lastIndex, match.index)}
         </span>
       );
     }
 
     // Add code block with syntax highlighting
-    const language = match[1] || 'text';
+    const language = match[1] || "text";
     const code = match[2];
     parts.push(
       <div key={`code-${match.index}`} className="my-2">
@@ -63,13 +76,26 @@ function MessageContent({ content }: MessageContentProps) {
   // Add remaining text
   if (lastIndex < content.length) {
     parts.push(
-      <span key={`text-${lastIndex}`} className="whitespace-pre-wrap break-words leading-relaxed">
+      <span
+        key={`text-${lastIndex}`}
+        className="whitespace-pre-wrap break-words leading-relaxed"
+      >
         {content.slice(lastIndex)}
       </span>
     );
   }
 
-  return <div className="space-y-1">{parts.length > 0 ? parts : <span className="whitespace-pre-wrap break-words leading-relaxed">{content}</span>}</div>;
+  return (
+    <div className="space-y-1">
+      {parts.length > 0 ? (
+        parts
+      ) : (
+        <span className="whitespace-pre-wrap break-words leading-relaxed">
+          {content}
+        </span>
+      )}
+    </div>
+  );
 }
 
 export interface Message {
@@ -88,7 +114,15 @@ export interface ChatInterfaceProps {
   providerConfig?: ProviderConfig | null;
 }
 
-export function ChatInterface({ onFormGenerated, onStreamingStateChange, onConversationUpdate, onNewConversation, messages: externalMessages, className, providerConfig }: ChatInterfaceProps) {
+export function ChatInterface({
+  onFormGenerated,
+  onStreamingStateChange,
+  onConversationUpdate,
+  onNewConversation,
+  messages: externalMessages,
+  className,
+  providerConfig,
+}: ChatInterfaceProps) {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>(externalMessages || []);
   const [isLoading, setIsLoading] = useState(false);
@@ -106,19 +140,24 @@ export function ChatInterface({ onFormGenerated, onStreamingStateChange, onConve
 
   const handleScroll = useCallback(() => {
     if (!messagesContainerRef.current) return;
-    
-    const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+
+    const { scrollTop, scrollHeight, clientHeight } =
+      messagesContainerRef.current;
     const isAtBottom = scrollHeight - scrollTop - clientHeight < 100;
-    
+
     setShowScrollToBottom(!isAtBottom && messages.length > 0);
   }, [messages.length]);
 
-  // Sync with external messages
+  // Sync with external messages only when switching conversations
   useEffect(() => {
-    if (externalMessages && externalMessages.length !== messages.length) {
+    if (
+      externalMessages &&
+      externalMessages.length > 0 &&
+      messages.length === 0
+    ) {
       setMessages(externalMessages);
     }
-  }, [externalMessages, messages.length]);
+  }, [externalMessages]);
 
   // Remove the useEffect that was causing multiple updates
 
@@ -128,53 +167,56 @@ export function ChatInterface({ onFormGenerated, onStreamingStateChange, onConve
     const container = messagesContainerRef.current;
     if (!container) return;
 
-    container.addEventListener('scroll', handleScroll);
+    container.addEventListener("scroll", handleScroll);
     handleScroll(); // Check initial state
 
-    return () => container.removeEventListener('scroll', handleScroll);
+    return () => container.removeEventListener("scroll", handleScroll);
   }, [handleScroll]);
 
   const createModel = (config: ProviderConfig) => {
     const { provider, apiKey, model, endpoint } = config;
-    
+
     switch (provider) {
-      case 'openai':
+      case "openai":
         const openaiProvider = createOpenAI({ apiKey });
-        return openaiProvider(model || 'gpt-4o');
-      
-      case 'anthropic':
+        return openaiProvider(model || "gpt-4o");
+
+      case "anthropic":
         const anthropicProvider = createAnthropic({ apiKey });
-        return anthropicProvider(model || 'claude-3-5-sonnet-20241022');
-      
-      case 'google':
+        return anthropicProvider(model || "claude-3-5-sonnet-20241022");
+
+      case "google":
         const googleProvider = createGoogleGenerativeAI({ apiKey });
-        return googleProvider(model || 'gemini-1.5-pro');
-      
-      case 'mistral':
+        return googleProvider(model || "gemini-1.5-pro");
+
+      case "mistral":
         const mistralProvider = createMistral({ apiKey });
-        return mistralProvider(model || 'mistral-large-latest');
-      
-      case 'openrouter':
+        return mistralProvider(model || "mistral-large-latest");
+
+      case "openrouter":
         const openrouterProvider = createOpenRouter({ apiKey });
-        return openrouterProvider.chat(model || 'meta-llama/llama-3.2-3b-instruct:free');
-      
-      case 'openai-compatible':
-        if (!endpoint) throw new Error('Endpoint required for OpenAI-compatible providers');
+        return openrouterProvider.chat(
+          model || "meta-llama/llama-3.2-3b-instruct:free"
+        );
+
+      case "openai-compatible":
+        if (!endpoint)
+          throw new Error("Endpoint required for OpenAI-compatible providers");
         const openaiCompatible = createOpenAICompatible({
-          name: 'openai-compatible',
+          name: "openai-compatible",
           baseURL: endpoint,
           ...(apiKey && { apiKey }),
         });
-        return openaiCompatible(model || 'gpt-3.5-turbo');
-      
+        return openaiCompatible(model || "gpt-3.5-turbo");
+
       default:
-        throw new Error('Unsupported provider');
+        throw new Error("Unsupported provider");
     }
   };
 
   const generateResponse = async (userMessage: string) => {
     if (!providerConfig) {
-      setError(new Error('Provider configuration required'));
+      setError(new Error("Provider configuration required"));
       return;
     }
 
@@ -185,34 +227,232 @@ export function ChatInterface({ onFormGenerated, onStreamingStateChange, onConve
 
       const userMsg: Message = {
         id: Date.now().toString(),
-        role: 'user',
+        role: "user",
         content: userMessage,
       };
 
-      setMessages(prev => [...prev, userMsg]);
+      const newMessages = [...messages, userMsg];
+      setMessages(newMessages);
+
+      // Immediately save user message
+      onConversationUpdate?.(newMessages, false);
 
       const model = createModel(providerConfig);
-      
+
       const systemPrompt = `You are a helpful AI assistant for form creation. You can chat naturally with users about forms, answer questions, and help them design forms.
 
 **IMPORTANT: Only show formedible code blocks when the user specifically asks to create, build, generate, or show a form.**
 
-When creating forms, use formedible code blocks like this:
+When creating forms, use formedible code blocks with complete JavaScript object literal syntax including Zod schemas:
 
 \`\`\`formedible
 {
-  "fields": [
+  schema: z.object({
+    firstName: z.string().min(1, 'First name is required'),
+    email: z.string().email('Please enter a valid email address'),
+    age: z.number().min(18, 'Must be 18 or older').optional(),
+    newsletter: z.boolean().default(false)
+  }),
+  fields: [
     {
-      "name": "firstName",
-      "type": "text",
-      "label": "First Name",
-      "placeholder": "Enter your first name"
+      name: 'firstName',
+      type: 'text',
+      label: 'First Name',
+      placeholder: 'Enter your first name'
+    },
+    {
+      name: 'email',
+      type: 'email', 
+      label: 'Email Address',
+      placeholder: 'your@email.com'
+    },
+    {
+      name: 'age',
+      type: 'number',
+      label: 'Age',
+      placeholder: '18+'
+    },
+    {
+      name: 'newsletter',
+      type: 'checkbox',
+      label: 'Subscribe to newsletter'
     }
-  ]
+  ],
+  formOptions: {
+    defaultValues: {
+      firstName: '',
+      email: '',
+      newsletter: false
+    }
+  }
 }
 \`\`\`
 
-Available field types: text, email, password, tel, textarea, select, checkbox, switch, number, date, slider, file, rating, phone, colorPicker, location, duration, multiSelect, autocomplete, masked, object, array, radio
+**CRITICAL REQUIREMENTS:**
+- ALWAYS include complete Zod schema with proper validation
+- Use JavaScript object literals (unquoted keys, single quotes for strings) 
+- Match schema field names EXACTLY with field names
+- Include proper Zod validations: .min(), .max(), .email(), .optional(), .default()
+- Available field types: text, email, password, tel, textarea, select, checkbox, switch, number, date, slider, file, rating, phone, colorPicker, location, duration, multiSelect, autocomplete, masked, object, array, radio
+
+**Zod Schema Examples:**
+- z.string().min(1, 'Required') - required text
+- z.string().email('Invalid email') - email validation  
+- z.number().min(18, 'Must be 18+') - number with min
+- z.boolean().default(false) - checkbox with default
+- z.string().optional() - optional field
+- z.enum(['option1', 'option2']) - select options
+- z.array(z.string()) - multiSelect
+
+**ARRAY FIELDS - Use arrayConfig with proper configuration:**
+
+Simple string arrays:
+\`\`\`javascript
+{
+  name: 'contactMethods',
+  type: 'array',
+  label: 'Contact Email Addresses',
+  arrayConfig: {
+    itemType: 'email',
+    itemLabel: 'Email Address',
+    itemPlaceholder: 'contact@company.com',
+    minItems: 1,
+    maxItems: 5,
+    addButtonLabel: 'Add Email',
+    removeButtonLabel: 'Remove',
+    defaultValue: ''
+  }
+}
+\`\`\`
+
+Complex object arrays:
+\`\`\`javascript
+{
+  name: 'teamMembers',
+  type: 'array',
+  label: 'Team Members',
+  arrayConfig: {
+    itemType: 'object',
+    itemLabel: 'Team Member',
+    minItems: 1,
+    maxItems: 10,
+    sortable: true,
+    addButtonLabel: 'Add Team Member',
+    removeButtonLabel: 'Remove Member',
+    defaultValue: {
+      name: '',
+      email: '',
+      role: 'developer'
+    },
+    objectConfig: {
+      fields: [
+        {
+          name: 'name',
+          type: 'text',
+          label: 'Name',
+          placeholder: 'Enter name'
+        },
+        {
+          name: 'email',
+          type: 'text',
+          label: 'Email',
+          placeholder: 'Enter email'
+        },
+        {
+          name: 'role',
+          type: 'select',
+          label: 'Role',
+          options: [
+            { value: 'developer', label: 'Developer' },
+            { value: 'designer', label: 'Designer' }
+          ]
+        }
+      ]
+    }
+  }
+}
+\`\`\`
+
+**STANDALONE OBJECT FIELDS - Use objectConfig with fields:**
+
+\`\`\`javascript
+{
+  name: 'atmosphericConditions',
+  type: 'object',
+  label: 'Atmospheric Conditions',
+  description: 'Fundamental atmospheric parameters',
+  objectConfig: {
+    title: 'Atmospheric Parameters',
+    collapsible: true,
+    defaultExpanded: true,
+    columns: 2,
+    layout: 'grid',
+    fields: [
+      {
+        name: 'altitude',
+        type: 'number',
+        label: 'Altitude',
+        placeholder: 'Enter altitude in meters'
+      },
+      {
+        name: 'pressure',
+        type: 'number',
+        label: 'Pressure',
+        placeholder: 'Enter pressure in hPa'
+      },
+      {
+        name: 'temperature',
+        type: 'slider',
+        label: 'Temperature',
+        min: -50,
+        max: 50,
+        step: 1
+      }
+    ]
+  }
+}
+\`\`\`
+
+**NESTED OBJECT FIELDS - Objects inside objects:**
+
+\`\`\`javascript
+{
+  name: 'location',
+  type: 'object',
+  label: 'Location Details',
+  objectConfig: {
+    fields: [
+      {
+        name: 'coordinates',
+        type: 'object',
+        label: 'GPS Coordinates',
+        objectConfig: {
+          fields: [
+            {
+              name: 'latitude',
+              type: 'number',
+              label: 'Latitude',
+              placeholder: 'Enter latitude'
+            },
+            {
+              name: 'longitude',
+              type: 'number',
+              label: 'Longitude',
+              placeholder: 'Enter longitude'
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
+\`\`\`
+
+**Optional properties:**
+- pages: [...] for multi-page forms
+- progress: { showSteps: true, showPercentage: false }
+- submitLabel: 'Submit Form'
+- formOptions: { defaultValues: {...}, onSubmit: async (data) => {...} }
 
 Chat naturally. Ask clarifying questions. Suggest improvements. Only output formedible blocks when specifically requested.`;
 
@@ -222,7 +462,7 @@ Chat naturally. Ask clarifying questions. Suggest improvements. Only output form
       const result = await streamText({
         model,
         system: systemPrompt,
-        messages: [...messages, userMsg].map(msg => ({
+        messages: [...messages, userMsg].map((msg) => ({
           role: msg.role,
           content: msg.content,
         })),
@@ -233,27 +473,29 @@ Chat naturally. Ask clarifying questions. Suggest improvements. Only output form
 
       const assistantMsg: Message = {
         id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: '',
+        role: "assistant",
+        content: "",
       };
 
-      setMessages(prev => [...prev, assistantMsg]);
+      setMessages((prev) => [...prev, assistantMsg]);
 
-      let fullResponse = '';
+      let fullResponse = "";
       for await (const textPart of result.textStream) {
         if (abortController.signal.aborted) break;
-        
+
         fullResponse += textPart;
-        setMessages(prev => prev.map(msg => 
-          msg.id === assistantMsg.id 
-            ? { ...msg, content: fullResponse }
-            : msg
-        ));
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === assistantMsg.id ? { ...msg, content: fullResponse } : msg
+          )
+        );
       }
 
       // Extract and send formedible code blocks to preview
       if (fullResponse && onFormGenerated) {
-        const formedibleMatch = fullResponse.match(/```formedible\s*\n([\s\S]*?)\n```/);
+        const formedibleMatch = fullResponse.match(
+          /```formedible\s*\n([\s\S]*?)\n```/
+        );
         if (formedibleMatch && formedibleMatch[1]) {
           onFormGenerated(formedibleMatch[1].trim());
         }
@@ -261,14 +503,19 @@ Chat naturally. Ask clarifying questions. Suggest improvements. Only output form
 
       onStreamingStateChange?.(false);
 
-      // Save conversation to localStorage ONLY on stream end
-      setTimeout(() => {
-        onConversationUpdate?.(messages, true);
-      }, 0);
-
+      // Save conversation to localStorage ONLY on stream end with complete messages
+      setMessages((currentMessages) => {
+        // Use a microtask to defer the parent update until after current render cycle
+        Promise.resolve().then(() => {
+          onConversationUpdate?.(currentMessages, true);
+        });
+        return currentMessages;
+      });
     } catch (err) {
-      console.error('AI Generation Error:', err);
-      setError(err instanceof Error ? err : new Error('Unknown error occurred'));
+      console.error("AI Generation Error:", err);
+      setError(
+        err instanceof Error ? err : new Error("Unknown error occurred")
+      );
     } finally {
       setIsLoading(false);
       onStreamingStateChange?.(false);
@@ -279,7 +526,7 @@ Chat naturally. Ask clarifying questions. Suggest improvements. Only output form
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading || !providerConfig) return;
-    
+
     const userInput = input;
     setInput("");
     generateResponse(userInput);
@@ -300,14 +547,21 @@ Chat naturally. Ask clarifying questions. Suggest improvements. Only output form
   };
 
   return (
-    <Card className={cn("flex flex-col h-full border-2 border-accent/30 shadow-lg", className)}>
-      <CardHeader className="pb-4 bg-gradient-to-r from-accent/10 to-transparent">
+    <Card
+      className={cn(
+        "flex flex-col h-full border-2 border-accent/30 shadow-lg !py-0 !gap-0",
+        className
+      )}
+    >
+      <CardHeader className="px-3 pt-1 pb-0 bg-gradient-to-r from-accent/10 to-transparent">
         <CardTitle className="flex items-center justify-between text-lg">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-accent/20 rounded-lg">
               <MessageSquare className="h-5 w-5 text-accent-foreground" />
             </div>
-            <span className="text-foreground font-semibold">AI Form Builder Chat</span>
+            <span className="text-foreground font-semibold">
+              AI Form Builder Chat
+            </span>
           </div>
           {onNewConversation && (
             <Button
@@ -322,19 +576,22 @@ Chat naturally. Ask clarifying questions. Suggest improvements. Only output form
           )}
         </CardTitle>
       </CardHeader>
-      
-      <CardContent className="flex flex-col flex-1 p-6 min-h-0 relative">
+
+      <CardContent className="flex flex-col flex-1 px-3 pt-0 pb-1 min-h-0 relative">
         <div
           ref={messagesContainerRef}
-          className="flex-1 overflow-y-auto space-y-4 mb-4 pr-2 min-h-0 max-h-full"
+          className="flex-1 overflow-y-auto space-y-3 mb-1 pr-2 min-h-0 max-h-full"
         >
           {messages.length === 0 && (
             <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
               <Bot className="h-12 w-12 mb-4 opacity-50" />
-              <h3 className="text-lg font-medium mb-2">Welcome to AI Form Builder</h3>
+              <h3 className="text-lg font-medium mb-2">
+                Welcome to AI Form Builder
+              </h3>
               <p className="text-sm max-w-md">
-                Describe the form you want to create and I'll generate it for you. 
-                Try something like "Create a contact form with name, email, and message fields"
+                Describe the form you want to create and I'll generate it for
+                you. Try something like "Create a contact form with name, email,
+                and message fields"
               </p>
             </div>
           )}
@@ -361,7 +618,7 @@ Chat naturally. Ask clarifying questions. Suggest improvements. Only output form
                   <Bot className="h-4 w-4" />
                 )}
               </div>
-              
+
               <div
                 className={cn(
                   "flex flex-col gap-2 rounded-lg px-4 py-3 text-sm shadow-md border max-w-[85%]",
@@ -407,7 +664,8 @@ Chat naturally. Ask clarifying questions. Suggest improvements. Only output form
           <Alert variant="destructive" className="mb-4">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              Failed to send message. Please check your configuration and try again.
+              Failed to send message. Please check your configuration and try
+              again.
             </AlertDescription>
           </Alert>
         )}
@@ -422,7 +680,7 @@ Chat naturally. Ask clarifying questions. Suggest improvements. Only output form
             className="flex-1 min-h-[80px] resize-none"
             rows={3}
           />
-          
+
           {isLoading ? (
             <Button
               type="button"

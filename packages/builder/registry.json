@@ -109,6 +109,16 @@
           "path": "src/components/ui/code-block.tsx",
           "type": "registry:component",
           "target": "components/ui/code-block.tsx"
+        },
+        {
+          "path": "src/components/formedible/builder/formedible-parser.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/builder/formedible-parser.tsx"
+        },
+        {
+          "path": "src/components/formedible/builder/form-preview-base.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/builder/form-preview-base.tsx"
         }
       ]
     }

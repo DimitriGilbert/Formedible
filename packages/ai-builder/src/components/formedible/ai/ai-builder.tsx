@@ -166,7 +166,7 @@ function AIBuilderCore({ className, onFormGenerated, onFormSubmit }: AIBuilderPr
     // Only create/update conversations when needed
     if (messages.length > 0) {
       if (!currentConversationId) {
-        // Create new conversation on first message
+        // Create new conversation ONLY on first user message
         const newConversationId = `conversation_${Date.now()}`;
         const newConversation: Conversation = {
           id: newConversationId,
@@ -178,8 +178,8 @@ function AIBuilderCore({ className, onFormGenerated, onFormSubmit }: AIBuilderPr
         
         setConversations(prev => [...prev, newConversation]);
         setCurrentConversationId(newConversationId);
-      } else if (isStreamEnd) {
-        // ONLY update conversations/localStorage on stream end
+      } else {
+        // ALWAYS update existing conversation with new messages (not just on stream end)
         setConversations(prev => prev.map(conv => 
           conv.id === currentConversationId 
             ? { ...conv, messages, updatedAt: new Date() }
@@ -192,6 +192,9 @@ function AIBuilderCore({ className, onFormGenerated, onFormSubmit }: AIBuilderPr
   const handleNewConversation = useCallback(() => {
     setCurrentConversationId(undefined);
     setCurrentMessages([]);
+    // Clear forms when starting new conversation
+    setGeneratedForms([]);
+    setCurrentFormIndex(0);
   }, []);
 
   // Remove automatic conversation creation
@@ -199,12 +202,55 @@ function AIBuilderCore({ className, onFormGenerated, onFormSubmit }: AIBuilderPr
   const handleSelectConversation = useCallback((conversation: Conversation) => {
     setCurrentConversationId(conversation.id);
     setCurrentMessages(conversation.messages);
+    
+    // Extract forms from conversation messages
+    const extractedForms: Array<{ id: string; code: string; timestamp: Date }> = [];
+    
+    conversation.messages.forEach((message, messageIndex) => {
+      if (message.role === 'assistant' && message.content) {
+        // Look for code blocks containing form definitions
+        const codeBlockRegex = /```(?:javascript|js|json)?\s*([\s\S]*?)\s*```/g;
+        let match;
+        let codeBlockIndex = 0;
+        
+        while ((match = codeBlockRegex.exec(message.content)) !== null) {
+          const code = match[1].trim();
+          
+          // Check if this looks like a form definition (has fields array)
+          if (code.includes('fields:') || code.includes('"fields"') || code.includes('fields =')) {
+            console.log('Found form code in conversation:', {
+              conversationId: conversation.id,
+              messageIndex,
+              codeBlockIndex,
+              codePreview: code.substring(0, 100) + '...'
+            });
+            
+            extractedForms.push({
+              id: `form_${conversation.id}_${messageIndex}_${codeBlockIndex}`,
+              code: code,
+              timestamp: new Date(conversation.updatedAt)
+            });
+          }
+          codeBlockIndex++;
+        }
+      }
+    });
+    
+    console.log('Extracted forms from conversation:', extractedForms.length);
+    
+    // Update generated forms and reset index
+    setGeneratedForms(extractedForms);
+    setCurrentFormIndex(0);
   }, []);
 
   const handleDeleteConversation = useCallback((conversationId: string) => {
     setConversations(prev => prev.filter(c => c.id !== conversationId));
     if (currentConversationId === conversationId) {
       setCurrentConversationId(undefined);
+      setCurrentMessages([]);
+      // Clear forms when deleting current conversation
+      setGeneratedForms([]);
+      setCurrentFormIndex(0);
     }
   }, [currentConversationId]);
 
@@ -224,19 +270,19 @@ function AIBuilderCore({ className, onFormGenerated, onFormSubmit }: AIBuilderPr
 
   return (
     <div className={cn("flex flex-col h-full overflow-hidden", className)}>
-      <div className="flex items-center gap-2 px-1 pb-2 flex-shrink-0">
+      <div className="flex items-center gap-2 px-1 pb-1 flex-shrink-0">
         <Sparkles className="h-4 w-4 text-primary" />
         <h1 className="text-lg font-bold text-foreground">AI Form Builder</h1>
       </div>
 
       {/* Compact Collapsible Settings & History */}
-      <div className="flex-shrink-0 pb-1">
+      <div className="flex-shrink-0">
         <div 
-          className="flex items-center justify-between mb-1 p-2 bg-accent/10 hover:bg-accent/20 rounded-lg border-2 border-accent/20 hover:border-accent/30 transition-all duration-200 shadow-sm cursor-pointer"
+          className="flex items-center justify-between mb-1 p-1.5 bg-accent/10 hover:bg-accent/20 rounded-lg border-2 border-accent/20 hover:border-accent/30 transition-all duration-200 shadow-sm cursor-pointer"
           onClick={() => setIsTopSectionCollapsed(!isTopSectionCollapsed)}
         >
           <div className="flex items-center gap-2">
-            <div className="p-1.5 bg-accent/20 rounded-md">
+            <div className="p-1 bg-accent/20 rounded-md">
               <Settings className="h-4 w-4 text-accent-foreground" />
             </div>
             <span className="text-sm font-semibold text-foreground">Settings & History</span>
@@ -257,7 +303,7 @@ function AIBuilderCore({ className, onFormGenerated, onFormSubmit }: AIBuilderPr
         </div>
 
         {!isTopSectionCollapsed && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-1">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-1.5">
             <ConversationHistory
               conversations={conversations}
               currentConversationId={currentConversationId}
@@ -274,7 +320,7 @@ function AIBuilderCore({ className, onFormGenerated, onFormSubmit }: AIBuilderPr
       </div>
 
       {/* Chat Interface - Takes ALL Remaining Space */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-2 min-h-0 overflow-hidden">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-1.5 min-h-0 overflow-hidden">
         <ChatInterface
           onFormGenerated={handleFormGenerated}
           onStreamingStateChange={handleStreamingStateChange}

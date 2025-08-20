@@ -6,62 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { FormConfiguration } from './form-preview-base';
 
-interface FormField {
-  id: string;
-  name: string;
-  type: string;
-  label: string;
-  placeholder?: string;
-  description?: string;
-  required?: boolean;
-  options?: Array<{ value: string; label: string }>;
-  validation?: any;
-  page?: number;
-  group?: string;
-  section?: {
-    title: string;
-    description?: string;
-    collapsible?: boolean;
-    defaultExpanded?: boolean;
-  };
-  help?: {
-    text?: string;
-    tooltip?: string;
-    position?: 'top' | 'bottom' | 'left' | 'right';
-    link?: { url: string; text: string };
-  };
-  inlineValidation?: {
-    enabled?: boolean;
-    debounceMs?: number;
-    showSuccess?: boolean;
-  };
-  arrayConfig?: any;
-  datalist?: any;
-  multiSelectConfig?: any;
-  colorConfig?: any;
-  ratingConfig?: any;
-  phoneConfig?: any;
-}
-
-interface FormConfiguration {
-  title: string;
-  description?: string;
-  fields: FormField[];
-  pages: Array<{
-    page: number;
-    title: string;
-    description?: string;
-  }>;
-  settings: {
-    submitLabel: string;
-    nextLabel: string;
-    previousLabel: string;
-    showProgress: boolean;
-    allowPageNavigation?: boolean;
-    resetOnSubmit?: boolean;
-  };
-}
+// Remove duplicate interface - using FormConfiguration from form-preview-base.tsx
 
 interface FormPreviewProps {
   config: FormConfiguration;
@@ -85,7 +32,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
       const schemaFields: Record<string, any> = {};
 
       config.fields.forEach((field) => {
-        let fieldSchema: any;
+        let fieldSchema: z.ZodTypeAny;
 
         switch (field.type) {
           case "number":
@@ -104,6 +51,9 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
           case "array":
             fieldSchema = z.array(z.string());
             break;
+          case "object":
+            fieldSchema = z.object({}).passthrough();
+            break;
           default:
             fieldSchema = z.string();
         }
@@ -112,11 +62,11 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
           if (field.type === "number" || field.type === "slider" || field.type === "rating") {
             // For numbers, required means not null/undefined
           } else if (field.type === "checkbox" || field.type === "switch") {
-            fieldSchema = fieldSchema.refine((val: boolean) => val === true, {
-              message: `${field.label} is required`,
+            fieldSchema = fieldSchema.refine((val: unknown) => val === true, {
+              message: `${field.label || field.name} is required`,
             });
-          } else if (typeof fieldSchema.min === "function") {
-            fieldSchema = fieldSchema.min(1, `${field.label} is required`);
+          } else if ('min' in fieldSchema && typeof fieldSchema.min === "function") {
+            fieldSchema = fieldSchema.min(1, `${field.label || field.name} is required`);
           }
         } else {
           fieldSchema = fieldSchema.optional();
@@ -127,38 +77,48 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
 
       return {
         schema: z.object(schemaFields),
-        fields: config.fields.map((field) => ({
-          name: field.name,
-          type: field.type,
-          label: field.label,
-          placeholder: field.placeholder,
-          description: field.description,
-          page: field.page || 1,
-          group: field.group,
-          section: field.section,
-          help: field.help,
-          inlineValidation: field.inlineValidation,
-          ...(field.options && { options: field.options }),
-          ...(field.arrayConfig && { arrayConfig: field.arrayConfig }),
-          ...(field.datalist && { datalist: field.datalist }),
-          ...(field.multiSelectConfig && { multiSelectConfig: field.multiSelectConfig }),
-          ...(field.colorConfig && { colorConfig: field.colorConfig }),
-          ...(field.ratingConfig && { ratingConfig: field.ratingConfig }),
-          ...(field.phoneConfig && { phoneConfig: field.phoneConfig }),
-        })),
-        pages: config.pages && config.pages.length > 1 ? config.pages : [],
-        submitLabel: config.settings.submitLabel,
-        nextLabel: config.settings.nextLabel,
-        previousLabel: config.settings.previousLabel,
-        progress: config.settings.showProgress
+        fields: config.fields.map((field) => {
+          const mappedField: any = {
+            name: field.name,
+            type: field.type,
+            label: field.label || field.name,
+            page: field.page || 1,
+          };
+
+          if (field.placeholder) mappedField.placeholder = field.placeholder;
+          if (field.description) mappedField.description = field.description;
+          if (field.defaultValue !== undefined) mappedField.defaultValue = field.defaultValue;
+          if (field.group) mappedField.group = field.group;
+          if (field.section) mappedField.section = field.section;
+          if (field.help) mappedField.help = field.help;
+          if (field.inlineValidation) mappedField.inlineValidation = field.inlineValidation;
+          if (field.options) mappedField.options = field.options;
+          if (field.arrayConfig) mappedField.arrayConfig = field.arrayConfig;
+          if (field.objectConfig) mappedField.objectConfig = field.objectConfig;
+          if (field.datalist) mappedField.datalist = field.datalist;
+          if (field.multiSelectConfig) mappedField.multiSelectConfig = field.multiSelectConfig;
+          if (field.colorConfig) mappedField.colorConfig = field.colorConfig;
+          if (field.ratingConfig) mappedField.ratingConfig = field.ratingConfig;
+          if (field.phoneConfig) mappedField.phoneConfig = field.phoneConfig;
+          if (field.min !== undefined) mappedField.min = field.min;
+          if (field.max !== undefined) mappedField.max = field.max;
+          if (field.step !== undefined) mappedField.step = field.step;
+
+          return mappedField;
+        }),
+        pages: (config.pages && config.pages.length > 1) ? config.pages : [],
+        submitLabel: config.settings?.submitLabel || "Submit",
+        nextLabel: config.settings?.nextLabel || "Next",
+        previousLabel: config.settings?.previousLabel || "Previous",
+        progress: config.settings?.showProgress
           ? { showSteps: true, showPercentage: true }
           : undefined,
         formOptions: {
-          onSubmit: async ({ value }: any) => {
+          onSubmit: async ({ value }: { value: Record<string, unknown> }) => {
             console.log('Preview form submitted:', value);
             
             // Format the form data for display
-            const formatValue = (val: any): string => {
+            const formatValue = (val: unknown): string => {
               if (val === null || val === undefined) return 'null';
               if (typeof val === 'boolean') return val.toString();
               if (typeof val === 'number') return val.toString();
@@ -211,7 +171,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
     }
     return (
       <Card className={cn("bg-muted/30", className)}>
-        <CardContent className="py-6">
+        <CardContent className="py-3">
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
@@ -226,8 +186,8 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
   const { Form } = formResult;
 
   return (
-    <Card className={cn("bg-muted/30", className)}>
-      <CardHeader>
+    <Card className={cn("bg-muted/30 !py-0 !gap-0", className)}>
+      <CardHeader className="px-3 pt-1 pb-0">
         <CardTitle className="flex items-center justify-between">
           <div>
             <div>{config.title}</div>
@@ -239,19 +199,19 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
           </div>
           <div className="text-sm text-muted-foreground">
             {config.fields.length} field{config.fields.length !== 1 ? 's' : ''}
-            {config.pages.length > 1 && ` • ${config.pages.length} pages`}
+            {(config.pages && config.pages.length > 1) && ` • ${config.pages.length} pages`}
           </div>
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
+      <CardContent className="px-3 pt-0 pb-1">
+        <div className="space-y-1">
           {/* Form stats */}
-          <div className={`grid gap-4 p-4 bg-muted/50 border rounded-lg ${config.pages.length > 1 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+          <div className={`grid gap-2 p-2 bg-muted/50 border rounded-lg ${(config.pages && config.pages.length > 1) ? 'grid-cols-3' : 'grid-cols-2'}`}>
             <div className="text-center">
               <div className="text-2xl font-bold text-primary">{config.fields.length}</div>
               <div className="text-xs text-muted-foreground">Fields</div>
             </div>
-            {config.pages.length > 1 && (
+            {(config.pages && config.pages.length > 1) && (
               <div className="text-center">
                 <div className="text-2xl font-bold text-primary">{config.pages.length}</div>
                 <div className="text-xs text-muted-foreground">Pages</div>
@@ -266,15 +226,15 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
           </div>
 
           {/* Live form preview */}
-          <div className="border-2 border-dashed border-muted-foreground/20 rounded-lg p-6 bg-background">
-            <div className="text-xs text-muted-foreground mb-4 text-center">
+          <div className="border-2 border-dashed border-muted-foreground/20 rounded-lg p-2 bg-background">
+            <div className="text-xs text-muted-foreground mb-1 text-center">
               ✨ Live Preview - This form is fully functional!
             </div>
             <Form />
           </div>
 
           {/* Field breakdown */}
-          <div className="space-y-2">
+          <div className="space-y-1">
             <h4 className="text-sm font-medium text-muted-foreground">Field Types Used</h4>
             <div className="flex flex-wrap gap-2">
               {Array.from(new Set(config.fields.map(f => f.type))).map(type => {
@@ -310,7 +270,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
             config.fields.some(f => f.group) ||
             config.fields.some(f => f.help) ||
             config.fields.some(f => f.inlineValidation?.enabled)) && (
-            <div className="space-y-2">
+            <div className="space-y-1">
               <h4 className="text-sm font-medium text-muted-foreground">Advanced Features</h4>
               <div className="flex flex-wrap gap-2">
                 {config.fields.some(f => f.section) && (
@@ -328,12 +288,12 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
                     ❓ Help & Tooltips
                   </div>
                 )}
-                {config.fields.some(f => f.inlineValidation?.enabled) && (
+                {config.fields.some(f => f.inlineValidation && typeof f.inlineValidation === 'object' && (f.inlineValidation as any).enabled) && (
                   <div className="inline-flex items-center gap-1 px-2 py-1 bg-muted text-muted-foreground rounded text-xs">
                     ⚡ Inline Validation
                   </div>
                 )}
-                {config.settings.showProgress && (
+                {config.settings?.showProgress && (
                   <div className="inline-flex items-center gap-1 px-2 py-1 bg-primary/20 text-primary rounded text-xs">
                     📊 Progress Indicator
                   </div>

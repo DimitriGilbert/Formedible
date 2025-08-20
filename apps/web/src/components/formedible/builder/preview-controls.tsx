@@ -7,12 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Monitor, Tablet, Smartphone, Code, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FormPreview } from "./form-preview";
+import type { FormConfiguration } from "./form-preview-base";
 
 export type PreviewMode = "desktop" | "tablet" | "mobile";
 export type ViewMode = "preview" | "code";
 
 interface PreviewControlsProps {
-  config: any; // Form configuration
+  config: FormConfiguration;
   code?: string; // Generated code for code view
   className?: string;
   showModeSelector?: boolean;
@@ -43,8 +44,8 @@ export const PreviewControls: React.FC<PreviewControlsProps> = ({
   ];
 
   return (
-    <Card className={cn("flex flex-col h-full", className)}>
-      <CardHeader className="pb-3">
+    <Card className={cn("flex flex-col h-full !py-0 !gap-0", className)}>
+      <CardHeader className="px-3 pt-1 pb-0">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             {viewMode === "preview" ? (
@@ -52,7 +53,7 @@ export const PreviewControls: React.FC<PreviewControlsProps> = ({
             ) : (
               <Code className="h-5 w-5" />
             )}
-            {viewMode === "preview" ? "Form Preview" : "Generated Code"}
+            {viewMode === "preview" ? "" : "Generated Code"}
           </CardTitle>
           
           <div className="flex items-center gap-2">
@@ -95,7 +96,7 @@ export const PreviewControls: React.FC<PreviewControlsProps> = ({
         </div>
       </CardHeader>
       
-      <CardContent className="flex-1 overflow-hidden">
+      <CardContent className="flex-1 overflow-hidden px-3 pt-0">
         {viewMode === "preview" ? (
           <div
             className={cn(
