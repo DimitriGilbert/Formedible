@@ -10,8 +10,8 @@ import { cn } from "@/lib/utils";
 import { Plus, Trash2, Copy, Edit, FileText, ChevronDown, ChevronUp } from "lucide-react";
 import { FieldConfigurator } from "../field-configurator";
 import { globalFieldStore } from "../field-store";
-import type { TabContentProps, FormField } from "../types";
-import { FIELD_TYPES } from "../types";
+import type { TabContentProps, FormField } from "@/lib/formedible/builder-types";
+import { FIELD_TYPES } from "@/lib/formedible/builder-types";
 
 // FieldList Component with grid layout (2 per row)
 const FieldList: React.FC<{

@@ -3,7 +3,7 @@ import React, { useState, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { useBuilderContext } from "./BuilderContext";
-import type { TabConfig, TabContainerProps } from "./types";
+import type { TabConfig, TabContainerProps } from "@/lib/formedible/builder-types";
 
 export const TabContainer: React.FC<TabContainerProps> = ({
   tabs,

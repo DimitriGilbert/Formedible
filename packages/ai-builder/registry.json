@@ -24,8 +24,7 @@
         "badge",
         "alert",
         "skeleton",
-        "https://formedible.dev/r/use-formedible.json",
-        "https://formedible.dev/r/form-builder.json"
+        "https://formedible.dev/r/use-formedible.json"
       ],
       "dependencies": [
         "react",

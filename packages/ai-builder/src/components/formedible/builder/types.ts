@@ -1,59 +1,11 @@
 import React from "react";
 import { z } from "zod";
+import type { FieldConfig, DynamicText, ObjectConfig, FieldHelpConfig, InlineValidationConfig, SectionConfig } from "@/lib/formedible/types";
 
-// Form Field Types
-export interface FormField {
-  id: string;
-  name: string;
-  type: string;
-  label: string;
-  placeholder?: string;
-  description?: string;
-  required?: boolean;
-  page?: number;
-  tab?: string;
-  group?: string;
-  section?: {
-    title: string;
-    description?: string;
-    collapsible?: boolean;
-    defaultExpanded?: boolean;
-  };
-  help?: {
-    text?: string;
-    tooltip?: string;
-    position?: "top" | "bottom" | "left" | "right";
-    link?: { url: string; text: string };
-  };
-  inlineValidation?: {
-    enabled?: boolean;
-    debounceMs?: number;
-    showSuccess?: boolean;
-  };
-  validation?: {
-    min?: number;
-    max?: number;
-    minLength?: number;
-    maxLength?: number;
-    pattern?: string;
-    custom?: string;
-    includes?: string;
-    startsWith?: string;
-    endsWith?: string;
-    email?: boolean;
-    url?: boolean;
-    uuid?: boolean;
-    transform?: string;
-    refine?: string;
-    customMessages?: Record<string, string>;
-  };
-  options?: Array<{ value: string; label: string }>;
-  arrayConfig?: any;
-  datalist?: any;
-  multiSelectConfig?: any;
-  colorConfig?: any;
-  ratingConfig?: any;
-  phoneConfig?: any;
+// Form Field Types - use proper FieldConfig from formedible with builder-specific additions
+export interface FormField extends FieldConfig {
+  id: string; // Builder-specific ID for field management
+  label: string; // Make label required for builder
 }
 
 // Form Metadata Types

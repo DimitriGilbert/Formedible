@@ -31,7 +31,7 @@
     "test:e2e": "jest --config jest.config.js",
     "test:e2e:watch": "jest --config jest.config.js --watch",
     "test:e2e:coverage": "jest --config jest.config.js --coverage",
-    "sync-components": "npm run build:pkg && npm run build:builder && npm run build:ai-builder && scripts/sync-components"
+    "sync-components": "npm run build:ai-builder && npm run build:builder && npm run build:pkg && scripts/sync-components"
   },
   "keywords": [],
   "author": "",

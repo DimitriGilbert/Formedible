@@ -5,7 +5,7 @@ import { Download, Upload } from "lucide-react";
 import { BuilderProvider, useBuilderContext } from "./BuilderContext";
 import { TabContainer } from "./TabContainer";
 import { defaultTabs } from "./default-tabs";
-import type { FormBuilderProps } from "./types";
+import type { FormBuilderProps } from "@/lib/formedible/builder-types";
 
 // Internal FormBuilder component that uses context
 const FormBuilderInternal: React.FC<{

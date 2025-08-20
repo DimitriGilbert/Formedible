@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { CodeGenerator } from "../code-generator";
-import type { TabContentProps } from "../types";
+import type { TabContentProps } from "@/lib/formedible/builder-types";
 
 export const CodeTabContent: React.FC<TabContentProps> = ({
   getFormMetadata,

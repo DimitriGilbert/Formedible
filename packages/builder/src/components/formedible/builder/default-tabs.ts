@@ -2,7 +2,7 @@ import { Settings, Eye, Code } from "lucide-react";
 import { BuilderTabContent } from "./tabs/BuilderTabContent";
 import { PreviewTabContent } from "./tabs/PreviewTabContent";
 import { CodeTabContent } from "./tabs/CodeTabContent";
-import type { TabConfig } from "./types";
+import type { TabConfig } from "@/lib/formedible/builder-types";
 
 export const builderTab: TabConfig = {
   id: "builder",

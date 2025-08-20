@@ -8,7 +8,7 @@ import type {
   FormField,
   FormConfig,
   TabContentProps,
-} from "./types";
+} from "@/lib/formedible/builder-types";
 
 const BuilderContext = createContext<BuilderContextType | null>(null);
 
@@ -193,10 +193,10 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
           // For numbers, required means not null/undefined
         } else if (field.type === "checkbox" || field.type === "switch") {
           fieldSchema = fieldSchema.refine((val: boolean) => val === true, {
-            message: field.validation?.customMessages?.required || `${field.label} is required`,
+            message: field.validationConfig?.customMessages?.required || `${field.label} is required`,
           });
         } else if (typeof fieldSchema.min === "function") {
-          fieldSchema = fieldSchema.min(1, field.validation?.customMessages?.required || `${field.label} is required`);
+          fieldSchema = fieldSchema.min(1, field.validationConfig?.customMessages?.required || `${field.label} is required`);
         }
       } else {
         fieldSchema = fieldSchema.optional();
@@ -211,6 +211,7 @@ export const BuilderProvider: React.FC<BuilderProviderProps> = ({
       schema: z.object(schemaFields),
       settings: formMetaRef.current.settings,
       fields: currentFields.map((field) => ({
+        id: field.id,
         name: field.name,
         type: field.type,
         label: field.label,

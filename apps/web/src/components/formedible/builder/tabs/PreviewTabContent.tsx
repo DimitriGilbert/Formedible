@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { PreviewControls } from "../preview-controls";
-import type { TabContentProps } from "../types";
+import type { TabContentProps } from "@/lib/formedible/builder-types";
 
 export const PreviewTabContent: React.FC<TabContentProps> = ({
   getFormConfig,

@@ -1,42 +1,7 @@
 "use client";
 import React, { useMemo } from "react";
 import { CodeBlock } from "@/components/ui/code-block";
-
-interface FormField {
-  id: string;
-  name: string;
-  type: string;
-  label: string;
-  placeholder?: string;
-  description?: string;
-  required?: boolean;
-  page?: number;
-  group?: string;
-  section?: {
-    title: string;
-    description?: string;
-    collapsible?: boolean;
-    defaultExpanded?: boolean;
-  };
-  help?: {
-    text?: string;
-    tooltip?: string;
-    position?: "top" | "bottom" | "left" | "right";
-    link?: { url: string; text: string };
-  };
-  inlineValidation?: {
-    enabled?: boolean;
-    debounceMs?: number;
-    showSuccess?: boolean;
-  };
-  options?: Array<{ value: string; label: string }>;
-  arrayConfig?: any;
-  datalist?: any;
-  multiSelectConfig?: any;
-  colorConfig?: any;
-  ratingConfig?: any;
-  phoneConfig?: any;
-}
+import type { FormField } from "@/lib/formedible/builder-types";
 
 interface CodeGeneratorProps {
   formTitle: string;

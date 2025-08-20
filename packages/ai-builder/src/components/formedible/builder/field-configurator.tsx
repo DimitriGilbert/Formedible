@@ -377,9 +377,15 @@ export const FieldConfigurator: React.FC<FieldConfiguratorProps> = ({
         textareaConfig: initialField.textareaConfig || {},
         passwordConfig: initialField.passwordConfig || {},
         emailConfig: {
-          allowedDomains: initialField.emailConfig?.allowedDomains?.join(', ') || "",
-          blockedDomains: initialField.emailConfig?.blockedDomains?.join(', ') || "",
-          suggestions: initialField.emailConfig?.suggestions?.join(', ') || "",
+          allowedDomains: Array.isArray(initialField.emailConfig?.allowedDomains) 
+            ? initialField.emailConfig.allowedDomains.join(', ') 
+            : (initialField.emailConfig?.allowedDomains || ""),
+          blockedDomains: Array.isArray(initialField.emailConfig?.blockedDomains) 
+            ? initialField.emailConfig.blockedDomains.join(', ') 
+            : (initialField.emailConfig?.blockedDomains || ""),
+          suggestions: Array.isArray(initialField.emailConfig?.suggestions) 
+            ? initialField.emailConfig.suggestions.join(', ') 
+            : (initialField.emailConfig?.suggestions || ""),
           validateMX: initialField.emailConfig?.validateMX || false,
         },
         helpText: initialField.help?.text || "",
@@ -394,18 +400,18 @@ export const FieldConfigurator: React.FC<FieldConfiguratorProps> = ({
         inlineValidationEnabled: initialField.inlineValidation?.enabled || false,
         inlineValidationDebounceMs: initialField.inlineValidation?.debounceMs || 300,
         inlineValidationShowSuccess: initialField.inlineValidation?.showSuccess || false,
-        validationMinLength: initialField.validation?.minLength,
-        validationMaxLength: initialField.validation?.maxLength,
-        validationMin: initialField.validation?.min,
-        validationMax: initialField.validation?.max,
-        validationPattern: initialField.validation?.pattern || "",
-        validationIncludes: initialField.validation?.includes || "",
-        validationStartsWith: initialField.validation?.startsWith || "",
-        validationEndsWith: initialField.validation?.endsWith || "",
-        validationEmail: initialField.validation?.email || false,
-        validationUrl: initialField.validation?.url || false,
-        validationUuid: initialField.validation?.uuid || false,
-        validationCustom: initialField.validation?.custom || "",
+        validationMinLength: initialField.validationConfig?.minLength,
+        validationMaxLength: initialField.validationConfig?.maxLength,
+        validationMin: initialField.validationConfig?.min,
+        validationMax: initialField.validationConfig?.max,
+        validationPattern: initialField.validationConfig?.pattern || "",
+        validationIncludes: initialField.validationConfig?.includes || "",
+        validationStartsWith: initialField.validationConfig?.startsWith || "",
+        validationEndsWith: initialField.validationConfig?.endsWith || "",
+        validationEmail: initialField.validationConfig?.email || false,
+        validationUrl: initialField.validationConfig?.url || false,
+        validationUuid: initialField.validationConfig?.uuid || false,
+        validationCustom: initialField.validationConfig?.custom || "",
       },
       
       // DIRECT STORE UPDATE - NO PARENT RE-RENDERS!
@@ -464,7 +470,7 @@ export const FieldConfigurator: React.FC<FieldConfiguratorProps> = ({
             debounceMs: value.inlineValidationDebounceMs,
             showSuccess: value.inlineValidationShowSuccess,
           } : undefined,
-          validation: (value.validationMinLength || value.validationMaxLength || value.validationMin || value.validationMax || value.validationPattern || value.validationIncludes || value.validationStartsWith || value.validationEndsWith || value.validationEmail || value.validationUrl || value.validationUuid || value.validationCustom) ? {
+          validationConfig: (value.validationMinLength || value.validationMaxLength || value.validationMin || value.validationMax || value.validationPattern || value.validationIncludes || value.validationStartsWith || value.validationEndsWith || value.validationEmail || value.validationUrl || value.validationUuid || value.validationCustom) ? {
             minLength: value.validationMinLength,
             maxLength: value.validationMaxLength,
             min: value.validationMin,

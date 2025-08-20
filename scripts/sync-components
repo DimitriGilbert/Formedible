@@ -46,16 +46,7 @@ update_web_components() {
   # Change to web app directory
   cd apps/web
 
-  # Install builder components if registry exists
-  # first, as it uses older formedible from web
-  if [[ -f "../../packages/builder/public/r/form-builder.json" ]]; then
-    log_info "Installing form-builder from built registry..."
-    npx shadcn@latest add --yes --overwrite "../../packages/builder/public/r/form-builder.json"
-  else
-    log_warning "Builder registry not found, skipping builder installation"
-  fi
-  
-  # Install ai-builder components if registry exists
+  # Install ai-builder components FIRST if registry exists
   if [[ -f "../../packages/ai-builder/public/r/ai-builder.json" ]]; then
     log_info "Installing ai-builder from built registry..."
     npx shadcn@latest add --yes --overwrite "../../packages/ai-builder/public/r/ai-builder.json"
@@ -63,7 +54,15 @@ update_web_components() {
     log_warning "AI Builder registry not found, skipping ai-builder installation"
   fi
   
-  # Install formedible using shadcn CLI with file path
+  # Install builder components SECOND if registry exists
+  if [[ -f "../../packages/builder/public/r/form-builder.json" ]]; then
+    log_info "Installing form-builder from built registry..."
+    npx shadcn@latest add --yes --overwrite "../../packages/builder/public/r/form-builder.json"
+  else
+    log_warning "Builder registry not found, skipping builder installation"
+  fi
+  
+  # Install formedible LAST using shadcn CLI with file path
   log_info "Installing formedible from built registry..."
   npx shadcn@latest add --yes --overwrite "../../packages/formedible/public/r/use-formedible.json"
   

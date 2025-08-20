@@ -61,9 +61,9 @@
           "target": "components/formedible/builder/field-store.ts"
         },
         {
-          "path": "src/components/formedible/builder/types.ts",
+          "path": "src/lib/formedible/builder-types.ts",
           "type": "registry:lib",
-          "target": "components/formedible/builder/types.ts"
+          "target": "lib/formedible/builder-types.ts"
         },
         {
           "path": "src/components/formedible/builder/BuilderContext.tsx",
