@@ -85,7 +85,7 @@ export function ConversationHistory({
           )}
         </div>
       </CardHeader>
-      <CardContent className="p-4">
+      <CardContent className="px-4 pt-0 pb-4">
         <div className="h-[300px] overflow-y-auto">
           {conversations.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground py-8">
@@ -94,37 +94,28 @@ export function ConversationHistory({
               <p className="text-xs">Start a chat to see your history</p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-1">
               {conversations.map((conversation) => (
                 <div
                   key={conversation.id}
                   className={cn(
-                    "group flex items-center gap-2 p-2 rounded-lg border transition-colors hover:bg-muted/50 cursor-pointer",
-                    currentConversationId === conversation.id && "bg-muted border-primary"
+                    "group flex items-center justify-between gap-2 px-2 py-1.5 rounded hover:bg-muted/50 cursor-pointer text-sm",
+                    currentConversationId === conversation.id && "bg-muted"
                   )}
                   onClick={() => onSelectConversation(conversation)}
                 >
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <MessageSquare className="h-3 w-3 text-muted-foreground shrink-0" />
-                      <span className="text-xs text-muted-foreground">
-                        {formatDate(conversation.updatedAt)}
-                      </span>
-                    </div>
-                    <p className="text-sm font-medium truncate">
+                    <p className="font-medium truncate text-sm">
                       {getConversationTitle(conversation)}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {conversation.messages?.length || 0} messages
-                    </p>
                   </div>
-                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                     {onExportConversation && (
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="h-6 w-6"
+                        className="h-5 w-5"
                         onClick={(e) => {
                           e.stopPropagation();
                           onExportConversation(conversation);
@@ -137,7 +128,7 @@ export function ConversationHistory({
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="h-6 w-6 text-destructive hover:text-destructive"
+                      className="h-5 w-5 text-destructive hover:text-destructive"
                       onClick={(e) => {
                         e.stopPropagation();
                         onDeleteConversation(conversation.id);

@@ -4,11 +4,11 @@
 
 FROM THE ROOT OF THE PROJECT !!! **ALWAYS**
 
-- `npm run check-types` - Check types in all packages
 - `npm run build` - Build all packages (uses turbo)
 - `npm run build:web` - Build web app
 - `npm run build:pkg` - Build formedible package only
 - `npm run build:builder` - Build builder package only
+- `npm run build:ai-builder` - Build ai-builder package only
 - `scripts/quick-sync.js` - Sync components from formedible package to web app
 - `npm run sync-components` - Sync components from formedible package to web app using shadcn cli
 
@@ -41,13 +41,19 @@ FROM THE ROOT OF THE PROJECT !!! **ALWAYS**
 **PACKAGES ARE THE SOURCE OF TRUTH - WEB APP IS SYNCED FROM PACKAGES**
 
 1. **NEVER EDIT WEB APP FILES DIRECTLY** - ONLY EDIT PACKAGE FILES
-   - ❌ WRONG: Edit /apps/web/src/components/formedible/ai/chat-interface.tsx 
+
+   - ❌ WRONG: Edit /apps/web/src/components/formedible/ai/chat-interface.tsx
    - ✅ RIGHT: Edit /packages/ai-builder/src/components/formedible/ai/chat-interface.tsx
 
 2. **WORKFLOW IS ALWAYS:**
-   - Step 1: Edit PACKAGE files only
-   - Step 2: Run scripts/quick-sync.js OR npm run sync-components  
-   - Step 3: Done - web app now has the updated files
+
+   - Step 1: Edit PACKAGE files only, build the targeted package(s) to make sure change are ok !
+   - Step 2: Run "scripts/quick-sync.js"
+   - Step 3: npm run build:web
+   - Step 4: npm run sync-components
+   - Step 3: npm run build:web
+   - Step 6: Done - web app now has the updated files
+     MUST PASS TO GO TO NEXT STEP !
 
 3. **NEVER UPDATE BOTH PACKAGE AND WEB APP** - This creates duplicates and sync conflicts
 

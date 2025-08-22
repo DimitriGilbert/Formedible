@@ -6,6 +6,8 @@ import { ProviderSelection, type ProviderConfig } from "./provider-selection";
 import { ChatInterface } from "./chat-interface";
 import { FormPreview } from "./form-preview";
 import { ConversationHistory, type Conversation } from "./conversation-history";
+import { SidebarIcons, type SidebarView } from "./sidebar-icons";
+import { SidebarContent } from "./sidebar-content";
 import { Button } from "@/components/ui/button";
 import { Sparkles, ChevronDown, ChevronUp, Settings, History, ChevronLeft, ChevronRight, Eye, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -44,6 +46,8 @@ function AIBuilderCore({ className, onFormGenerated, onFormSubmit }: AIBuilderPr
   const [currentConversationId, setCurrentConversationId] = useState<string | undefined>();
   const [currentMessages, setCurrentMessages] = useState<Message[]>([]);
   const [isTopSectionCollapsed, setIsTopSectionCollapsed] = useState(false);
+  const [activeView, setActiveView] = useState<SidebarView | null>(null);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Load saved data on mount
   useEffect(() => {
@@ -269,6 +273,17 @@ function AIBuilderCore({ className, onFormGenerated, onFormSubmit }: AIBuilderPr
     linkElement.click();
   }, []);
 
+  const handleToggleCollapse = useCallback(() => {
+    setIsCollapsed(!isCollapsed);
+  }, [isCollapsed]);
+
+  const handleViewChange = useCallback((view: SidebarView | null) => {
+    setActiveView(view);
+    if (view && isCollapsed) {
+      setIsCollapsed(false);
+    }
+  }, [isCollapsed]);
+
 
 
   return (
@@ -278,71 +293,52 @@ function AIBuilderCore({ className, onFormGenerated, onFormSubmit }: AIBuilderPr
         <h1 className="text-lg font-bold text-foreground">AI Form Builder</h1>
       </div>
 
-      {/* Compact Collapsible Settings & History */}
-      <div className="flex-shrink-0">
-        <div 
-          className="flex items-center justify-between mb-1 p-1.5 bg-accent/10 hover:bg-accent/20 rounded-lg border-2 border-accent/20 hover:border-accent/30 transition-all duration-200 shadow-sm cursor-pointer"
-          onClick={() => setIsTopSectionCollapsed(!isTopSectionCollapsed)}
-        >
-          <div className="flex items-center gap-2">
-            <div className="p-1 bg-accent/20 rounded-md">
-              <Settings className="h-4 w-4 text-accent-foreground" />
-            </div>
-            <span className="text-sm font-semibold text-foreground">Settings & History</span>
-          </div>
-          <div className="flex items-center gap-1 text-sm h-7 px-3">
-            {isTopSectionCollapsed ? (
-              <>
-                <ChevronDown className="h-4 w-4" />
-                <span className="font-medium">Show</span>
-              </>
-            ) : (
-              <>
-                <ChevronUp className="h-4 w-4" />
-                <span className="font-medium">Hide</span>
-              </>
-            )}
-          </div>
-        </div>
 
-        {!isTopSectionCollapsed && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-1.5">
-            <ConversationHistory
-              conversations={conversations}
-              currentConversationId={currentConversationId}
-              onSelectConversation={handleSelectConversation}
-              onDeleteConversation={handleDeleteConversation}
-              onExportConversation={handleExportConversation}
-            />
-            <ProviderSelection
-              onConfigChange={handleProviderConfigChange}
-              initialConfig={providerConfig}
-            />
-          </div>
-        )}
-      </div>
-
-      {/* Chat Interface - Takes ALL Remaining Space */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-1.5 min-h-0 overflow-hidden">
-        <ChatInterface
-          onFormGenerated={handleFormGenerated}
-          onStreamingStateChange={handleStreamingStateChange}
-          onConversationUpdate={handleConversationUpdate}
+      {/* Main Layout: Sidebar + Content Area */}
+      <div className="flex-1 flex min-h-0 overflow-hidden gap-2">
+        {/* Sidebar */}
+        <SidebarIcons
+          isCollapsed={isCollapsed}
+          onToggleCollapse={handleToggleCollapse}
+          activeView={activeView}
+          onViewChange={handleViewChange}
+        />
+        
+        <SidebarContent
+          activeView={activeView}
+          isCollapsed={isCollapsed}
+          conversations={conversations}
+          currentConversationId={currentConversationId}
+          onSelectConversation={handleSelectConversation}
+          onDeleteConversation={handleDeleteConversation}
           onNewConversation={handleNewConversation}
-          messages={currentMessages}
+          onExportConversation={handleExportConversation}
           providerConfig={providerConfig}
-          className="h-full overflow-hidden"
+          onConfigChange={handleProviderConfigChange}
         />
 
-        <FormPreview
-          forms={generatedForms}
-          currentFormIndex={currentFormIndex}
-          onFormIndexChange={handleFormIndexChange}
-          onDeleteForm={handleDeleteForm}
-          isStreaming={isGenerating}
-          onFormSubmit={handleFormSubmit}
-          className="h-full overflow-hidden"
-        />
+        {/* Chat + Preview Grid */}
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-2 min-h-0 overflow-hidden">
+          <ChatInterface
+            onFormGenerated={handleFormGenerated}
+            onStreamingStateChange={handleStreamingStateChange}
+            onConversationUpdate={handleConversationUpdate}
+            onNewConversation={handleNewConversation}
+            messages={currentMessages}
+            providerConfig={providerConfig}
+            className="h-full overflow-hidden"
+          />
+
+          <FormPreview
+            forms={generatedForms}
+            currentFormIndex={currentFormIndex}
+            onFormIndexChange={handleFormIndexChange}
+            onDeleteForm={handleDeleteForm}
+            isStreaming={isGenerating}
+            onFormSubmit={handleFormSubmit}
+            className="h-full overflow-hidden"
+          />
+        </div>
       </div>
     </div>
   );

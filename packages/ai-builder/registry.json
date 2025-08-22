@@ -24,6 +24,10 @@
         "badge",
         "alert",
         "skeleton",
+        "sidebar",
+        "tooltip",
+        "separator",
+        "slider",
         "https://formedible.dev/r/use-formedible.json"
       ],
       "dependencies": [
@@ -70,6 +74,26 @@
           "path": "src/components/formedible/ai/conversation-history.tsx",
           "type": "registry:component",
           "target": "components/formedible/ai/conversation-history.tsx"
+        },
+        {
+          "path": "src/components/formedible/ai/chat-messages.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/ai/chat-messages.tsx"
+        },
+        {
+          "path": "src/components/formedible/ai/sidebar-icons.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/ai/sidebar-icons.tsx"
+        },
+        {
+          "path": "src/components/formedible/ai/sidebar-content.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/ai/sidebar-content.tsx"
+        },
+        {
+          "path": "src/components/formedible/ai/agent-settings.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/ai/agent-settings.tsx"
         },
         {
           "path": "src/lib/form-extraction-utils.ts",
