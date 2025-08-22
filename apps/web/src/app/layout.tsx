@@ -15,6 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://formedible.dev"),
   title: "Formedible - Schema-Driven Forms Made Simple",
   description:
     "A powerful React hook that wraps TanStack Form with shadcn/ui components. Features schema validation, multi-page support, component overrides, and custom wrappers.",
