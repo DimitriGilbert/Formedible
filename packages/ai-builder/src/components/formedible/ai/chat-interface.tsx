@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { streamText } from "ai";
+import { streamText, type LanguageModel } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
@@ -149,13 +149,9 @@ export function ChatInterface({
     setShowScrollToBottom(!isAtBottom && messages.length > 0);
   }, [messages.length]);
 
-  // Sync with external messages only when switching conversations
+  // Sync with external messages when switching conversations
   useEffect(() => {
-    if (
-      externalMessages &&
-      externalMessages.length > 0 &&
-      messages.length === 0
-    ) {
+    if (externalMessages !== undefined) {
       setMessages(externalMessages);
     }
   }, [externalMessages]);
@@ -174,33 +170,47 @@ export function ChatInterface({
     return () => container.removeEventListener("scroll", handleScroll);
   }, [handleScroll]);
 
-  const createModel = (config: ProviderConfig) => {
+  const createModel = (config: ProviderConfig): LanguageModel => {
     const { provider, apiKey, model, endpoint } = config;
 
     switch (provider) {
-      case "openai":
+      case "openai": {
         const openaiProvider = createOpenAI({ apiKey });
-        return openaiProvider(model || "gpt-4o");
+        // Flagship latest; swap to "gpt-5-mini" if you prefer cost/latency.
+        return openaiProvider(model || "gpt-5");
+      }
 
-      case "anthropic":
+      case "anthropic": {
         const anthropicProvider = createAnthropic({ apiKey });
-        return anthropicProvider(model || "claude-3-5-sonnet-20241022");
+        // Latest Sonnet generation
+        // TODO : fix this shit ! -_-
+        return anthropicProvider(
+          model || "claude-sonnet-4"
+        ) as unknown as LanguageModel;
+      }
 
-      case "google":
+      case "google": {
         const googleProvider = createGoogleGenerativeAI({ apiKey });
-        return googleProvider(model || "gemini-1.5-pro");
+        // Latest top reasoning model in Gemini API
+        return googleProvider(model || "gemini-2.5-pro");
+      }
 
-      case "mistral":
+      case "mistral": {
         const mistralProvider = createMistral({ apiKey });
-        return mistralProvider(model || "mistral-large-latest");
+        // Mistral Large 2 (GA, sometimes shown as mistral-large-2407)
+        return mistralProvider(model || "mistral-large-2407");
+      }
 
-      case "openrouter":
+      case "openrouter": {
         const openrouterProvider = createOpenRouter({ apiKey });
+        // OpenRouter must route to Kimi K2 per your requirement
+        // Common IDs: "openrouter/kimiplus-k2" (preferred) or "moonshotai/moonshot-k2"
         return openrouterProvider.chat(
-          model || "meta-llama/llama-3.2-3b-instruct:free"
-        );
+          model || "openrouter/kimiplus-k2"
+        ) as LanguageModel;
+      }
 
-      case "openai-compatible":
+      case "openai-compatible": {
         if (!endpoint)
           throw new Error("Endpoint required for OpenAI-compatible providers");
         const openaiCompatible = createOpenAICompatible({
@@ -208,7 +218,9 @@ export function ChatInterface({
           baseURL: endpoint,
           ...(apiKey && { apiKey }),
         });
-        return openaiCompatible(model || "gpt-3.5-turbo");
+        // Use a modern widely supported baseline; adjust to your endpoint’s catalog
+        return openaiCompatible(model || "gpt-4.1-mini");
+      }
 
       default:
         throw new Error("Unsupported provider");
@@ -457,7 +469,7 @@ Chat naturally. Ask clarifying questions. Suggest improvements. Only output form
       const abortController = new AbortController();
       abortControllerRef.current = abortController;
 
-      const result = await streamText({
+      const result = streamText({
         model,
         system: systemPrompt,
         messages: [...messages, userMsg].map((msg) => ({
@@ -500,7 +512,10 @@ Chat naturally. Ask clarifying questions. Suggest improvements. Only output form
       onStreamingStateChange?.(false);
 
       // Save conversation to localStorage ONLY on stream end with complete messages
-      const finalMessages = [...messages, { ...assistantMsg, content: fullResponse }];
+      const finalMessages = [
+        ...newMessages, // This includes user message
+        { ...assistantMsg, content: fullResponse },
+      ];
       onConversationUpdate?.(finalMessages, true);
     } catch (err) {
       console.error("AI Generation Error:", err);

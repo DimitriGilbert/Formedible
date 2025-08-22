@@ -11,7 +11,7 @@ export const PreviewTabContent: React.FC<TabContentProps> = ({
   return (
     <div className="h-full m-0 p-8 overflow-y-auto min-h-0">
       <div className="max-w-6xl mx-auto">
-        <div className="mb-6">
+        <div className="mb-8">
           <h2 className="text-2xl font-bold">Live Preview</h2>
           <p className="text-muted-foreground">See how your form will look and behave</p>
         </div>

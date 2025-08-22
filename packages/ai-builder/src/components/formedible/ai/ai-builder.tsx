@@ -56,13 +56,15 @@ function AIBuilderCore({ className, onFormGenerated, onFormSubmit }: AIBuilderPr
 
       // Load conversations
       const savedConversations = localStorage.getItem(STORAGE_KEYS.CONVERSATIONS);
+      let loadedConversations: Conversation[] = [];
       if (savedConversations) {
         const parsedConversations = JSON.parse(savedConversations);
-        setConversations(parsedConversations.map((c: any) => ({
+        loadedConversations = parsedConversations.map((c: any) => ({
           ...c,
           createdAt: new Date(c.createdAt),
           updatedAt: new Date(c.updatedAt),
-        })));
+        }));
+        setConversations(loadedConversations);
       }
 
       // Load UI state
@@ -70,7 +72,26 @@ function AIBuilderCore({ className, onFormGenerated, onFormSubmit }: AIBuilderPr
       if (savedUIState) {
         const uiState = JSON.parse(savedUIState);
         setIsTopSectionCollapsed(uiState.isTopSectionCollapsed || false);
-        setCurrentConversationId(uiState.currentConversationId);
+        
+        // Restore current conversation if it exists
+        if (uiState.currentConversationId && loadedConversations.length > 0) {
+          const currentConversation = loadedConversations.find(c => c.id === uiState.currentConversationId);
+          if (currentConversation) {
+            setCurrentConversationId(uiState.currentConversationId);
+            setCurrentMessages(currentConversation.messages);
+            
+            // Extract forms from conversation messages using shared utility
+            const extractedForms = extractFormsFromMessages(
+              currentConversation.messages,
+              currentConversation.id,
+              new Date(currentConversation.updatedAt)
+            );
+            
+            // Restore generated forms
+            setGeneratedForms(extractedForms);
+            setCurrentFormIndex(0);
+          }
+        }
       }
     } catch (error) {
       console.warn("Failed to load saved AI Builder data:", error);
@@ -164,13 +185,10 @@ function AIBuilderCore({ className, onFormGenerated, onFormSubmit }: AIBuilderPr
     // Always update current messages for UI
     setCurrentMessages(messages);
     
-    // Only save to localStorage when streaming is complete
-    if (!isStreamEnd) return;
-    
-    // Only create/update conversations when streaming ends
+    // Handle conversation creation/update
     if (messages.length > 0) {
       if (!currentConversationId) {
-        // Create new conversation ONLY when stream ends and there's no current conversation
+        // Create new conversation when first message is sent
         const newConversationId = `conversation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         
         setConversations(prev => {
@@ -190,7 +208,7 @@ function AIBuilderCore({ className, onFormGenerated, onFormSubmit }: AIBuilderPr
         });
         setCurrentConversationId(newConversationId);
       } else {
-        // Update existing conversation only when stream ends
+        // Update existing conversation with new messages
         setConversations(prev => prev.map(conv => 
           conv.id === currentConversationId 
             ? { ...conv, messages, updatedAt: new Date() }

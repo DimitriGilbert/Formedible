@@ -184,8 +184,8 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
   const { Form } = formResult;
 
   return (
-    <Card className={cn("bg-muted/30 !py-0 !gap-0", className)}>
-      <CardHeader className="px-3 pt-1 pb-0">
+    <Card className={cn("bg-muted/30", className)}>
+      <CardHeader className="pb-2">
         <CardTitle className="flex items-center justify-between">
           <div>
             <div>{config.title || 'Untitled Form'}</div>
@@ -201,10 +201,10 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
           </div>
         </CardTitle>
       </CardHeader>
-      <CardContent className="px-3 pt-0 pb-1">
-        <div className="space-y-1">
+      <CardContent className="pt-0">
+        <div className="space-y-3">
           {/* Form stats */}
-          <div className={`grid gap-2 p-2 bg-muted/50 border rounded-lg ${(config.pages && config.pages.length > 1) ? 'grid-cols-3' : 'grid-cols-2'}`}>
+          <div className={`grid gap-2 p-1.5 bg-muted/50 border rounded-lg ${(config.pages && config.pages.length > 1) ? 'grid-cols-3' : 'grid-cols-2'}`}>
             <div className="text-center">
               <div className="text-2xl font-bold text-primary">{config.fields.length}</div>
               <div className="text-xs text-muted-foreground">Fields</div>
@@ -224,7 +224,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
           </div>
 
           {/* Live form preview */}
-          <div className="border-2 border-dashed border-muted-foreground/20 rounded-lg p-2 bg-background">
+          <div className="border-2 border-dashed border-muted-foreground/20 rounded-lg p-4 bg-background">
             <div className="text-xs text-muted-foreground mb-1 text-center">
               ✨ Live Preview - This form is fully functional!
             </div>

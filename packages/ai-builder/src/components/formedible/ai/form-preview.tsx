@@ -45,7 +45,7 @@ export function FormPreview({
   }
 
   return (
-    <Card className={cn("flex flex-col h-full !py-0 !gap-0", className)}>
+    <Card className={cn("flex flex-col h-full", className)}>
       <CardHeader className="px-3 pt-1 pb-0">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
@@ -98,7 +98,7 @@ export function FormPreview({
         </div>
       </CardHeader>
       
-      <CardContent className="flex-1 overflow-hidden p-0">
+      <CardContent className="flex-1 overflow-hidden">
         <FormPreviewBase 
           formCode={currentForm?.code}
           isStreaming={isStreaming && !currentForm}
