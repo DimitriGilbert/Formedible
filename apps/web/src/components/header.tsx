@@ -5,13 +5,17 @@ import { ModeToggle } from "./mode-toggle";
 
 export default function Header() {
   const pathname = usePathname();
-  
+
   const links = [
     { to: "/", label: "Home" },
     { to: "/docs", label: "Documentation" },
     { to: "/builder", label: "Form Builder" },
-    { to: "/ai-builder", label: "AI Builder" },
-    { to: "https://github.com/DimitriGilbert/FormEdible", label: "Github", target: "_blank" },
+    // { to: "/ai-builder", label: "AI Builder" },
+    {
+      to: "https://github.com/DimitriGilbert/FormEdible",
+      label: "Github",
+      target: "_blank",
+    },
   ];
 
   return (
@@ -21,20 +25,23 @@ export default function Header() {
           <div className="flex items-center gap-8">
             <Link href="/" className="flex items-center gap-2">
               <div className="w-8 h-8 bg-gradient-to-br from-primary to-muted-foreground rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-sm">F</span>
+                <span className="text-primary-foreground font-bold text-sm">
+                  F
+                </span>
               </div>
               <span className="font-bold text-xl">Formedible</span>
             </Link>
             <nav className="hidden md:flex gap-6">
               {links.map(({ to, label, target }) => (
-                <Link 
-                  key={to} 
+                <Link
+                  key={to}
                   href={to}
-                   className={`text-sm font-medium transition-colors hover:text-primary ${
-                     pathname === to || (to !== "/" && pathname.startsWith(to))
-                       ? "text-primary" 
-                       : "text-muted-foreground"
-                   }`}                  target={target}
+                  className={`text-sm font-medium transition-colors hover:text-primary ${
+                    pathname === to || (to !== "/" && pathname.startsWith(to))
+                      ? "text-primary"
+                      : "text-muted-foreground"
+                  }`}
+                  target={target}
                 >
                   {label}
                 </Link>
