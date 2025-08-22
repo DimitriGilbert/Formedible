@@ -1,23 +1,12 @@
 "use client";
 import React, { useMemo } from "react";
 import { CodeBlock } from "@/components/ui/code-block";
+import type { FieldConfig, DynamicText } from "@/lib/formedible/types";
+import { resolveDynamicText } from "@/lib/formedible/template-interpolation";
 
-interface FormField {
+interface FormField extends FieldConfig {
   id: string;
-  name: string;
-  type: string;
-  label: string;
-  placeholder?: string;
-  description?: string;
-  required?: boolean;
-  page?: number;
-  group?: string;
-  section?: {
-    title: string;
-    description?: string;
-    collapsible?: boolean;
-    defaultExpanded?: boolean;
-  };
+  label: string; // Make label required for builder
   help?: {
     text?: string;
     tooltip?: string;
@@ -29,7 +18,7 @@ interface FormField {
     debounceMs?: number;
     showSuccess?: boolean;
   };
-  options?: Array<{ value: string; label: string }>;
+  options?: string[] | Array<{ value: string; label: string }> | ((values: Record<string, unknown>) => string[] | Array<{ value: string; label: string }>);
   arrayConfig?: any;
   datalist?: any;
   multiSelectConfig?: any;
@@ -85,9 +74,9 @@ export const MyForm = () => {
       fields: fields.map((field) => ({
         name: field.name,
         type: field.type,
-        label: field.label,
-        placeholder: field.placeholder,
-        description: field.description,
+        label: resolveDynamicText(field.label, {}) || field.label,
+        placeholder: resolveDynamicText(field.placeholder, {}) || field.placeholder,
+        description: resolveDynamicText(field.description, {}) || field.description,
         page: field.page || 1,
         group: field.group,
         section: field.section,
