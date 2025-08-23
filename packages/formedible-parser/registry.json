@@ -1,0 +1,29 @@
+{
+  "name": "formedible-parser",
+  "version": "0.1.0",
+  "components": [
+    {
+      "name": "formedible-parser",
+      "type": "registry:ui",
+      "files": [
+        {
+          "path": "components/formedible/parser/formedible-parser.tsx",
+          "content": "",
+          "type": "registry:ui"
+        },
+        {
+          "path": "components/formedible/parser/types.ts",
+          "content": "",
+          "type": "registry:ui"
+        }
+      ],
+      "tailwind": {
+        "config": {
+          "theme": {
+            "extend": {}
+          }
+        }
+      }
+    }
+  ]
+}
