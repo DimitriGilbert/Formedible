@@ -19,7 +19,6 @@ export interface ParserConfig {
   enableSchemaInference: boolean;
   mergeStrategy: "extend" | "override" | "intersect";
   fieldTypeValidation: boolean;
-  aiErrorMessages: boolean;
   customInstructions?: string;
   maxCodeLength: number;
   maxNestingDepth: number;
@@ -57,11 +56,6 @@ export const parserConfigSchemaDefinition = {
     type: "boolean",
     default: true,
     description: "Validate field types against supported types",
-  },
-  aiErrorMessages: {
-    type: "boolean",
-    default: true,
-    description: "Provide AI-friendly error messages with suggestions",
   },
   customInstructions: {
     type: "string",
@@ -102,7 +96,6 @@ export const defaultParserConfig: ParserConfig = {
   enableSchemaInference: false,
   mergeStrategy: "extend",
   fieldTypeValidation: true,
-  aiErrorMessages: true,
   customInstructions: undefined,
   maxCodeLength: 1000000,
   maxNestingDepth: 50,
@@ -370,14 +363,6 @@ export const parserConfigFields = [
     defaultValue: true,
   },
   {
-    name: "aiErrorMessages",
-    type: "switch",
-    label: "AI-Friendly Error Messages",
-    description:
-      "Generate detailed error messages with suggestions for AI systems.",
-    defaultValue: true,
-  },
-  {
     name: "customInstructions",
     type: "textarea",
     label: "Custom Instructions",
@@ -489,7 +474,6 @@ export function validateParserConfig(config: unknown): config is ParserConfig {
       c.mergeStrategy === "override" ||
       c.mergeStrategy === "intersect") &&
     typeof c.fieldTypeValidation === "boolean" &&
-    typeof c.aiErrorMessages === "boolean" &&
     (c.customInstructions === undefined ||
       typeof c.customInstructions === "string") &&
     typeof c.maxCodeLength === "number" &&
@@ -525,9 +509,6 @@ export function generateSystemPrompt(config: ParserConfig): string {
     fieldTypeValidation: config.fieldTypeValidation
       ? "Validate all field types against the 24 supported formedible field types"
       : "Allow flexible field types without strict validation",
-    aiErrorMessages: config.aiErrorMessages
-      ? "Generate detailed, AI-friendly error messages with suggestions and examples"
-      : "Use basic error messages without detailed suggestions",
     enableSchemaInference: config.enableSchemaInference
       ? "Automatically infer Zod schemas from field definitions for better type safety"
       : "Use manual schema definition without automatic inference",
@@ -555,12 +536,12 @@ export function generateSystemPrompt(config: ParserConfig): string {
       : {}),
   };
 
-  const selectedFields = config.systemPromptFields
-    .map((field) => fieldDescriptions[field])
-    .filter((desc): desc is string => Boolean(desc));
+  const selectedConfigFields = Object.entries(fieldDescriptions)
+    .filter(([_key, desc]) => Boolean(desc))
+    .map(([_key, desc]) => desc);
 
   if (
-    !selectedFields.length &&
+    !selectedConfigFields.length &&
     !config.includeTabFormatting &&
     !config.includePageFormatting
   ) {
@@ -571,7 +552,7 @@ export function generateSystemPrompt(config: ParserConfig): string {
 
 You are working with a Formedible form parser that has been configured with the following settings:
 
-${selectedFields.map((desc, index) => `${index + 1}. ${desc}`).join("\n")}
+${selectedConfigFields.map((desc, index) => `${index + 1}. ${desc}`).join("\n")}
 
 ## Key Guidelines
 - Follow the configured validation and parsing rules strictly
@@ -601,136 +582,425 @@ ${selectedFields.map((desc, index) => `${index + 1}. ${desc}`).join("\n")}
     }
   }
 
-  // Generate dynamic examples using the field example objects
-  const exampleFields = [
-    fieldExamples.text,
-    fieldExamples.email,
-    fieldExamples.textarea,
-  ];
-
+  // Create a comprehensive, realistic form example
   let basicExample: any = {
-    title: "Contact Form",
-    fields: exampleFields,
+    title: "User Registration Form",
+    description: "Complete user registration with validation",
+    fields: [
+      {
+        name: "fullName",
+        type: "text",
+        label: "Full Name",
+        placeholder: "Enter your full name",
+        required: true,
+        validation: "z.string().min(2, 'Name must be at least 2 characters')"
+      },
+      {
+        name: "email",
+        type: "email", 
+        label: "Email Address",
+        placeholder: "your@email.com",
+        required: true,
+        validation: "z.string().email('Please enter a valid email address')"
+      },
+      {
+        name: "password",
+        type: "password",
+        label: "Password",
+        required: true,
+        passwordConfig: { showToggle: true, strengthMeter: true },
+        validation: "z.string().min(8, 'Password must be at least 8 characters')"
+      },
+      {
+        name: "age",
+        type: "number",
+        label: "Age",
+        required: true,
+        numberConfig: { min: 18, max: 120, allowNegative: false },
+        validation: "z.number().min(18, 'Must be at least 18 years old').max(120)"
+      },
+      {
+        name: "country",
+        type: "select",
+        label: "Country",
+        required: true,
+        options: [
+          { value: "us", label: "United States" },
+          { value: "uk", label: "United Kingdom" },
+          { value: "ca", label: "Canada" },
+          { value: "au", label: "Australia" }
+        ],
+        validation: "z.enum(['us', 'uk', 'ca', 'au'])"
+      },
+      {
+        name: "newsletter",
+        type: "checkbox",
+        label: "Subscribe to Newsletter",
+        description: "Receive updates about new features and promotions"
+      }
+    ],
+    schema: "z.object({ fullName: z.string().min(2), email: z.string().email(), password: z.string().min(8), age: z.number().min(18).max(120), country: z.enum(['us', 'uk', 'ca', 'au']), newsletter: z.boolean().optional() })",
     formOptions: {
       defaultValues: {
         fullName: "",
         email: "",
-        message: "",
+        password: "",
+        age: 18,
+        country: "",
+        newsletter: false
       },
-      onSubmit:
-        "async ({ value }) => { console.log('Form submitted:', value); }",
+      onSubmit: "async ({ value }) => { console.log('Registration data:', value); await submitRegistration(value); }",
+      onSubmitInvalid: "({ errors }) => { console.log('Validation errors:', errors); }"
     },
+    submitLabel: "Create Account",
+    layout: {
+      type: "grid",
+      columns: 2,
+      gap: "md"
+    }
   };
 
   if (config.includeTabFormatting && config.includePageFormatting) {
-    // Both tabs and pages - use stepper with tabs inside
+    // Both tabs and pages - comprehensive multi-step form with tabs
     basicExample = {
-      title: "Multi-Step Registration",
+      title: "Complete Profile Setup",
+      description: "Multi-step registration with organized sections",
       layout: { type: "stepper" },
       pages: [
-        { title: "Personal Info", description: "Your basic information" },
-        { title: "Account Setup", description: "Create your account" },
+        { title: "Personal Information", description: "Basic details about you" },
+        { title: "Account Preferences", description: "Customize your experience" },
+        { title: "Review & Submit", description: "Confirm your information" }
       ],
       tabs: [
-        {
-          id: "contact",
-          label: "Contact Details",
-          description: "How to reach you",
-        },
-        {
-          id: "preferences",
-          label: "Preferences",
-          description: "Your account preferences",
-        },
+        { id: "basic", label: "Basic Info", description: "Name and contact" },
+        { id: "address", label: "Address", description: "Location details" },
+        { id: "settings", label: "Settings", description: "Account preferences" }
       ],
       fields: [
-        { ...fieldExamples.text, page: 1, tab: "contact" },
-        { ...fieldExamples.email, page: 1, tab: "contact" },
-        { ...fieldExamples.phone, page: 1, tab: "preferences" },
-        { ...fieldExamples.textarea, page: 2 },
+        {
+          name: "firstName",
+          type: "text",
+          label: "First Name",
+          required: true,
+          page: 1,
+          tab: "basic",
+          validation: "z.string().min(1, 'First name is required')"
+        },
+        {
+          name: "lastName", 
+          type: "text",
+          label: "Last Name",
+          required: true,
+          page: 1,
+          tab: "basic",
+          validation: "z.string().min(1, 'Last name is required')"
+        },
+        {
+          name: "email",
+          type: "email",
+          label: "Email",
+          required: true,
+          page: 1,
+          tab: "basic",
+          validation: "z.string().email('Invalid email address')"
+        },
+        {
+          name: "address",
+          type: "object",
+          label: "Address",
+          page: 1,
+          tab: "address",
+          objectConfig: {
+            title: "Mailing Address",
+            fields: [
+              { name: "street", type: "text", label: "Street Address", required: true },
+              { name: "city", type: "text", label: "City", required: true },
+              { name: "zipCode", type: "text", label: "ZIP Code", required: true }
+            ]
+          }
+        },
+        {
+          name: "notifications",
+          type: "switch",
+          label: "Email Notifications",
+          page: 2,
+          tab: "settings"
+        },
+        {
+          name: "theme",
+          type: "select",
+          label: "Preferred Theme",
+          page: 2,
+          tab: "settings",
+          options: [
+            { value: "light", label: "Light" },
+            { value: "dark", label: "Dark" },
+            { value: "auto", label: "Auto" }
+          ]
+        }
       ],
+      schema: "z.object({ firstName: z.string().min(1), lastName: z.string().min(1), email: z.string().email(), address: z.object({ street: z.string(), city: z.string(), zipCode: z.string() }), notifications: z.boolean().optional(), theme: z.enum(['light', 'dark', 'auto']).optional() })",
+      formOptions: {
+        defaultValues: {
+          firstName: "",
+          lastName: "",
+          email: "",
+          address: { street: "", city: "", zipCode: "" },
+          notifications: true,
+          theme: "auto"
+        },
+        onSubmit: "async ({ value }) => { console.log('Profile setup complete:', value); await saveProfile(value); }"
+      },
+      nextLabel: "Continue",
+      previousLabel: "Back",
+      submitLabel: "Complete Setup"
+    };
+  } else if (config.includeTabFormatting) {
+    // Tab-based form with organized sections
+    basicExample = {
+      title: "Project Application Form",
+      description: "Comprehensive application with tabbed organization",
+      layout: { type: "tabs" },
+      tabs: [
+        { id: "personal", label: "Personal Info", description: "Your basic information" },
+        { id: "project", label: "Project Details", description: "About your project" },
+        { id: "experience", label: "Experience", description: "Your background" }
+      ],
+      fields: [
+        {
+          name: "fullName",
+          type: "text",
+          label: "Full Name",
+          required: true,
+          tab: "personal",
+          validation: "z.string().min(2, 'Name must be at least 2 characters')"
+        },
+        {
+          name: "email",
+          type: "email",
+          label: "Email Address",
+          required: true,
+          tab: "personal",
+          validation: "z.string().email('Please enter a valid email')"
+        },
+        {
+          name: "phone",
+          type: "phone",
+          label: "Phone Number",
+          tab: "personal",
+          phoneConfig: { defaultCountry: "US", format: "national" }
+        },
+        {
+          name: "projectTitle",
+          type: "text",
+          label: "Project Title",
+          required: true,
+          tab: "project",
+          validation: "z.string().min(5, 'Project title must be at least 5 characters')"
+        },
+        {
+          name: "projectDescription",
+          type: "textarea",
+          label: "Project Description",
+          required: true,
+          tab: "project",
+          textareaConfig: { rows: 6, maxLength: 1000, showWordCount: true },
+          validation: "z.string().min(50, 'Description must be at least 50 characters')"
+        },
+        {
+          name: "budget",
+          type: "select",
+          label: "Budget Range",
+          required: true,
+          tab: "project",
+          options: [
+            { value: "under-5k", label: "Under $5,000" },
+            { value: "5k-15k", label: "$5,000 - $15,000" },
+            { value: "15k-50k", label: "$15,000 - $50,000" },
+            { value: "over-50k", label: "Over $50,000" }
+          ]
+        },
+        {
+          name: "yearsExperience",
+          type: "slider",
+          label: "Years of Experience",
+          tab: "experience",
+          sliderConfig: { min: 0, max: 30, step: 1 }
+        },
+        {
+          name: "skills",
+          type: "multiSelect",
+          label: "Skills",
+          tab: "experience",
+          options: ["JavaScript", "TypeScript", "React", "Node.js", "Python", "Design"],
+          multiSelectConfig: { maxSelections: 5, searchable: true }
+        }
+      ],
+      schema: "z.object({ fullName: z.string().min(2), email: z.string().email(), phone: z.string().optional(), projectTitle: z.string().min(5), projectDescription: z.string().min(50), budget: z.enum(['under-5k', '5k-15k', '15k-50k', 'over-50k']), yearsExperience: z.number().min(0).max(30).optional(), skills: z.array(z.string()).optional() })",
       formOptions: {
         defaultValues: {
           fullName: "",
           email: "",
           phone: "",
-          message: "",
+          projectTitle: "",
+          projectDescription: "",
+          budget: "",
+          yearsExperience: 0,
+          skills: []
         },
-        onSubmit:
-          "async ({ value }) => { console.log('Registration submitted:', value); }",
+        onSubmit: "async ({ value }) => { console.log('Application submitted:', value); await submitApplication(value); }"
       },
-    };
-  } else if (config.includeTabFormatting) {
-    basicExample = {
-      title: "Contact Form",
-      layout: { type: "tabs" },
-      tabs: [
-        {
-          id: "contact",
-          label: "Contact Info",
-          description: "Your personal details",
-        },
-        {
-          id: "message",
-          label: "Message",
-          description: "Tell us what you need",
-        },
-      ],
-      fields: [
-        { ...fieldExamples.text, tab: "contact" },
-        { ...fieldExamples.email, tab: "contact" },
-        { ...fieldExamples.textarea, tab: "message" },
-      ],
-      formOptions: {
-        defaultValues: {
-          fullName: "",
-          email: "",
-          message: "",
-        },
-        onSubmit:
-          "async ({ value }) => { console.log('Contact form submitted:', value); }",
-      },
+      submitLabel: "Submit Application"
     };
   } else if (config.includePageFormatting) {
+    // Multi-page form with step-by-step progression
     basicExample = {
-      title: "Multi-Step Contact Form",
+      title: "Customer Onboarding",
+      description: "Complete your account setup in simple steps",
       layout: { type: "stepper" },
       pages: [
-        { title: "Personal Info", description: "Your basic information" },
-        { title: "Your Message", description: "Tell us what you need" },
+        { title: "Account Details", description: "Create your account credentials" },
+        { title: "Personal Information", description: "Tell us about yourself" },
+        { title: "Preferences", description: "Customize your experience" },
+        { title: "Confirmation", description: "Review and confirm your information" }
       ],
       fields: [
-        { ...fieldExamples.text, page: 1 },
-        { ...fieldExamples.email, page: 1 },
-        { ...fieldExamples.textarea, page: 2 },
+        {
+          name: "username",
+          type: "text",
+          label: "Username",
+          required: true,
+          page: 1,
+          placeholder: "Choose a unique username",
+          validation: "z.string().min(3, 'Username must be at least 3 characters')"
+        },
+        {
+          name: "email",
+          type: "email",
+          label: "Email Address",
+          required: true,
+          page: 1,
+          validation: "z.string().email('Please enter a valid email address')"
+        },
+        {
+          name: "password",
+          type: "password",
+          label: "Password",
+          required: true,
+          page: 1,
+          passwordConfig: { showToggle: true, strengthMeter: true },
+          validation: "z.string().min(8, 'Password must be at least 8 characters')"
+        },
+        {
+          name: "firstName",
+          type: "text",
+          label: "First Name",
+          required: true,
+          page: 2,
+          validation: "z.string().min(1, 'First name is required')"
+        },
+        {
+          name: "lastName",
+          type: "text",
+          label: "Last Name",
+          required: true,
+          page: 2,
+          validation: "z.string().min(1, 'Last name is required')"
+        },
+        {
+          name: "birthDate",
+          type: "date",
+          label: "Date of Birth",
+          page: 2,
+          dateConfig: { format: "yyyy-MM-dd", showTime: false }
+        },
+        {
+          name: "company",
+          type: "text",
+          label: "Company (Optional)",
+          page: 2
+        },
+        {
+          name: "notifications",
+          type: "switch",
+          label: "Email Notifications",
+          description: "Receive product updates and newsletters",
+          page: 3
+        },
+        {
+          name: "language",
+          type: "select",
+          label: "Preferred Language",
+          page: 3,
+          options: [
+            { value: "en", label: "English" },
+            { value: "es", label: "Spanish" },
+            { value: "fr", label: "French" },
+            { value: "de", label: "German" }
+          ],
+          validation: "z.enum(['en', 'es', 'fr', 'de'])"
+        },
+        {
+          name: "interests",
+          type: "multiSelect",
+          label: "Interests",
+          page: 3,
+          options: ["Technology", "Design", "Marketing", "Sales", "Finance", "Education"],
+          multiSelectConfig: { maxSelections: 3, searchable: true }
+        }
       ],
-      nextLabel: "Continue",
-      previousLabel: "Back",
-      submitLabel: "Send Message",
+      schema: "z.object({ username: z.string().min(3), email: z.string().email(), password: z.string().min(8), firstName: z.string().min(1), lastName: z.string().min(1), birthDate: z.date().optional(), company: z.string().optional(), notifications: z.boolean().optional(), language: z.enum(['en', 'es', 'fr', 'de']).optional(), interests: z.array(z.string()).optional() })",
       formOptions: {
         defaultValues: {
-          fullName: "",
+          username: "",
           email: "",
-          message: "",
+          password: "",
+          firstName: "",
+          lastName: "",
+          birthDate: undefined,
+          company: "",
+          notifications: true,
+          language: "en",
+          interests: []
         },
-        onSubmit:
-          "async ({ value }) => { console.log('Multi-step form submitted:', value); }",
+        onSubmit: "async ({ value }) => { console.log('Onboarding complete:', value); await completeOnboarding(value); }"
       },
+      nextLabel: "Continue",
+      previousLabel: "Back",
+      submitLabel: "Complete Setup",
+      progress: {
+        showProgress: true,
+        showStepNumbers: true
+      }
     };
   }
 
-  prompt += `
+  // Filter field examples based on selected field types
+  const selectedFieldExamples = Object.entries(fieldExamples)
+    .filter(([type]) => config.systemPromptFields.includes(type));
+
+  if (selectedFieldExamples.length > 0) {
+    prompt += `
 
 ## Field Examples
 
 Each field type has a complete example configuration:
 
-### Available Field Types
-${Object.entries(fieldExamples)
+### Available Field Types (Selected: ${config.systemPromptFields.join(', ')})
+${selectedFieldExamples
   .map(
     ([type, example]) => `**${type}**: \`${JSON.stringify(example, null, 2)}\``
   )
-  .join("\n\n")}
+  .join("\n\n")}`;
+  } else {
+    prompt += `
+
+## Field Examples
+
+No specific field types selected. Use the default formedible field types as needed.`;
+  }
+
+  prompt += `
 
 ## Complete Form Example
 

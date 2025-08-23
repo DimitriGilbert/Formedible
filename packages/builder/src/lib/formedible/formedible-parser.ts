@@ -138,7 +138,7 @@ export class FormedibleParser {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
       throw this.createParserError(
-        `Failed to parse form definition - ${errorMessage}`,
+        `Failed to parse form definition. ${errorMessage}`,
         "PARSE_ERROR",
         { originalError: error }
       );
@@ -182,7 +182,7 @@ export class FormedibleParser {
   }
 
   /**
-   * Creates a standardized parser error with additional metadata
+   * Creates a standardized parser error with additional metadata and AI-friendly suggestions
    * @private
    */
   private static createParserError(
@@ -190,7 +190,223 @@ export class FormedibleParser {
     code: string,
     metadata?: Record<string, unknown>
   ): ParserError {
-    const error = new Error(message) as ParserError;
+    // Enhance error message with helpful context and suggestions
+    let enhancedMessage = message;
+    
+    switch (code) {
+      case "INVALID_INPUT":
+        enhancedMessage = `❌ Invalid Input: ${message}
+
+🔧 How to fix:
+• Provide a non-empty string containing your form definition
+• Make sure you're passing the form code as a string, not an object
+
+📝 Example:
+const formCode = \`{
+  fields: [
+    { name: "email", type: "email", label: "Email Address" }
+  ]
+}\`;
+const parsed = FormedibleParser.parse(formCode);`;
+        break;
+        
+      case "CODE_TOO_LARGE":
+        enhancedMessage = `❌ Code Too Large: ${message}
+
+🔧 How to fix:
+• Reduce the size of your form definition
+• Split large forms into multiple smaller forms
+• Remove unnecessary comments or whitespace
+
+💡 Tips:
+• Consider using arrays for repetitive field configurations
+• Use object field types to group related fields`;
+        break;
+        
+      case "SYNTAX_ERROR":
+        enhancedMessage = `❌ Syntax Error: ${message}
+
+🔧 Common fixes:
+• Use double quotes around object keys: { "name": "value" }
+• Remove trailing commas: [item1, item2] not [item1, item2,]
+• Check for balanced brackets and parentheses
+• Escape quotes in strings: "It's working" → "It\\'s working"
+
+📝 Valid formats:
+JSON: { "fields": [{ "name": "email", "type": "email" }] }
+JS Object: { fields: [{ name: "email", type: "email" }] }`;
+        break;
+        
+      case "INVALID_DEFINITION":
+        enhancedMessage = `❌ Invalid Definition: ${message}
+
+🔧 How to fix:
+• Ensure your form definition is a JavaScript object or valid JSON
+• Must contain at least a 'fields' array
+
+📝 Minimum required structure:
+{
+  fields: [
+    { name: "fieldName", type: "text" }
+  ]
+}`;
+        break;
+        
+      case "INVALID_FIELDS":
+        enhancedMessage = `❌ Invalid Fields: ${message}
+
+🔧 How to fix:
+• The 'fields' property must be an array
+• Each field must be an object with 'name' and 'type' properties
+
+📝 Example:
+{
+  fields: [
+    { name: "firstName", type: "text", label: "First Name" },
+    { name: "email", type: "email", label: "Email Address" }
+  ]
+}`;
+        break;
+        
+      case "INVALID_FIELD":
+        const fieldIndex = metadata?.fieldIndex;
+        enhancedMessage = `❌ Invalid Field${fieldIndex !== undefined ? ` at position ${fieldIndex}` : ''}: ${message}
+
+🔧 How to fix:
+• Each field must be an object, not a string or number
+• Check that field #${fieldIndex || 0} is properly formatted
+
+📝 Field structure:
+{
+  name: "fieldName",     // Required: unique field identifier
+  type: "text",          // Required: field type
+  label: "Display Name", // Optional: user-friendly label
+  required: true         // Optional: validation
+}`;
+        break;
+        
+      case "MISSING_REQUIRED_FIELD":
+        const missingFieldIndex = metadata?.fieldIndex;
+        enhancedMessage = `❌ Missing Required Properties${missingFieldIndex !== undefined ? ` in field #${missingFieldIndex}` : ''}: ${message}
+
+🔧 How to fix:
+• Every field MUST have both 'name' and 'type' properties
+• The 'name' should be a unique identifier for the field
+• The 'type' should be one of the supported field types
+
+📝 Fix field #${missingFieldIndex || 0}:
+{
+  name: "uniqueFieldName",  // ✅ Required
+  type: "text",             // ✅ Required  
+  label: "Display Label"    // ✅ Recommended
+}`;
+        break;
+        
+      case "UNSUPPORTED_FIELD_TYPE":
+        const fieldType = metadata?.fieldType;
+        const supportedTypes = this.ALLOWED_FIELD_TYPES.join(', ');
+        enhancedMessage = `❌ Unsupported Field Type: ${message}
+
+🔧 How to fix:
+• Change field type from "${fieldType}" to one of the supported types
+• Check for typos in the field type name
+
+✅ Supported field types:
+${supportedTypes}
+
+📝 Common field types:
+• "text" - Single line text input
+• "email" - Email address with validation  
+• "number" - Numeric input with validation
+• "select" - Dropdown selection
+• "checkbox" - Boolean checkbox
+• "date" - Date picker
+• "textarea" - Multi-line text area`;
+        break;
+        
+      case "INVALID_ARRAY_CONFIG":
+        enhancedMessage = `❌ Invalid Array Configuration: ${message}
+
+🔧 How to fix:
+• Array field configuration must be an object
+• Provide arrayConfig with proper structure
+
+📝 Example array field:
+{
+  name: "items",
+  type: "array",
+  arrayConfig: {
+    itemType: "text",           // Type of each array item
+    itemLabel: "Item",          // Label for each item
+    minItems: 1,               // Minimum number of items
+    maxItems: 10,              // Maximum number of items
+    addButtonLabel: "Add Item" // Custom add button text
+  }
+}`;
+        break;
+        
+      case "INVALID_OBJECT_CONFIG":
+        enhancedMessage = `❌ Invalid Object Configuration: ${message}
+
+🔧 How to fix:
+• Object field configuration must be an object
+• Provide objectConfig with fields array
+
+📝 Example object field:
+{
+  name: "address",
+  type: "object",
+  objectConfig: {
+    title: "Address Information",
+    fields: [
+      { name: "street", type: "text", label: "Street" },
+      { name: "city", type: "text", label: "City" }
+    ]
+  }
+}`;
+        break;
+        
+      case "PARSE_ERROR":
+        enhancedMessage = `❌ Parsing Failed: ${message}
+
+🔧 Common causes and fixes:
+• **Syntax Issues**: Check for missing quotes, brackets, or commas
+• **Invalid JavaScript**: Ensure object literal syntax is correct
+• **Zod Expressions**: Make sure Zod schemas are properly formatted
+
+📝 Debugging steps:
+1. Validate your JSON syntax using an online JSON validator
+2. Check that all object keys are quoted: { "name": "value" }
+3. Remove trailing commas: [item1, item2] not [item1, item2,]
+4. Verify Zod expressions: z.string().min(1) not z.string.min(1)
+
+💡 Example working format:
+{
+  fields: [
+    {
+      name: "email",
+      type: "email", 
+      label: "Email Address",
+      validation: "z.string().email()"
+    }
+  ],
+  schema: "z.object({ email: z.string().email() })"
+}`;
+        break;
+        
+      default:
+        enhancedMessage = `❌ Parser Error: ${message}
+
+🔧 General troubleshooting:
+• Check JSON/JavaScript syntax
+• Verify all required properties are present
+• Ensure field types are supported
+• Check for typos in property names
+
+💡 Need help? Provide the exact form code that's causing issues for specific assistance.`;
+    }
+    
+    const error = new Error(enhancedMessage) as ParserError;
     error.name = "ParserError";
     error.code = code;
 

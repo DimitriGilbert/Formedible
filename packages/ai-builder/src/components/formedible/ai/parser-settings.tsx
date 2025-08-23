@@ -64,7 +64,7 @@ export function ParserSettings({ className, onConfigChange }: ParserSettingsProp
   // Copy system prompt to clipboard
   const handleCopySystemPrompt = async () => {
     try {
-      const systemPrompt = generateSystemPrompt(config);
+      const systemPrompt = generateSystemPrompt(lastSavedConfig);
       const promptToCopy = systemPrompt || 'System prompt will be generated based on current configuration...';
       
       await navigator.clipboard.writeText(promptToCopy);
@@ -80,7 +80,7 @@ export function ParserSettings({ className, onConfigChange }: ParserSettingsProp
     // Basic Configuration Section
     ...parserConfigFields
       .filter(field => 
-        ['strictValidation', 'enableSchemaInference', 'fieldTypeValidation', 'aiErrorMessages'].includes(field.name)
+        ['strictValidation', 'enableSchemaInference', 'fieldTypeValidation'].includes(field.name)
       )
       .map(field => ({
         ...field,
@@ -98,7 +98,7 @@ export function ParserSettings({ className, onConfigChange }: ParserSettingsProp
     // Advanced Configuration Section (conditional)
     ...parserConfigFields
       .filter(field => 
-        !['strictValidation', 'enableSchemaInference', 'fieldTypeValidation', 'aiErrorMessages', 'selectFields', 'systemPromptFields', 'includeTabFormatting', 'includePageFormatting'].includes(field.name)
+        !['strictValidation', 'enableSchemaInference', 'fieldTypeValidation', 'selectFields', 'systemPromptFields', 'includeTabFormatting', 'includePageFormatting'].includes(field.name)
       )
       .map(field => ({
         ...field,
@@ -124,7 +124,7 @@ export function ParserSettings({ className, onConfigChange }: ParserSettingsProp
       )
   ];
 
-  const { Form } = useFormedible<ParserConfig & { showAdvanced: boolean }>({
+  const { Form, form } = useFormedible<ParserConfig & { showAdvanced: boolean }>({
     fields: formFields,
     formOptions: {
       defaultValues: { 
@@ -142,11 +142,7 @@ export function ParserSettings({ className, onConfigChange }: ParserSettingsProp
         const mergedConfig = mergeParserConfig({ ...config, ...parserConfig });
         handleSaveConfig(mergedConfig);
       },
-      onChange: ({ value }) => {
-        // Update config in real time (but don't save yet)
-        const { showAdvanced, ...parserConfig } = value;
-        setConfig(prev => ({ ...prev, ...parserConfig }));
-      }
+      // NO onChange - we only update when the user clicks Save!
     },
     submitLabel: hasChanges ? "Save Settings" : "Settings Saved",
     showSubmitButton: hasChanges,
@@ -219,7 +215,7 @@ export function ParserSettings({ className, onConfigChange }: ParserSettingsProp
         <CardContent>
           <div className="p-3 bg-muted rounded-md text-xs overflow-auto max-h-64">
             <pre className="whitespace-pre-wrap">
-              {generateSystemPrompt(config) || 'System prompt will be generated based on current configuration...'}
+              {generateSystemPrompt(lastSavedConfig) || 'System prompt will be generated based on current saved configuration...'}
             </pre>
           </div>
         </CardContent>
