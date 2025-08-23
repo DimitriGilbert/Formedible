@@ -101,7 +101,7 @@ export function SidebarContent({
         className
       )}
     >
-      <div className="h-full p-2">
+      <div className="h-full p-2 overflow-y-auto">
         {renderContent()}
       </div>
     </div>

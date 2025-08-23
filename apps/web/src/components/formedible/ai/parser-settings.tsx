@@ -22,8 +22,7 @@ interface ParserSettingsProps {
 
 export function ParserSettings({ className, onConfigChange }: ParserSettingsProps) {
   const [config, setConfig] = useState<ParserConfig>(defaultParserConfig);
-  const [hasChanges, setHasChanges] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [lastSavedConfig, setLastSavedConfig] = useState<ParserConfig>(defaultParserConfig);
 
   // Load saved config on mount
   useEffect(() => {
@@ -33,6 +32,7 @@ export function ParserSettings({ className, onConfigChange }: ParserSettingsProp
         const parsed = JSON.parse(saved);
         if (validateParserConfig(parsed)) {
           setConfig(parsed);
+          setLastSavedConfig(parsed);
         }
       }
     } catch (error) {
@@ -40,12 +40,15 @@ export function ParserSettings({ className, onConfigChange }: ParserSettingsProp
     }
   }, []);
 
+  // Check if there are unsaved changes
+  const hasChanges = JSON.stringify(config) !== JSON.stringify(lastSavedConfig);
+
   // Save config to localStorage and notify parent
   const handleSaveConfig = (newConfig: ParserConfig) => {
     try {
       localStorage.setItem('formedible-parser-config', JSON.stringify(newConfig));
       setConfig(newConfig);
-      setHasChanges(false);
+      setLastSavedConfig(newConfig);
       onConfigChange?.(newConfig);
     } catch (error) {
       console.error('Failed to save parser config:', error);
@@ -58,44 +61,75 @@ export function ParserSettings({ className, onConfigChange }: ParserSettingsProp
     handleSaveConfig(resetConfig);
   };
 
-  // Basic fields (always shown)
-  const basicFields = parserConfigFields.filter(field => 
-    ['strictValidation', 'enableSchemaInference', 'fieldTypeValidation', 'aiErrorMessages'].includes(field.name)
-  );
+  // Create form fields with conditional logic
+  const formFields = [
+    // Basic Settings Section
+    {
+      name: 'showAdvanced',
+      type: 'switch',
+      label: 'Show Advanced Settings',
+      description: 'Display advanced configuration options',
+      defaultValue: false,
+      section: {
+        title: 'Settings View',
+        collapsible: false
+      }
+    },
+    
+    // Basic Configuration Section
+    ...parserConfigFields
+      .filter(field => 
+        ['strictValidation', 'enableSchemaInference', 'fieldTypeValidation', 'aiErrorMessages'].includes(field.name)
+      )
+      .map(field => ({
+        ...field,
+        section: {
+          title: 'Basic Configuration',
+          description: 'Core parser settings that affect form processing behavior',
+          collapsible: false
+        }
+      })),
+    
+    // Advanced Configuration Section (conditional)
+    ...parserConfigFields
+      .filter(field => 
+        !['strictValidation', 'enableSchemaInference', 'fieldTypeValidation', 'aiErrorMessages'].includes(field.name)
+      )
+      .map(field => ({
+        ...field,
+        conditional: (values: any) => values.showAdvanced === true,
+        section: {
+          title: 'Advanced Configuration',
+          description: 'Advanced settings for performance optimization and edge cases',
+          collapsible: false
+        }
+      }))
+  ];
 
-  // Advanced fields (shown when expanded)
-  const advancedFields = parserConfigFields.filter(field => 
-    !['strictValidation', 'enableSchemaInference', 'fieldTypeValidation', 'aiErrorMessages'].includes(field.name)
-  );
-
-  const { Form: BasicForm } = useFormedible({
-    fields: basicFields,
+  const { Form } = useFormedible<ParserConfig & { showAdvanced: boolean }>({
+    fields: formFields,
     formOptions: {
-      defaultValues: config,
+      defaultValues: { ...config, showAdvanced: false },
       onSubmit: async ({ value }) => {
-        const mergedConfig = mergeParserConfig({ ...config, ...value });
+        // Extract showAdvanced and save the rest
+        const { showAdvanced, ...parserConfig } = value;
+        const mergedConfig = mergeParserConfig({ ...config, ...parserConfig });
         handleSaveConfig(mergedConfig);
       },
-      onChange: () => setHasChanges(true)
+      onChange: ({ value }) => {
+        // Update config in real time (but don't save yet)
+        const { showAdvanced, ...parserConfig } = value;
+        setConfig(prev => ({ ...prev, ...parserConfig }));
+      }
     },
-    submitLabel: "Save Basic Settings",
+    submitLabel: hasChanges ? "Save Settings" : "Settings Saved",
     showSubmitButton: hasChanges,
     autoSubmitOnChange: false,
-  });
-
-  const { Form: AdvancedForm } = useFormedible({
-    fields: advancedFields,
-    formOptions: {
-      defaultValues: config,
-      onSubmit: async ({ value }) => {
-        const mergedConfig = mergeParserConfig({ ...config, ...value });
-        handleSaveConfig(mergedConfig);
-      },
-      onChange: () => setHasChanges(true)
-    },
-    submitLabel: "Save Advanced Settings",
-    showSubmitButton: false,
-    autoSubmitOnChange: false,
+    layout: {
+      type: 'grid',
+      columns: 1,
+      gap: 'md'
+    }
   });
 
   return (
@@ -110,12 +144,12 @@ export function ParserSettings({ className, onConfigChange }: ParserSettingsProp
             Configure how the Formedible parser processes form definitions and handles AI interactions.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4">
           {/* Current Status */}
           <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
             <div className="space-y-1">
               <p className="text-sm font-medium">Parser Status</p>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Badge variant={config.strictValidation ? "default" : "secondary"}>
                   {config.strictValidation ? "Strict" : "Permissive"}
                 </Badge>
@@ -132,38 +166,10 @@ export function ParserSettings({ className, onConfigChange }: ParserSettingsProp
             )}
           </div>
 
-          {/* Basic Settings */}
-          <div className="space-y-3">
-            <h4 className="text-sm font-semibold">Basic Configuration</h4>
-            <BasicForm />
+          {/* Formedible Form */}
+          <div className="space-y-4">
+            <Form />
           </div>
-
-          {/* Advanced Settings Toggle */}
-          <div className="pt-2 border-t">
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => setShowAdvanced(!showAdvanced)}
-              className="w-full justify-center"
-            >
-              {showAdvanced ? "Hide" : "Show"} Advanced Settings
-            </Button>
-          </div>
-
-          {/* Advanced Settings */}
-          {showAdvanced && (
-            <div className="space-y-3">
-              <h4 className="text-sm font-semibold">Advanced Configuration</h4>
-              <Alert>
-                <Info className="h-4 w-4" />
-                <AlertDescription>
-                  Advanced settings control parser behavior for edge cases and performance optimization.
-                  Default values are recommended for most use cases.
-                </AlertDescription>
-              </Alert>
-              <AdvancedForm />
-            </div>
-          )}
 
           {/* Action Buttons */}
           <div className="flex gap-2 pt-4 border-t">
@@ -176,32 +182,7 @@ export function ParserSettings({ className, onConfigChange }: ParserSettingsProp
               <RotateCcw className="h-3 w-3" />
               Reset to Defaults
             </Button>
-            {hasChanges && (
-              <Button 
-                onClick={() => {
-                  const mergedConfig = mergeParserConfig(config);
-                  handleSaveConfig(mergedConfig);
-                }}
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <Save className="h-3 w-3" />
-                Save All Changes
-              </Button>
-            )}
           </div>
-
-          {/* Configuration Preview */}
-          {showAdvanced && (
-            <details className="pt-2">
-              <summary className="text-sm font-medium cursor-pointer">
-                Current Configuration (JSON)
-              </summary>
-              <pre className="mt-2 p-3 bg-muted rounded-md text-xs overflow-auto max-h-48">
-                {JSON.stringify(config, null, 2)}
-              </pre>
-            </details>
-          )}
         </CardContent>
       </Card>
 
@@ -211,7 +192,7 @@ export function ParserSettings({ className, onConfigChange }: ParserSettingsProp
           <CardTitle className="text-sm">Parser Information</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid grid-cols-2 gap-4 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
             <div>
               <p className="font-medium mb-1">Supported Field Types</p>
               <p className="text-muted-foreground">24 field types including text, email, number, array, object, etc.</p>
@@ -229,6 +210,16 @@ export function ParserSettings({ className, onConfigChange }: ParserSettingsProp
               <p className="text-muted-foreground">Configurable limits: {config.maxCodeLength.toLocaleString()} chars, {config.maxNestingDepth} levels</p>
             </div>
           </div>
+          
+          {/* Configuration Preview (always available) */}
+          <details className="pt-2 border-t">
+            <summary className="text-sm font-medium cursor-pointer">
+              Current Configuration (JSON)
+            </summary>
+            <pre className="mt-2 p-3 bg-muted rounded-md text-xs overflow-auto max-h-48">
+              {JSON.stringify(config, null, 2)}
+            </pre>
+          </details>
         </CardContent>
       </Card>
     </div>
