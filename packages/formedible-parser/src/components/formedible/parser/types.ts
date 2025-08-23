@@ -161,3 +161,61 @@ export interface ParserError extends Error {
   line?: number;
   column?: number;
 }
+
+// Phase 2: Enhanced Parser Types
+
+/**
+ * Enhanced parser options for Phase 2 features
+ */
+export interface EnhancedParserOptions extends ParserOptions {
+  baseSchema?: unknown; // z.ZodSchema in actual usage
+  mergeStrategy?: 'extend' | 'override' | 'intersect';
+  predefinedHandlers?: {
+    onSubmit?: (data: unknown) => void;
+    specificFields?: Record<string, ParsedFieldConfig>;
+    [key: string]: unknown;
+  };
+}
+
+/**
+ * Enhanced error type with AI-friendly suggestions
+ */
+export interface EnhancedParserError {
+  type: 'syntax' | 'validation' | 'field_type' | 'schema';
+  message: string;
+  suggestion?: string;
+  location?: {
+    line?: number;
+    column?: number;
+    field?: string;
+  };
+  examples?: string[];
+}
+
+/**
+ * Schema inference configuration options
+ */
+export interface SchemaInferenceOptions {
+  enabled?: boolean;
+  fieldTypeMapping?: Record<string, unknown>; // z.ZodType in actual usage
+  defaultValidation?: boolean;
+  inferFromValues?: boolean;
+}
+
+/**
+ * Result of schema inference parsing
+ */
+export interface SchemaInferenceResult {
+  config: ParsedFormConfig;
+  inferredSchema: unknown; // z.ZodSchema in actual usage
+  confidence: number;
+}
+
+/**
+ * Result of validation with suggestions
+ */
+export interface ValidationWithSuggestionsResult {
+  isValid: boolean;
+  errors: EnhancedParserError[];
+  suggestions: string[];
+}

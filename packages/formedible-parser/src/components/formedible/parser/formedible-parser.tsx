@@ -6,7 +6,12 @@ import type {
   ParserOptions, 
   ObjectConfig,
   ParserError,
-  PageConfig
+  PageConfig,
+  EnhancedParserOptions,
+  EnhancedParserError,
+  SchemaInferenceOptions,
+  SchemaInferenceResult,
+  ValidationWithSuggestionsResult
 } from './types';
 
 /**
@@ -64,7 +69,7 @@ export class FormedibleParser {
    * @returns Parsed and validated form definition
    * @throws {ParserError} When parsing fails with detailed error information
    */
-  static parse(code: string, options?: ParserOptions): ParsedFormConfig {
+  static parse(code: string, options?: ParserOptions | EnhancedParserOptions): ParsedFormConfig {
     if (!code || typeof code !== 'string') {
       throw this.createParserError('Input code must be a non-empty string', 'INVALID_INPUT');
     }
@@ -892,5 +897,313 @@ export class FormedibleParser {
     }
 
     return validated;
+  }
+
+  // Phase 2: Enhanced Features
+
+  /**
+   * Parses form definition with schema inference capabilities
+   * @param code - The form definition code to parse
+   * @param options - Schema inference options
+   * @returns Parsing result with inferred schema information
+   */
+  static parseWithSchemaInference(code: string, options?: SchemaInferenceOptions): SchemaInferenceResult {
+    const config = this.parse(code);
+    
+    // Basic schema inference implementation
+    let confidence = 0.5; // Base confidence
+    let inferredSchema = null;
+
+    if (options?.enabled) {
+      try {
+        const schemaBuilder: Record<string, string> = {};
+        
+        for (const field of config.fields) {
+          const zodType = this.inferZodTypeFromField(field);
+          if (zodType) {
+            schemaBuilder[field.name] = zodType;
+            confidence += 0.1; // Increase confidence for each successful inference
+          }
+        }
+
+        // Create a basic schema representation
+        inferredSchema = {
+          type: 'object',
+          properties: schemaBuilder,
+          isInferred: true
+        };
+
+        confidence = Math.min(confidence, 1.0);
+      } catch (error) {
+        console.warn('Schema inference failed:', error);
+        confidence = 0.1;
+      }
+    }
+
+    return {
+      config,
+      inferredSchema,
+      confidence
+    };
+  }
+
+  /**
+   * Merges a parsed configuration with a base schema
+   * @param parsedConfig - The parsed form configuration
+   * @param baseSchema - Base schema to merge with
+   * @param strategy - Merge strategy to use
+   * @returns Enhanced form configuration
+   */
+  static mergeSchemas(
+    parsedConfig: ParsedFormConfig, 
+    baseSchema: unknown,
+    strategy: 'extend' | 'override' | 'intersect' = 'extend'
+  ): ParsedFormConfig {
+    const merged = { ...parsedConfig };
+
+    if (!baseSchema || typeof baseSchema !== 'object') {
+      return merged;
+    }
+
+    try {
+      // Extract field information from base schema if it has properties
+      const baseSchemaObj = baseSchema as Record<string, unknown>;
+      
+      if (strategy === 'extend' && baseSchemaObj.properties) {
+        // Add missing fields from base schema
+        const existingFieldNames = new Set(merged.fields.map(f => f.name));
+        const baseProperties = baseSchemaObj.properties as Record<string, unknown>;
+        
+        for (const [fieldName, fieldSchema] of Object.entries(baseProperties)) {
+          if (!existingFieldNames.has(fieldName)) {
+            const inferredField = this.createFieldFromSchema(fieldName, fieldSchema);
+            if (inferredField) {
+              merged.fields.push(inferredField);
+            }
+          }
+        }
+      } else if (strategy === 'override') {
+        // Override existing schema completely
+        merged.schema = baseSchema;
+      } else if (strategy === 'intersect') {
+        // Keep only fields that exist in both
+        const baseProperties = (baseSchemaObj.properties as Record<string, unknown>) || {};
+        merged.fields = merged.fields.filter(field => 
+          Object.prototype.hasOwnProperty.call(baseProperties, field.name)
+        );
+      }
+
+      // Update the schema property
+      if (strategy !== 'override') {
+        merged.schema = baseSchema;
+      }
+
+    } catch (error) {
+      console.warn('Schema merging failed:', error);
+    }
+
+    return merged;
+  }
+
+  /**
+   * Validates form definition code with AI-friendly error suggestions
+   * @param code - The form definition code to validate
+   * @returns Validation result with detailed errors and suggestions
+   */
+  static validateWithSuggestions(code: string): ValidationWithSuggestionsResult {
+    const errors: EnhancedParserError[] = [];
+    const suggestions: string[] = [];
+
+    try {
+      // Attempt to parse the code
+      this.parse(code);
+      return { isValid: true, errors: [], suggestions: [] };
+    } catch (error) {
+      let errorType: EnhancedParserError['type'] = 'syntax';
+      let message = 'Unknown parsing error';
+      let suggestion = '';
+      let examples: string[] = [];
+
+      if (error instanceof Error) {
+        message = error.message;
+        
+        // Analyze error types and provide specific suggestions
+        if (message.includes('Invalid syntax') || message.includes('JSON.parse')) {
+          errorType = 'syntax';
+          suggestion = 'Check for missing quotes around object keys or trailing commas';
+          examples = [
+            '{ "name": "field1", "type": "text" }',
+            '{ fields: [{ name: "field1", type: "text" }] }'
+          ];
+          suggestions.push('Use double quotes around object keys');
+          suggestions.push('Remove trailing commas before closing brackets');
+        } else if (message.includes('invalid type')) {
+          errorType = 'field_type';
+          suggestion = `Use one of the supported field types: ${this.ALLOWED_FIELD_TYPES.join(', ')}`;
+          examples = [
+            '{ name: "email", type: "email" }',
+            '{ name: "age", type: "number" }'
+          ];
+          suggestions.push('Check field type spelling');
+          suggestions.push('Refer to supported field types list');
+        } else if (message.includes('must have')) {
+          errorType = 'validation';
+          suggestion = 'Ensure all required properties are present';
+          examples = [
+            '{ name: "required-field", type: "text", label: "Required Field" }'
+          ];
+          suggestions.push('Add missing required properties: name, type');
+        } else if (message.includes('schema')) {
+          errorType = 'schema';
+          suggestion = 'Check Zod schema syntax and structure';
+          examples = [
+            'schema: z.object({ name: z.string(), email: z.string().email() })'
+          ];
+          suggestions.push('Verify Zod schema syntax');
+        }
+      }
+
+      errors.push({
+        type: errorType,
+        message,
+        suggestion,
+        examples,
+        location: this.extractErrorLocation(code, error)
+      });
+
+      // Add general suggestions
+      suggestions.push('Validate JSON syntax using a JSON validator');
+      suggestions.push('Check for balanced parentheses and brackets');
+      suggestions.push('Ensure all string values are properly quoted');
+
+      return { isValid: false, errors, suggestions };
+    }
+  }
+
+  /**
+   * Infers Zod type from a field configuration
+   * @private
+   */
+  private static inferZodTypeFromField(field: ParsedFieldConfig): string | null {
+    const typeMapping: Record<string, string> = {
+      'text': 'z.string()',
+      'email': 'z.string().email()',
+      'password': 'z.string().min(1)',
+      'url': 'z.string().url()',
+      'tel': 'z.string()',
+      'textarea': 'z.string()',
+      'number': 'z.number()',
+      'date': 'z.string().datetime()',
+      'checkbox': 'z.boolean()',
+      'switch': 'z.boolean()',
+      'select': 'z.string()',
+      'radio': 'z.string()',
+      'multiSelect': 'z.array(z.string())',
+      'file': 'z.instanceof(File)',
+      'slider': 'z.number()',
+      'rating': 'z.number()',
+      'phone': 'z.string()',
+      'colorPicker': 'z.string()',
+      'location': 'z.object({ lat: z.number(), lng: z.number() })',
+      'duration': 'z.number()',
+      'autocomplete': 'z.string()',
+      'masked': 'z.string()',
+      'array': 'z.array(z.unknown())',
+      'object': 'z.object({})'
+    };
+
+    let baseType = typeMapping[field.type];
+    if (!baseType) return null;
+
+    // Add validation constraints
+    if (field.type === 'text' || field.type === 'textarea') {
+      if (field.min && field.max) {
+        baseType = baseType.replace('z.string()', `z.string().min(${field.min}).max(${field.max})`);
+      } else if (field.min) {
+        baseType = baseType.replace('z.string()', `z.string().min(${field.min})`);
+      } else if (field.max) {
+        baseType = baseType.replace('z.string()', `z.string().max(${field.max})`);
+      }
+    }
+
+    if (field.type === 'number' || field.type === 'slider') {
+      if (field.min && field.max) {
+        baseType = baseType.replace('z.number()', `z.number().min(${field.min}).max(${field.max})`);
+      } else if (field.min) {
+        baseType = baseType.replace('z.number()', `z.number().min(${field.min})`);
+      } else if (field.max) {
+        baseType = baseType.replace('z.number()', `z.number().max(${field.max})`);
+      }
+    }
+
+    // Handle required/optional
+    if (field.required === false) {
+      baseType += '.optional()';
+    }
+
+    return baseType;
+  }
+
+  /**
+   * Creates a field configuration from a schema definition
+   * @private
+   */
+  private static createFieldFromSchema(name: string, schema: unknown): ParsedFieldConfig | null {
+    // Basic implementation - would need more sophisticated schema analysis
+    try {
+      const schemaObj = schema as Record<string, unknown>;
+      let type = 'text'; // default
+
+      // Very basic type inference from schema structure
+      if (schemaObj.type === 'string') {
+        type = 'text';
+      } else if (schemaObj.type === 'number') {
+        type = 'number';
+      } else if (schemaObj.type === 'boolean') {
+        type = 'checkbox';
+      }
+
+      return {
+        name,
+        type,
+        label: name.charAt(0).toUpperCase() + name.slice(1).replace(/([A-Z])/g, ' $1')
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Extracts error location information from parsing error
+   * @private
+   */
+  private static extractErrorLocation(code: string, error: unknown): EnhancedParserError['location'] | undefined {
+    try {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      // Try to extract line/column info from JSON parse errors
+      const positionMatch = errorMessage.match(/at position (\d+)/i);
+      if (positionMatch) {
+        const position = parseInt(positionMatch[1], 10);
+        const lines = code.substring(0, position).split('\n');
+        return {
+          line: lines.length,
+          column: lines[lines.length - 1].length + 1
+        };
+      }
+
+      // Try to extract field information from validation errors
+      const fieldMatch = errorMessage.match(/field at index (\d+)/i);
+      if (fieldMatch) {
+        return {
+          field: `field[${fieldMatch[1]}]`
+        };
+      }
+
+    } catch {
+      // Ignore extraction errors
+    }
+
+    return undefined;
   }
 }

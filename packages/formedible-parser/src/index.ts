@@ -11,7 +11,13 @@ export type {
   FieldOptions,
   ObjectConfig,
   PageConfig,
-  ProgressConfig
+  ProgressConfig,
+  // Phase 2: Enhanced types
+  EnhancedParserOptions,
+  EnhancedParserError,
+  SchemaInferenceOptions,
+  SchemaInferenceResult,
+  ValidationWithSuggestionsResult
 } from './components/formedible/parser/types';
 
 // Export version info
@@ -26,3 +32,14 @@ export const supportedFieldTypes = [
 ] as const;
 
 export type SupportedFieldType = typeof supportedFieldTypes[number];
+
+// Export parser configuration schema (Phase 2)
+export type { ParserConfig } from './lib/formedible/parser-config-schema';
+export { 
+  defaultParserConfig,
+  parserConfigFields,
+  parserConfigFormDefinition,
+  parserConfigSchemaDefinition,
+  validateParserConfig,
+  mergeParserConfig
+} from './lib/formedible/parser-config-schema';

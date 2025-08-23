@@ -62,3 +62,8 @@ FROM THE ROOT OF THE PROJECT !!! **ALWAYS**
 5. **WEB APP GETS EVERYTHING FROM PACKAGES** - Never create duplicate files in web app
 
 **IF YOU BREAK THESE RULES YOU ARE A FUCKING MORON AND NOT RESPECTING THE ARCHITECTURE**
+
+**YOU WILL NEVER**
+
+- add packages to a package.json file directly ! always use the package manager ! **ALWAYS**
+- remove existing functionalities unless explicitely allowed !
