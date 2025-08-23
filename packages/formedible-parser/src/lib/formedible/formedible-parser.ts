@@ -66,17 +66,39 @@ export class FormedibleParser {
     "radio",
   ] as const;
 
-  // Allowed top-level keys in form definitions
+  // Allowed top-level keys in form definitions - ALL formedible properties
   private static readonly ALLOWED_KEYS = [
     "schema",
     "fields",
     "pages",
+    "tabs",
+    "layout", 
     "progress",
     "submitLabel",
     "nextLabel",
     "previousLabel",
+    "collapseLabel",
+    "expandLabel",
     "formClassName",
     "fieldClassName",
+    "labelClassName",
+    "buttonClassName", 
+    "submitButtonClassName",
+    "submitButton",
+    "autoScroll",
+    "autoSubmitOnChange",
+    "autoSubmitDebounceMs",
+    "disabled",
+    "loading",
+    "resetOnSubmitSuccess",
+    "showSubmitButton",
+    "crossFieldValidation",
+    "asyncValidation",
+    "analytics",
+    "persistence",
+    "conditionalSections",
+    "defaultComponents",
+    "globalWrapper",
     "formOptions",
     "title",
     "description",
@@ -742,6 +764,136 @@ ${supportedTypes}
           if (value && typeof value === "object") {
             sanitized.formOptions = value as ParsedFormConfig["formOptions"];
           }
+          break;
+
+        case "layout":
+          if (value && typeof value === "object") {
+            sanitized.layout = value as ParsedFormConfig["layout"];
+          }
+          break;
+
+        case "tabs":
+          if (Array.isArray(value)) {
+            sanitized.tabs = value as ParsedFormConfig["tabs"];
+          }
+          break;
+
+        case "collapseLabel":
+          if (typeof value === "string") {
+            sanitized.collapseLabel = value;
+          }
+          break;
+
+        case "expandLabel":
+          if (typeof value === "string") {
+            sanitized.expandLabel = value;
+          }
+          break;
+
+        case "labelClassName":
+          if (typeof value === "string") {
+            sanitized.labelClassName = value;
+          }
+          break;
+
+        case "buttonClassName":
+          if (typeof value === "string") {
+            sanitized.buttonClassName = value;
+          }
+          break;
+
+        case "submitButtonClassName":
+          if (typeof value === "string") {
+            sanitized.submitButtonClassName = value;
+          }
+          break;
+
+        case "submitButton":
+          // Store as unknown - React component can't be JSON serialized
+          sanitized.submitButton = value;
+          break;
+
+        case "autoScroll":
+          if (typeof value === "boolean") {
+            sanitized.autoScroll = value;
+          }
+          break;
+
+        case "autoSubmitOnChange":
+          if (typeof value === "boolean") {
+            sanitized.autoSubmitOnChange = value;
+          }
+          break;
+
+        case "autoSubmitDebounceMs":
+          if (typeof value === "number") {
+            sanitized.autoSubmitDebounceMs = value;
+          }
+          break;
+
+        case "disabled":
+          if (typeof value === "boolean") {
+            sanitized.disabled = value;
+          }
+          break;
+
+        case "loading":
+          if (typeof value === "boolean") {
+            sanitized.loading = value;
+          }
+          break;
+
+        case "resetOnSubmitSuccess":
+          if (typeof value === "boolean") {
+            sanitized.resetOnSubmitSuccess = value;
+          }
+          break;
+
+        case "showSubmitButton":
+          if (typeof value === "boolean") {
+            sanitized.showSubmitButton = value;
+          }
+          break;
+
+        case "crossFieldValidation":
+          if (Array.isArray(value)) {
+            sanitized.crossFieldValidation = value;
+          }
+          break;
+
+        case "asyncValidation":
+          if (value && typeof value === "object") {
+            sanitized.asyncValidation = value;
+          }
+          break;
+
+        case "analytics":
+          if (value && typeof value === "object") {
+            sanitized.analytics = value;
+          }
+          break;
+
+        case "persistence":
+          if (value && typeof value === "object") {
+            sanitized.persistence = value;
+          }
+          break;
+
+        case "conditionalSections":
+          if (Array.isArray(value)) {
+            sanitized.conditionalSections = value;
+          }
+          break;
+
+        case "defaultComponents":
+          if (value && typeof value === "object") {
+            sanitized.defaultComponents = value;
+          }
+          break;
+
+        case "globalWrapper":
+          // Store as unknown - React component can't be JSON serialized
+          sanitized.globalWrapper = value;
           break;
       }
     }

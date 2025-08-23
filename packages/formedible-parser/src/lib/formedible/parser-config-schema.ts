@@ -558,7 +558,14 @@ ${selectedConfigFields.map((desc, index) => `${index + 1}. ${desc}`).join("\n")}
 - Follow the configured validation and parsing rules strictly
 - Generate forms that respect the maximum limits and nesting depth
 - Use the specified error message style and detail level
-- Apply the configured schema inference and merging strategies`;
+- Apply the configured schema inference and merging strategies
+
+## CRITICAL: Output Format Requirements
+- Generate CONFIGURATION OBJECTS for formedible, NOT executable code
+- Use this format: { fields: [...], formOptions: { defaultValues: {...} }, ... }
+- DO NOT include function implementations in onSubmit - use placeholder comments
+- DO NOT include validation strings like "z.string()" - use validation property objects
+- The parser expects a configuration object that will be passed to useFormedible hook`;
 
   // Add formatting guidelines
   if (config.includeTabFormatting || config.includePageFormatting) {

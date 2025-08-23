@@ -29,13 +29,43 @@ export interface ParsedFormConfig {
   schema?: unknown;
   fields: ParsedFieldConfig[];
   pages?: PageConfig[];
+  tabs?: Array<{
+    id: string;
+    label: string;
+    description?: string;
+  }>;
+  layout?: {
+    type?: 'grid' | 'flex' | 'tabs' | 'accordion' | 'stepper';
+    columns?: number;
+    gap?: 'sm' | 'md' | 'lg';
+  };
   title?: string;
   description?: string;
   submitLabel?: string;
   nextLabel?: string;
   previousLabel?: string;
+  collapseLabel?: string;
+  expandLabel?: string;
   formClassName?: string;
   fieldClassName?: string;
+  labelClassName?: string;
+  buttonClassName?: string;
+  submitButtonClassName?: string;
+  submitButton?: unknown; // React component
+  autoScroll?: boolean;
+  autoSubmitOnChange?: boolean;
+  autoSubmitDebounceMs?: number;
+  disabled?: boolean;
+  loading?: boolean;
+  resetOnSubmitSuccess?: boolean;
+  showSubmitButton?: boolean;
+  crossFieldValidation?: unknown[];
+  asyncValidation?: Record<string, unknown>;
+  analytics?: Record<string, unknown>;
+  persistence?: Record<string, unknown>;
+  conditionalSections?: unknown[];
+  defaultComponents?: Record<string, unknown>;
+  globalWrapper?: unknown; // React component
   progress?: ProgressConfig;
   formOptions?: {
     defaultValues?: Record<string, unknown>;
