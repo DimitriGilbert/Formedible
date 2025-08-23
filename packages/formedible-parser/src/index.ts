@@ -62,4 +62,5 @@ export {
   parserConfigSchemaDefinition,
   validateParserConfig,
   mergeParserConfig,
+  generateSystemPrompt,
 } from "./lib/formedible/parser-config-schema";

@@ -12,7 +12,7 @@ import {
   mergeParserConfig,
   generateSystemPrompt,
   type ParserConfig 
-} from "@/lib/parser-config";
+} from "@/lib/formedible/parser-config-schema";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Info, Save, RotateCcw, Copy, Check } from "lucide-react";
 

@@ -104,11 +104,6 @@
           "path": "src/lib/form-extraction-utils.ts",
           "type": "registry:lib",
           "target": "lib/form-extraction-utils.ts"
-        },
-        {
-          "path": "src/lib/parser-config.ts",
-          "type": "registry:lib",
-          "target": "lib/parser-config.ts"
         }
       ]
     }
