@@ -1,6 +1,6 @@
 "use client";
 
-// Import and re-export types from formedible to stay DRY
+// Import ALL types from main formedible package to eliminate duplicates
 import type { 
   FieldConfig,
   DynamicText,
@@ -8,7 +8,30 @@ import type {
   FieldOptions,
   ObjectConfig,
   PageConfig,
-  ProgressConfig
+  ProgressConfig,
+  UseFormedibleOptions,
+  LayoutConfig,
+  ConditionalSection,
+  FormAnalytics,
+  CrossFieldValidation,
+  AsyncValidation,
+  // Field-specific configs
+  TextareaConfig,
+  PasswordConfig,
+  EmailConfig,
+  NumberConfig,
+  MultiSelectConfig,
+  DateFieldProps,
+  SliderFieldProps,
+  FileUploadFieldProps,
+  LocationConfig,
+  DurationConfig,
+  AutocompleteConfig,
+  MaskedInputConfig,
+  ColorPickerFieldProps,
+  RatingFieldProps,
+  PhoneFieldProps,
+  ArrayFieldProps
 } from "./types";
 
 export type { 
@@ -18,31 +41,69 @@ export type {
   FieldOptions,
   ObjectConfig,
   PageConfig,
-  ProgressConfig
+  ProgressConfig,
+  UseFormedibleOptions,
+  LayoutConfig,
+  ConditionalSection,
+  FormAnalytics,
+  CrossFieldValidation,
+  AsyncValidation,
+  // Field-specific configs
+  TextareaConfig,
+  PasswordConfig,
+  EmailConfig,
+  NumberConfig,
+  MultiSelectConfig,
+  DateFieldProps,
+  SliderFieldProps,
+  FileUploadFieldProps,
+  LocationConfig,
+  DurationConfig,
+  AutocompleteConfig,
+  MaskedInputConfig,
+  ColorPickerFieldProps,
+  RatingFieldProps,
+  PhoneFieldProps,
+  ArrayFieldProps
 };
 
-// Just use FieldConfig directly - no need to redefine!
+// Use real FieldConfig from main formedible package - no duplicates!
 export type ParsedFieldConfig = FieldConfig;
 
 
-export interface ParsedFormConfig {
-  schema?: unknown;
-  fields: ParsedFieldConfig[];
-  pages?: PageConfig[];
-  title?: string;
-  description?: string;
-  submitLabel?: string;
-  nextLabel?: string;
-  previousLabel?: string;
-  formClassName?: string;
-  fieldClassName?: string;
-  progress?: ProgressConfig;
-  formOptions?: {
-    defaultValues?: Record<string, unknown>;
-    onSubmit?: (data: { value: Record<string, unknown> }) => void | Promise<void>;
-    [key: string]: unknown;
-  };
-}
+// Parser config - picks only the serializable parts of UseFormedibleOptions
+// Excludes functions and React components that can't be parsed from text
+export type ParsedFormConfig = Pick<UseFormedibleOptions<Record<string, unknown>>, 
+  | 'fields'
+  | 'schema' 
+  | 'pages'
+  | 'tabs'
+  | 'layout'
+  | 'progress'
+  | 'submitLabel'
+  | 'nextLabel' 
+  | 'previousLabel'
+  | 'collapseLabel'
+  | 'expandLabel'
+  | 'formClassName'
+  | 'fieldClassName'
+  | 'labelClassName'
+  | 'buttonClassName'
+  | 'submitButtonClassName'
+  | 'autoScroll'
+  | 'autoSubmitOnChange'
+  | 'autoSubmitDebounceMs'
+  | 'disabled'
+  | 'loading'
+  | 'resetOnSubmitSuccess'
+  | 'showSubmitButton'
+  | 'crossFieldValidation'
+  | 'asyncValidation'
+  | 'analytics'
+  | 'conditionalSections'
+  | 'persistence'
+  | 'formOptions'
+>;
 
 export interface ParserOptions {
   strictValidation?: boolean;

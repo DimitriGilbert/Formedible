@@ -1,8 +1,9 @@
 "use client";
 
+import { z } from 'zod';
 import type {
-  ParsedFieldConfig,
-  ParsedFormConfig,
+  UseFormedibleOptions,
+  FieldConfig,
   ParserOptions,
   ObjectConfig,
   ParserError,
@@ -66,20 +67,39 @@ export class FormedibleParser {
     "radio",
   ] as const;
 
-  // Allowed top-level keys in form definitions
+  // Allowed top-level keys in form definitions - configuration only, NO functions
   private static readonly ALLOWED_KEYS = [
-    "schema",
     "fields",
-    "pages",
-    "progress",
+    "schema",
+    "title",
+    "description",
     "submitLabel",
     "nextLabel",
     "previousLabel",
+    "collapseLabel",
+    "expandLabel",
     "formClassName",
     "fieldClassName",
+    "labelClassName",
+    "buttonClassName", 
+    "submitButtonClassName",
+    "autoScroll",
+    "pages",
+    "progress",
+    "tabs",
+    "autoSubmitOnChange",
+    "autoSubmitDebounceMs",
+    "disabled",
+    "loading",
+    "resetOnSubmitSuccess",
+    "showSubmitButton",
+    "crossFieldValidation",
+    "asyncValidation",
+    "analytics",
+    "layout",
+    "conditionalSections",
+    "persistence",
     "formOptions",
-    "title",
-    "description",
   ] as const;
 
   // Configuration for parser behavior
@@ -101,7 +121,7 @@ export class FormedibleParser {
   static parse(
     code: string,
     options?: ParserOptions | EnhancedParserOptions
-  ): ParsedFormConfig {
+  ): UseFormedibleOptions<Record<string, unknown>> {
     if (!code || typeof code !== "string") {
       throw this.createParserError(
         "Input code must be a non-empty string",
@@ -643,7 +663,7 @@ ${supportedTypes}
    */
   private static validateAndSanitize(
     obj: Record<string, unknown>
-  ): ParsedFormConfig {
+  ): UseFormedibleOptions<Record<string, unknown>> {
     if (typeof obj !== "object" || obj === null) {
       throw this.createParserError(
         "Definition must be an object",
@@ -651,7 +671,7 @@ ${supportedTypes}
       );
     }
 
-    const sanitized: ParsedFormConfig = {
+    const sanitized: UseFormedibleOptions<Record<string, unknown>> = {
       fields: [],
     };
 
@@ -669,7 +689,9 @@ ${supportedTypes}
       switch (key) {
         case "schema":
           // Pass through the schema - it's needed for validation
-          sanitized.schema = value;
+          if (value && typeof value === 'object') {
+            sanitized.schema = value as any;
+          }
           break;
 
         case "fields":
@@ -691,15 +713,10 @@ ${supportedTypes}
           break;
 
         case "title":
-          if (typeof value === "string") {
-            sanitized.title = value;
-          }
-          break;
-
         case "description":
-          if (typeof value === "string") {
-            sanitized.description = value;
-          }
+          // These aren't in UseFormedibleOptions but might be used by consuming apps
+          // Store them as additional properties
+          (sanitized as any)[key] = typeof value === "string" ? value : undefined;
           break;
 
         case "submitLabel":
@@ -734,15 +751,139 @@ ${supportedTypes}
 
         case "progress":
           if (value && typeof value === "object") {
-            sanitized.progress = value as ParsedFormConfig["progress"];
+            sanitized.progress = value as UseFormedibleOptions<Record<string, unknown>>["progress"];
           }
           break;
 
         case "formOptions":
           if (value && typeof value === "object") {
-            sanitized.formOptions = value as ParsedFormConfig["formOptions"];
+            sanitized.formOptions = value as UseFormedibleOptions<Record<string, unknown>>["formOptions"];
           }
           break;
+
+        case "layout":
+          if (value && typeof value === "object") {
+            sanitized.layout = value as UseFormedibleOptions<Record<string, unknown>>["layout"];
+          }
+          break;
+
+        case "tabs":
+          if (Array.isArray(value)) {
+            sanitized.tabs = value as UseFormedibleOptions<Record<string, unknown>>["tabs"];
+          }
+          break;
+
+        case "collapseLabel":
+          if (typeof value === "string") {
+            sanitized.collapseLabel = value;
+          }
+          break;
+
+        case "expandLabel":
+          if (typeof value === "string") {
+            sanitized.expandLabel = value;
+          }
+          break;
+
+        case "labelClassName":
+          if (typeof value === "string") {
+            sanitized.labelClassName = value;
+          }
+          break;
+
+        case "buttonClassName":
+          if (typeof value === "string") {
+            sanitized.buttonClassName = value;
+          }
+          break;
+
+        case "submitButtonClassName":
+          if (typeof value === "string") {
+            sanitized.submitButtonClassName = value;
+          }
+          break;
+
+        // Components and functions are not supported by parser - skipped
+
+        case "autoScroll":
+          if (typeof value === "boolean") {
+            sanitized.autoScroll = value;
+          }
+          break;
+
+        case "autoSubmitOnChange":
+          if (typeof value === "boolean") {
+            sanitized.autoSubmitOnChange = value;
+          }
+          break;
+
+        case "autoSubmitDebounceMs":
+          if (typeof value === "number") {
+            sanitized.autoSubmitDebounceMs = value;
+          }
+          break;
+
+        case "disabled":
+          if (typeof value === "boolean") {
+            sanitized.disabled = value;
+          }
+          break;
+
+        case "loading":
+          if (typeof value === "boolean") {
+            sanitized.loading = value;
+          }
+          break;
+
+        case "resetOnSubmitSuccess":
+          if (typeof value === "boolean") {
+            sanitized.resetOnSubmitSuccess = value;
+          }
+          break;
+
+        case "showSubmitButton":
+          if (typeof value === "boolean") {
+            sanitized.showSubmitButton = value;
+          }
+          break;
+
+        case "crossFieldValidation":
+          if (Array.isArray(value)) {
+            sanitized.crossFieldValidation = value;
+          }
+          break;
+
+        case "asyncValidation":
+          if (value && typeof value === "object") {
+            sanitized.asyncValidation = value as any;
+          }
+          break;
+
+        case "analytics":
+          if (value && typeof value === "object") {
+            sanitized.analytics = value as Record<string, unknown>;
+          }
+          break;
+
+        case "persistence":
+          if (value && typeof value === "object") {
+            sanitized.persistence = value as any;
+          }
+          break;
+
+        case "conditionalSections":
+          if (Array.isArray(value)) {
+            sanitized.conditionalSections = value;
+          }
+          break;
+
+        case "defaultComponents":
+          // Skip - components can't be parsed from text
+          break;
+
+        // Components and functions are not supported by parser - skipped
+
+        // All function handlers are not supported by parser - skipped
       }
     }
 
@@ -753,8 +894,8 @@ ${supportedTypes}
    * Enhanced field validation with support for all 24 field types
    * @private
    */
-  private static validateFields(fields: unknown[]): ParsedFieldConfig[] {
-    return fields.map((field, index): ParsedFieldConfig => {
+  private static validateFields(fields: unknown[]): FieldConfig[] {
+    return fields.map((field, index): FieldConfig => {
       if (typeof field !== "object" || field === null) {
         throw this.createParserError(
           `Field at index ${index} must be an object`,
@@ -796,7 +937,7 @@ ${supportedTypes}
       }
 
       // Build properly typed field config
-      const validatedField: ParsedFieldConfig = {
+      const validatedField: FieldConfig = {
         name: fieldObj.name,
         type: fieldObj.type,
       };
@@ -838,7 +979,7 @@ ${supportedTypes}
    * @private
    */
   private static addFieldSpecificConfigurations(
-    validatedField: ParsedFieldConfig,
+    validatedField: FieldConfig,
     fieldObj: Record<string, unknown>,
     index: number
   ): void {
@@ -946,7 +1087,7 @@ ${supportedTypes}
   private static validateArrayConfig(
     config: unknown,
     fieldIndex: number
-  ): ParsedFieldConfig["arrayConfig"] {
+  ): FieldConfig["arrayConfig"] {
     if (typeof config !== "object" || !config) {
       throw this.createParserError(
         `Array config at field index ${fieldIndex} must be an object`,
@@ -955,7 +1096,7 @@ ${supportedTypes}
     }
 
     const arrayConfig = config as Record<string, unknown>;
-    const validated: ParsedFieldConfig["arrayConfig"] = {
+    const validated: FieldConfig["arrayConfig"] = {
       itemType: "text",
     };
 
@@ -1072,13 +1213,13 @@ ${supportedTypes}
 
   private static validateMultiSelectConfig(
     config: unknown
-  ): ParsedFieldConfig["multiSelectConfig"] {
+  ): FieldConfig["multiSelectConfig"] {
     if (typeof config !== "object" || !config) {
       return undefined;
     }
 
     const multiSelectConfig = config as Record<string, unknown>;
-    const validated: NonNullable<ParsedFieldConfig["multiSelectConfig"]> = {};
+    const validated: NonNullable<FieldConfig["multiSelectConfig"]> = {};
 
     if (typeof multiSelectConfig.maxSelections === "number") {
       validated.maxSelections = multiSelectConfig.maxSelections;
@@ -1104,13 +1245,13 @@ ${supportedTypes}
 
   private static validateColorConfig(
     config: unknown
-  ): ParsedFieldConfig["colorConfig"] {
+  ): FieldConfig["colorConfig"] {
     if (typeof config !== "object" || !config) {
       return undefined;
     }
 
     const colorConfig = config as Record<string, unknown>;
-    const validated: NonNullable<ParsedFieldConfig["colorConfig"]> = {};
+    const validated: NonNullable<FieldConfig["colorConfig"]> = {};
 
     if (
       colorConfig.format &&
@@ -1136,13 +1277,13 @@ ${supportedTypes}
 
   private static validateRatingConfig(
     config: unknown
-  ): ParsedFieldConfig["ratingConfig"] {
+  ): FieldConfig["ratingConfig"] {
     if (typeof config !== "object" || !config) {
       return undefined;
     }
 
     const ratingConfig = config as Record<string, unknown>;
-    const validated: NonNullable<ParsedFieldConfig["ratingConfig"]> = {};
+    const validated: NonNullable<FieldConfig["ratingConfig"]> = {};
 
     if (typeof ratingConfig.max === "number") {
       validated.max = ratingConfig.max;
@@ -1181,13 +1322,13 @@ ${supportedTypes}
 
   private static validatePhoneConfig(
     config: unknown
-  ): ParsedFieldConfig["phoneConfig"] {
+  ): FieldConfig["phoneConfig"] {
     if (typeof config !== "object" || !config) {
       return undefined;
     }
 
     const phoneConfig = config as Record<string, unknown>;
-    const validated: NonNullable<ParsedFieldConfig["phoneConfig"]> = {};
+    const validated: NonNullable<FieldConfig["phoneConfig"]> = {};
 
     if (
       phoneConfig.defaultCountry &&
@@ -1218,13 +1359,13 @@ ${supportedTypes}
 
   private static validateDatalistConfig(
     config: unknown
-  ): ParsedFieldConfig["datalist"] {
+  ): FieldConfig["datalist"] {
     if (typeof config !== "object" || !config) {
       return undefined;
     }
 
     const datalistConfig = config as Record<string, unknown>;
-    const validated: NonNullable<ParsedFieldConfig["datalist"]> = {};
+    const validated: NonNullable<FieldConfig["datalist"]> = {};
 
     if (Array.isArray(datalistConfig.options)) {
       validated.options = datalistConfig.options.filter(
@@ -1301,7 +1442,7 @@ ${supportedTypes}
       try {
         const schemaBuilder: Record<string, string> = {};
 
-        for (const field of config.fields) {
+        for (const field of config.fields || []) {
           const zodType = this.inferZodTypeFromField(field);
           if (zodType) {
             schemaBuilder[field.name] = zodType;
@@ -1338,10 +1479,10 @@ ${supportedTypes}
    * @returns Enhanced form configuration
    */
   static mergeSchemas(
-    parsedConfig: ParsedFormConfig,
+    parsedConfig: UseFormedibleOptions<Record<string, unknown>>,
     baseSchema: unknown,
     strategy: "extend" | "override" | "intersect" = "extend"
-  ): ParsedFormConfig {
+  ): UseFormedibleOptions<Record<string, unknown>> {
     const merged = { ...parsedConfig };
 
     if (!baseSchema || typeof baseSchema !== "object") {
@@ -1354,7 +1495,7 @@ ${supportedTypes}
 
       if (strategy === "extend" && baseSchemaObj.properties) {
         // Add missing fields from base schema
-        const existingFieldNames = new Set(merged.fields.map((f) => f.name));
+        const existingFieldNames = new Set((merged.fields || []).map((f) => f.name));
         const baseProperties = baseSchemaObj.properties as Record<
           string,
           unknown
@@ -1366,26 +1507,29 @@ ${supportedTypes}
               fieldName,
               fieldSchema
             );
-            if (inferredField) {
+            if (inferredField && merged.fields) {
               merged.fields.push(inferredField);
             }
           }
         }
       } else if (strategy === "override") {
         // Override existing schema completely
-        merged.schema = baseSchema;
+        if (baseSchema && typeof baseSchema === 'object' && '_def' in baseSchema) {
+          // Check if it's a Zod schema by looking for the _def property
+          merged.schema = baseSchema as z.ZodSchema<Record<string, unknown>>;
+        }
       } else if (strategy === "intersect") {
         // Keep only fields that exist in both
         const baseProperties =
           (baseSchemaObj.properties as Record<string, unknown>) || {};
-        merged.fields = merged.fields.filter((field) =>
+        merged.fields = (merged.fields || []).filter((field) =>
           Object.prototype.hasOwnProperty.call(baseProperties, field.name)
         );
       }
 
-      // Update the schema property
-      if (strategy !== "override") {
-        merged.schema = baseSchema;
+      // Update the schema property only if it's actually a Zod schema
+      if (strategy !== "override" && baseSchema && typeof baseSchema === 'object' && '_def' in baseSchema) {
+        merged.schema = baseSchema as z.ZodSchema<Record<string, unknown>>;
       }
     } catch (error) {
       console.warn("Schema merging failed:", error);
@@ -1482,7 +1626,7 @@ ${supportedTypes}
    * @private
    */
   private static inferZodTypeFromField(
-    field: ParsedFieldConfig
+    field: FieldConfig
   ): string | null {
     const typeMapping: Record<string, string> = {
       text: "z.string()",
@@ -1568,7 +1712,7 @@ ${supportedTypes}
   private static createFieldFromSchema(
     name: string,
     schema: unknown
-  ): ParsedFieldConfig | null {
+  ): FieldConfig | null {
     // Basic implementation - would need more sophisticated schema analysis
     try {
       const schemaObj = schema as Record<string, unknown>;
@@ -1634,4 +1778,4 @@ ${supportedTypes}
 }
 
 // Export types for external use
-export type { ParsedFormConfig, ParsedFieldConfig, ParserOptions, ObjectConfig, ParserError, PageConfig };
+export type { UseFormedibleOptions, FieldConfig, ParserOptions, ObjectConfig, ParserError, PageConfig };

@@ -31,6 +31,11 @@
           "target": "lib/formedible/parser-types.ts"
         },
         {
+          "path": "src/lib/formedible/types.ts",
+          "type": "registry:lib",
+          "target": "lib/formedible/types.ts"
+        },
+        {
           "path": "src/lib/formedible/parser-config-schema.ts",
           "type": "registry:lib",
           "target": "lib/formedible/parser-config-schema.ts"

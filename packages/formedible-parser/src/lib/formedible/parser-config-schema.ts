@@ -560,12 +560,17 @@ ${selectedConfigFields.map((desc, index) => `${index + 1}. ${desc}`).join("\n")}
 - Use the specified error message style and detail level
 - Apply the configured schema inference and merging strategies
 
-## CRITICAL: Output Format Requirements
+## CRITICAL: Formedible Library Compliance
 - Generate CONFIGURATION OBJECTS for formedible, NOT executable code
 - Use this format: { fields: [...], formOptions: { defaultValues: {...} }, ... }
 - DO NOT include function implementations in onSubmit - use placeholder comments
-- DO NOT include validation strings like "z.string()" - use validation property objects
-- The parser expects a configuration object that will be passed to useFormedible hook`;
+- DO NOT include validation strings like "z.string()" - validation is handled by the schema
+- DO NOT use 'condition' property - conditional fields are not supported in parser mode
+- DO NOT use string schemas like 'schema: "z.object(...)"' - omit schema property or use actual Zod objects  
+- Use proper field config properties: min/max directly on fields, not in config objects for basic types
+- AVOID conditional fields entirely - parser cannot handle function strings in JSON format
+- For object fields, use proper objectConfig with nested fields array
+- Respect UseFormedibleOptions interface: title, description, fields, formOptions, submitLabel, etc.`;
 
   // Add formatting guidelines
   if (config.includeTabFormatting || config.includePageFormatting) {
@@ -599,32 +604,29 @@ ${selectedConfigFields.map((desc, index) => `${index + 1}. ${desc}`).join("\n")}
         type: "text",
         label: "Full Name",
         placeholder: "Enter your full name",
-        required: true,
-        validation: "z.string().min(2, 'Name must be at least 2 characters')"
+        required: true
       },
       {
         name: "email",
         type: "email", 
         label: "Email Address",
         placeholder: "your@email.com",
-        required: true,
-        validation: "z.string().email('Please enter a valid email address')"
+        required: true
       },
       {
         name: "password",
         type: "password",
         label: "Password",
         required: true,
-        passwordConfig: { showToggle: true, strengthMeter: true },
-        validation: "z.string().min(8, 'Password must be at least 8 characters')"
+        passwordConfig: { showToggle: true, strengthMeter: true }
       },
       {
         name: "age",
         type: "number",
         label: "Age",
         required: true,
-        numberConfig: { min: 18, max: 120, allowNegative: false },
-        validation: "z.number().min(18, 'Must be at least 18 years old').max(120)"
+        min: 18,
+        max: 120
       },
       {
         name: "country",
@@ -636,8 +638,7 @@ ${selectedConfigFields.map((desc, index) => `${index + 1}. ${desc}`).join("\n")}
           { value: "uk", label: "United Kingdom" },
           { value: "ca", label: "Canada" },
           { value: "au", label: "Australia" }
-        ],
-        validation: "z.enum(['us', 'uk', 'ca', 'au'])"
+        ]
       },
       {
         name: "newsletter",
@@ -646,7 +647,6 @@ ${selectedConfigFields.map((desc, index) => `${index + 1}. ${desc}`).join("\n")}
         description: "Receive updates about new features and promotions"
       }
     ],
-    schema: "z.object({ fullName: z.string().min(2), email: z.string().email(), password: z.string().min(8), age: z.number().min(18).max(120), country: z.enum(['us', 'uk', 'ca', 'au']), newsletter: z.boolean().optional() })",
     formOptions: {
       defaultValues: {
         fullName: "",
@@ -655,9 +655,8 @@ ${selectedConfigFields.map((desc, index) => `${index + 1}. ${desc}`).join("\n")}
         age: 18,
         country: "",
         newsletter: false
-      },
-      onSubmit: "async ({ value }) => { console.log('Registration data:', value); await submitRegistration(value); }",
-      onSubmitInvalid: "({ errors }) => { console.log('Validation errors:', errors); }"
+      }
+      // onSubmit, onSubmitInvalid handlers will be provided by the application
     },
     submitLabel: "Create Account",
     layout: {
@@ -691,7 +690,6 @@ ${selectedConfigFields.map((desc, index) => `${index + 1}. ${desc}`).join("\n")}
           required: true,
           page: 1,
           tab: "basic",
-          validation: "z.string().min(1, 'First name is required')"
         },
         {
           name: "lastName", 
@@ -700,7 +698,6 @@ ${selectedConfigFields.map((desc, index) => `${index + 1}. ${desc}`).join("\n")}
           required: true,
           page: 1,
           tab: "basic",
-          validation: "z.string().min(1, 'Last name is required')"
         },
         {
           name: "email",
@@ -709,7 +706,6 @@ ${selectedConfigFields.map((desc, index) => `${index + 1}. ${desc}`).join("\n")}
           required: true,
           page: 1,
           tab: "basic",
-          validation: "z.string().email('Invalid email address')"
         },
         {
           name: "address",
@@ -756,7 +752,7 @@ ${selectedConfigFields.map((desc, index) => `${index + 1}. ${desc}`).join("\n")}
           notifications: true,
           theme: "auto"
         },
-        onSubmit: "async ({ value }) => { console.log('Profile setup complete:', value); await saveProfile(value); }"
+        // onSubmit handler will be provided by the application
       },
       nextLabel: "Continue",
       previousLabel: "Back",
@@ -780,16 +776,14 @@ ${selectedConfigFields.map((desc, index) => `${index + 1}. ${desc}`).join("\n")}
           label: "Full Name",
           required: true,
           tab: "personal",
-          validation: "z.string().min(2, 'Name must be at least 2 characters')"
-        },
+          },
         {
           name: "email",
           type: "email",
           label: "Email Address",
           required: true,
           tab: "personal",
-          validation: "z.string().email('Please enter a valid email')"
-        },
+          },
         {
           name: "phone",
           type: "phone",
@@ -803,8 +797,7 @@ ${selectedConfigFields.map((desc, index) => `${index + 1}. ${desc}`).join("\n")}
           label: "Project Title",
           required: true,
           tab: "project",
-          validation: "z.string().min(5, 'Project title must be at least 5 characters')"
-        },
+          },
         {
           name: "projectDescription",
           type: "textarea",
@@ -812,8 +805,7 @@ ${selectedConfigFields.map((desc, index) => `${index + 1}. ${desc}`).join("\n")}
           required: true,
           tab: "project",
           textareaConfig: { rows: 6, maxLength: 1000, showWordCount: true },
-          validation: "z.string().min(50, 'Description must be at least 50 characters')"
-        },
+          },
         {
           name: "budget",
           type: "select",
@@ -855,7 +847,7 @@ ${selectedConfigFields.map((desc, index) => `${index + 1}. ${desc}`).join("\n")}
           yearsExperience: 0,
           skills: []
         },
-        onSubmit: "async ({ value }) => { console.log('Application submitted:', value); await submitApplication(value); }"
+        // onSubmit handler will be provided by the application
       },
       submitLabel: "Submit Application"
     };
@@ -879,16 +871,14 @@ ${selectedConfigFields.map((desc, index) => `${index + 1}. ${desc}`).join("\n")}
           required: true,
           page: 1,
           placeholder: "Choose a unique username",
-          validation: "z.string().min(3, 'Username must be at least 3 characters')"
-        },
+          },
         {
           name: "email",
           type: "email",
           label: "Email Address",
           required: true,
           page: 1,
-          validation: "z.string().email('Please enter a valid email address')"
-        },
+          },
         {
           name: "password",
           type: "password",
@@ -896,15 +886,13 @@ ${selectedConfigFields.map((desc, index) => `${index + 1}. ${desc}`).join("\n")}
           required: true,
           page: 1,
           passwordConfig: { showToggle: true, strengthMeter: true },
-          validation: "z.string().min(8, 'Password must be at least 8 characters')"
-        },
+          },
         {
           name: "firstName",
           type: "text",
           label: "First Name",
           required: true,
           page: 2,
-          validation: "z.string().min(1, 'First name is required')"
         },
         {
           name: "lastName",
@@ -912,7 +900,6 @@ ${selectedConfigFields.map((desc, index) => `${index + 1}. ${desc}`).join("\n")}
           label: "Last Name",
           required: true,
           page: 2,
-          validation: "z.string().min(1, 'Last name is required')"
         },
         {
           name: "birthDate",
@@ -945,8 +932,7 @@ ${selectedConfigFields.map((desc, index) => `${index + 1}. ${desc}`).join("\n")}
             { value: "fr", label: "French" },
             { value: "de", label: "German" }
           ],
-          validation: "z.enum(['en', 'es', 'fr', 'de'])"
-        },
+          },
         {
           name: "interests",
           type: "multiSelect",
@@ -970,7 +956,7 @@ ${selectedConfigFields.map((desc, index) => `${index + 1}. ${desc}`).join("\n")}
           language: "en",
           interests: []
         },
-        onSubmit: "async ({ value }) => { console.log('Onboarding complete:', value); await completeOnboarding(value); }"
+        // onSubmit handler will be provided by the application
       },
       nextLabel: "Continue",
       previousLabel: "Back",

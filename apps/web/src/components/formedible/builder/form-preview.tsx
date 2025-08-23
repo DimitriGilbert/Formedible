@@ -6,12 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { ParsedFormConfig } from '@/lib/formedible/parser-types';
+import type { UseFormedibleOptions } from '@/lib/formedible/parser-types';
 
 // Remove duplicate interface - using FormConfiguration from form-preview-base.tsx
 
 interface FormPreviewProps {
-  config: ParsedFormConfig;
+  config: UseFormedibleOptions<Record<string, unknown>>;
   className?: string;
 }
 
@@ -19,9 +19,11 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
   config,
   className,
 }) => {
+  const fields = config.fields || [];
+
   // Convert form configuration to formedible configuration
   const formedibleConfig = useMemo(() => {
-    if (config.fields.length === 0) {
+    if (fields.length === 0) {
       return {
         fields: [],
         schema: z.object({})
@@ -31,7 +33,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
     try {
       const schemaFields: Record<string, any> = {};
 
-      config.fields.forEach((field) => {
+      fields.forEach((field) => {
         let fieldSchema: z.ZodTypeAny;
 
         switch (field.type) {
@@ -77,7 +79,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
 
       return {
         schema: z.object(schemaFields),
-        fields: config.fields.map((field) => {
+        fields: fields.map((field) => {
           const mappedField: any = {
             name: field.name,
             type: field.type,
@@ -147,14 +149,14 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
         schema: z.object({})
       };
     }
-  }, [config]);
+  }, [fields, config]);
 
   // Create the form using formedible - call hook at top level
   const formResult = useFormedible(formedibleConfig);
 
   // Handle configuration errors or empty fields
-  if (!formResult || !formResult.Form || config.fields.length === 0) {
-    if (config.fields.length === 0) {
+  if (!formResult || !formResult.Form || fields.length === 0) {
+    if (fields.length === 0) {
       return (
         <Card className={cn("bg-muted/30", className)}>
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
@@ -196,7 +198,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
             )}
           </div>
           <div className="text-sm text-muted-foreground">
-            {config.fields.length} field{config.fields.length !== 1 ? 's' : ''}
+            {fields.length} field{fields.length !== 1 ? 's' : ''}
             {(config.pages && config.pages.length > 1) && ` • ${config.pages.length} pages`}
           </div>
         </CardTitle>
@@ -206,7 +208,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
           {/* Form stats */}
           <div className={`grid gap-2 p-1.5 bg-muted/50 border rounded-lg ${(config.pages && config.pages.length > 1) ? 'grid-cols-3' : 'grid-cols-2'}`}>
             <div className="text-center">
-              <div className="text-2xl font-bold text-primary">{config.fields.length}</div>
+              <div className="text-2xl font-bold text-primary">{fields.length}</div>
               <div className="text-xs text-muted-foreground">Fields</div>
             </div>
             {(config.pages && config.pages.length > 1) && (
@@ -217,7 +219,7 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
             )}
             <div className="text-center">
               <div className="text-2xl font-bold text-primary">
-                {config.fields.filter(f => f.required).length}
+                {fields.filter(f => f.required).length}
               </div>
               <div className="text-xs text-muted-foreground">Required</div>
             </div>
@@ -235,8 +237,8 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
           <div className="space-y-1">
             <h4 className="text-sm font-medium text-muted-foreground">Field Types Used</h4>
             <div className="flex flex-wrap gap-2">
-              {Array.from(new Set(config.fields.map(f => f.type))).map(type => {
-                const count = config.fields.filter(f => f.type === type).length;
+              {Array.from(new Set(fields.map(f => f.type))).map(type => {
+                const count = fields.filter(f => f.type === type).length;
                 const icons: Record<string, string> = {
                   text: '📝', email: '📧', password: '🔒', textarea: '📄',
                   number: '🔢', select: '📋', radio: '⚪', multiSelect: '☑️',
@@ -264,29 +266,29 @@ export const FormPreview: React.FC<FormPreviewProps> = ({
           </div>
 
           {/* Advanced features used */}
-          {(config.fields.some(f => f.section) || 
-            config.fields.some(f => f.group) ||
-            config.fields.some(f => f.help) ||
-            config.fields.some(f => (f as any).inlineValidationEnabled)) && (
+          {(fields.some(f => f.section) || 
+            fields.some(f => f.group) ||
+            fields.some(f => f.help) ||
+            fields.some(f => (f as any).inlineValidationEnabled)) && (
             <div className="space-y-1">
               <h4 className="text-sm font-medium text-muted-foreground">Advanced Features</h4>
               <div className="flex flex-wrap gap-2">
-                {config.fields.some(f => f.section) && (
+                {fields.some(f => f.section) && (
                   <div className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded text-xs">
                     📑 Sections
                   </div>
                 )}
-                {config.fields.some(f => f.group) && (
+                {fields.some(f => f.group) && (
                   <div className="inline-flex items-center gap-1 px-2 py-1 bg-accent/10 text-accent rounded text-xs">
                     🏷️ Field Groups
                   </div>
                 )}
-                {config.fields.some(f => f.help) && (
+                {fields.some(f => f.help) && (
                   <div className="inline-flex items-center gap-1 px-2 py-1 bg-secondary/50 text-foreground rounded text-xs">
                     ❓ Help & Tooltips
                   </div>
                 )}
-                {config.fields.some(f => f.inlineValidation && typeof f.inlineValidation === 'object' && (f.inlineValidation as any).enabled) && (
+                {fields.some(f => f.inlineValidation && typeof f.inlineValidation === 'object' && (f.inlineValidation as any).enabled) && (
                   <div className="inline-flex items-center gap-1 px-2 py-1 bg-muted text-muted-foreground rounded text-xs">
                     ⚡ Inline Validation
                   </div>

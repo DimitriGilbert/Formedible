@@ -4,11 +4,11 @@ import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PreviewControls } from "./preview-controls";
-import { FormedibleParser, type ParsedFormConfig, type ParsedFieldConfig } from "@/lib/formedible/formedible-parser";
+import { FormedibleParser, type UseFormedibleOptions, type FieldConfig } from "@/lib/formedible/formedible-parser";
 import { Eye, AlertCircle, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Use formedible's ParsedFormConfig directly - no more DRY violations!
+// Use formedible's UseFormedibleOptions directly - no more DRY violations!
 
 export interface FormPreviewBaseProps {
   formCode?: string;
@@ -28,7 +28,7 @@ export function FormPreviewBase({
   emptyStateMessage = "No form generated yet. The preview will appear here once a form is created."
 }: FormPreviewBaseProps) {
   
-  const parsedConfig = useMemo<ParsedFormConfig | null>(() => {
+  const parsedConfig = useMemo<UseFormedibleOptions<Record<string, unknown>> | null>(() => {
     if (!formCode) return null;
     
     try {
@@ -37,12 +37,11 @@ export function FormPreviewBase({
         codePreview: formCode.substring(0, 200) + '...'
       });
       
-      const parsed: ParsedFormConfig = FormedibleParser.parse(formCode);
+      const parsed: UseFormedibleOptions<Record<string, unknown>> = FormedibleParser.parse(formCode);
       
       console.log('Successfully parsed form config:', {
-        fieldsCount: parsed.fields.length,
-        hasSchema: !!parsed.schema,
-        title: parsed.title
+        fieldsCount: parsed.fields?.length || 0,
+        hasSchema: !!parsed.schema
       });
       
       // Return the parsed config directly - no conversion needed!

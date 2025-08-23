@@ -949,6 +949,8 @@ export interface SectionRendererProps {
 export interface UseFormedibleOptions<TFormValues> {
   fields?: FieldConfig[];
   schema?: z.ZodSchema<TFormValues>;
+  title?: string;
+  description?: string;
   submitLabel?: string;
   nextLabel?: string;
   previousLabel?: string;
