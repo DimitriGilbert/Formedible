@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { ParsedFormConfig } from './formedible-parser';
+import type { ParsedFormConfig } from '@/lib/formedible/parser-types';
 
 // Remove duplicate interface - using FormConfiguration from form-preview-base.tsx
 

@@ -21,14 +21,19 @@
       ],
       "files": [
         {
-          "path": "src/components/formedible/parser/formedible-parser.tsx",
-          "type": "registry:component",
-          "target": "components/formedible/parser/formedible-parser.tsx"
+          "path": "src/lib/formedible/formedible-parser.ts",
+          "type": "registry:lib",
+          "target": "lib/formedible/formedible-parser.ts"
         },
         {
-          "path": "src/components/formedible/parser/types.ts",
+          "path": "src/lib/formedible/parser-types.ts",
           "type": "registry:lib",
-          "target": "components/formedible/parser/types.ts"
+          "target": "lib/formedible/parser-types.ts"
+        },
+        {
+          "path": "src/lib/formedible/parser-config-schema.ts",
+          "type": "registry:lib",
+          "target": "lib/formedible/parser-config-schema.ts"
         },
         {
           "path": "src/lib/utils.ts",

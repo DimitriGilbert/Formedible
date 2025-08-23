@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Monitor, Tablet, Smartphone, Code, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FormPreview } from "./form-preview";
-import type { ParsedFormConfig } from "./formedible-parser";
+import type { ParsedFormConfig } from "@/lib/formedible/parser-types";
 
 export type PreviewMode = "desktop" | "tablet" | "mobile";
 export type ViewMode = "preview" | "code";

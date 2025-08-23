@@ -4,8 +4,7 @@ import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PreviewControls } from "./preview-controls";
-import { FormedibleParser } from "../parser/formedible-parser";
-import type { ParsedFormConfig, ParsedFieldConfig } from "../parser/types";
+import { FormedibleParser, type ParsedFormConfig, type ParsedFieldConfig } from "@/lib/formedible/formedible-parser";
 import { Eye, AlertCircle, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 

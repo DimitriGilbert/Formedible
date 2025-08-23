@@ -1,10 +1,10 @@
 // Export the main parser class
-export { FormedibleParser } from './components/formedible/parser/formedible-parser';
+export { FormedibleParser } from "./lib/formedible/formedible-parser";
 
 // Export all types
-export type { 
-  ParsedFormConfig, 
-  ParsedFieldConfig, 
+export type {
+  ParsedFormConfig,
+  ParsedFieldConfig,
   ParserOptions,
   ParserError,
   FieldOption,
@@ -17,29 +17,49 @@ export type {
   EnhancedParserError,
   SchemaInferenceOptions,
   SchemaInferenceResult,
-  ValidationWithSuggestionsResult
-} from './components/formedible/parser/types';
+  ValidationWithSuggestionsResult,
+} from "./lib/formedible/parser-types";
 
 // Export version info
-export const version = '0.1.0';
+export const version = "0.1.0";
 
 // Export compatibility info
 export const supportedFieldTypes = [
-  'text', 'email', 'password', 'url', 'tel', 'textarea', 'select', 
-  'checkbox', 'switch', 'number', 'date', 'slider', 'file', 'rating',
-  'phone', 'colorPicker', 'location', 'duration', 'multiSelect',
-  'autocomplete', 'masked', 'object', 'array', 'radio'
+  "text",
+  "email",
+  "password",
+  "url",
+  "tel",
+  "textarea",
+  "select",
+  "checkbox",
+  "switch",
+  "number",
+  "date",
+  "slider",
+  "file",
+  "rating",
+  "phone",
+  "colorPicker",
+  "location",
+  "duration",
+  "multiSelect",
+  "autocomplete",
+  "masked",
+  "object",
+  "array",
+  "radio",
 ] as const;
 
-export type SupportedFieldType = typeof supportedFieldTypes[number];
+export type SupportedFieldType = (typeof supportedFieldTypes)[number];
 
 // Export parser configuration schema (Phase 2)
-export type { ParserConfig } from './lib/formedible/parser-config-schema';
-export { 
+export type { ParserConfig } from "./lib/formedible/parser-config-schema";
+export {
   defaultParserConfig,
   parserConfigFields,
   parserConfigFormDefinition,
   parserConfigSchemaDefinition,
   validateParserConfig,
-  mergeParserConfig
-} from './lib/formedible/parser-config-schema';
+  mergeParserConfig,
+} from "./lib/formedible/parser-config-schema";

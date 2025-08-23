@@ -140,6 +140,14 @@ function main() {
   // Process parser registry -> ai-builder  
   totalCopied += processRegistry(parserRegistry, parserSourceBase, aiBuilderDestBase);
 
+  // Process parser registry -> builder
+  const builderDestBase = 'packages/builder/src';
+  totalCopied += processRegistry(parserRegistry, parserSourceBase, builderDestBase);
+
+  // Process formedible registry -> formedible-parser (so parser can use real types)
+  const parserDestBase = 'packages/formedible-parser/src';
+  totalCopied += processRegistry(formedibleRegistry, formedibleSourceBase, parserDestBase);
+
   logSuccess(`Quick sync complete! ${totalCopied} files copied. 🎉`);
 }
 
