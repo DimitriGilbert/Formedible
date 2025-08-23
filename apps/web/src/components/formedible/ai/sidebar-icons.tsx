@@ -6,11 +6,12 @@ import {
   ChevronRight, 
   History, 
   Settings, 
-  Globe 
+  Globe,
+  FileText 
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type SidebarView = "history" | "settings" | "provider";
+export type SidebarView = "history" | "settings" | "provider" | "parser";
 
 interface SidebarIconsProps {
   isCollapsed: boolean;
@@ -93,6 +94,19 @@ export function SidebarIcons({
         >
           <Globe className="h-4 w-4" />
           <span className="sr-only">Provider</span>
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => handleIconClick("parser")}
+          className={cn(
+            "h-12 w-12 rounded-none hover:bg-muted/40",
+            activeView === "parser" && "bg-muted text-foreground"
+          )}
+        >
+          <FileText className="h-4 w-4" />
+          <span className="sr-only">Form Parser Settings</span>
         </Button>
       </div>
     </div>

@@ -62,6 +62,14 @@ update_web_components() {
     log_warning "Builder registry not found, skipping builder installation"
   fi
   
+  # Install formedible-parser components THIRD if registry exists
+  if [[ -f "../../packages/formedible-parser/public/r/formedible-parser.json" ]]; then
+    log_info "Installing formedible-parser from built registry..."
+    npx shadcn@latest add --yes --overwrite "../../packages/formedible-parser/public/r/formedible-parser.json"
+  else
+    log_warning "Formedible Parser registry not found, skipping parser installation"
+  fi
+  
   # Install formedible LAST using shadcn CLI with file path
   log_info "Installing formedible from built registry..."
   npx shadcn@latest add --yes --overwrite "../../packages/formedible/public/r/use-formedible.json"
@@ -102,6 +110,15 @@ update_registry() {
     log_success "AI Builder registry updated in web app"
   else
     log_warning "AI Builder registry file not found in packages/ai-builder/public/r/ai-builder.json (this is optional)"
+  fi
+  
+  # Copy formedible-parser registry to web app public directory (if it exists)
+  if [[ -f "packages/formedible-parser/public/r/formedible-parser.json" ]]; then
+    mkdir -p "apps/web/public/r"
+    cp "packages/formedible-parser/public/r/formedible-parser.json" "apps/web/public/r/formedible-parser.json"
+    log_success "Formedible Parser registry updated in web app"
+  else
+    log_warning "Formedible Parser registry file not found in packages/formedible-parser/public/r/formedible-parser.json (this is optional)"
   fi
 }
 

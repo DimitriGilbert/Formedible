@@ -6,6 +6,7 @@ import type { SidebarView } from "./sidebar-icons";
 import { ConversationHistory, type Conversation, type ConversationHistoryProps } from "./conversation-history";
 import { AgentSettings } from "./agent-settings";
 import { ProviderSelection } from "./provider-selection";
+import { ParserSettings } from "./parser-settings";
 import type { ProviderConfig } from "./provider-selection";
 
 interface SidebarContentProps {
@@ -78,6 +79,13 @@ export function SidebarContent({
               className="h-full"
             />
           </Card>
+        );
+        
+      case "parser":
+        return (
+          <ParserSettings
+            className="h-full"
+          />
         );
         
       default:
