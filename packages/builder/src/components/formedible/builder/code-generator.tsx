@@ -1,8 +1,8 @@
 "use client";
 import React, { useMemo } from "react";
 import { CodeBlock } from "@/components/ui/code-block";
-import type { FieldConfig, DynamicText } from "@/lib/formedible/types";
-import { resolveDynamicText } from "@/lib/formedible/template-interpolation";
+import type { FieldConfig } from "@/lib/formedible/types";
+import { generateFormCode } from "@/lib/formedible/code-generation";
 
 interface FormField extends FieldConfig {
   id: string;
@@ -48,120 +48,15 @@ export const CodeGenerator: React.FC<CodeGeneratorProps> = ({
   settings,
 }) => {
   const generatedCode = useMemo(() => {
-    if (fields.length === 0) {
-      return `import { useFormedible } from 'formedible';
-import { z } from 'zod';
-
-export const MyForm = () => {
-  const { Form } = useFormedible({
-    schema: z.object({}),
-    fields: [],
-    formOptions: {
-      onSubmit: async ({ value }) => {
-        console.log('Form submitted:', value);
-      },
-    },
-  });
-  
-  return <Form />;
-};`;
-    }
-
-    const formConfig = {
+    const result = generateFormCode({
       title: formTitle,
       description: formDescription,
-      schema: "z.object(schemaFields)",
-      fields: fields.map((field) => ({
-        name: field.name,
-        type: field.type,
-        label: resolveDynamicText(field.label, {}) || field.label,
-        placeholder: resolveDynamicText(field.placeholder, {}) || field.placeholder,
-        description: resolveDynamicText(field.description, {}) || field.description,
-        page: field.page || 1,
-        group: field.group,
-        section: field.section,
-        help: field.help,
-        inlineValidation: field.inlineValidation,
-        ...(field.options && { options: field.options }),
-        ...(field.arrayConfig && { arrayConfig: field.arrayConfig }),
-        ...(field.datalist && { datalist: field.datalist }),
-        ...(field.multiSelectConfig && { multiSelectConfig: field.multiSelectConfig }),
-        ...(field.colorConfig && { colorConfig: field.colorConfig }),
-        ...(field.ratingConfig && { ratingConfig: field.ratingConfig }),
-        ...(field.phoneConfig && { phoneConfig: field.phoneConfig }),
-      })),
-      pages: pages,
-      submitLabel: settings.submitLabel,
-      nextLabel: settings.nextLabel,
-      previousLabel: settings.previousLabel,
-      progress: settings.showProgress
-        ? { showSteps: true, showPercentage: true }
-        : undefined,
-      formOptions: {
-        onSubmit: "async ({ value }) => {\n      console.log('Form submitted:', value);\n      // Handle form submission here\n    }",
-      },
-    };
-
-    // Generate schema fields
-    const schemaFieldsCode = fields.map((field) => {
-      let fieldSchema = "";
-      
-      switch (field.type) {
-        case "number":
-        case "slider":
-        case "rating":
-          fieldSchema = "z.number()";
-          break;
-        case "checkbox":
-        case "switch":
-          fieldSchema = "z.boolean()";
-          break;
-        case "date":
-          fieldSchema = "z.string()";
-          break;
-        case "multiSelect":
-        case "array":
-          fieldSchema = "z.array(z.string())";
-          break;
-        default:
-          fieldSchema = "z.string()";
-      }
-
-      if (field.required) {
-        if (field.type === "checkbox" || field.type === "switch") {
-          fieldSchema = `${fieldSchema}.refine((val) => val === true, {
-    message: '${field.label} is required',
-  })`;
-        } else if (field.type !== "number" && field.type !== "slider" && field.type !== "rating") {
-          fieldSchema = `${fieldSchema}.min(1, '${field.label} is required')`;
-        }
-      } else {
-        fieldSchema = `${fieldSchema}.optional()`;
-      }
-
-      return `  ${field.name}: ${fieldSchema}`;
-    }).join(",\n");
-
-    const configString = JSON.stringify(formConfig, null, 2)
-      .replace('"z.object(schemaFields)"', 'z.object(schemaFields)')
-      .replace('"async ({ value }) => {\\n      console.log(\'Form submitted:\', value);\\n      // Handle form submission here\\n    }"', 
-        'async ({ value }) => {\n      console.log(\'Form submitted:\', value);\n      // Handle form submission here\n    }');
-
-    return `import { useFormedible } from 'formedible';
-import { z } from 'zod';
-
-export const MyForm = () => {
-  // Define the schema for form validation
-  const schemaFields = {
-${schemaFieldsCode}
-  };
-
-  const formConfig = ${configString};
-
-  const { Form } = useFormedible(formConfig);
-  
-  return <Form />;
-};`;
+      fields,
+      pages,
+      settings,
+    });
+    
+    return result.fullCode;
   }, [formTitle, formDescription, fields, pages, settings]);
 
   return (

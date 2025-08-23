@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { CodeBlock } from "@/components/ui/code-block";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Monitor, Tablet, Smartphone, Code, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FormPreview } from "./form-preview";
+import { generateCodeFromParsedConfig } from "@/lib/formedible/code-generation";
 import type { ParsedFormConfig } from "@/lib/formedible/parser-types";
 
 export type PreviewMode = "desktop" | "tablet" | "mobile";
@@ -14,7 +15,7 @@ export type ViewMode = "preview" | "code";
 
 interface PreviewControlsProps {
   config: ParsedFormConfig;
-  code?: string; // Generated code for code view
+  code?: string; // Deprecated - now generated automatically
   className?: string;
   showModeSelector?: boolean;
   showDeviceSelector?: boolean;
@@ -23,7 +24,7 @@ interface PreviewControlsProps {
 
 export const PreviewControls: React.FC<PreviewControlsProps> = ({
   config,
-  code,
+  code, // Deprecated but kept for compatibility
   className,
   showModeSelector = true,
   showDeviceSelector = true,
@@ -31,6 +32,21 @@ export const PreviewControls: React.FC<PreviewControlsProps> = ({
 }) => {
   const [previewMode, setPreviewMode] = useState<PreviewMode>("desktop");
   const [viewMode, setViewMode] = useState<ViewMode>("preview");
+
+  // Generate full React/TypeScript code from parsed config
+  const generatedCode = useMemo(() => {
+    try {
+      if (!config || !config.fields || config.fields.length === 0) {
+        return code || "// No form configuration available";
+      }
+      
+      const result = generateCodeFromParsedConfig(config);
+      return result.fullCode;
+    } catch (error) {
+      console.error('Failed to generate code:', error);
+      return code || "// Error generating code";
+    }
+  }, [config, code]);
 
   const deviceModes: { mode: PreviewMode; icon: React.ReactNode; label: string }[] = [
     { mode: "desktop", icon: <Monitor className="h-4 w-4" />, label: "Desktop" },
@@ -112,10 +128,10 @@ export const PreviewControls: React.FC<PreviewControlsProps> = ({
           </div>
         ) : (
           <div className="h-full overflow-y-auto">
-            {code ? (
+            {generatedCode ? (
               <CodeBlock
-                code={code}
-                language="json"
+                code={generatedCode}
+                language="tsx"
                 showLineNumbers={true}
                 showCopyButton={true}
                 className="h-full"

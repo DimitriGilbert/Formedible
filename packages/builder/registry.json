@@ -114,6 +114,11 @@
           "path": "src/components/formedible/builder/form-preview-base.tsx",
           "type": "registry:component",
           "target": "components/formedible/builder/form-preview-base.tsx"
+        },
+        {
+          "path": "src/lib/formedible/code-generation.ts",
+          "type": "registry:lib",
+          "target": "lib/formedible/code-generation.ts"
         }
       ]
     }
