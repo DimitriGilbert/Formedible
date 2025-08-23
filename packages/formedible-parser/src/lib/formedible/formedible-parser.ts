@@ -946,9 +946,14 @@ ${supportedTypes}
       this.addOptionalStringProperty(validatedField, fieldObj, "label");
       this.addOptionalStringProperty(validatedField, fieldObj, "placeholder");
       this.addOptionalStringProperty(validatedField, fieldObj, "description");
+      this.addOptionalStringProperty(validatedField, fieldObj, "tab");
 
       if (typeof fieldObj.required === "boolean") {
         validatedField.required = fieldObj.required;
+      }
+
+      if (typeof fieldObj.page === "number") {
+        validatedField.page = fieldObj.page;
       }
 
       if (fieldObj.defaultValue !== undefined) {
