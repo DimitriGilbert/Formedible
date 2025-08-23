@@ -132,6 +132,14 @@ function main() {
   const aiBuilderSourceBase = 'packages/ai-builder/src';
   totalCopied += processRegistry(aiBuilderRegistry, aiBuilderSourceBase, webDestBase);
 
+  // Process parser registry -> web app
+  const parserRegistry = 'packages/formedible-parser/public/r/formedible-parser.json';
+  const parserSourceBase = 'packages/formedible-parser/src'; 
+  totalCopied += processRegistry(parserRegistry, parserSourceBase, webDestBase);
+
+  // Process parser registry -> ai-builder  
+  totalCopied += processRegistry(parserRegistry, parserSourceBase, aiBuilderDestBase);
+
   logSuccess(`Quick sync complete! ${totalCopied} files copied. 🎉`);
 }
 

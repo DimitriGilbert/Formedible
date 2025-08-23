@@ -10,7 +10,7 @@
   ],
   "scripts": {
     "dev": "tsup src/index.ts --format esm,cjs --dts --watch",
-    "build": "tsup src/index.ts --format esm,cjs --dts",
+    "build": "tsup src/index.ts --format esm,cjs --dts && rm -f public/r/formedible-parser.json && npx shadcn@latest build",
     "check-types": "npx tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest"

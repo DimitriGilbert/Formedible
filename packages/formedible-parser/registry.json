@@ -1,29 +1,41 @@
 {
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
   "name": "formedible-parser",
-  "version": "0.1.0",
-  "components": [
+  "homepage": "https://github.com/DimitriGilbert/Formedible",
+  "items": [
     {
       "name": "formedible-parser",
-      "type": "registry:ui",
+      "type": "registry:block",
+      "title": "Formedible Parser",
+      "description": "Safe parser for Formedible form definitions - handles JSON, JavaScript object literals, and Zod schema expressions",
+      "registryDependencies": [
+        "button",
+        "textarea",
+        "label",
+        "card"
+      ],
+      "dependencies": [
+        "react",
+        "clsx",
+        "tailwind-merge"
+      ],
       "files": [
         {
-          "path": "components/formedible/parser/formedible-parser.tsx",
-          "content": "",
-          "type": "registry:ui"
+          "path": "src/components/formedible/parser/formedible-parser.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/parser/formedible-parser.tsx"
         },
         {
-          "path": "components/formedible/parser/types.ts",
-          "content": "",
-          "type": "registry:ui"
+          "path": "src/components/formedible/parser/types.ts",
+          "type": "registry:lib",
+          "target": "components/formedible/parser/types.ts"
+        },
+        {
+          "path": "src/lib/utils.ts",
+          "type": "registry:lib",
+          "target": "lib/utils.ts"
         }
-      ],
-      "tailwind": {
-        "config": {
-          "theme": {
-            "extend": {}
-          }
-        }
-      }
+      ]
     }
   ]
 }
