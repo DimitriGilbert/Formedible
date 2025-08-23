@@ -16,6 +16,8 @@ export interface ParserConfig {
   maxNestingDepth: number;
   enableZodParsing: boolean;
   showDetailedErrors: boolean;
+  enableSystemPromptBuilder: boolean;
+  systemPromptFields: string[];
   [key: string]: unknown;
 }
 
@@ -29,7 +31,19 @@ export const defaultParserConfig: ParserConfig = {
   maxCodeLength: 1000000,
   maxNestingDepth: 50,
   enableZodParsing: true,
-  showDetailedErrors: true
+  showDetailedErrors: true,
+  enableSystemPromptBuilder: false,
+  systemPromptFields: [
+    'strictValidation',
+    'fieldTypeValidation', 
+    'aiErrorMessages',
+    'enableSchemaInference',
+    'mergeStrategy',
+    'maxCodeLength',
+    'maxNestingDepth',
+    'enableZodParsing',
+    'showDetailedErrors'
+  ]
 };
 
 export const parserConfigFields = [
@@ -114,6 +128,42 @@ export const parserConfigFields = [
     label: 'Detailed Error Information',
     description: 'Include detailed error context and location information in parser output.',
     defaultValue: true
+  },
+  {
+    name: 'enableSystemPromptBuilder',
+    type: 'switch',
+    label: 'System Prompt Builder',
+    description: 'Enable dynamic system prompt generation with configurable field selection.',
+    defaultValue: false
+  },
+  {
+    name: 'systemPromptFields',
+    type: 'multiSelect',
+    label: 'System Prompt Fields',
+    description: 'Select which configuration fields to include in the generated system prompt.',
+    options: [
+      { value: 'strictValidation', label: 'Strict Validation' },
+      { value: 'fieldTypeValidation', label: 'Field Type Validation' },
+      { value: 'aiErrorMessages', label: 'AI-Friendly Error Messages' },
+      { value: 'enableSchemaInference', label: 'Schema Inference' },
+      { value: 'mergeStrategy', label: 'Schema Merge Strategy' },
+      { value: 'maxCodeLength', label: 'Maximum Code Length' },
+      { value: 'maxNestingDepth', label: 'Maximum Nesting Depth' },
+      { value: 'enableZodParsing', label: 'Zod Expression Parsing' },
+      { value: 'showDetailedErrors', label: 'Detailed Error Information' },
+      { value: 'customInstructions', label: 'Custom Instructions' }
+    ],
+    defaultValue: [
+      'strictValidation',
+      'fieldTypeValidation', 
+      'aiErrorMessages',
+      'enableSchemaInference',
+      'mergeStrategy',
+      'maxCodeLength',
+      'maxNestingDepth',
+      'enableZodParsing',
+      'showDetailedErrors'
+    ]
   }
 ];
 
@@ -134,7 +184,10 @@ export function validateParserConfig(config: unknown): config is ParserConfig {
     typeof c.maxCodeLength === 'number' &&
     typeof c.maxNestingDepth === 'number' &&
     typeof c.enableZodParsing === 'boolean' &&
-    typeof c.showDetailedErrors === 'boolean'
+    typeof c.showDetailedErrors === 'boolean' &&
+    typeof c.enableSystemPromptBuilder === 'boolean' &&
+    Array.isArray(c.systemPromptFields) &&
+    c.systemPromptFields.every(field => typeof field === 'string')
   );
 }
 
@@ -143,4 +196,66 @@ export function mergeParserConfig(config: Partial<ParserConfig>): ParserConfig {
     ...defaultParserConfig,
     ...config
   };
+}
+
+/**
+ * Generate a dynamic system prompt based on selected configuration fields
+ */
+export function generateSystemPrompt(config: ParserConfig): string {
+  if (!config.enableSystemPromptBuilder || !config.systemPromptFields.length) {
+    return '';
+  }
+
+  const fieldDescriptions: Record<string, string> = {
+    strictValidation: config.strictValidation 
+      ? 'Use strict validation - reject unknown properties and enforce schema compliance'
+      : 'Use permissive validation - allow unknown properties and be flexible with schema',
+    fieldTypeValidation: config.fieldTypeValidation
+      ? 'Validate all field types against the 24 supported formedible field types'
+      : 'Allow flexible field types without strict validation',
+    aiErrorMessages: config.aiErrorMessages
+      ? 'Generate detailed, AI-friendly error messages with suggestions and examples'
+      : 'Use basic error messages without detailed suggestions',
+    enableSchemaInference: config.enableSchemaInference
+      ? 'Automatically infer Zod schemas from field definitions for better type safety'
+      : 'Use manual schema definition without automatic inference',
+    mergeStrategy: `Use "${config.mergeStrategy}" strategy when merging schemas - ${
+      config.mergeStrategy === 'extend' ? 'add missing fields from base schema' :
+      config.mergeStrategy === 'override' ? 'replace schema completely' :
+      'keep only fields that exist in both schemas'
+    }`,
+    maxCodeLength: `Maximum allowed form definition length: ${config.maxCodeLength.toLocaleString()} characters`,
+    maxNestingDepth: `Maximum nesting depth for object and array structures: ${config.maxNestingDepth} levels`,
+    enableZodParsing: config.enableZodParsing
+      ? 'Parse and handle Zod schema expressions (z.string(), z.number(), etc.)'
+      : 'Treat Zod expressions as plain text without parsing',
+    showDetailedErrors: config.showDetailedErrors
+      ? 'Include detailed error context, location information, and debugging details'
+      : 'Provide minimal error information',
+    ...(config.customInstructions ? {
+      customInstructions: `Additional instructions: ${config.customInstructions}`
+    } : {})
+  };
+
+  const selectedFields = config.systemPromptFields
+    .map(field => fieldDescriptions[field])
+    .filter((desc): desc is string => Boolean(desc));
+
+  if (!selectedFields.length) {
+    return '';
+  }
+
+  return `# Formedible Parser Configuration
+
+You are working with a Formedible form parser that has been configured with the following settings:
+
+${selectedFields.map((desc, index) => `${index + 1}. ${desc}`).join('\n')}
+
+## Key Guidelines
+- Follow the configured validation and parsing rules strictly
+- Generate forms that respect the maximum limits and nesting depth
+- Use the specified error message style and detail level
+- Apply the configured schema inference and merging strategies
+
+When generating or parsing form definitions, ensure all output adheres to these configuration parameters.`;
 }

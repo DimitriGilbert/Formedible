@@ -10,10 +10,11 @@ import {
   defaultParserConfig, 
   validateParserConfig,
   mergeParserConfig,
+  generateSystemPrompt,
   type ParserConfig 
 } from "@/lib/parser-config";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info, Save, RotateCcw } from "lucide-react";
+import { Info, Save, RotateCcw, Copy, Check } from "lucide-react";
 
 interface ParserSettingsProps {
   className?: string;
@@ -23,6 +24,7 @@ interface ParserSettingsProps {
 export function ParserSettings({ className, onConfigChange }: ParserSettingsProps) {
   const [config, setConfig] = useState<ParserConfig>(defaultParserConfig);
   const [lastSavedConfig, setLastSavedConfig] = useState<ParserConfig>(defaultParserConfig);
+  const [copied, setCopied] = useState(false);
 
   // Load saved config on mount
   useEffect(() => {
@@ -61,6 +63,22 @@ export function ParserSettings({ className, onConfigChange }: ParserSettingsProp
     handleSaveConfig(resetConfig);
   };
 
+  // Copy system prompt to clipboard
+  const handleCopySystemPrompt = async () => {
+    try {
+      const systemPrompt = generateSystemPrompt(config);
+      if (!systemPrompt) {
+        return; // Don't copy empty prompt
+      }
+      
+      await navigator.clipboard.writeText(systemPrompt);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy system prompt:', error);
+    }
+  };
+
   // Create form fields with conditional logic
   const formFields = [
     // Basic Settings Section
@@ -93,7 +111,7 @@ export function ParserSettings({ className, onConfigChange }: ParserSettingsProp
     // Advanced Configuration Section (conditional)
     ...parserConfigFields
       .filter(field => 
-        !['strictValidation', 'enableSchemaInference', 'fieldTypeValidation', 'aiErrorMessages'].includes(field.name)
+        !['strictValidation', 'enableSchemaInference', 'fieldTypeValidation', 'aiErrorMessages', 'enableSystemPromptBuilder', 'systemPromptFields'].includes(field.name)
       )
       .map(field => ({
         ...field,
@@ -103,13 +121,36 @@ export function ParserSettings({ className, onConfigChange }: ParserSettingsProp
           description: 'Advanced settings for performance optimization and edge cases',
           collapsible: false
         }
+      })),
+
+    // System Prompt Builder Section (conditional)
+    ...parserConfigFields
+      .filter(field => 
+        ['enableSystemPromptBuilder', 'systemPromptFields'].includes(field.name)
+      )
+      .map(field => ({
+        ...field,
+        conditional: field.name === 'systemPromptFields' 
+          ? (values: any) => values.enableSystemPromptBuilder === true
+          : undefined,
+        section: {
+          title: 'System Prompt Builder',
+          description: 'Generate dynamic system prompts with configurable field selection',
+          collapsible: false
+        }
       }))
   ];
 
   const { Form } = useFormedible<ParserConfig & { showAdvanced: boolean }>({
     fields: formFields,
     formOptions: {
-      defaultValues: { ...config, showAdvanced: false },
+      defaultValues: { 
+        ...config, 
+        showAdvanced: false,
+        // Ensure all system prompt fields have proper defaults
+        enableSystemPromptBuilder: config.enableSystemPromptBuilder ?? false,
+        systemPromptFields: config.systemPromptFields ?? defaultParserConfig.systemPromptFields
+      },
       onSubmit: async ({ value }) => {
         // Extract showAdvanced and save the rest
         const { showAdvanced, ...parserConfig } = value;
@@ -159,6 +200,9 @@ export function ParserSettings({ className, onConfigChange }: ParserSettingsProp
                 <Badge variant={config.enableSchemaInference ? "default" : "secondary"}>
                   {config.enableSchemaInference ? "Schema Inference" : "Manual Schema"}
                 </Badge>
+                <Badge variant={config.enableSystemPromptBuilder ? "default" : "secondary"}>
+                  {config.enableSystemPromptBuilder ? "System Prompt" : "No System Prompt"}
+                </Badge>
               </div>
             </div>
             {hasChanges && (
@@ -172,7 +216,7 @@ export function ParserSettings({ className, onConfigChange }: ParserSettingsProp
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-2 pt-4 border-t">
+          <div className="flex flex-wrap gap-2 pt-4 border-t">
             <Button 
               onClick={handleReset}
               variant="outline"
@@ -182,6 +226,27 @@ export function ParserSettings({ className, onConfigChange }: ParserSettingsProp
               <RotateCcw className="h-3 w-3" />
               Reset to Defaults
             </Button>
+            
+            {config.enableSystemPromptBuilder && generateSystemPrompt(config) && (
+              <Button
+                onClick={handleCopySystemPrompt}
+                variant={copied ? "default" : "outline"}
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                {copied ? (
+                  <>
+                    <Check className="h-3 w-3" />
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-3 w-3" />
+                    Copy System Prompt
+                  </>
+                )}
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -210,6 +275,18 @@ export function ParserSettings({ className, onConfigChange }: ParserSettingsProp
               <p className="text-muted-foreground">Configurable limits: {config.maxCodeLength.toLocaleString()} chars, {config.maxNestingDepth} levels</p>
             </div>
           </div>
+          
+          {/* System Prompt Preview (when enabled) */}
+          {config.enableSystemPromptBuilder && generateSystemPrompt(config) && (
+            <details className="pt-2 border-t">
+              <summary className="text-sm font-medium cursor-pointer">
+                Generated System Prompt Preview
+              </summary>
+              <div className="mt-2 p-3 bg-muted rounded-md text-xs overflow-auto max-h-48">
+                <pre className="whitespace-pre-wrap">{generateSystemPrompt(config)}</pre>
+              </div>
+            </details>
+          )}
           
           {/* Configuration Preview (always available) */}
           <details className="pt-2 border-t">
