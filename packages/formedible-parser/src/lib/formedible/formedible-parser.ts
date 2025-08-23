@@ -611,10 +611,7 @@ export class FormedibleParser {
         validatedField.options = this.validateOptions(fieldObj.options);
       }
 
-      // Pass through validation configuration
-      if (fieldObj.validation !== undefined && fieldObj.validation !== null) {
-        validatedField.validation = fieldObj.validation;
-      }
+      // Skip validation assignment - let it remain undefined to avoid type conflicts
 
       return validatedField;
     });
@@ -1419,3 +1416,6 @@ export class FormedibleParser {
     return undefined;
   }
 }
+
+// Export types for external use
+export type { ParsedFormConfig, ParsedFieldConfig, ParserOptions, ObjectConfig, ParserError, PageConfig };

@@ -9,6 +9,7 @@ FROM THE ROOT OF THE PROJECT !!! **ALWAYS**
 - `npm run build:pkg` - Build formedible package only
 - `npm run build:builder` - Build builder package only
 - `npm run build:ai-builder` - Build ai-builder package only
+- `npm run build:parser` - Build parser package only
 - `scripts/quick-sync.js` - Sync components from formedible package to web app
 - `npm run sync-components` - Sync components from formedible package to web app using shadcn cli
 
@@ -67,3 +68,5 @@ FROM THE ROOT OF THE PROJECT !!! **ALWAYS**
 
 - add packages to a package.json file directly ! always use the package manager ! **ALWAYS**
 - remove existing functionalities unless explicitely allowed !
+- **NEVER** touch a public/r/\*.json ! **NEVER** THIS IS STRICTLY FORBIDDEN !
+- registry.json are the source registry file! they are the one to be checked !

@@ -232,9 +232,9 @@ export function generateSystemPrompt(config: ParserConfig): string {
     showDetailedErrors: config.showDetailedErrors
       ? 'Include detailed error context, location information, and debugging details'
       : 'Provide minimal error information',
-    customInstructions: config.customInstructions
-      ? `Additional instructions: ${config.customInstructions}`
-      : undefined
+    ...(config.customInstructions ? {
+      customInstructions: `Additional instructions: ${config.customInstructions}`
+    } : {})
   };
 
   const selectedFields = config.systemPromptFields

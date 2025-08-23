@@ -25,8 +25,10 @@ export interface ParserConfig {
   maxNestingDepth: number;
   enableZodParsing: boolean;
   showDetailedErrors: boolean;
-  enableSystemPromptBuilder: boolean;
+  selectFields: boolean;
   systemPromptFields: string[];
+  includeTabFormatting: boolean;
+  includePageFormatting: boolean;
   [key: string]: unknown;
 }
 
@@ -106,7 +108,7 @@ export const defaultParserConfig: ParserConfig = {
   maxNestingDepth: 50,
   enableZodParsing: true,
   showDetailedErrors: true,
-  enableSystemPromptBuilder: false,
+  selectFields: false,
   systemPromptFields: [
     'strictValidation',
     'fieldTypeValidation', 
@@ -117,8 +119,165 @@ export const defaultParserConfig: ParserConfig = {
     'maxNestingDepth',
     'enableZodParsing',
     'showDetailedErrors'
-  ]
+  ],
+  includeTabFormatting: true,
+  includePageFormatting: true
 };
+
+/**
+ * Type-safe field examples for each field type - aligned with formedible documentation
+ */
+const fieldExamples = {
+  text: { name: "fullName", type: "text", label: "Full Name", required: true },
+  email: { name: "email", type: "email", label: "Email Address", required: true },
+  url: { name: "website", type: "url", label: "Website URL" },
+  textarea: { 
+    name: "message", 
+    type: "textarea", 
+    label: "Message", 
+    textareaConfig: { rows: 4, maxLength: 500, showWordCount: true }
+  },
+  number: { 
+    name: "age", 
+    type: "number", 
+    label: "Age", 
+    numberConfig: { min: 18, max: 120, allowNegative: false }
+  },
+  select: { 
+    name: "country", 
+    type: "select", 
+    label: "Country", 
+    options: [
+      { value: "us", label: "United States" },
+      { value: "uk", label: "United Kingdom" },
+      { value: "ca", label: "Canada" }
+    ]
+  },
+  multiSelect: { 
+    name: "skills", 
+    type: "multiSelect", 
+    label: "Skills", 
+    options: ["React", "Vue", "Angular", "Node.js"],
+    multiSelectConfig: { maxSelections: 3, searchable: true, creatable: true }
+  },
+  radio: { 
+    name: "plan", 
+    type: "radio", 
+    label: "Plan", 
+    options: [
+      { value: "free", label: "Free Plan" }, 
+      { value: "pro", label: "Pro Plan" },
+      { value: "enterprise", label: "Enterprise Plan" }
+    ]
+  },
+  checkbox: { name: "newsletter", type: "checkbox", label: "Subscribe to Newsletter" },
+  switch: { name: "notifications", type: "switch", label: "Enable Notifications" },
+  date: { 
+    name: "birthDate", 
+    type: "date", 
+    label: "Birth Date", 
+    dateConfig: { format: "yyyy-MM-dd", showTime: false }
+  },
+  file: { 
+    name: "resume", 
+    type: "file", 
+    label: "Resume", 
+    fileConfig: { accept: ".pdf,.doc,.docx", maxSize: 5000000, multiple: false }
+  },
+  slider: { 
+    name: "experience", 
+    type: "slider", 
+    label: "Years Experience", 
+    sliderConfig: { min: 0, max: 20, step: 1 }
+  },
+  rating: { 
+    name: "satisfaction", 
+    type: "rating", 
+    label: "Satisfaction Rating", 
+    ratingConfig: { max: 5, allowHalf: true, icon: "star" }
+  },
+  phone: { 
+    name: "phone", 
+    type: "phone", 
+    label: "Phone Number", 
+    phoneConfig: { defaultCountry: "US", format: "national" }
+  },
+  colorPicker: { 
+    name: "brandColor", 
+    type: "colorPicker", 
+    label: "Brand Color", 
+    colorConfig: { 
+      format: "hex", 
+      presetColors: ["#ff0000", "#00ff00", "#0000ff"],
+      allowCustom: true 
+    }
+  },
+  password: {
+    name: "password",
+    type: "password", 
+    label: "Password",
+    passwordConfig: { showToggle: true, strengthMeter: true }
+  },
+  duration: {
+    name: "workHours",
+    type: "duration",
+    label: "Work Hours",
+    durationConfig: { format: "hm", showLabels: true }
+  },
+  autocomplete: {
+    name: "city",
+    type: "autocomplete",
+    label: "City",
+    autocompleteConfig: {
+      options: ["New York", "Los Angeles", "Chicago", "Houston"],
+      minChars: 2,
+      allowCustom: true
+    }
+  },
+  maskedInput: {
+    name: "ssn",
+    type: "maskedInput", 
+    label: "SSN",
+    maskedInputConfig: { mask: "000-00-0000", guide: true }
+  },
+  array: { 
+    name: "team", 
+    type: "array", 
+    label: "Team Members",
+    arrayConfig: { 
+      itemType: "object",
+      itemLabel: "Team Member",
+      minItems: 1,
+      maxItems: 10,
+      sortable: true,
+      addButtonLabel: "Add Member",
+      removeButtonLabel: "Remove",
+      objectConfig: {
+        fields: [
+          { name: "name", type: "text", label: "Full Name", required: true },
+          { name: "role", type: "select", label: "Role", options: ["Developer", "Designer", "Manager"] },
+          { name: "email", type: "email", label: "Email", required: true }
+        ]
+      }
+    }
+  },
+  object: {
+    name: "address",
+    type: "object", 
+    label: "Address",
+    objectConfig: {
+      title: "Mailing Address",
+      collapsible: true,
+      layout: "vertical",
+      fields: [
+        { name: "street", type: "text", label: "Street Address", required: true },
+        { name: "city", type: "text", label: "City", required: true },
+        { name: "state", type: "select", label: "State", options: ["CA", "NY", "TX", "FL"] },
+        { name: "zip", type: "text", label: "ZIP Code", required: true }
+      ]
+    }
+  }
+} as const;
 
 /**
  * Formedible field configurations for the parser settings UI
@@ -208,40 +367,35 @@ export const parserConfigFields = [
     defaultValue: true
   },
   {
-    name: 'enableSystemPromptBuilder',
+    name: 'selectFields',
     type: 'switch',
-    label: 'System Prompt Builder',
-    description: 'Enable dynamic system prompt generation with configurable field selection.',
+    label: 'Select Fields',
     defaultValue: false
   },
   {
     name: 'systemPromptFields',
     type: 'multiSelect',
-    label: 'System Prompt Fields',
-    description: 'Select which configuration fields to include in the generated system prompt.',
-    options: [
-      { value: 'strictValidation', label: 'Strict Validation' },
-      { value: 'fieldTypeValidation', label: 'Field Type Validation' },
-      { value: 'aiErrorMessages', label: 'AI-Friendly Error Messages' },
-      { value: 'enableSchemaInference', label: 'Schema Inference' },
-      { value: 'mergeStrategy', label: 'Schema Merge Strategy' },
-      { value: 'maxCodeLength', label: 'Maximum Code Length' },
-      { value: 'maxNestingDepth', label: 'Maximum Nesting Depth' },
-      { value: 'enableZodParsing', label: 'Zod Expression Parsing' },
-      { value: 'showDetailedErrors', label: 'Detailed Error Information' },
-      { value: 'customInstructions', label: 'Custom Instructions' }
-    ],
-    defaultValue: [
-      'strictValidation',
-      'fieldTypeValidation', 
-      'aiErrorMessages',
-      'enableSchemaInference',
-      'mergeStrategy',
-      'maxCodeLength',
-      'maxNestingDepth',
-      'enableZodParsing',
-      'showDetailedErrors'
-    ]
+    label: 'Field Types',
+    description: 'Select which formedible field types to include as examples in the system prompt.',
+    options: Object.keys(fieldExamples).map(fieldType => ({
+      value: fieldType,
+      label: fieldType.charAt(0).toUpperCase() + fieldType.slice(1)
+    })),
+    defaultValue: Object.keys(fieldExamples)
+  },
+  {
+    name: 'includeTabFormatting',
+    type: 'switch',
+    label: 'Tab Formatting',
+    description: 'Include tab-based form structure in the system prompt.',
+    defaultValue: true
+  },
+  {
+    name: 'includePageFormatting',
+    type: 'switch',
+    label: 'Page Formatting',
+    description: 'Include multi-page form structure in the system prompt.',
+    defaultValue: true
   }
 ];
 
@@ -280,9 +434,11 @@ export function validateParserConfig(config: unknown): config is ParserConfig {
     typeof c.maxNestingDepth === 'number' &&
     typeof c.enableZodParsing === 'boolean' &&
     typeof c.showDetailedErrors === 'boolean' &&
-    typeof c.enableSystemPromptBuilder === 'boolean' &&
+    typeof c.selectFields === 'boolean' &&
     Array.isArray(c.systemPromptFields) &&
-    c.systemPromptFields.every(field => typeof field === 'string')
+    c.systemPromptFields.every(field => typeof field === 'string') &&
+    typeof c.includeTabFormatting === 'boolean' &&
+    typeof c.includePageFormatting === 'boolean'
   );
 }
 
@@ -296,13 +452,11 @@ export function mergeParserConfig(config: Partial<ParserConfig>): ParserConfig {
   };
 }
 
+
 /**
  * Generate a dynamic system prompt based on selected configuration fields
  */
 export function generateSystemPrompt(config: ParserConfig): string {
-  if (!config.enableSystemPromptBuilder || !config.systemPromptFields.length) {
-    return '';
-  }
 
   const fieldDescriptions: Record<string, string> = {
     strictValidation: config.strictValidation 
@@ -339,11 +493,11 @@ export function generateSystemPrompt(config: ParserConfig): string {
     .map(field => fieldDescriptions[field])
     .filter((desc): desc is string => Boolean(desc));
 
-  if (!selectedFields.length) {
+  if (!selectedFields.length && !config.includeTabFormatting && !config.includePageFormatting) {
     return '';
   }
 
-  return `# Formedible Parser Configuration
+  let prompt = `# Formedible Parser Configuration
 
 You are working with a Formedible form parser that has been configured with the following settings:
 
@@ -353,7 +507,148 @@ ${selectedFields.map((desc, index) => `${index + 1}. ${desc}`).join('\n')}
 - Follow the configured validation and parsing rules strictly
 - Generate forms that respect the maximum limits and nesting depth
 - Use the specified error message style and detail level
-- Apply the configured schema inference and merging strategies
+- Apply the configured schema inference and merging strategies`;
 
-When generating or parsing form definitions, ensure all output adheres to these configuration parameters.`;
+  // Add formatting guidelines
+  if (config.includeTabFormatting || config.includePageFormatting) {
+    prompt += `
+
+## Form Structure Guidelines`;
+    
+    if (config.includeTabFormatting) {
+      prompt += `
+- **Tab Layout**: Use the \`layout: { type: 'tabs' }\` configuration for organizing forms into logical sections
+- **Tab Structure**: Each tab should group related fields together for better user experience
+- **Tab Navigation**: Ensure tab titles are descriptive and help users understand the content`;
+    }
+    
+    if (config.includePageFormatting) {
+      prompt += `
+- **Multi-Page Forms**: Use the \`pages\` array to create multi-step forms for complex data collection
+- **Page Structure**: Each page should have a clear purpose and logical flow
+- **Page Navigation**: Include appropriate navigation controls with \`nextLabel\`, \`previousLabel\`, and \`submitLabel\`
+- **Progress Indication**: Consider adding progress indicators for multi-page forms using the \`progress\` configuration`;
+    }
+  }
+
+  // Generate dynamic examples using the field example objects
+  const exampleFields = [
+    fieldExamples.text,
+    fieldExamples.email,
+    fieldExamples.textarea
+  ];
+
+  let basicExample: any = {
+    title: "Contact Form",
+    fields: exampleFields,
+    formOptions: {
+      defaultValues: {
+        fullName: "",
+        email: "",
+        message: ""
+      },
+      onSubmit: "async ({ value }) => { console.log('Form submitted:', value); }"
+    }
+  };
+
+  if (config.includeTabFormatting && config.includePageFormatting) {
+    // Both tabs and pages - use stepper with tabs inside
+    basicExample = {
+      title: "Multi-Step Registration",
+      layout: { type: "stepper" },
+      pages: [
+        { title: "Personal Info", description: "Your basic information" },
+        { title: "Account Setup", description: "Create your account" }
+      ],
+      tabs: [
+        { id: "contact", label: "Contact Details", description: "How to reach you" },
+        { id: "preferences", label: "Preferences", description: "Your account preferences" }
+      ],
+      fields: [
+        { ...fieldExamples.text, page: 1, tab: "contact" },
+        { ...fieldExamples.email, page: 1, tab: "contact" },
+        { ...fieldExamples.phone, page: 1, tab: "preferences" },
+        { ...fieldExamples.textarea, page: 2 }
+      ],
+      formOptions: {
+        defaultValues: {
+          fullName: "",
+          email: "",
+          phone: "",
+          message: ""
+        },
+        onSubmit: "async ({ value }) => { console.log('Registration submitted:', value); }"
+      }
+    };
+  } else if (config.includeTabFormatting) {
+    basicExample = {
+      title: "Contact Form",
+      layout: { type: "tabs" },
+      tabs: [
+        { id: "contact", label: "Contact Info", description: "Your personal details" },
+        { id: "message", label: "Message", description: "Tell us what you need" }
+      ],
+      fields: [
+        { ...fieldExamples.text, tab: "contact" },
+        { ...fieldExamples.email, tab: "contact" },
+        { ...fieldExamples.textarea, tab: "message" }
+      ],
+      formOptions: {
+        defaultValues: {
+          fullName: "",
+          email: "",
+          message: ""
+        },
+        onSubmit: "async ({ value }) => { console.log('Contact form submitted:', value); }"
+      }
+    };
+  } else if (config.includePageFormatting) {
+    basicExample = {
+      title: "Multi-Step Contact Form",
+      layout: { type: "stepper" },
+      pages: [
+        { title: "Personal Info", description: "Your basic information" },
+        { title: "Your Message", description: "Tell us what you need" }
+      ],
+      fields: [
+        { ...fieldExamples.text, page: 1 },
+        { ...fieldExamples.email, page: 1 },
+        { ...fieldExamples.textarea, page: 2 }
+      ],
+      nextLabel: "Continue",
+      previousLabel: "Back",
+      submitLabel: "Send Message",
+      formOptions: {
+        defaultValues: {
+          fullName: "",
+          email: "",
+          message: ""
+        },
+        onSubmit: "async ({ value }) => { console.log('Multi-step form submitted:', value); }"
+      }
+    };
+  }
+
+  prompt += `
+
+## Field Examples
+
+Each field type has a complete example configuration:
+
+### Available Field Types
+${Object.entries(fieldExamples).map(([type, example]) => 
+  `**${type}**: \`${JSON.stringify(example, null, 2)}\``
+).join('\n\n')}
+
+## Complete Form Example
+
+Based on your current configuration:
+
+\`\`\`json
+${JSON.stringify(basicExample, null, 2)}
+\`\`\`
+
+When generating forms, use these field examples and adapt the structure based on the configuration options above.`;
+
+  return prompt;
 }

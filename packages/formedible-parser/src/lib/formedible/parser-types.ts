@@ -2,6 +2,8 @@
 
 // Import and re-export types from formedible to stay DRY
 import type { 
+  FieldConfig,
+  DynamicText,
   FieldOption,
   FieldOptions,
   ObjectConfig,
@@ -10,6 +12,8 @@ import type {
 } from "./types";
 
 export type { 
+  FieldConfig,
+  DynamicText,
   FieldOption,
   FieldOptions,
   ObjectConfig,
@@ -17,88 +21,8 @@ export type {
   ProgressConfig
 };
 
-export interface ParsedFieldConfig {
-  name: string;
-  type: string;
-  label?: string;
-  placeholder?: string;
-  description?: string;
-  required?: boolean;
-  defaultValue?: unknown;
-  options?: Array<{ value: string; label: string }>;
-  min?: number;
-  max?: number;
-  step?: number;
-  validation?: unknown;
-  
-  // Field-specific configurations
-  arrayConfig?: {
-    itemType: string;
-    itemLabel?: string;
-    itemPlaceholder?: string;
-    itemValidation?: unknown;
-    minItems?: number;
-    maxItems?: number;
-    addButtonLabel?: string;
-    removeButtonLabel?: string;
-    sortable?: boolean;
-    defaultValue?: unknown;
-    objectConfig?: ObjectConfig;
-    [key: string]: unknown;
-  };
-  
-  objectConfig?: ObjectConfig;
-  
-  multiSelectConfig?: {
-    maxSelections?: number;
-    searchable?: boolean;
-    creatable?: boolean;
-    placeholder?: string;
-    noOptionsText?: string;
-    loadingText?: string;
-    [key: string]: unknown;
-  };
-  
-  colorConfig?: {
-    format?: 'hex' | 'rgb' | 'hsl';
-    showPreview?: boolean;
-    showAlpha?: boolean;
-    presetColors?: string[];
-    allowCustom?: boolean;
-    [key: string]: unknown;
-  };
-  
-  ratingConfig?: {
-    max?: number;
-    allowHalf?: boolean;
-    allowClear?: boolean;
-    icon?: 'star' | 'heart' | 'thumbs' | unknown;
-    size?: 'sm' | 'md' | 'lg' | 'small' | 'medium' | 'large';
-    showValue?: boolean;
-    [key: string]: unknown;
-  };
-  
-  phoneConfig?: {
-    defaultCountry?: string;
-    preferredCountries?: string[];
-    onlyCountries?: string[];
-    excludeCountries?: string[];
-    format?: 'national' | 'international';
-    [key: string]: unknown;
-  };
-  
-  datalist?: {
-    options?: string[];
-    asyncOptions?: unknown;
-    debounceMs?: number;
-    minChars?: number;
-    maxResults?: number;
-    [key: string]: unknown;
-  };
-  
-  // Allow additional unknown configurations
-  [key: string]: unknown;
-}
+// Just use FieldConfig directly - no need to redefine!
+export type ParsedFieldConfig = FieldConfig;
 
 
 export interface ParsedFormConfig {

@@ -28,6 +28,7 @@ import { CodeBlock } from "@/components/ui/code-block";
 import { cn } from "@/lib/utils";
 import type { ProviderConfig } from "./provider-selection";
 import { extractFormedibleCode } from "@/lib/form-extraction-utils";
+import { generateSystemPrompt, defaultParserConfig } from "@/lib/formedible/parser-config-schema";
 
 // MessageContent component to handle code blocks with syntax highlighting
 interface MessageContentProps {
@@ -251,222 +252,30 @@ export function ChatMessages({
 
       const model = createModel(providerConfig);
 
-      const systemPrompt = `You are a helpful AI assistant for form creation. You can chat naturally with users about forms, answer questions, and help them design forms.
+      // Get parser configuration from localStorage or use defaults
+      let parserConfig = defaultParserConfig;
+      try {
+        const savedConfig = localStorage.getItem('formedible-parser-config');
+        if (savedConfig) {
+          const parsed = JSON.parse(savedConfig);
+          parserConfig = { ...defaultParserConfig, ...parsed };
+        }
+      } catch (error) {
+        console.warn('Failed to load parser config, using defaults:', error);
+      }
+
+      // Generate dynamic system prompt based on configuration
+      const configuredSystemPrompt = generateSystemPrompt(parserConfig);
+      
+      const baseSystemPrompt = `You are a helpful AI assistant for form creation. You can chat naturally with users about forms, answer questions, and help them design forms.
 
 **IMPORTANT: Only show formedible code blocks when the user specifically asks to create, build, generate, or show a form.**
 
-When creating forms, use formedible code blocks with complete JavaScript object literal syntax including Zod schemas:
+When creating forms, use formedible code blocks with complete JavaScript object literal syntax including Zod schemas. Chat naturally. Ask clarifying questions. Suggest improvements. Only output formedible blocks when specifically requested.`;
 
-\`\`\`formedible
-{
-  schema: z.object({
-    firstName: z.string().min(1, 'First name is required'),
-    email: z.string().email('Please enter a valid email address'),
-    age: z.number().min(18, 'Must be 18 or older').optional(),
-    newsletter: z.boolean().default(false)
-  }),
-  fields: [
-    {
-      name: 'firstName',
-      type: 'text',
-      label: 'First Name',
-      placeholder: 'Enter your first name'
-    },
-    {
-      name: 'email',
-      type: 'email', 
-      label: 'Email Address',
-      placeholder: 'your@email.com'
-    },
-    {
-      name: 'age',
-      type: 'number',
-      label: 'Age',
-      placeholder: '18+'
-    },
-    {
-      name: 'newsletter',
-      type: 'checkbox',
-      label: 'Subscribe to newsletter'
-    }
-  ],
-  formOptions: {
-    defaultValues: {
-      firstName: '',
-      email: '',
-      newsletter: false
-    }
-  }
-}
-\`\`\`
-
-**CRITICAL REQUIREMENTS:**
-- ALWAYS include complete Zod schema with proper validation
-- Use JavaScript object literals (unquoted keys, single quotes for strings) 
-- Match schema field names EXACTLY with field names
-- Include proper Zod validations: .min(), .max(), .email(), .optional(), .default()
-- Available field types: text, email, password, tel, textarea, select, checkbox, switch, number, date, slider, file, rating, phone, colorPicker, location, duration, multiSelect, autocomplete, masked, object, array, radio
-
-**Zod Schema Examples:**
-- z.string().min(1, 'Required') - required text
-- z.string().email('Invalid email') - email validation  
-- z.number().min(18, 'Must be 18+') - number with min
-- z.boolean().default(false) - checkbox with default
-- z.string().optional() - optional field
-- z.enum(['option1', 'option2']) - select options
-- z.array(z.string()) - multiSelect
-
-**ARRAY FIELDS - Use arrayConfig with proper configuration:**
-
-Simple string arrays:
-\`\`\`javascript
-{
-  name: 'contactMethods',
-  type: 'array',
-  label: 'Contact Email Addresses',
-  arrayConfig: {
-    itemType: 'email',
-    itemLabel: 'Email Address',
-    itemPlaceholder: 'contact@company.com',
-    minItems: 1,
-    maxItems: 5,
-    addButtonLabel: 'Add Email',
-    removeButtonLabel: 'Remove',
-    defaultValue: ''
-  }
-}
-\`\`\`
-
-Complex object arrays:
-\`\`\`javascript
-{
-  name: 'teamMembers',
-  type: 'array',
-  label: 'Team Members',
-  arrayConfig: {
-    itemType: 'object',
-    itemLabel: 'Team Member',
-    minItems: 1,
-    maxItems: 10,
-    sortable: true,
-    addButtonLabel: 'Add Team Member',
-    removeButtonLabel: 'Remove Member',
-    defaultValue: {
-      name: '',
-      email: '',
-      role: 'developer'
-    },
-    objectConfig: {
-      fields: [
-        {
-          name: 'name',
-          type: 'text',
-          label: 'Name',
-          placeholder: 'Enter name'
-        },
-        {
-          name: 'email',
-          type: 'text',
-          label: 'Email',
-          placeholder: 'Enter email'
-        },
-        {
-          name: 'role',
-          type: 'select',
-          label: 'Role',
-          options: [
-            { value: 'developer', label: 'Developer' },
-            { value: 'designer', label: 'Designer' }
-          ]
-        }
-      ]
-    }
-  }
-}
-\`\`\`
-
-**STANDALONE OBJECT FIELDS - Use objectConfig with fields:**
-
-\`\`\`javascript
-{
-  name: 'atmosphericConditions',
-  type: 'object',
-  label: 'Atmospheric Conditions',
-  description: 'Fundamental atmospheric parameters',
-  objectConfig: {
-    title: 'Atmospheric Parameters',
-    collapsible: true,
-    defaultExpanded: true,
-    columns: 2,
-    layout: 'grid',
-    fields: [
-      {
-        name: 'altitude',
-        type: 'number',
-        label: 'Altitude',
-        placeholder: 'Enter altitude in meters'
-      },
-      {
-        name: 'pressure',
-        type: 'number',
-        label: 'Pressure',
-        placeholder: 'Enter pressure in hPa'
-      },
-      {
-        name: 'temperature',
-        type: 'slider',
-        label: 'Temperature',
-        min: -50,
-        max: 50,
-        step: 1
-      }
-    ]
-  }
-}
-\`\`\`
-
-**NESTED OBJECT FIELDS - Objects inside objects:**
-
-\`\`\`javascript
-{
-  name: 'location',
-  type: 'object',
-  label: 'Location Details',
-  objectConfig: {
-    fields: [
-      {
-        name: 'coordinates',
-        type: 'object',
-        label: 'GPS Coordinates',
-        objectConfig: {
-          fields: [
-            {
-              name: 'latitude',
-              type: 'number',
-              label: 'Latitude',
-              placeholder: 'Enter latitude'
-            },
-            {
-              name: 'longitude',
-              type: 'number',
-              label: 'Longitude',
-              placeholder: 'Enter longitude'
-            }
-          ]
-        }
-      }
-    ]
-  }
-}
-\`\`\`
-
-**Optional properties:**
-- pages: [...] for multi-page forms
-- progress: { showSteps: true, showPercentage: false }
-- submitLabel: 'Submit Form'
-- formOptions: { defaultValues: {...}, onSubmit: async (data) => {...} }
-
-Chat naturally. Ask clarifying questions. Suggest improvements. Only output formedible blocks when specifically requested.`;
+      const systemPrompt = configuredSystemPrompt 
+        ? `${baseSystemPrompt}\n\n${configuredSystemPrompt}` 
+        : baseSystemPrompt;
 
       const abortController = new AbortController();
       abortControllerRef.current = abortController;

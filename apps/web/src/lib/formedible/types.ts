@@ -1147,6 +1147,9 @@ export interface FieldConfig {
   inlineValidation?: InlineValidationConfig;
   section?: SectionConfig;
   validationConfig?: FieldValidationConfig;
+  
+  // Allow additional unknown configurations for extensibility
+  [key: string]: unknown;
 }
 
 // Page configuration for multi-page forms
