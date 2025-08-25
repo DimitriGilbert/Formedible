@@ -39,8 +39,8 @@ export default function Home() {
   }, []);
 
   // Determine the current theme - handle 'system' theme by falling back to systemTheme
-  const currentTheme = theme === 'system' ? systemTheme : theme;
-  const darkMode = currentTheme === 'dark';
+  const currentTheme = theme === "system" ? systemTheme : theme;
+  const darkMode = currentTheme === "dark";
 
   const installCommand = `npx shadcn@latest add ${
     origin || "https://formedible.dev"
@@ -49,10 +49,23 @@ export default function Home() {
   return (
     <>
       <Toaster position="top-right" richColors />
-      <div className="min-h-screen bg-background">
+      <div
+        className="min-h-screen bg-background"
+        // className="min-h-screen bg-white dark:bg-white bg-[radial-gradient(circle_at_15.71%_21.78%,rgba(180,83,9,0.35)_0%,rgba(180,83,9,0)_60.86%),radial-gradient(circle_at_46.23%_67.83%,rgba(120,113,108,0.60)_0%,rgba(120,113,108,0)_82.54%),radial-gradient(circle_at_11.18%_83.46%,rgba(161,98,7,0.35)_0%,rgba(161,98,7,0)_50.85%),radial-gradient(circle_at_89.46%_33.40%,rgba(202,138,4,0.35)_0%,rgba(202,138,4,0)_88.26%),radial-gradient(circle_at_86.03%_86.63%,rgba(249,115,22,0.30)_0%,rgba(249,115,22,0)_57.14%)]"
+      >
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="text-center"
+        >
+          <Badge variant="secondary" className="mt-8">
+            Schema driven form made simple
+          </Badge>
+        </motion.div>
         {/* Hero Section */}
-        <section className="container mx-auto px-4 py-16">
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-16 xl:gap-24 items-start max-w-7xl mx-auto">
+        <section className="container mx-auto px-4 py-8">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-16 xl:gap-24 max-w-7xl mx-auto items-center">
             {/* Left Content */}
             <motion.div
               className="text-center xl:text-left"
@@ -60,40 +73,68 @@ export default function Home() {
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.2 }}
-              >
-                <Badge variant="secondary" className="mb-4">
-                  <Package className="w-3 h-3 mr-1" />
-                  shadcn/ui Registry Component
-                </Badge>
-              </motion.div>
-
               <motion.h2
                 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary to-muted-foreground bg-clip-text text-transparent"
                 initial={{ y: 30, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.3 }}
               >
-                Schema-Driven Forms
+                Forms So good
                 <br />
-                <span className="bg-gradient-to-r from-primary to-muted-foreground bg-clip-text text-transparent">
-                  Made Simple
+                <span className="text-2xl md:text-4xl bg-gradient-to-r from-primary to-muted-foreground bg-clip-text text-transparent">
+                  You'll want more
                 </span>
               </motion.h2>
 
-              <motion.p
+              <motion.div
                 className="text-xl text-muted-foreground mb-8"
                 initial={{ y: 30, opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ delay: 0.4 }}
               >
-                A powerful React hook that wraps TanStack Form with shadcn/ui
-                components. Features schema validation, multi-page support,
-                component overrides, and custom wrappers.
-              </motion.p>
+                <ul>
+                  <li className="pb-3">
+                    <p className=" bg-gradient-to-br from-primary to-muted-foreground bg-clip-text text-transparent">
+                      AI friendly
+                    </p>
+                    <p className="text-sm">
+                      with documentation to guide your assistants
+                    </p>
+                  </li>
+                  <li className="pb-3">
+                    <p className=" bg-gradient-to-br from-primary to-muted-foreground bg-clip-text text-transparent">
+                      Safe and consistant
+                    </p>
+                    <p className="text-sm">
+                      through out your app with real time validation
+                    </p>
+                  </li>
+                  <li className="pb-3">
+                    <p className=" bg-gradient-to-br from-primary to-muted-foreground bg-clip-text text-transparent">
+                      Flexible and customisable
+                    </p>
+                    <p className="text-sm">
+                      24 inputs with full customisation and custom component
+                      support
+                    </p>
+                  </li>
+                  <li className="pb-3">
+                    <p className=" bg-gradient-to-br from-primary to-muted-foreground bg-clip-text text-transparent">
+                      Powerful built-in functionalities
+                    </p>
+                    <p className="text-sm">
+                      pagination and design helpers to make your forms look
+                      great
+                    </p>
+                  </li>
+                  <li>
+                    <p className=" bg-gradient-to-br from-primary to-muted-foreground bg-clip-text text-transparent">
+                      Bult with ShadCN UI
+                    </p>
+                    <p className="text-sm">for a modern developer experience</p>
+                  </li>
+                </ul>
+              </motion.div>
 
               <motion.div
                 className="flex flex-col sm:flex-row gap-4 justify-center xl:justify-start mb-8"

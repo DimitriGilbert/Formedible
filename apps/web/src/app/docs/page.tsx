@@ -52,6 +52,15 @@ export default function DocsPage() {
       badge: "Start Here",
     },
     {
+      title: "Examples",
+      description:
+        "Real-world form implementations from simple to complex use cases",
+      icon: Book,
+      href: "/docs/examples",
+      color: "text-warning",
+      badge: null,
+    },
+    {
       title: "Field Types",
       description:
         "Explore 20+ pre-built field components with advanced features like custom visualizations",
@@ -130,15 +139,6 @@ export default function DocsPage() {
       icon: Code,
       href: "/docs/api",
       color: "text-muted-foreground",
-      badge: null,
-    },
-    {
-      title: "Examples",
-      description:
-        "Real-world form implementations from simple to complex use cases",
-      icon: Book,
-      href: "/docs/examples",
-      color: "text-warning",
       badge: null,
     },
   ];

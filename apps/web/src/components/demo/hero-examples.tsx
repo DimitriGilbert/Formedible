@@ -3,7 +3,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DemoCard } from "@/components/demo/demo-card";
 import { AnimatePresence, motion } from "motion/react";
 
-// Import examples from docs/examples
+// Import examples from docs/examples and components/examples
+import {
+  InstallationPromptGenerator,
+  installationPromptCode,
+} from "@/components/examples/installation-prompt-generator";
+import {
+  SystemPromptGenerator,
+  systemPromptCode,
+} from "@/components/examples/system-prompt-generator";
 import {
   ContactFormExample,
   contactFormCode,
@@ -23,23 +31,44 @@ import {
 
 export const HeroExamples: React.FC = () => {
   return (
-    <Tabs defaultValue="Flow" className="w-full">
-      <TabsList className="grid w-full grid-cols-4 mb-6">
-        <TabsTrigger value="Flow" className="text-xs">
-          Flow
-        </TabsTrigger>
-        <TabsTrigger value="contact" className="text-xs">
-          Contact
-        </TabsTrigger>
-        <TabsTrigger value="registration" className="text-xs">
-          Multi-Page
-        </TabsTrigger>
-        <TabsTrigger value="survey" className="text-xs">
-          Conditional
-        </TabsTrigger>
-      </TabsList>
-
+    <Tabs defaultValue="installation" className="w-full">
       <AnimatePresence mode="wait">
+        <TabsContent key="installation" value="installation">
+          <motion.div
+            key="installation-form"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+          >
+            <DemoCard
+              title="Installation Guide Generator"
+              description="Personalized setup instructions for your project stack and preferences"
+              preview={<InstallationPromptGenerator />}
+              code={installationPromptCode}
+              codeTitle="Installation Prompt Generator"
+              codeDescription="15-page flow form that generates custom installation instructions with copy-to-clipboard"
+            />
+          </motion.div>
+        </TabsContent>
+        <TabsContent key="system-prompt" value="system-prompt">
+          <motion.div
+            key="system-prompt-form"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+          >
+            <DemoCard
+              title="AI System Prompt Generator"
+              description="Create customized AI assistant prompts for Formedible development"
+              preview={<SystemPromptGenerator />}
+              code={systemPromptCode}
+              codeTitle="System Prompt Generator"
+              codeDescription="21-page configuration form using parser schema to generate specialized AI prompts"
+            />
+          </motion.div>
+        </TabsContent>
         <TabsContent key="contact" value="contact">
           <motion.div
             key="contact-form"
@@ -115,6 +144,27 @@ export const HeroExamples: React.FC = () => {
           </motion.div>
         </TabsContent>
       </AnimatePresence>
+
+      <TabsList className="grid w-full grid-cols-6 mt-2">
+        <TabsTrigger value="installation" className="text-xs">
+          Install
+        </TabsTrigger>
+        <TabsTrigger value="system-prompt" className="text-xs">
+          AI Prompt
+        </TabsTrigger>
+        <TabsTrigger value="Flow" className="text-xs">
+          Flow
+        </TabsTrigger>
+        <TabsTrigger value="contact" className="text-xs">
+          Contact
+        </TabsTrigger>
+        <TabsTrigger value="registration" className="text-xs">
+          Multi-Page
+        </TabsTrigger>
+        <TabsTrigger value="survey" className="text-xs">
+          Conditional
+        </TabsTrigger>
+      </TabsList>
     </Tabs>
   );
 };
