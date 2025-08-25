@@ -1,16 +1,16 @@
-import React from 'react';
-import { format, parseISO } from 'date-fns';
-import { Calendar as CalendarIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
+import React from "react";
+import { format, parseISO } from "date-fns";
+import { Calendar as CalendarIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
-import type { BaseFieldProps } from '@/lib/formedible/types';
-import { FieldWrapper } from './base-field-wrapper';
+} from "@/components/ui/popover";
+import type { BaseFieldProps } from "@/lib/formedible/types";
+import { FieldWrapper } from "./base-field-wrapper";
 
 export const DateField: React.FC<BaseFieldProps> = ({
   fieldApi,
@@ -21,9 +21,9 @@ export const DateField: React.FC<BaseFieldProps> = ({
   labelClassName,
   wrapperClassName,
 }) => {
-  const name = fieldApi.name;
   const isDisabled = fieldApi.form?.state?.isSubmitting ?? false;
-  const hasErrors = fieldApi.state?.meta?.isTouched && fieldApi.state?.meta?.errors?.length > 0;
+  const hasErrors =
+    fieldApi.state?.meta?.isTouched && fieldApi.state?.meta?.errors?.length > 0;
 
   const [isOpen, setIsOpen] = React.useState(false);
 
@@ -31,9 +31,9 @@ export const DateField: React.FC<BaseFieldProps> = ({
   const selectedDate = value
     ? value instanceof Date
       ? value
-      : typeof value === 'string'
-        ? parseISO(value)
-        : undefined
+      : typeof value === "string"
+      ? parseISO(value)
+      : undefined
     : undefined;
 
   const handleDateSelect = (date: Date | undefined) => {
@@ -67,7 +67,11 @@ export const DateField: React.FC<BaseFieldProps> = ({
             onClick={() => setIsOpen(true)}
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
-            {selectedDate ? format(selectedDate, "PPP") : <span>{placeholder || "Pick a date"}</span>}
+            {selectedDate ? (
+              format(selectedDate, "PPP")
+            ) : (
+              <span>{placeholder || "Pick a date"}</span>
+            )}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0">

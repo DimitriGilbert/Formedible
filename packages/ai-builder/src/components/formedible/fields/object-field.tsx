@@ -1,9 +1,9 @@
 "use client";
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import type { BaseFieldProps, ObjectFieldProps, LayoutConfig } from "@/lib/formedible/types";
-import { FieldWrapper } from './base-field-wrapper';
-import { NestedFieldRenderer } from './shared-field-renderer';
+import type { BaseFieldProps, ObjectFieldProps } from "@/lib/formedible/types";
+import { FieldWrapper } from "./base-field-wrapper";
+import { NestedFieldRenderer } from "./shared-field-renderer";
 import { resolveDynamicText } from "@/lib/formedible/template-interpolation";
 
 export const ObjectField: React.FC<ObjectFieldProps> = ({
@@ -18,8 +18,10 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
   );
 
   // Subscribe to form values for dynamic text resolution
-  const [subscribedValues, setSubscribedValues] = React.useState(fieldApi.form?.state?.values || {});
-  
+  const [subscribedValues, setSubscribedValues] = React.useState(
+    fieldApi.form?.state?.values || {}
+  );
+
   React.useEffect(() => {
     if (!fieldApi.form) return;
     const unsubscribe = fieldApi.form.store.subscribe((state) => {
@@ -40,13 +42,13 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
           ...fieldApi.state.meta,
           errors: [], // Reset errors for subfield
           isTouched: false, // Reset touched state for subfield
-        }
+        },
       },
       handleChange: (value: unknown) => {
         const currentValue = fieldApi.state?.value || {};
         fieldApi.handleChange({
           ...currentValue,
-          [fieldName]: value
+          [fieldName]: value,
         });
       },
       handleBlur: fieldApi.handleBlur,
@@ -54,8 +56,11 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
   };
 
   const renderField = (subFieldConfig: any) => {
-    const fieldValue = fieldApi.state?.value?.[subFieldConfig.name] || '';
-    const mockFieldApi = createMockFieldApi(subFieldConfig.name, fieldValue) as unknown as BaseFieldProps['fieldApi'];
+    const fieldValue = fieldApi.state?.value?.[subFieldConfig.name] || "";
+    const mockFieldApi = createMockFieldApi(
+      subFieldConfig.name,
+      fieldValue
+    ) as unknown as BaseFieldProps["fieldApi"];
 
     return (
       <div key={subFieldConfig.name}>
@@ -63,7 +68,9 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
           fieldConfig={subFieldConfig}
           fieldApi={mockFieldApi}
           form={form}
-          currentValues={(fieldApi.state?.value || {}) as Record<string, unknown>}
+          currentValues={
+            (fieldApi.state?.value || {}) as Record<string, unknown>
+          }
         />
       </div>
     );
@@ -72,7 +79,7 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
   const getLayoutClasses = () => {
     const layout = objectConfig?.layout || "vertical";
     const columns = objectConfig?.columns || 2;
-    
+
     switch (layout) {
       case "horizontal":
         return "flex flex-wrap gap-4";
@@ -100,10 +107,15 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
                     onClick={() => setIsExpanded(!isExpanded)}
                     className="text-xs text-muted-foreground hover:text-foreground"
                   >
-                    {isExpanded 
-                      ? resolveDynamicText(objectConfig?.collapseLabel || "Collapse", subscribedValues)
-                      : resolveDynamicText(objectConfig?.expandLabel || "Expand", subscribedValues)
-                    }
+                    {isExpanded
+                      ? resolveDynamicText(
+                          objectConfig?.collapseLabel || "Collapse",
+                          subscribedValues
+                        )
+                      : resolveDynamicText(
+                          objectConfig?.expandLabel || "Expand",
+                          subscribedValues
+                        )}
                   </button>
                 )}
               </div>
@@ -127,11 +139,12 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
         )}
 
         {/* Show field errors */}
-        {fieldApi.state?.meta?.errors && fieldApi.state?.meta?.errors.length > 0 && (
-          <div className="text-sm text-destructive">
-            {fieldApi.state?.meta?.errors.join(", ")}
-          </div>
-        )}
+        {fieldApi.state?.meta?.errors &&
+          fieldApi.state?.meta?.errors.length > 0 && (
+            <div className="text-sm text-destructive">
+              {fieldApi.state?.meta?.errors.join(", ")}
+            </div>
+          )}
       </div>
     </FieldWrapper>
   );
@@ -144,17 +157,24 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
           <CardHeader className="pb-3">
             {objectConfig?.title && (
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base">{resolveDynamicText(objectConfig.title, subscribedValues)}</CardTitle>
+                <CardTitle className="text-base">
+                  {resolveDynamicText(objectConfig.title, subscribedValues)}
+                </CardTitle>
                 {objectConfig?.collapsible && (
                   <button
                     type="button"
                     onClick={() => setIsExpanded(!isExpanded)}
                     className="text-xs text-muted-foreground hover:text-foreground"
                   >
-                    {isExpanded 
-                      ? resolveDynamicText(objectConfig?.collapseLabel || "Collapse", subscribedValues)
-                      : resolveDynamicText(objectConfig?.expandLabel || "Expand", subscribedValues)
-                    }
+                    {isExpanded
+                      ? resolveDynamicText(
+                          objectConfig?.collapseLabel || "Collapse",
+                          subscribedValues
+                        )
+                      : resolveDynamicText(
+                          objectConfig?.expandLabel || "Expand",
+                          subscribedValues
+                        )}
                   </button>
                 )}
               </div>
@@ -174,13 +194,14 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
               </div>
             </>
           )}
-          
+
           {/* Show field errors */}
-          {fieldApi.state?.meta?.errors && fieldApi.state?.meta?.errors.length > 0 && (
-            <div className="text-sm text-destructive mt-4">
-              {fieldApi.state?.meta?.errors.join(", ")}
-            </div>
-          )}
+          {fieldApi.state?.meta?.errors &&
+            fieldApi.state?.meta?.errors.length > 0 && (
+              <div className="text-sm text-destructive mt-4">
+                {fieldApi.state?.meta?.errors.join(", ")}
+              </div>
+            )}
         </CardContent>
       </Card>
     );

@@ -1,18 +1,12 @@
-'use client';
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { cn } from '@/lib/utils';
-import { Check, X, Loader2 } from 'lucide-react';
-import type { AnyFieldApi } from '@tanstack/react-form';
-import type { InlineValidationWrapperProps } from '@/lib/formedible/types';
+"use client";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { cn } from "@/lib/utils";
+import { Check, X, Loader2 } from "lucide-react";
+import type { InlineValidationWrapperProps } from "@/lib/formedible/types";
 
-
-
-export const InlineValidationWrapper: React.FC<InlineValidationWrapperProps> = ({
-  children,
-  fieldApi,
-  inlineValidation = {},
-  className,
-}) => {
+export const InlineValidationWrapper: React.FC<
+  InlineValidationWrapperProps
+> = ({ children, fieldApi, inlineValidation = {}, className }) => {
   const {
     enabled = true,
     debounceMs = 300,
@@ -36,27 +30,30 @@ export const InlineValidationWrapper: React.FC<InlineValidationWrapperProps> = (
   const isTouched = state.meta.isTouched;
 
   // Validation function
-  const validateValue = useCallback(async (currentValue: unknown) => {
-    if (!enabled || !asyncValidator) return;
+  const validateValue = useCallback(
+    async (currentValue: unknown) => {
+      if (!enabled || !asyncValidator) return;
 
-    setValidationState(prev => ({ ...prev, isValidating: true }));
+      setValidationState((prev) => ({ ...prev, isValidating: true }));
 
-    try {
-      const result = await asyncValidator(currentValue);
-      
-      setValidationState({
-        isValidating: false,
-        isValid: result === null,
-        message: result,
-      });
-    } catch (error) {
-      setValidationState({
-        isValidating: false,
-        isValid: false,
-        message: error instanceof Error ? error.message : 'Validation failed',
-      });
-    }
-  }, [enabled, asyncValidator]);
+      try {
+        const result = await asyncValidator(currentValue);
+
+        setValidationState({
+          isValidating: false,
+          isValid: result === null,
+          message: result,
+        });
+      } catch (error) {
+        setValidationState({
+          isValidating: false,
+          isValid: false,
+          message: error instanceof Error ? error.message : "Validation failed",
+        });
+      }
+    },
+    [enabled, asyncValidator]
+  );
 
   // Debounced validation function
   const debouncedValidate = useMemo(
@@ -66,7 +63,7 @@ export const InlineValidationWrapper: React.FC<InlineValidationWrapperProps> = (
 
   // Trigger validation when value changes
   useEffect(() => {
-    if (enabled && isTouched && value !== undefined && value !== '') {
+    if (enabled && isTouched && value !== undefined && value !== "") {
       debouncedValidate(value);
     } else {
       setValidationState({
@@ -90,7 +87,7 @@ export const InlineValidationWrapper: React.FC<InlineValidationWrapperProps> = (
 
   const getValidationIcon = () => {
     if (!enabled || !isTouched) return null;
-    
+
     if (validationState.isValidating) {
       return <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />;
     }
@@ -144,19 +141,20 @@ export const InlineValidationWrapper: React.FC<InlineValidationWrapperProps> = (
           </div>
         )}
       </div>
-      
+
       {/* Validation message */}
       {validationMessage && (
-        <div className={cn(
-          "text-xs mt-1 flex items-center gap-1",
-          hasErrors || validationState.isValid === false
-            ? "text-destructive"
-            : "text-muted-foreground"
-        )}>
-          {typeof validationMessage === 'string' 
-            ? validationMessage 
-            : (validationMessage as Error)?.message || 'Validation error'
-          }
+        <div
+          className={cn(
+            "text-xs mt-1 flex items-center gap-1",
+            hasErrors || validationState.isValid === false
+              ? "text-destructive"
+              : "text-muted-foreground"
+          )}
+        >
+          {typeof validationMessage === "string"
+            ? validationMessage
+            : (validationMessage as Error)?.message || "Validation error"}
         </div>
       )}
     </div>
@@ -169,9 +167,9 @@ function debounce<T extends (...args: any[]) => any>(
   wait: number
 ): (...args: Parameters<T>) => void {
   let timeout: ReturnType<typeof setTimeout>;
-  
+
   return (...args: Parameters<T>) => {
     clearTimeout(timeout);
     timeout = setTimeout(() => func(...args), wait);
   };
-} 
+}

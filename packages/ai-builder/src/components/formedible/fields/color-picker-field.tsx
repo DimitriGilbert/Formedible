@@ -1,51 +1,65 @@
-'use client';
-import React, { useState, useRef, useEffect } from 'react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { Palette, Check } from 'lucide-react';
-import type { ColorPickerFieldSpecificProps } from '@/lib/formedible/types';
-import { FieldWrapper } from './base-field-wrapper';
-
+"use client";
+import React, { useState, useRef, useEffect } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { Palette, Check } from "lucide-react";
+import type { ColorPickerFieldSpecificProps } from "@/lib/formedible/types";
+import { FieldWrapper } from "./base-field-wrapper";
 
 const DEFAULT_PRESETS = [
-  '#FF0000', '#FF8000', '#FFFF00', '#80FF00', '#00FF00', '#00FF80',
-  '#00FFFF', '#0080FF', '#0000FF', '#8000FF', '#FF00FF', '#FF0080',
-  '#000000', '#404040', '#808080', '#C0C0C0', '#FFFFFF', '#8B4513'
+  "#FF0000",
+  "#FF8000",
+  "#FFFF00",
+  "#80FF00",
+  "#00FF00",
+  "#00FF80",
+  "#00FFFF",
+  "#0080FF",
+  "#0000FF",
+  "#8000FF",
+  "#FF00FF",
+  "#FF0080",
+  "#000000",
+  "#404040",
+  "#808080",
+  "#C0C0C0",
+  "#FFFFFF",
+  "#8B4513",
 ];
 
 // Color conversion utilities
 const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result ? {
-    r: parseInt(result[1], 16),
-    g: parseInt(result[2], 16),
-    b: parseInt(result[3], 16)
-  } : null;
+  return result
+    ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16),
+      }
+    : null;
 };
-
-
 
 const hexToHsl = (hex: string): { h: number; s: number; l: number } | null => {
   const rgb = hexToRgb(hex);
   if (!rgb) return null;
-  
+
   const { r, g, b } = rgb;
   const rNorm = r / 255;
   const gNorm = g / 255;
   const bNorm = b / 255;
-  
+
   const max = Math.max(rNorm, gNorm, bNorm);
   const min = Math.min(rNorm, gNorm, bNorm);
   const diff = max - min;
-  
+
   let h = 0;
   let s = 0;
   const l = (max + min) / 2;
-  
+
   if (diff !== 0) {
     s = l > 0.5 ? diff / (2 - max - min) : diff / (max + min);
-    
+
     switch (max) {
       case rNorm:
         h = (gNorm - bNorm) / diff + (gNorm < bNorm ? 6 : 0);
@@ -59,21 +73,21 @@ const hexToHsl = (hex: string): { h: number; s: number; l: number } | null => {
     }
     h /= 6;
   }
-  
+
   return {
     h: Math.round(h * 360),
     s: Math.round(s * 100),
-    l: Math.round(l * 100)
+    l: Math.round(l * 100),
   };
 };
 
-const formatColor = (hex: string, format: 'hex' | 'rgb' | 'hsl'): string => {
+const formatColor = (hex: string, format: "hex" | "rgb" | "hsl"): string => {
   switch (format) {
-    case 'rgb': {
+    case "rgb": {
       const rgb = hexToRgb(hex);
       return rgb ? `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})` : hex;
     }
-    case 'hsl': {
+    case "hsl": {
       const hsl = hexToHsl(hex);
       return hsl ? `hsl(${hsl.h}, ${hsl.s}%, ${hsl.l}%)` : hex;
     }
@@ -89,35 +103,36 @@ export const ColorPickerField: React.FC<ColorPickerFieldSpecificProps> = ({
   ...wrapperProps
 }) => {
   const {
-    format = 'hex',
+    format = "hex",
     showPreview = true,
     presetColors = DEFAULT_PRESETS,
     allowCustom = true,
   } = colorConfig;
 
-  const name = fieldApi.name;
-  
-  const value = (fieldApi.state?.value as string) || '#000000';
-  
+  const value = (fieldApi.state?.value as string) || "#000000";
+
   const [isOpen, setIsOpen] = useState(false);
   const [customInput, setCustomInput] = useState(value);
   const containerRef = useRef<HTMLDivElement>(null);
   const colorInputRef = useRef<HTMLInputElement>(null);
 
   // Ensure value is always a valid hex color
-  const normalizedValue = value.startsWith('#') ? value : `#${value}`;
+  const normalizedValue = value.startsWith("#") ? value : `#${value}`;
   const displayValue = formatColor(normalizedValue, format);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleColorSelect = (color: string) => {
@@ -131,7 +146,7 @@ export const ColorPickerField: React.FC<ColorPickerFieldSpecificProps> = ({
   const handleCustomInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
     setCustomInput(inputValue);
-    
+
     // Validate and update if it's a valid color
     if (inputValue.match(/^#[0-9A-Fa-f]{6}$/)) {
       const formattedColor = formatColor(inputValue, format);
@@ -172,7 +187,7 @@ export const ColorPickerField: React.FC<ColorPickerFieldSpecificProps> = ({
             >
               {!showPreview && <Palette className="h-4 w-4" />}
             </Button>
-            
+
             {/* Native color input (hidden) */}
             <input
               ref={colorInputRef}
@@ -192,14 +207,14 @@ export const ColorPickerField: React.FC<ColorPickerFieldSpecificProps> = ({
               const inputValue = e.target.value;
               fieldApi.handleChange(inputValue);
               // Try to extract hex value for internal use
-              if (inputValue.startsWith('#')) {
+              if (inputValue.startsWith("#")) {
                 setCustomInput(inputValue);
               }
             }}
             onBlur={() => {
               fieldApi.handleBlur();
             }}
-            placeholder={'#000000'}
+            placeholder={"#000000"}
             className={cn(
               "flex-1",
               fieldApi.state?.meta?.errors.length ? "border-destructive" : ""
@@ -221,8 +236,8 @@ export const ColorPickerField: React.FC<ColorPickerFieldSpecificProps> = ({
                     type="button"
                     className={cn(
                       "w-8 h-8 rounded border-2 hover:scale-110 transition-transform",
-                      normalizedValue.toLowerCase() === color.toLowerCase() 
-                        ? "border-primary ring-2 ring-primary ring-offset-2" 
+                      normalizedValue.toLowerCase() === color.toLowerCase()
+                        ? "border-primary ring-2 ring-primary ring-offset-2"
                         : "border-muted hover:border-primary"
                     )}
                     style={{ backgroundColor: color }}

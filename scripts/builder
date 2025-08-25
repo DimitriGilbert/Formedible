@@ -177,7 +177,7 @@ build_parser_package() {
   log_info "Building formedible-parser package..."
   npm run build:parser
   
-  if [[ ! -d "packages/parser/dist" ]]; then
+  if [[ ! -d "packages/formedible-parser/dist" ]]; then
     log_error "Parser package build failed - dist directory not found"
     exit 1
   fi
@@ -335,9 +335,9 @@ create_release_artifacts() {
   fi
   
   # Copy parser package dist to build directory
-  if [[ -d "packages/parser/dist" ]]; then
+  if [[ -d "packages/formedible-parser/dist" ]]; then
     mkdir -p "$BUILD_DIR/parser"
-    cp -r "packages/parser/dist"/* "$BUILD_DIR/parser/"
+    cp -r "packages/formedible-parser/dist"/* "$BUILD_DIR/parser/"
   fi
   
   # Copy web dist to build directory
