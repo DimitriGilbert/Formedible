@@ -168,6 +168,23 @@ build_ai_builder_package() {
   log_success "AI-builder package build completed"
 }
 
+build_parser_package() {
+  if [[ "$SKIP_BUILD" == true ]]; then
+    log_info "Skipping parser package build (--skip-build flag)"
+    return
+  fi
+  
+  log_info "Building formedible-parser package..."
+  npm run build:parser
+  
+  if [[ ! -d "packages/parser/dist" ]]; then
+    log_error "Parser package build failed - dist directory not found"
+    exit 1
+  fi
+  
+  log_success "Parser package build completed"
+}
+
 update_web_components() {
   log_info "Updating web app components from package..."
   
@@ -317,26 +334,56 @@ create_release_artifacts() {
     cp -r "packages/ai-builder/dist"/* "$BUILD_DIR/ai-builder/"
   fi
   
+  # Copy parser package dist to build directory
+  if [[ -d "packages/parser/dist" ]]; then
+    mkdir -p "$BUILD_DIR/parser"
+    cp -r "packages/parser/dist"/* "$BUILD_DIR/parser/"
+  fi
+  
   # Copy web dist to build directory
   mkdir -p "$BUILD_DIR/web"
   cp -r "$WEB_DIST_DIR"/* "$BUILD_DIR/web/"
   
-  # Create release zips
+  # Create release zips - ENSURE ALL PACKAGES GET ZIPS
   log_info "Creating release zip: $RELEASE_DIR/formedible-$RELEASE_NAME.zip"
-  (cd "$BUILD_DIR/package" && zip -r "../../$RELEASE_DIR/formedible-$RELEASE_NAME.zip" .)
-  
-  if [[ -d "$BUILD_DIR/builder" ]]; then
-    log_info "Creating builder release zip: $RELEASE_DIR/formedible-builder-$RELEASE_NAME.zip"
-    (cd "$BUILD_DIR/builder" && zip -r "../../$RELEASE_DIR/formedible-builder-$RELEASE_NAME.zip" .)
+  if [[ -d "$BUILD_DIR/package" ]]; then
+    (cd "$BUILD_DIR/package" && zip -r "../../$RELEASE_DIR/formedible-$RELEASE_NAME.zip" .)
+  else
+    log_error "Main package build directory not found: $BUILD_DIR/package"
+    exit 1
   fi
   
+  log_info "Creating builder release zip: $RELEASE_DIR/formedible-builder-$RELEASE_NAME.zip"
+  if [[ -d "$BUILD_DIR/builder" ]]; then
+    (cd "$BUILD_DIR/builder" && zip -r "../../$RELEASE_DIR/formedible-builder-$RELEASE_NAME.zip" .)
+  else
+    log_error "Builder package build directory not found: $BUILD_DIR/builder"
+    exit 1
+  fi
+  
+  log_info "Creating ai-builder release zip: $RELEASE_DIR/formedible-ai-builder-$RELEASE_NAME.zip"
   if [[ -d "$BUILD_DIR/ai-builder" ]]; then
-    log_info "Creating ai-builder release zip: $RELEASE_DIR/formedible-ai-builder-$RELEASE_NAME.zip"
     (cd "$BUILD_DIR/ai-builder" && zip -r "../../$RELEASE_DIR/formedible-ai-builder-$RELEASE_NAME.zip" .)
+  else
+    log_error "AI-builder package build directory not found: $BUILD_DIR/ai-builder"
+    exit 1
+  fi
+  
+  log_info "Creating parser release zip: $RELEASE_DIR/formedible-parser-$RELEASE_NAME.zip"
+  if [[ -d "$BUILD_DIR/parser" ]]; then
+    (cd "$BUILD_DIR/parser" && zip -r "../../$RELEASE_DIR/formedible-parser-$RELEASE_NAME.zip" .)
+  else
+    log_error "Parser package build directory not found: $BUILD_DIR/parser"
+    exit 1
   fi
   
   log_info "Creating web release zip: $RELEASE_DIR/formedible-web-$RELEASE_NAME.zip"
-  (cd "$BUILD_DIR/web" && zip -r "../../$RELEASE_DIR/formedible-web-$RELEASE_NAME.zip" .)
+  if [[ -d "$BUILD_DIR/web" ]]; then
+    (cd "$BUILD_DIR/web" && zip -r "../../$RELEASE_DIR/formedible-web-$RELEASE_NAME.zip" .)
+  else
+    log_error "Web build directory not found: $BUILD_DIR/web"
+    exit 1
+  fi
   
   log_success "Release artifacts created"
 }
@@ -519,18 +566,18 @@ show_summary() {
   if [[ -d "$BUILD_DIR/ai-builder" ]]; then
     echo "│   ├── ai-builder/ (formedible-ai-builder library)"
   fi
+  if [[ -d "$BUILD_DIR/parser" ]]; then
+    echo "│   ├── parser/ (formedible-parser library)"
+  fi
   echo "│   └── web/ (web application)"
   
   if [[ -n "$RELEASE_NAME" ]]; then
     echo "│"
     echo "├── $RELEASE_DIR/"
     echo "│   ├── formedible-$RELEASE_NAME.zip"
-    if [[ -f "$RELEASE_DIR/formedible-builder-$RELEASE_NAME.zip" ]]; then
-      echo "│   ├── formedible-builder-$RELEASE_NAME.zip"
-    fi
-    if [[ -f "$RELEASE_DIR/formedible-ai-builder-$RELEASE_NAME.zip" ]]; then
-      echo "│   ├── formedible-ai-builder-$RELEASE_NAME.zip"
-    fi
+    echo "│   ├── formedible-builder-$RELEASE_NAME.zip"
+    echo "│   ├── formedible-ai-builder-$RELEASE_NAME.zip"
+    echo "│   ├── formedible-parser-$RELEASE_NAME.zip"
     echo "│   └── formedible-web-$RELEASE_NAME.zip"
   fi
   echo ""
@@ -552,14 +599,16 @@ show_summary() {
 main() {
   echo "🚀 Formedible Build & Release Script"
   echo "===================================="
-  echo "ℹ️  This script builds both formedible and formedible-builder packages."
+  echo "ℹ️  This script builds all formedible packages: formedible, builder, ai-builder, and parser."
   echo "   It also uses modular components. You can also run:"
-  echo "   • scripts/build-package    - Build formedible package only"
-  echo "   • npm run build:builder    - Build formedible-builder package only"
-  echo "   • scripts/sync-components  - Sync components to web app"
-  echo "   • scripts/build-web        - Build web app only"
-  echo "   • scripts/deploy-web       - Deploy web app only"
-  echo "   • scripts/create-release   - Create release only"
+  echo "   • scripts/build-package     - Build formedible package only"
+  echo "   • npm run build:builder     - Build formedible-builder package only"
+  echo "   • npm run build:ai-builder  - Build formedible-ai-builder package only"
+  echo "   • npm run build:parser      - Build formedible-parser package only"
+  echo "   • scripts/sync-components   - Sync components to web app"
+  echo "   • scripts/build-web         - Build web app only"
+  echo "   • scripts/deploy-web        - Deploy web app only"
+  echo "   • scripts/create-release    - Create release only"
   echo ""
   
   # Argument validation
@@ -613,6 +662,9 @@ main() {
   
   # Build ai-builder package
   build_ai_builder_package
+  
+  # Build parser package
+  build_parser_package
   
   # CRITICAL: Sync components FIRST using quick-sync to ensure all dependencies are up to date
   log_info "Running quick-sync to update all components before building registries..."
