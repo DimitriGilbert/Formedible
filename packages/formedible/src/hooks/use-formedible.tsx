@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useMemo, memo, useRef } from "react";
-import { useForm, AnyFormApi, AnyFieldApi } from "@tanstack/react-form";
+import { useForm } from "@tanstack/react-form";
+import type { AnyFormApi, AnyFieldApi } from "@tanstack/react-form";
 import { cn } from "@/lib/utils";
 import type {
   FormedibleFormApi,
@@ -207,9 +208,9 @@ const SectionRenderer: React.FC<
   );
 
   // Subscribe to form values for dynamic text resolution - always at top level
-  const [subscribedValues, setSubscribedValues] = React.useState<Record<string, unknown>>(
-    form?.state?.values || {}
-  );
+  const [subscribedValues, setSubscribedValues] = React.useState<
+    Record<string, unknown>
+  >(form?.state?.values || {});
 
   React.useEffect(() => {
     if (!form) return;
@@ -261,7 +262,7 @@ const SectionRenderer: React.FC<
           className={layout.className}
         >
           {allVisibleFields.map((field) => (
-            <GridItem 
+            <GridItem
               key={field.name}
               gridColumn={field.gridColumn}
               gridRow={field.gridRow}

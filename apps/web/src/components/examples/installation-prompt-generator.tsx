@@ -11,8 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Terminal, Package, Code, Copy, Check, FileText } from "lucide-react";
+import { Terminal, Copy, Check, FileText } from "lucide-react";
 
 const installationSchema = z.object({
   // Framework
