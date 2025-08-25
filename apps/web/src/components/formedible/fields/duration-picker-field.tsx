@@ -16,7 +16,7 @@ interface DurationPickerFieldProps extends BaseFieldProps {
   durationConfig?: DurationConfig;
 }
 
-const parseDuration = (value: any, format: string) => {
+const parseDuration = (value: any) => {
   if (!value) return { hours: 0, minutes: 0, seconds: 0 };
 
   if (typeof value === "number") {
@@ -76,7 +76,7 @@ export const DurationPickerField: React.FC<DurationPickerFieldProps> = ({
   const maxSeconds = durationConfig?.maxSeconds || 59;
   const showLabels = durationConfig?.showLabels !== false;
 
-  const currentValue = parseDuration(fieldApi.state?.value, format);
+  const currentValue = parseDuration(fieldApi.state?.value);
   const [hours, setHours] = useState(currentValue.hours);
   const [minutes, setMinutes] = useState(currentValue.minutes);
   const [seconds, setSeconds] = useState(currentValue.seconds);
