@@ -1,6 +1,7 @@
 "use client";
 
 import { useFormedible } from "@/hooks/use-formedible";
+import { toast } from "sonner";
 
 export type AIProvider =
   | "openai"
@@ -85,7 +86,27 @@ export function ProviderSelection({
           apiKey: value.apiKey || "",
           ...(value.endpoint && { endpoint: value.endpoint }),
         };
+        
+        // Validate configuration
+        const providersRequiringKey = ["openai", "anthropic", "google", "mistral", "openrouter"];
+        if (providersRequiringKey.includes(config.provider as string) && (!config.apiKey || config.apiKey.trim().length === 0)) {
+          toast.error("API key required", {
+            description: `Please enter a valid API key for ${config.provider}.`
+          });
+          return;
+        }
+        
+        if (config.provider === "openai-compatible" && (!config.endpoint || config.endpoint.trim().length === 0)) {
+          toast.error("Endpoint required", {
+            description: "Please enter a valid API endpoint for OpenAI-compatible provider."
+          });
+          return;
+        }
+        
         onConfigChange(config);
+        toast.success("Provider configured successfully!", {
+          description: "You can now start building forms with AI."
+        });
       },
     },
     submitLabel: "💾 Save Configuration",

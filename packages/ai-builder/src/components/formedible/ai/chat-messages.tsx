@@ -27,8 +27,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CodeBlock } from "@/components/ui/code-block";
 import { cn } from "@/lib/utils";
 import type { ProviderConfig } from "./provider-selection";
+import type { AIBuilderMode, BackendConfig } from "./ai-builder";
 import { extractFormedibleCode } from "@/lib/form-extraction-utils";
 import { generateSystemPrompt, defaultParserConfig } from "@/lib/formedible/parser-config-schema";
+import { toast } from "sonner";
 
 // MessageContent component to handle code blocks with syntax highlighting
 interface MessageContentProps {
@@ -114,6 +116,8 @@ export interface ChatMessagesProps {
   messages?: Message[];
   className?: string;
   providerConfig?: ProviderConfig | null;
+  mode?: AIBuilderMode;
+  backendConfig?: BackendConfig;
 }
 
 export function ChatMessages({
@@ -124,6 +128,8 @@ export function ChatMessages({
   messages: externalMessages,
   className,
   providerConfig,
+  mode = "direct",
+  backendConfig,
 }: ChatMessagesProps) {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>(externalMessages || []);
@@ -230,9 +236,116 @@ export function ChatMessages({
     }
   };
 
+  const isServiceConfigured = (): boolean => {
+    if (mode === "backend") {
+      return !!(backendConfig && backendConfig.endpoint && backendConfig.endpoint.trim().length > 0);
+    }
+    
+    // For direct mode, check provider configuration
+    if (!providerConfig) return false;
+    
+    // Check if provider requires API key
+    const providersRequiringKey = ["openai", "anthropic", "google", "mistral", "openrouter"];
+    if (providersRequiringKey.includes(providerConfig.provider as string)) {
+      return !!(providerConfig.apiKey && providerConfig.apiKey.trim().length > 0);
+    }
+    
+    // For openai-compatible, endpoint is required
+    if (providerConfig.provider === "openai-compatible") {
+      return !!(providerConfig.endpoint && providerConfig.endpoint.trim().length > 0);
+    }
+    
+    return true;
+  };
+
+  // AI service abstraction - handles both direct and backend modes
+  const generateAIResponse = async (
+    userMessage: string, 
+    conversationMessages: Message[],
+    systemPrompt: string,
+    abortSignal: AbortSignal
+  ): Promise<AsyncIterable<string>> => {
+    if (mode === "backend") {
+      // Backend mode - make API call to developer's endpoint
+      if (!backendConfig?.endpoint) {
+        throw new Error("Backend endpoint not configured");
+      }
+
+      const response = await fetch(backendConfig.endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...backendConfig.headers,
+        },
+        body: JSON.stringify({
+          messages: conversationMessages.map(msg => ({
+            role: msg.role,
+            content: msg.content,
+          })),
+          systemPrompt,
+          userMessage,
+        }),
+        signal: abortSignal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Backend request failed: ${response.status} ${response.statusText}`);
+      }
+
+      if (!response.body) {
+        throw new Error("No response body from backend");
+      }
+
+      // Return async iterator for streaming response
+      return {
+        async *[Symbol.asyncIterator]() {
+          const reader = response.body!.getReader();
+          const decoder = new TextDecoder();
+          
+          try {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              
+              const chunk = decoder.decode(value, { stream: true });
+              yield chunk;
+            }
+          } finally {
+            reader.releaseLock();
+          }
+        },
+      };
+    } else {
+      // Direct mode - use AI SDK as before
+      if (!providerConfig) {
+        throw new Error("Provider configuration required");
+      }
+
+      const model = createModel(providerConfig);
+      const result = streamText({
+        model,
+        system: systemPrompt,
+        messages: conversationMessages.map((msg) => ({
+          role: msg.role,
+          content: msg.content,
+        })),
+        temperature: providerConfig.temperature || 0.7,
+        maxOutputTokens: providerConfig.maxTokens || 2000,
+        abortSignal,
+      });
+
+      return result.textStream;
+    }
+  };
+
   const generateResponse = async (userMessage: string) => {
-    if (!providerConfig) {
-      setError(new Error("Provider configuration required"));
+    if (!isServiceConfigured()) {
+      toast.error(mode === "backend" ? "Backend not configured" : "Provider not configured", {
+        description: mode === "backend" 
+          ? "Backend endpoint configuration is required to send messages."
+          : "Please configure your AI provider with a valid API key before sending messages."
+      });
+      setError(new Error("Service configuration required"));
       return;
     }
 
@@ -249,8 +362,6 @@ export function ChatMessages({
 
       const newMessages = [...messages, userMsg];
       setMessages(newMessages);
-
-      const model = createModel(providerConfig);
 
       // Get parser configuration from localStorage or use defaults
       let parserConfig = defaultParserConfig;
@@ -280,17 +391,13 @@ When creating forms, use formedible code blocks with complete JavaScript object 
       const abortController = new AbortController();
       abortControllerRef.current = abortController;
 
-      const result = streamText({
-        model,
-        system: systemPrompt,
-        messages: [...messages, userMsg].map((msg) => ({
-          role: msg.role,
-          content: msg.content,
-        })),
-        temperature: providerConfig.temperature || 0.7,
-        maxOutputTokens: providerConfig.maxTokens || 2000,
-        abortSignal: abortController.signal,
-      });
+      // Use the AI service abstraction
+      const textStream = await generateAIResponse(
+        userMessage,
+        [...messages, userMsg],
+        systemPrompt,
+        abortController.signal
+      );
 
       const assistantMsg: Message = {
         id: (Date.now() + 1).toString(),
@@ -301,7 +408,7 @@ When creating forms, use formedible code blocks with complete JavaScript object 
       setMessages((prev) => [...prev, assistantMsg]);
 
       let fullResponse = "";
-      for await (const textPart of result.textStream) {
+      for await (const textPart of textStream) {
         if (abortController.signal.aborted) break;
 
         fullResponse += textPart;
@@ -342,7 +449,16 @@ When creating forms, use formedible code blocks with complete JavaScript object 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || isLoading || !providerConfig) return;
+    if (!input.trim() || isLoading) return;
+
+    if (!isServiceConfigured()) {
+      toast.error(mode === "backend" ? "Backend configuration required" : "Provider configuration required", {
+        description: mode === "backend" 
+          ? "Backend endpoint configuration is required to send messages."
+          : "Please set up your AI provider with a valid API key in the settings before sending messages."
+      });
+      return;
+    }
 
     const userInput = input;
     setInput("");
@@ -511,7 +627,7 @@ When creating forms, use formedible code blocks with complete JavaScript object 
           ) : (
             <Button
               type="submit"
-              disabled={!input.trim()}
+              disabled={!input.trim() || !isServiceConfigured()}
               size="icon"
               className="shrink-0"
             >

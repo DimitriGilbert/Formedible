@@ -13,6 +13,7 @@ import { Sparkles, ChevronDown, ChevronUp, Settings, History, ChevronLeft, Chevr
 import { cn } from "@/lib/utils";
 import type { Message } from "./chat-interface";
 import { extractFormsFromMessages } from "@/lib/form-extraction-utils";
+import { toast } from "sonner";
 
 // Create a client instance outside the component to avoid recreation
 const queryClient = new QueryClient({
@@ -25,10 +26,19 @@ const queryClient = new QueryClient({
   },
 });
 
+export type AIBuilderMode = "direct" | "backend";
+
+export interface BackendConfig {
+  endpoint: string;
+  headers?: Record<string, string>;
+}
+
 export interface AIBuilderProps {
   className?: string;
   onFormGenerated?: (formCode: string) => void;
   onFormSubmit?: (formData: Record<string, unknown>) => void;
+  mode?: AIBuilderMode;
+  backendConfig?: BackendConfig;
 }
 
 const STORAGE_KEYS = {
@@ -37,7 +47,7 @@ const STORAGE_KEYS = {
   UI_STATE: "formedible-ai-builder-ui-state",
 };
 
-function AIBuilderCore({ className, onFormGenerated, onFormSubmit }: AIBuilderProps) {
+function AIBuilderCore({ className, onFormGenerated, onFormSubmit, mode = "direct", backendConfig }: AIBuilderProps) {
   const [providerConfig, setProviderConfig] = useState<ProviderConfig | null>(null);
   const [generatedForms, setGeneratedForms] = useState<Array<{ id: string; code: string; timestamp: Date }>>([]);
   const [currentFormIndex, setCurrentFormIndex] = useState<number>(0);
@@ -48,6 +58,30 @@ function AIBuilderCore({ className, onFormGenerated, onFormSubmit }: AIBuilderPr
   const [isTopSectionCollapsed, setIsTopSectionCollapsed] = useState(false);
   const [activeView, setActiveView] = useState<SidebarView | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // Check if AI service is properly configured based on mode
+  const isProviderConfigured = useCallback(() => {
+    if (mode === "backend") {
+      // For backend mode, just check that backend config is provided
+      return !!(backendConfig && backendConfig.endpoint && backendConfig.endpoint.trim().length > 0);
+    }
+    
+    // For direct mode, check provider configuration
+    if (!providerConfig) return false;
+    
+    // Check if provider requires API key
+    const providersRequiringKey = ["openai", "anthropic", "google", "mistral", "openrouter"];
+    if (providersRequiringKey.includes(providerConfig.provider as string)) {
+      return !!(providerConfig.apiKey && providerConfig.apiKey.trim().length > 0);
+    }
+    
+    // For openai-compatible, endpoint is required
+    if (providerConfig.provider === "openai-compatible") {
+      return !!(providerConfig.endpoint && providerConfig.endpoint.trim().length > 0);
+    }
+    
+    return true;
+  }, [mode, backendConfig, providerConfig]);
 
   // Load saved data on mount
   useEffect(() => {
@@ -186,6 +220,14 @@ function AIBuilderCore({ className, onFormGenerated, onFormSubmit }: AIBuilderPr
   }, [currentFormIndex]);
 
   const handleConversationUpdate = useCallback((messages: Message[], isStreamEnd: boolean = false) => {
+    // Check if provider is configured before allowing conversation updates
+    if (!isProviderConfigured()) {
+      toast.error("Please configure your AI provider first", {
+        description: "You need to set up your API key in the settings before you can chat."
+      });
+      return;
+    }
+
     // Always update current messages for UI
     setCurrentMessages(messages);
     
@@ -220,7 +262,7 @@ function AIBuilderCore({ className, onFormGenerated, onFormSubmit }: AIBuilderPr
         ));
       }
     }
-  }, [currentConversationId]);
+  }, [currentConversationId, isProviderConfigured]);
 
   const handleNewConversation = useCallback(() => {
     setCurrentConversationId(undefined);
@@ -319,15 +361,56 @@ function AIBuilderCore({ className, onFormGenerated, onFormSubmit }: AIBuilderPr
 
         {/* Chat + Preview Grid */}
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-2 min-h-0 overflow-hidden">
-          <ChatInterface
-            onFormGenerated={handleFormGenerated}
-            onStreamingStateChange={handleStreamingStateChange}
-            onConversationUpdate={handleConversationUpdate}
-            onNewConversation={handleNewConversation}
-            messages={currentMessages}
-            providerConfig={providerConfig}
-            className="h-full overflow-hidden"
-          />
+          {/* Conditionally show provider form or chat interface */}
+          {!isProviderConfigured() ? (
+            <div className="flex flex-col h-full border-2 border-accent/30 rounded-lg shadow-lg bg-card">
+              <div className="px-6 py-4 bg-gradient-to-r from-accent/10 to-transparent border-b">
+                <h2 className="text-lg font-semibold text-foreground">Setup Required</h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {mode === "backend" 
+                    ? "Backend endpoint configuration is required"
+                    : "Please configure your AI provider to start building forms"
+                  }
+                </p>
+              </div>
+              <div className="flex-1 overflow-y-auto">
+                {mode === "direct" ? (
+                  <ProviderSelection
+                    onConfigChange={handleProviderConfigChange}
+                    initialConfig={providerConfig}
+                    className="h-full"
+                  />
+                ) : (
+                  <div className="p-6">
+                    <div className="text-center text-muted-foreground">
+                      <h3 className="text-base font-medium mb-2">Backend Mode</h3>
+                      <p className="text-sm">
+                        {backendConfig?.endpoint 
+                          ? `Endpoint: ${backendConfig.endpoint}`
+                          : "No backend endpoint configured"
+                        }
+                      </p>
+                      <p className="text-xs mt-4">
+                        Backend configuration must be provided via props by the developer.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <ChatInterface
+              onFormGenerated={handleFormGenerated}
+              onStreamingStateChange={handleStreamingStateChange}
+              onConversationUpdate={handleConversationUpdate}
+              onNewConversation={handleNewConversation}
+              messages={currentMessages}
+              providerConfig={providerConfig}
+              mode={mode}
+              backendConfig={backendConfig}
+              className="h-full overflow-hidden"
+            />
+          )}
 
           <FormPreview
             forms={generatedForms}
