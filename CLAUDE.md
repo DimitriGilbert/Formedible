@@ -49,7 +49,7 @@ FROM THE ROOT OF THE PROJECT !!! **ALWAYS**
 2. **WORKFLOW IS ALWAYS:**
 
    - Step 1: Edit PACKAGE files only, build the targeted package(s) to make sure change are ok !
-   - Step 2: Run "scripts/quick-sync.js"
+   - Step 2: Run "scripts/quick-sync.js" **NOT** node scripts/quick-sync.js, **NOT** in any other dir than root !
    - Step 3: npm run build:web
    - Step 4: npm run sync-components
    - Step 3: npm run build:web
