@@ -91,7 +91,8 @@ const FORMEDIBLE_SANDBOX_DEPENDENCIES_FROM_REPO = {
   "tailwind-merge": "^2.6.0",
   "zod": "^3.24.1",
   "sonner": "^1.7.1",
-  "typescript": "^5.7.2"
+  "typescript": "^5.7.2",
+  "@swc/helpers": "^0.5.5"
 };
 
 /**
@@ -360,17 +361,19 @@ export function validateFormCode(formCode: string): CodeValidationResult {
     const hasJSXElements = /<[A-Za-z][^>]*>/.test(formCode);
     const hasExportDefault = /export\s+default/.test(formCode);
     const hasExportFunction = /export\s+(function|const)\s+/.test(formCode);
+    const hasFunction = /(function|const)\s+[A-Z][a-zA-Z0-9]*/.test(formCode);
+    const hasComponent = /[A-Z][a-zA-Z0-9]*\s*=/.test(formCode) || hasFunction;
     
     result.hasImports = /import\s+.*from/.test(formCode);
-    result.hasExports = hasExportDefault || hasExportFunction;
+    result.hasExports = hasExportDefault || hasExportFunction || hasComponent;
 
     if (!hasReactImport && hasJSXElements) {
       result.warnings.push("JSX detected but React import is missing");
     }
 
-    if (!result.hasExports) {
-      result.errors.push("Component must have a default export or named export");
-      result.isValid = false;
+    // Be more lenient for form components - if it has JSX or looks like a component, assume it's valid
+    if (!result.hasExports && !hasJSXElements && !hasComponent) {
+      result.warnings.push("No clear component export found - this may affect rendering");
     }
 
     // Check for common syntax errors
@@ -423,22 +426,202 @@ export function validateFormCode(formCode: string): CodeValidationResult {
 }
 
 /**
- * Extracts form component from generated code
+ * Safely encodes content to base64 to avoid JavaScript syntax errors
+ */
+function encodeToBase64(content: string): string {
+  try {
+    return btoa(unescape(encodeURIComponent(content)));
+  } catch (error) {
+    console.warn("Failed to encode content to base64:", error);
+    // Fallback: escape dangerous characters
+    return content
+      .replace(/"/g, '\\"')
+      .replace(/'/g, "\\'")
+      .replace(/\n/g, '\\n')
+      .replace(/\r/g, '\\r');
+  }
+}
+
+/**
+ * Creates a safe form component with base64 encoded content
+ */
+function createSafeFormComponent(formCode: string): string {
+  const encodedContent = encodeToBase64(formCode);
+  
+  return `import React from 'react';
+
+// Base64 encoded form configuration to avoid JavaScript syntax errors
+const encodedFormConfig = "${encodedContent}";
+
+// Decode the configuration safely
+function decodeFormConfig(): any {
+  try {
+    const decoded = atob(encodedFormConfig);
+    const unescaped = decodeURIComponent(escape(decoded));
+    return JSON.parse(unescaped);
+  } catch (error) {
+    console.error("Failed to decode form configuration:", error);
+    return {
+      title: "Form Configuration Error",
+      description: "Failed to load form configuration",
+      fields: []
+    };
+  }
+}
+
+export default function FormComponent({ onSubmit }: {
+  onSubmit?: (data: Record<string, any>) => void;
+}) {
+  const formConfig = decodeFormConfig();
+  
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const formData = new FormData(e.target as HTMLFormElement);
+    const data = Object.fromEntries(formData.entries());
+    onSubmit?.(data);
+  };
+  
+  return (
+    <div className="max-w-2xl mx-auto p-6">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold mb-2">{formConfig.title}</h1>
+        {formConfig.description && (
+          <p className="text-gray-600">{formConfig.description}</p>
+        )}
+      </div>
+      
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {formConfig.fields && formConfig.fields.length > 0 ? (
+          formConfig.fields.map((field: any, index: number) => (
+            <div key={index} className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                {field.label || field.name}
+                {field.required && <span className="text-red-500 ml-1">*</span>}
+              </label>
+              
+              {field.type === 'textarea' ? (
+                <textarea
+                  name={field.name}
+                  placeholder={field.placeholder}
+                  required={field.required}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={4}
+                />
+              ) : field.type === 'select' ? (
+                <select
+                  name={field.name}
+                  required={field.required}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select an option</option>
+                  {field.options && field.options.map((option: any, i: number) => (
+                    <option key={i} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type={field.type || 'text'}
+                  name={field.name}
+                  placeholder={field.placeholder}
+                  required={field.required}
+                  min={field.min}
+                  max={field.max}
+                  step={field.step}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              )}
+              
+              {field.description && (
+                <p className="text-xs text-gray-500">{field.description}</p>
+              )}
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <p>No form fields configured</p>
+            <p className="text-xs mt-2">Form configuration: {JSON.stringify(formConfig, null, 2)}</p>
+          </div>
+        )}
+        
+        <button
+          type="submit"
+          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+        >
+          Submit
+        </button>
+      </form>
+      
+      <div className="mt-6 p-4 bg-gray-50 rounded-md">
+        <details className="text-xs text-gray-600">
+          <summary className="cursor-pointer">Debug Info</summary>
+          <pre className="mt-2 whitespace-pre-wrap">{JSON.stringify(formConfig, null, 2)}</pre>
+        </details>
+      </div>
+    </div>
+  );
+}`;
+}
+
+/**
+ * Extracts form component from generated code with safe base64 encoding
  */
 export function extractFormComponent(formCode: string): string {
   if (!formCode || formCode.trim().length === 0) {
     return DEFAULT_SANDBOX_TEMPLATES.FALLBACK_FORM;
   }
 
+  // ALWAYS check if it's JSON first - this is the most common error case
+  const trimmedCode = formCode.trim();
+  console.log("extractFormComponent called with:", { 
+    length: formCode.length, 
+    startsWithBrace: trimmedCode.startsWith('{'),
+    endsWithBrace: trimmedCode.endsWith('}'),
+    first50: trimmedCode.substring(0, 50) 
+  });
+  
+  if (trimmedCode.startsWith('{') && trimmedCode.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(formCode);
+      // If it parses as JSON, it needs base64 encoding
+      console.log("✅ Detected JSON form configuration, creating safe component");
+      const safeComponent = createSafeFormComponent(formCode);
+      console.log("✅ Created safe component:", safeComponent.substring(0, 200) + "...");
+      return safeComponent;
+    } catch (error) {
+      // If it looks like JSON but fails to parse, also use base64 encoding for safety
+      console.log("⚠️ Malformed JSON detected, creating safe component:", error);
+      return createSafeFormComponent(formCode);
+    }
+  }
+
   const validation = validateFormCode(formCode);
   
   if (!validation.isValid) {
     console.warn("Form code validation failed:", validation.errors);
-    // Return fallback but with error info
+    
+    // If there are only warnings or minor issues, try to use the code anyway
+    if (validation.errors.length === 0 || validation.errors.every(err => err.includes("export"))) {
+      // Try to wrap the code in a basic export if it looks like a component
+      if (/<[A-Za-z][^>]*>/.test(formCode) || /(function|const)\s+[A-Z]/.test(formCode)) {
+        const componentName = formCode.match(/(function|const)\s+([A-Z][a-zA-Z0-9]*)/)?.[2] || 'FormComponent';
+        if (!formCode.includes('export default') && !formCode.includes('export {')) {
+          return `${formCode.trim()}\n\nexport default ${componentName};`;
+        }
+      }
+    }
+    
+    // For syntax errors, try to create a safe component with the content
+    if (validation.errors.some(err => err.includes("syntax") || err.includes("semicolon"))) {
+      console.log("Syntax errors detected, creating safe base64 component");
+      return createSafeFormComponent(formCode);
+    }
+    
+    // Return fallback only for serious errors
     return `${DEFAULT_SANDBOX_TEMPLATES.FALLBACK_FORM}
     
-// Validation errors found in generated code:
-// ${validation.errors.map(error => `// - ${error}`).join('\n')}`;
+// Validation issues found in generated code:
+// ${validation.errors.map(error => `// - ${error}`).join('\n')}
+// ${validation.warnings.map(warning => `// WARNING: ${warning}`).join('\n')}`;
   }
 
   // If the code is valid, return it with proper formatting

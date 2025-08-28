@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useRef } from "react";
 import { 
   SandpackProvider, 
   SandpackLayout, 
@@ -9,11 +9,31 @@ import {
   SandpackFileExplorer,
   SandpackCodeEditor,
   SandpackFiles,
-  SandpackPredefinedTemplate
+  SandpackPredefinedTemplate,
+  useSandpack
 } from "@codesandbox/sandpack-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Loader2, CheckCircle, XCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { 
+  AlertTriangle, 
+  Loader2, 
+  CheckCircle, 
+  XCircle, 
+  ExternalLink,
+  RefreshCw,
+  Terminal,
+  TerminalSquare,
+  Eye,
+  EyeOff,
+  Settings,
+  Code2,
+  Play
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { 
   injectFormCodeIntoSandbox,
@@ -22,6 +42,17 @@ import {
   type SandboxFiles as SandboxFilesType,
   type InjectionOptions
 } from "@/lib/sandbox-code-injector";
+import {
+  getCachedTemplate,
+  setCachedTemplate,
+  generateCacheKey,
+  getCacheStatistics
+} from "@/lib/sandbox-cache";
+import {
+  analyzeFormCode,
+  splitFormCode,
+  splitResultToSandpackFiles
+} from "@/lib/code-splitting-utils";
 
 export interface SandpackPreviewProps {
   /** The generated form code to preview */
@@ -50,6 +81,22 @@ export interface SandpackPreviewProps {
   showValidationStatus?: boolean;
   /** Custom styles to inject */
   customStyles?: string;
+  /** Whether to show the toolbar controls */
+  showToolbar?: boolean;
+  /** Whether to show loading progress */
+  showProgress?: boolean;
+  /** Callback when preview is refreshed */
+  onRefresh?: () => void;
+  /** Callback when CodeSandbox is opened */
+  onOpenCodeSandbox?: (sandboxUrl: string) => void;
+  /** Whether to enable performance optimizations */
+  enablePerformanceMode?: boolean;
+  /** Whether to show performance metrics */
+  showPerformanceMetrics?: boolean;
+  /** Form fields for code splitting analysis */
+  formFields?: any[];
+  /** Whether to enable code splitting for large forms */
+  enableCodeSplitting?: boolean;
 }
 
 // Default template files for Formedible forms
@@ -184,17 +231,39 @@ export function SandpackPreview({
   showFileExplorer = false,
   template = "react-ts",
   isLoading = false,
-  height = "500px",
+  height = "100%",
   injectionOptions,
   showValidationStatus = true,
-  customStyles
+  customStyles,
+  showToolbar = true,
+  showProgress = true,
+  onRefresh,
+  onOpenCodeSandbox,
+  enablePerformanceMode = true,
+  showPerformanceMetrics = false,
+  formFields = [],
+  enableCodeSplitting = true
 }: SandpackPreviewProps) {
   const [error, setError] = useState<string | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
   const [validationStatus, setValidationStatus] = useState<ReturnType<typeof validateFormCode> | null>(null);
+  const [consoleVisible, setConsoleVisible] = useState(showConsole);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [bundleProgress, setBundleProgress] = useState(0);
+  const [bundleStatus, setBundleStatus] = useState<'idle' | 'bundling' | 'success' | 'error'>('idle');
+  const [performanceMetrics, setPerformanceMetrics] = useState<{
+    cacheHit: boolean;
+    loadTime: number;
+    splitStrategy: string;
+    bundleSize: number;
+  } | null>(null);
+  const sandpackRef = useRef<any>(null);
+  const loadStartTime = useRef<number>(0);
 
-  // Create files object with the form code injected using the new utility
+  // Create files object with performance optimizations and caching
   const files = useMemo((): SandpackFiles => {
+    loadStartTime.current = performance.now();
+    
     if (!formCode) {
       // Return default files when no form code is provided
       return createSandboxFiles("", {
@@ -204,48 +273,131 @@ export function SandpackPreview({
     }
 
     try {
-      // Validate the form code first
-      const validation = validateFormCode(formCode);
-      setValidationStatus(validation);
+      // Generate cache key for performance optimization
+      const cacheKey = enablePerformanceMode 
+        ? generateCacheKey(formCode, {
+            showCodeEditor,
+            showConsole,
+            showFileExplorer,
+            templateComplexity: injectionOptions?.templateComplexity
+          })
+        : null;
 
-      if (!validation.isValid) {
-        console.warn("Form code validation failed:", validation.errors);
-        setError(`Validation failed: ${validation.errors.join(', ')}`);
-      } else {
-        setError(null);
+      // Try to get cached template first (synchronous check)
+      let cachedResult: SandpackFiles | null = null;
+      if (cacheKey && enablePerformanceMode) {
+        // getCachedTemplate is async, but for now we'll skip the cache check in the memoized function
+        // and implement proper async caching in a later iteration
+        cachedResult = null;
       }
 
-      // Use the injection utility to create sandbox files
-      const baseFiles: SandboxFilesType = {};
-      const injectedFiles = injectFormCodeIntoSandbox(
-        baseFiles,
-        formCode,
-        {
+      // Validate the form code first - but don't set state in useMemo
+      const validation = validateFormCode(formCode);
+
+      // Analyze form for code splitting if enabled
+      let finalFiles: SandpackFiles;
+      let splitStrategy = 'none';
+
+      if (enableCodeSplitting && enablePerformanceMode && formFields.length > 0) {
+        const analysis = analyzeFormCode(formCode, formFields);
+        
+        if (analysis.shouldSplit) {
+          const splitResult = splitFormCode(formCode, formFields, {
+            maxComponentSize: 5000,
+            maxFieldsPerChunk: 10,
+            enableLazyLoading: true
+          });
+          
+          if (splitResult.chunks.length > 0) {
+            // Convert split result to sandbox files
+            const splitFiles = splitResultToSandpackFiles(splitResult);
+            
+            // Merge with base sandbox structure
+            const baseFiles = createSandboxFiles("", {
+              ...injectionOptions,
+              customStyles
+            });
+            
+            finalFiles = { ...baseFiles, ...splitFiles };
+            splitStrategy = analysis.recommendedSplitStrategy;
+          } else {
+            // Fallback to normal injection
+            finalFiles = injectFormCodeIntoSandbox({}, formCode, {
+              useErrorBoundary: true,
+              strictTypeScript: true,
+              customStyles,
+              ...injectionOptions
+            });
+          }
+        } else {
+          // Form doesn't need splitting
+          finalFiles = injectFormCodeIntoSandbox({}, formCode, {
+            useErrorBoundary: true,
+            strictTypeScript: true,
+            customStyles,
+            ...injectionOptions
+          });
+        }
+      } else {
+        // Standard injection without splitting
+        finalFiles = injectFormCodeIntoSandbox({}, formCode, {
           useErrorBoundary: true,
           strictTypeScript: true,
           customStyles,
           ...injectionOptions
-        }
-      );
+        });
+      }
 
-      return injectedFiles;
+      // Cache the result for future use
+      if (cacheKey && enablePerformanceMode && !cachedResult) {
+        setCachedTemplate(cacheKey, finalFiles, formCode);
+      }
+
+      // Performance metrics removed to prevent infinite re-renders
+
+      return finalFiles;
+
     } catch (err) {
       console.error("Error processing form code:", err);
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
-      setError(`Failed to process form code: ${errorMessage}`);
       
-      // Return fallback files
+      // Return fallback files - don't set state in useMemo
       return createSandboxFiles("", {
         ...injectionOptions,
         customStyles
       });
     }
-  }, [formCode, injectionOptions, customStyles]);
+  }, [formCode, injectionOptions, customStyles, enablePerformanceMode, enableCodeSplitting, formFields, showCodeEditor, showConsole, showFileExplorer]);
+
+  // Handle validation and error states separately to avoid infinite loops
+  React.useEffect(() => {
+    if (formCode) {
+      try {
+        const validation = validateFormCode(formCode);
+        setValidationStatus(validation);
+
+        if (!validation.isValid) {
+          console.warn("Form code validation failed:", validation.errors);
+          setError(`Validation failed: ${validation.errors.join(', ')}`);
+        } else {
+          setError(null);
+        }
+      } catch (err) {
+        console.error("Error validating form code:", err);
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+        setError(`Failed to process form code: ${errorMessage}`);
+      }
+    } else {
+      setValidationStatus(null);
+      setError(null);
+    }
+  }, [formCode]);
 
   // Handle initialization complete
   const handleBundlerLoad = useCallback(() => {
     setIsInitializing(false);
     setError(null);
+    setBundleStatus('success');
+    setBundleProgress(100);
   }, []);
 
   // Handle runtime errors
@@ -253,8 +405,58 @@ export function SandpackPreview({
     console.error("Sandpack error:", error);
     setError(error.message);
     setIsInitializing(false);
+    setBundleStatus('error');
     onFormError?.(error);
   }, [onFormError]);
+
+  // Handle bundle progress
+  const handleBundleProgress = useCallback((progress: number) => {
+    setBundleProgress(progress);
+    if (progress > 0 && progress < 100) {
+      setBundleStatus('bundling');
+    }
+  }, []);
+
+  // Handle refresh functionality
+  const handleRefresh = useCallback(() => {
+    setRefreshKey(prev => prev + 1);
+    setIsInitializing(true);
+    setBundleStatus('idle');
+    setBundleProgress(0);
+    setError(null);
+    onRefresh?.();
+  }, [onRefresh]);
+
+  // Handle console toggle
+  const handleConsoleToggle = useCallback(() => {
+    setConsoleVisible(prev => !prev);
+  }, []);
+
+  // Handle open in CodeSandbox
+  const handleOpenCodeSandbox = useCallback(() => {
+    try {
+      // Create CodeSandbox URL with current files
+      const sandboxFiles = files;
+      const parameters = {
+        files: Object.entries(sandboxFiles).reduce((acc, [path, file]) => {
+          const content = typeof file === 'string' ? file : file.code || '';
+          acc[path.startsWith('/') ? path.slice(1) : path] = {
+            content
+          };
+          return acc;
+        }, {} as Record<string, { content: string }>)
+      };
+      
+      const compressed = btoa(JSON.stringify(parameters));
+      const sandboxUrl = `https://codesandbox.io/api/v1/sandboxes/define?parameters=${compressed}`;
+      
+      // Open in new tab
+      window.open(sandboxUrl, '_blank');
+      onOpenCodeSandbox?.(sandboxUrl);
+    } catch (error) {
+      console.error('Failed to open CodeSandbox:', error);
+    }
+  }, [files, onOpenCodeSandbox]);
 
   // Handle form submission and error messages from the sandbox
   React.useEffect(() => {
@@ -271,17 +473,129 @@ export function SandpackPreview({
     return () => window.removeEventListener('message', handleMessage);
   }, [onFormSubmit, onFormError]);
 
-  if (isLoading) {
-    return (
-      <div className={cn("space-y-4", className)} style={{ height }}>
+  // Enhanced loading component with progress
+  const renderLoadingState = () => (
+    <div className={cn("space-y-4 h-full flex flex-col", className)}>
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Loader2 className="h-4 w-4 animate-spin" />
-          <span className="text-sm text-muted-foreground">Loading preview environment...</span>
+          <span className="text-sm text-muted-foreground">
+            {bundleStatus === 'bundling' ? 'Bundling code...' : 'Loading preview environment...'}
+          </span>
         </div>
-        <Skeleton className="w-full h-full rounded-lg" />
+        {showProgress && bundleProgress > 0 && (
+          <Badge variant="secondary" className="text-xs">
+            {bundleProgress}%
+          </Badge>
+        )}
+      </div>
+      {showProgress && bundleProgress > 0 && (
+        <Progress value={bundleProgress} className="h-2" />
+      )}
+      <Skeleton className="w-full flex-1 rounded-lg" />
+    </div>
+  );
+
+  if (isLoading) {
+    return renderLoadingState();
+  }
+
+  // Enhanced toolbar component
+  const renderToolbar = () => {
+    if (!showToolbar) return null;
+
+    return (
+      <div className="flex items-center justify-between p-3 bg-gray-50 border-b border-gray-200 rounded-t-lg">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
+            <Play className="h-4 w-4 text-blue-600" />
+            <span className="text-sm font-medium text-gray-700">Live Preview</span>
+          </div>
+          {bundleStatus === 'success' && (
+            <Badge variant="secondary" className="text-xs bg-green-100 text-green-700">
+              <CheckCircle className="h-3 w-3 mr-1" />
+              Ready
+            </Badge>
+          )}
+          {bundleStatus === 'bundling' && (
+            <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700">
+              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+              Building...
+            </Badge>
+          )}
+          {bundleStatus === 'error' && (
+            <Badge variant="destructive" className="text-xs">
+              <XCircle className="h-3 w-3 mr-1" />
+              Error
+            </Badge>
+          )}
+        </div>
+        
+        <div className="flex items-center gap-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleConsoleToggle}
+                className={cn(
+                  "h-8 w-8 p-0",
+                  consoleVisible && "bg-blue-100 text-blue-700"
+                )}
+              >
+                {consoleVisible ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Terminal className="h-4 w-4" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Toggle Console</p>
+            </TooltipContent>
+          </Tooltip>
+          
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={bundleStatus === 'bundling'}
+                className="h-8 w-8 p-0"
+              >
+                <RefreshCw className={cn(
+                  "h-4 w-4",
+                  bundleStatus === 'bundling' && "animate-spin"
+                )} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Refresh Preview</p>
+            </TooltipContent>
+          </Tooltip>
+          
+          <Separator orientation="vertical" className="h-4 mx-1" />
+          
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleOpenCodeSandbox}
+                className="h-8 w-8 p-0"
+              >
+                <ExternalLink className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Open in CodeSandbox</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
       </div>
     );
-  }
+  };
 
   // Render validation status if enabled
   const renderValidationStatus = () => {
@@ -321,11 +635,13 @@ export function SandpackPreview({
     );
   };
 
-  if (error) {
-    return (
-      <div className={cn("space-y-4", className)} style={{ height }}>
-        {renderValidationStatus()}
-        <Alert className="h-full flex flex-col justify-center">
+  // Enhanced error component with recovery options
+  const renderErrorState = () => (
+    <div className={cn("border rounded-lg overflow-hidden h-full flex flex-col", className)}>
+      {renderToolbar()}
+      {renderValidationStatus()}
+      <div className="p-6 flex flex-col justify-center items-center flex-1">
+        <Alert className="max-w-md">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription className="mt-2">
             <strong>Preview Error:</strong> {error}
@@ -333,39 +649,127 @@ export function SandpackPreview({
             <span className="text-sm text-muted-foreground mt-2 block">
               The form preview encountered an error. Please check the generated code and try again.
             </span>
+            <div className="flex gap-2 mt-4">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleRefresh}
+                className="text-xs"
+              >
+                <RefreshCw className="h-3 w-3 mr-1" />
+                Retry
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleOpenCodeSandbox}
+                className="text-xs"
+              >
+                <ExternalLink className="h-3 w-3 mr-1" />
+                Debug in CodeSandbox
+              </Button>
+            </div>
           </AlertDescription>
         </Alert>
       </div>
-    );
+    </div>
+  );
+
+  if (error) {
+    return renderErrorState();
   }
+
+  // Enhanced Sandpack wrapper component
+  const SandpackWrapper = ({ children }: { children: React.ReactNode }) => {
+    return (
+      <div className={cn("border rounded-lg overflow-hidden h-full w-full flex flex-col", className)}>
+        {renderToolbar()}
+        {renderValidationStatus()}
+        <div key={refreshKey} className="relative flex-1 min-h-0 w-full">
+          {children}
+        </div>
+      </div>
+    );
+  };
 
   try {
     return (
-      <div className={cn("w-full overflow-hidden", className)} style={{ minHeight: height }}>
-        {renderValidationStatus()}
+      <SandpackWrapper>
         <SandpackProvider
           template={template}
           files={files}
+          style={{ height: "100%", width: "100%" }}
+          customSetup={{
+            dependencies: {
+              // Core React
+              "react": "^19.1.1",
+              "react-dom": "^19.1.1",
+              
+              // SWC Runtime (browser-compatible only)
+              "@swc/helpers": "^0.5.5",
+              
+              // Radix UI Components (comprehensive list)
+              "@radix-ui/react-accordion": "^1.2.2",
+              "@radix-ui/react-checkbox": "^1.1.4",
+              "@radix-ui/react-dialog": "^1.1.4",
+              "@radix-ui/react-label": "^2.1.1",
+              "@radix-ui/react-popover": "^1.1.4",
+              "@radix-ui/react-progress": "^1.1.1",
+              "@radix-ui/react-radio-group": "^1.2.2",
+              "@radix-ui/react-select": "^2.1.4",
+              "@radix-ui/react-slider": "^1.2.2",
+              "@radix-ui/react-switch": "^1.1.2",
+              "@radix-ui/react-tabs": "^1.1.2",
+              "@radix-ui/react-primitive": "^2.0.0",
+              "@radix-ui/react-collection": "^1.1.0",
+              "@radix-ui/react-compose-refs": "^1.1.0",
+              "@radix-ui/react-context": "^1.1.1",
+              "@radix-ui/react-dismissable-layer": "^1.1.1",
+              "@radix-ui/react-focus-guards": "^1.1.1",
+              "@radix-ui/react-focus-scope": "^1.1.0",
+              "@radix-ui/react-id": "^1.1.0",
+              "@radix-ui/react-portal": "^1.1.2",
+              "@radix-ui/react-presence": "^1.1.1",
+              "@radix-ui/react-slot": "^1.1.0",
+              "@radix-ui/react-use-callback-ref": "^1.1.0",
+              "@radix-ui/react-use-controllable-state": "^1.1.0",
+              "@radix-ui/react-use-escape-keydown": "^1.1.0",
+              "@radix-ui/react-use-layout-effect": "^1.1.0",
+              "@radix-ui/react-use-previous": "^1.1.0",
+              "@radix-ui/react-use-rect": "^1.1.0",
+              "@radix-ui/react-use-size": "^1.1.0",
+              "@radix-ui/react-visually-hidden": "^1.1.0",
+              
+              // Formedible ecosystem
+              "@tanstack/react-form": "^0.38.1",
+              "zod": "^3.24.1",
+              "clsx": "^2.1.1",
+              "tailwind-merge": "^2.6.0",
+              "sonner": "^1.7.1",
+              
+              // Additional runtime dependencies
+              "lucide-react": "^0.400.0"
+            },
+            devDependencies: {
+              "@types/react": "^18.3.17",
+              "@types/react-dom": "^18.3.5",
+              "typescript": "^5.7.2"
+            }
+          }}
           options={{
             bundlerURL: "https://sandpack-bundler.codesandbox.io",
             visibleFiles: showCodeEditor ? ["/FormComponent.tsx", "/App.tsx"] : [],
             activeFile: "/FormComponent.tsx",
             initMode: "lazy",
             autorun: true,
-            autoReload: true
-          }}
-          customSetup={{
-            dependencies: {
-              "react": "^18.2.0",
-              "react-dom": "^18.2.0",
-              "@types/react": "^18.2.0",
-              "@types/react-dom": "^18.2.0"
-            }
+            autoReload: true,
+            recompileMode: "delayed",
+            recompileDelay: 300
           }}
         >
           <SandpackLayout 
-            style={{ height, borderRadius: "8px" }}
-            className="border"
+            style={{ height: "100%", width: "100%" }}
+            className={showToolbar ? "rounded-b-lg" : "border rounded-lg"}
           >
             {showFileExplorer && <SandpackFileExplorer />}
             {showCodeEditor && (
@@ -375,39 +779,86 @@ export function SandpackPreview({
                 showInlineErrors
                 closableTabs
                 wrapContent
+                style={{ height: "100%" }}
               />
             )}
-            <SandpackPreviewComponent
-              showOpenInCodeSandbox={false}
-              showRefreshButton={true}
-              showNavigator={false}
-              style={{ height: "100%" }}
-            />
-            {showConsole && (
-              <SandpackConsole
-                showHeader={true}
-                showSyntaxError={true}
-                maxMessageCount={100}
-                resetOnPreviewRestart={true}
+            <div className="flex flex-col h-full w-full">
+              <SandpackPreviewComponent
+                showOpenInCodeSandbox={false}
+                showRefreshButton={false}
+                showNavigator={false}
+                style={{ 
+                  height: consoleVisible && (showConsole || consoleVisible) ? "60%" : "100%",
+                  width: "100%",
+                  borderRadius: "0"
+                }}
               />
-            )}
+              {(showConsole || consoleVisible) && (
+                <div 
+                  className="border-t bg-gray-900 text-gray-100"
+                  style={{ 
+                    height: "40%",
+                    display: consoleVisible ? "block" : "none"
+                  }}
+                >
+                  <div className="flex items-center justify-between px-3 py-2 border-b border-gray-700">
+                    <div className="flex items-center gap-2">
+                      <TerminalSquare className="h-4 w-4" />
+                      <span className="text-sm font-medium">Console Output</span>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleConsoleToggle}
+                      className="h-6 w-6 p-0 text-gray-300 hover:text-white hover:bg-gray-800"
+                    >
+                      <XCircle className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <SandpackConsole
+                    showHeader={false}
+                    showSyntaxError={true}
+                    maxMessageCount={100}
+                    resetOnPreviewRestart={true}
+                    style={{ 
+                      height: "calc(100% - 40px)",
+                      backgroundColor: "rgb(17 24 39)",
+                      border: "none"
+                    }}
+                  />
+                </div>
+              )}
+            </div>
           </SandpackLayout>
         </SandpackProvider>
-      </div>
+      </SandpackWrapper>
     );
   } catch (err) {
     console.error("Error rendering Sandpack:", err);
     return (
-      <Alert className={cn("h-full flex flex-col justify-center", className)}>
-        <AlertTriangle className="h-4 w-4" />
-        <AlertDescription>
-          <strong>Failed to initialize live preview.</strong>
-          <br />
-          <span className="text-sm text-muted-foreground mt-2 block">
-            Please try refreshing or switch to static preview mode.
-          </span>
-        </AlertDescription>
-      </Alert>
+      <SandpackWrapper>
+        <Alert className="h-full flex flex-col justify-center m-6">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            <strong>Failed to initialize live preview.</strong>
+            <br />
+            <span className="text-sm text-muted-foreground mt-2 block">
+              Please try refreshing or switch to static preview mode.
+            </span>
+            <div className="flex gap-2 mt-4">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleRefresh}
+                className="text-xs"
+              >
+                <RefreshCw className="h-3 w-3 mr-1" />
+                Retry
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      </SandpackWrapper>
     );
   }
 }

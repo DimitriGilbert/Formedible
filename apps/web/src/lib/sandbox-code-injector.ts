@@ -1,4 +1,20 @@
+/**
+ * Sandbox Code Injection Utility for Formedible AI Builder
+ * 
+ * This utility handles the injection of generated form code into Sandpack sandbox files,
+ * providing validation, error handling, and proper TypeScript type safety.
+ */
+
 import { SandpackFiles } from "@codesandbox/sandpack-react";
+import sandboxTemplates from "./sandbox-templates.json";
+import { 
+  createFormedibleSandbox, 
+  generateFormComponentFromFields, 
+  getTemplateByComplexity,
+  FORMEDIBLE_SANDBOX_DEPENDENCIES,
+  TEMPLATE_VARIATIONS,
+  type TemplateVariation
+} from './sandbox-templates';
 
 // Type definitions for sandbox injection
 export interface SandboxFiles {
@@ -37,80 +53,64 @@ export interface InjectionOptions {
   strictTypeScript?: boolean;
   /** Target file for the form component */
   targetFile?: string;
+  /** Template complexity level */
+  templateComplexity?: "basic" | "intermediate" | "advanced";
+  /** Form configuration for dynamic generation */
+  formConfig?: {
+    fields?: any[];
+    multiPage?: boolean;
+    hasConditional?: boolean;
+    title?: string;
+    description?: string;
+  };
+  /** Whether to use enhanced Formedible templates */
+  useEnhancedTemplates?: boolean;
 }
 
 /**
- * Default Formedible dependencies for sandbox environment
+ * Formedible-sandbox repository dependencies (from https://github.com/DimitriGilbert/formedible-sandbox)
  */
-const FORMEDIBLE_DEPENDENCIES = {
-  "react": "^18.2.0",
-  "react-dom": "^18.2.0",
-  "@types/react": "^18.2.0",
-  "@types/react-dom": "^18.2.0",
-  "typescript": "^5.0.0",
-  "lucide-react": "^0.263.1",
-  "clsx": "^2.0.0",
-  "tailwind-merge": "^2.0.0",
-  "zod": "^3.22.0"
+const FORMEDIBLE_SANDBOX_DEPENDENCIES_FROM_REPO = {
+  "react": "^19.1.1",
+  "react-dom": "^19.1.1",
+  "@types/react": "^18.3.17",
+  "@types/react-dom": "^18.3.5",
+  "@radix-ui/react-accordion": "^1.2.2",
+  "@radix-ui/react-checkbox": "^1.1.4",
+  "@radix-ui/react-dialog": "^1.1.4",
+  "@radix-ui/react-label": "^2.1.1",
+  "@radix-ui/react-popover": "^1.1.4",
+  "@radix-ui/react-progress": "^1.1.1",
+  "@radix-ui/react-radio-group": "^1.2.2",
+  "@radix-ui/react-select": "^2.1.4",
+  "@radix-ui/react-slider": "^1.2.2",
+  "@radix-ui/react-switch": "^1.1.2",
+  "@radix-ui/react-tabs": "^1.1.2",
+  "@tanstack/react-form": "^0.38.1",
+  "clsx": "^2.1.1",
+  "tailwind-merge": "^2.6.0",
+  "zod": "^3.24.1",
+  "sonner": "^1.7.1",
+  "typescript": "^5.7.2",
+  "@swc/helpers": "^0.5.5"
 };
 
 /**
  * Default sandbox file templates
  */
 const DEFAULT_SANDBOX_TEMPLATES = {
-  APP_TSX: `import React from 'react';
-import { createRoot } from 'react-dom/client';
-import FormComponent from './FormComponent';
-import './styles.css';
-
-interface FormData {
-  [key: string]: unknown;
-}
+  APP_TSX: `import "./App.css";
+import { GeneratedFormComponent } from "./GeneratedFormComponent";
 
 function App() {
-  const handleFormSubmit = (data: FormData) => {
-    console.log('Form submitted:', data);
-    
-    // Notify parent component if available
-    if (window.parent && window.parent.postMessage) {
-      window.parent.postMessage({
-        type: 'FORM_SUBMIT',
-        data: data
-      }, '*');
-    }
-  };
-
-  const handleFormError = (error: Error) => {
-    console.error('Form error:', error);
-    
-    // Notify parent component of error
-    if (window.parent && window.parent.postMessage) {
-      window.parent.postMessage({
-        type: 'FORM_ERROR',
-        error: error.message
-      }, '*');
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <FormComponent 
-            onSubmit={handleFormSubmit} 
-            onError={handleFormError}
-          />
-        </div>
-      </div>
-    </div>
+    <>
+      <GeneratedFormComponent />
+    </>
   );
 }
 
-const container = document.getElementById('root');
-if (container) {
-  const root = createRoot(container);
-  root.render(<App />);
-}`,
+export default App;`,
 
   FALLBACK_FORM: `import React from 'react';
 
@@ -361,17 +361,19 @@ export function validateFormCode(formCode: string): CodeValidationResult {
     const hasJSXElements = /<[A-Za-z][^>]*>/.test(formCode);
     const hasExportDefault = /export\s+default/.test(formCode);
     const hasExportFunction = /export\s+(function|const)\s+/.test(formCode);
+    const hasFunction = /(function|const)\s+[A-Z][a-zA-Z0-9]*/.test(formCode);
+    const hasComponent = /[A-Z][a-zA-Z0-9]*\s*=/.test(formCode) || hasFunction;
     
     result.hasImports = /import\s+.*from/.test(formCode);
-    result.hasExports = hasExportDefault || hasExportFunction;
+    result.hasExports = hasExportDefault || hasExportFunction || hasComponent;
 
     if (!hasReactImport && hasJSXElements) {
       result.warnings.push("JSX detected but React import is missing");
     }
 
-    if (!result.hasExports) {
-      result.errors.push("Component must have a default export or named export");
-      result.isValid = false;
+    // Be more lenient for form components - if it has JSX or looks like a component, assume it's valid
+    if (!result.hasExports && !hasJSXElements && !hasComponent) {
+      result.warnings.push("No clear component export found - this may affect rendering");
     }
 
     // Check for common syntax errors
@@ -424,22 +426,202 @@ export function validateFormCode(formCode: string): CodeValidationResult {
 }
 
 /**
- * Extracts form component from generated code
+ * Safely encodes content to base64 to avoid JavaScript syntax errors
+ */
+function encodeToBase64(content: string): string {
+  try {
+    return btoa(unescape(encodeURIComponent(content)));
+  } catch (error) {
+    console.warn("Failed to encode content to base64:", error);
+    // Fallback: escape dangerous characters
+    return content
+      .replace(/"/g, '\\"')
+      .replace(/'/g, "\\'")
+      .replace(/\n/g, '\\n')
+      .replace(/\r/g, '\\r');
+  }
+}
+
+/**
+ * Creates a safe form component with base64 encoded content
+ */
+function createSafeFormComponent(formCode: string): string {
+  const encodedContent = encodeToBase64(formCode);
+  
+  return `import React from 'react';
+
+// Base64 encoded form configuration to avoid JavaScript syntax errors
+const encodedFormConfig = "${encodedContent}";
+
+// Decode the configuration safely
+function decodeFormConfig(): any {
+  try {
+    const decoded = atob(encodedFormConfig);
+    const unescaped = decodeURIComponent(escape(decoded));
+    return JSON.parse(unescaped);
+  } catch (error) {
+    console.error("Failed to decode form configuration:", error);
+    return {
+      title: "Form Configuration Error",
+      description: "Failed to load form configuration",
+      fields: []
+    };
+  }
+}
+
+export default function FormComponent({ onSubmit }: {
+  onSubmit?: (data: Record<string, any>) => void;
+}) {
+  const formConfig = decodeFormConfig();
+  
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const formData = new FormData(e.target as HTMLFormElement);
+    const data = Object.fromEntries(formData.entries());
+    onSubmit?.(data);
+  };
+  
+  return (
+    <div className="max-w-2xl mx-auto p-6">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold mb-2">{formConfig.title}</h1>
+        {formConfig.description && (
+          <p className="text-gray-600">{formConfig.description}</p>
+        )}
+      </div>
+      
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {formConfig.fields && formConfig.fields.length > 0 ? (
+          formConfig.fields.map((field: any, index: number) => (
+            <div key={index} className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                {field.label || field.name}
+                {field.required && <span className="text-red-500 ml-1">*</span>}
+              </label>
+              
+              {field.type === 'textarea' ? (
+                <textarea
+                  name={field.name}
+                  placeholder={field.placeholder}
+                  required={field.required}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  rows={4}
+                />
+              ) : field.type === 'select' ? (
+                <select
+                  name={field.name}
+                  required={field.required}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select an option</option>
+                  {field.options && field.options.map((option: any, i: number) => (
+                    <option key={i} value={option.value}>{option.label}</option>
+                  ))}
+                </select>
+              ) : (
+                <input
+                  type={field.type || 'text'}
+                  name={field.name}
+                  placeholder={field.placeholder}
+                  required={field.required}
+                  min={field.min}
+                  max={field.max}
+                  step={field.step}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              )}
+              
+              {field.description && (
+                <p className="text-xs text-gray-500">{field.description}</p>
+              )}
+            </div>
+          ))
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <p>No form fields configured</p>
+            <p className="text-xs mt-2">Form configuration: {JSON.stringify(formConfig, null, 2)}</p>
+          </div>
+        )}
+        
+        <button
+          type="submit"
+          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+        >
+          Submit
+        </button>
+      </form>
+      
+      <div className="mt-6 p-4 bg-gray-50 rounded-md">
+        <details className="text-xs text-gray-600">
+          <summary className="cursor-pointer">Debug Info</summary>
+          <pre className="mt-2 whitespace-pre-wrap">{JSON.stringify(formConfig, null, 2)}</pre>
+        </details>
+      </div>
+    </div>
+  );
+}`;
+}
+
+/**
+ * Extracts form component from generated code with safe base64 encoding
  */
 export function extractFormComponent(formCode: string): string {
   if (!formCode || formCode.trim().length === 0) {
     return DEFAULT_SANDBOX_TEMPLATES.FALLBACK_FORM;
   }
 
+  // ALWAYS check if it's JSON first - this is the most common error case
+  const trimmedCode = formCode.trim();
+  console.log("extractFormComponent called with:", { 
+    length: formCode.length, 
+    startsWithBrace: trimmedCode.startsWith('{'),
+    endsWithBrace: trimmedCode.endsWith('}'),
+    first50: trimmedCode.substring(0, 50) 
+  });
+  
+  if (trimmedCode.startsWith('{') && trimmedCode.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(formCode);
+      // If it parses as JSON, it needs base64 encoding
+      console.log("✅ Detected JSON form configuration, creating safe component");
+      const safeComponent = createSafeFormComponent(formCode);
+      console.log("✅ Created safe component:", safeComponent.substring(0, 200) + "...");
+      return safeComponent;
+    } catch (error) {
+      // If it looks like JSON but fails to parse, also use base64 encoding for safety
+      console.log("⚠️ Malformed JSON detected, creating safe component:", error);
+      return createSafeFormComponent(formCode);
+    }
+  }
+
   const validation = validateFormCode(formCode);
   
   if (!validation.isValid) {
     console.warn("Form code validation failed:", validation.errors);
-    // Return fallback but with error info
+    
+    // If there are only warnings or minor issues, try to use the code anyway
+    if (validation.errors.length === 0 || validation.errors.every(err => err.includes("export"))) {
+      // Try to wrap the code in a basic export if it looks like a component
+      if (/<[A-Za-z][^>]*>/.test(formCode) || /(function|const)\s+[A-Z]/.test(formCode)) {
+        const componentName = formCode.match(/(function|const)\s+([A-Z][a-zA-Z0-9]*)/)?.[2] || 'FormComponent';
+        if (!formCode.includes('export default') && !formCode.includes('export {')) {
+          return `${formCode.trim()}\n\nexport default ${componentName};`;
+        }
+      }
+    }
+    
+    // For syntax errors, try to create a safe component with the content
+    if (validation.errors.some(err => err.includes("syntax") || err.includes("semicolon"))) {
+      console.log("Syntax errors detected, creating safe base64 component");
+      return createSafeFormComponent(formCode);
+    }
+    
+    // Return fallback only for serious errors
     return `${DEFAULT_SANDBOX_TEMPLATES.FALLBACK_FORM}
     
-// Validation errors found in generated code:
-// ${validation.errors.map(error => `// - ${error}`).join('\n')}`;
+// Validation issues found in generated code:
+// ${validation.errors.map(error => `// - ${error}`).join('\n')}
+// ${validation.warnings.map(warning => `// WARNING: ${warning}`).join('\n')}`;
   }
 
   // If the code is valid, return it with proper formatting
@@ -504,8 +686,42 @@ export function createSandboxFiles(
     additionalDependencies = {},
     customStyles = "",
     strictTypeScript = true,
-    targetFile = "/FormComponent.tsx"
+    targetFile = "/GeneratedFormComponent.tsx",
+    templateComplexity = "basic",
+    formConfig,
+    useEnhancedTemplates = true
   } = options;
+
+  // If using enhanced templates, create a complete Formedible sandbox
+  if (useEnhancedTemplates) {
+    let enhancedFormCode = formCode;
+    
+    // Generate form component from fields if configuration is provided
+    if (formConfig?.fields && formConfig.fields.length > 0) {
+      enhancedFormCode = generateFormComponentFromFields(formConfig.fields, formConfig);
+    } else if (!formCode || formCode.trim().length === 0) {
+      // Use template based on complexity
+      const template = getTemplateByComplexity(templateComplexity);
+      enhancedFormCode = template.formComponent;
+    }
+
+    // Create enhanced sandbox with complete Formedible integration
+    const enhancedSandbox = createFormedibleSandbox(enhancedFormCode, templateComplexity);
+    
+    // Merge with additional dependencies
+    if (Object.keys(additionalDependencies).length > 0) {
+      const packageJson = JSON.parse(enhancedSandbox["/package.json"].code);
+      packageJson.dependencies = { ...packageJson.dependencies, ...additionalDependencies };
+      enhancedSandbox["/package.json"].code = JSON.stringify(packageJson, null, 2);
+    }
+    
+    // Add custom styles if provided
+    if (customStyles) {
+      enhancedSandbox["/styles.css"].code += `\n\n/* Custom Styles */\n${customStyles}`;
+    }
+    
+    return enhancedSandbox;
+  }
 
   // Validate and extract form component
   const extractedFormCode = extractFormComponent(formCode);
@@ -527,7 +743,7 @@ export function createSandboxFiles(
         name: "formedible-preview",
         version: "1.0.0",
         dependencies: {
-          ...FORMEDIBLE_DEPENDENCIES,
+          ...FORMEDIBLE_SANDBOX_DEPENDENCIES_FROM_REPO,
           ...additionalDependencies
         },
         main: "/App.tsx",
@@ -599,7 +815,23 @@ export function injectFormCodeIntoSandbox(
   options: InjectionOptions = {}
 ): SandpackFiles {
   try {
-    // Validate the form code first
+    // If using enhanced templates, skip legacy validation for now
+    if (options.useEnhancedTemplates !== false) {
+      const enhancedOptions = {
+        ...options,
+        useEnhancedTemplates: true
+      };
+      
+      // Create new sandbox files with enhanced templates
+      const newFiles = createSandboxFiles(generatedFormCode, enhancedOptions);
+      
+      // Merge with base files if provided, giving priority to new files
+      const mergedFiles = { ...baseSandboxFiles, ...newFiles };
+      
+      return mergedFiles;
+    }
+    
+    // Legacy validation approach
     const validation = validateFormCode(generatedFormCode);
     
     if (!validation.isValid) {
@@ -672,4 +904,58 @@ export function getSandboxFileContent(
     return file;
   }
   return file?.code || null;
+}
+
+/**
+ * Get available template variations
+ */
+export function getAvailableTemplates(): TemplateVariation[] {
+  return TEMPLATE_VARIATIONS;
+}
+
+/**
+ * Create a Formedible sandbox from field configuration
+ */
+export function createSandboxFromFields(
+  fields: any[],
+  options: Omit<InjectionOptions, 'formConfig'> & { 
+    title?: string;
+    description?: string;
+    multiPage?: boolean;
+    hasConditional?: boolean;
+  } = {}
+): SandpackFiles {
+  const {
+    title,
+    description,
+    multiPage = false,
+    hasConditional = false,
+    ...injectionOptions
+  } = options;
+  
+  return createSandboxFiles('', {
+    ...injectionOptions,
+    useEnhancedTemplates: true,
+    formConfig: {
+      fields,
+      title,
+      description,
+      multiPage,
+      hasConditional
+    }
+  });
+}
+
+/**
+ * Create a sandbox with a specific template
+ */
+export function createSandboxWithTemplate(
+  templateComplexity: "basic" | "intermediate" | "advanced" = "basic",
+  options: InjectionOptions = {}
+): SandpackFiles {
+  return createSandboxFiles('', {
+    ...options,
+    useEnhancedTemplates: true,
+    templateComplexity
+  });
 }

@@ -107,6 +107,11 @@
           "target": "components/formedible/ai/sandpack-preview.tsx"
         },
         {
+          "path": "src/components/formedible/ai/lazy-sandpack-preview.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/ai/lazy-sandpack-preview.tsx"
+        },
+        {
           "path": "src/lib/form-extraction-utils.ts",
           "type": "registry:lib",
           "target": "lib/form-extraction-utils.ts"
@@ -120,6 +125,21 @@
           "path": "src/lib/sandbox-templates.ts",
           "type": "registry:lib",
           "target": "lib/sandbox-templates.ts"
+        },
+        {
+          "path": "src/lib/sandbox-cache.ts",
+          "type": "registry:lib",
+          "target": "lib/sandbox-cache.ts"
+        },
+        {
+          "path": "src/lib/code-splitting-utils.ts",
+          "type": "registry:lib",
+          "target": "lib/code-splitting-utils.ts"
+        },
+        {
+          "path": "src/lib/sandbox-templates.json",
+          "type": "registry:lib",
+          "target": "lib/sandbox-templates.json"
         }
       ]
     }
