@@ -62,6 +62,10 @@ export default function AdvancedFieldsPage() {
             {/* Feature Pills */}
             <div className="flex flex-wrap justify-center gap-4 mb-8">
               <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary/8 to-muted-foreground/8 rounded-full border">
+                <Layers className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium">Dynamic Arrays</span>
+              </div>
+              <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary/8 to-muted-foreground/8 rounded-full border">
                 <MapPin className="w-4 h-4 text-primary" />
                 <span className="text-sm font-medium">Location Picker</span>
               </div>
@@ -407,6 +411,160 @@ export default function AdvancedFieldsPage() {
                       </p>
                     </div>
                   </div>
+                </div>
+              </div>
+            </DocCard>
+
+            <DocCard
+              title="Array Fields"
+              description="Create dynamic lists with complex nested structures, drag-and-drop sorting, and intelligent validation."
+              icon={Layers}
+            >
+              <div className="space-y-6">
+                <p className="text-muted-foreground">
+                  Array fields are one of Formedible's most powerful features, enabling 
+                  dynamic form sections that users can expand and contract. Perfect for 
+                  team members, addresses, contact methods, or any repeating data structure.
+                </p>
+
+                <div>
+                  <h3 className="font-semibold text-lg mb-3">Simple Array</h3>
+                  <CodeBlock
+                    code={`{
+  name: 'tags',
+  type: 'array',
+  label: 'Project Tags',
+  arrayConfig: {
+    itemType: 'text',
+    itemLabel: 'Tag',
+    itemPlaceholder: 'Enter a tag...',
+    minItems: 1,
+    maxItems: 10,
+    addButtonLabel: 'Add Tag',
+    removeButtonLabel: 'Remove',
+    sortable: true,
+    defaultValue: ''
+  }
+}`}
+                    language="tsx"
+                    darkMode={darkMode}
+                  />
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-lg mb-3">Complex Object Array</h3>
+                  <CodeBlock
+                    code={`{
+  name: 'teamMembers',
+  type: 'array',
+  label: 'Team Members',
+  arrayConfig: {
+    itemType: 'object',
+    itemLabel: 'Team Member',
+    minItems: 1,
+    maxItems: 5,
+    sortable: true,
+    addButtonLabel: 'Add Team Member',
+    removeButtonLabel: 'Remove Member',
+    defaultValue: {
+      name: '',
+      email: '',
+      role: 'developer',
+      startDate: new Date()
+    },
+    objectConfig: {
+      title: 'Member Details',
+      description: 'Enter team member information',
+      collapsible: true,
+      defaultExpanded: true,
+      fields: [
+        {
+          name: 'name',
+          type: 'text',
+          label: 'Full Name',
+          placeholder: 'Enter full name'
+        },
+        {
+          name: 'email',
+          type: 'email',
+          label: 'Email Address',
+          placeholder: 'Enter email'
+        },
+        {
+          name: 'role',
+          type: 'select',
+          label: 'Role',
+          options: [
+            { value: 'developer', label: 'Developer' },
+            { value: 'designer', label: 'Designer' },
+            { value: 'manager', label: 'Manager' },
+            { value: 'qa', label: 'QA Engineer' }
+          ]
+        },
+        {
+          name: 'startDate',
+          type: 'date',
+          label: 'Start Date'
+        }
+      ]
+    }
+  }
+}`}
+                    language="tsx"
+                    darkMode={darkMode}
+                  />
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-lg mb-3">Configuration Options</h3>
+                  <div className="space-y-2">
+                    <div className="border-l-4 border-primary/20 pl-4">
+                      <code className="text-primary font-mono">itemType</code>
+                      <p className="text-sm text-muted-foreground">
+                        Type of items in the array ('text', 'email', 'object', etc.)
+                      </p>
+                    </div>
+                    <div className="border-l-4 border-primary/20 pl-4">
+                      <code className="text-primary font-mono">sortable</code>
+                      <p className="text-sm text-muted-foreground">
+                        Enable drag-and-drop reordering of array items
+                      </p>
+                    </div>
+                    <div className="border-l-4 border-primary/20 pl-4">
+                      <code className="text-primary font-mono">minItems / maxItems</code>
+                      <p className="text-sm text-muted-foreground">
+                        Control the minimum and maximum number of items
+                      </p>
+                    </div>
+                    <div className="border-l-4 border-primary/20 pl-4">
+                      <code className="text-primary font-mono">objectConfig</code>
+                      <p className="text-sm text-muted-foreground">
+                        Define nested field structure for object arrays
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold text-lg mb-3">Validation Integration</h3>
+                  <CodeBlock
+                    code={`// Zod schema for array validation
+const schema = z.object({
+  teamMembers: z
+    .array(
+      z.object({
+        name: z.string().min(1, "Name is required"),
+        email: z.string().email("Valid email required"),
+        role: z.enum(["developer", "designer", "manager", "qa"]),
+        startDate: z.date()
+      })
+    )
+    .min(1, "At least one team member is required")
+    .max(5, "Maximum 5 team members allowed")
+});`}
+                    language="tsx"
+                    darkMode={darkMode}
+                  />
                 </div>
               </div>
             </DocCard>

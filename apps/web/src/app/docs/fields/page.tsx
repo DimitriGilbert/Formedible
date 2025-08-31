@@ -41,7 +41,7 @@ export default function FieldsPage() {
                 Field Types
               </Badge>
               <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-primary to-muted-foreground bg-clip-text text-transparent">
-                20+ Beautiful Field Components
+                15+ Beautiful Field Components
               </h1>
               <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
                 Explore our comprehensive collection of pre-built field
@@ -211,6 +211,196 @@ export default function FieldsPage() {
   label: 'I agree to the terms and conditions',
   checkboxConfig: {
     required: true
+  }
+}`}
+                    language="tsx"
+                    darkMode={darkMode}
+                  />
+                </div>
+              </div>
+            </DocCard>
+
+            <DocCard
+              title="Complex Fields"
+              description="Dynamic components for handling arrays, objects, and specialized data structures."
+              icon={Layers}
+            >
+              <div className="space-y-8">
+                <div>
+                  <h4 className="font-semibold text-lg mb-2">Array Field</h4>
+                  <p className="text-muted-foreground text-sm mb-4">
+                    Dynamic list of items with add/remove functionality, sorting, and nested field support.
+                  </p>
+                  <CodeBlock
+                    code={`// Simple text array
+{
+  name: 'tags',
+  type: 'array',
+  label: 'Tags',
+  arrayConfig: {
+    itemType: 'text',
+    itemLabel: 'Tag',
+    itemPlaceholder: 'Enter tag...',
+    minItems: 1,
+    maxItems: 10,
+    addButtonLabel: 'Add Tag',
+    sortable: true,
+    defaultValue: ''
+  }
+}
+
+// Complex object array
+{
+  name: 'teamMembers',
+  type: 'array',
+  label: 'Team Members',
+  arrayConfig: {
+    itemType: 'object',
+    itemLabel: 'Team Member',
+    minItems: 1,
+    maxItems: 5,
+    sortable: true,
+    defaultValue: { name: '', role: '', email: '' },
+    objectConfig: {
+      fields: [
+        { name: 'name', type: 'text', label: 'Name' },
+        { name: 'role', type: 'select', label: 'Role', 
+          options: ['Developer', 'Designer', 'Manager'] },
+        { name: 'email', type: 'email', label: 'Email' }
+      ]
+    }
+  }
+}`}
+                    language="tsx"
+                    darkMode={darkMode}
+                  />
+                </div>
+
+                <div>
+                  <h4 className="font-semibold text-lg mb-2">Object Field</h4>
+                  <p className="text-muted-foreground text-sm mb-4">
+                    Group related fields together with optional collapsible sections.
+                  </p>
+                  <CodeBlock
+                    code={`{
+  name: 'address',
+  type: 'object',
+  label: 'Address Information',
+  objectConfig: {
+    title: 'Shipping Address',
+    description: 'Enter your shipping details',
+    collapsible: true,
+    defaultExpanded: true,
+    fields: [
+      { name: 'street', type: 'text', label: 'Street Address' },
+      { name: 'city', type: 'text', label: 'City' },
+      { name: 'state', type: 'select', label: 'State', options: [...] },
+      { name: 'zipCode', type: 'text', label: 'ZIP Code' }
+    ]
+  }
+}`}
+                    language="tsx"
+                    darkMode={darkMode}
+                  />
+                </div>
+
+                <div>
+                  <h4 className="font-semibold text-lg mb-2">Multi-Select Field</h4>
+                  <p className="text-muted-foreground text-sm mb-4">
+                    Select multiple options with search and create functionality.
+                  </p>
+                  <CodeBlock
+                    code={`{
+  name: 'skills',
+  type: 'multiselect',
+  label: 'Skills',
+  multiSelectConfig: {
+    options: [
+      { value: 'react', label: 'React' },
+      { value: 'typescript', label: 'TypeScript' },
+      { value: 'nodejs', label: 'Node.js' }
+    ],
+    maxSelections: 5,
+    searchable: true,
+    creatable: true,
+    placeholder: 'Select or create skills...'
+  }
+}`}
+                    language="tsx"
+                    darkMode={darkMode}
+                  />
+                </div>
+              </div>
+            </DocCard>
+
+            <DocCard
+              title="Specialized Fields"
+              description="Advanced components for specific data types and user interactions."
+              icon={Palette}
+            >
+              <div className="space-y-8">
+                <div>
+                  <h4 className="font-semibold text-lg mb-2">Phone Field</h4>
+                  <p className="text-muted-foreground text-sm mb-4">
+                    International phone number input with country selection.
+                  </p>
+                  <CodeBlock
+                    code={`{
+  name: 'phone',
+  type: 'phone',
+  label: 'Phone Number',
+  phoneConfig: {
+    defaultCountry: 'US',
+    format: 'international',
+    preferredCountries: ['US', 'CA', 'GB'],
+    placeholder: 'Enter phone number'
+  }
+}`}
+                    language="tsx"
+                    darkMode={darkMode}
+                  />
+                </div>
+
+                <div>
+                  <h4 className="font-semibold text-lg mb-2">Color Picker Field</h4>
+                  <p className="text-muted-foreground text-sm mb-4">
+                    Color selection with preview and preset colors.
+                  </p>
+                  <CodeBlock
+                    code={`{
+  name: 'brandColor',
+  type: 'color',
+  label: 'Brand Color',
+  colorConfig: {
+    format: 'hex',
+    showPreview: true,
+    showAlpha: false,
+    presetColors: ['#ff0000', '#00ff00', '#0000ff'],
+    allowCustom: true
+  }
+}`}
+                    language="tsx"
+                    darkMode={darkMode}
+                  />
+                </div>
+
+                <div>
+                  <h4 className="font-semibold text-lg mb-2">Rating Field</h4>
+                  <p className="text-muted-foreground text-sm mb-4">
+                    Star rating with customizable icons and precision.
+                  </p>
+                  <CodeBlock
+                    code={`{
+  name: 'satisfaction',
+  type: 'rating',
+  label: 'Satisfaction Rating',
+  ratingConfig: {
+    max: 5,
+    allowHalf: true,
+    allowClear: true,
+    icon: 'star',
+    size: 'lg',
+    showValue: true
   }
 }`}
                     language="tsx"
