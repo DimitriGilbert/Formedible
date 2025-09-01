@@ -1,5 +1,6 @@
 import React from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DemoCard } from "@/components/demo/demo-card";
 import { AnimatePresence, motion } from "motion/react";
 
@@ -30,8 +31,37 @@ import {
 } from "@/app/docs/examples/rental-car-flow-form";
 
 export const HeroExamples: React.FC = () => {
+  const [selectedExample, setSelectedExample] = React.useState("installation");
+
+  // Define all examples with their labels
+  const examples = [
+    { value: "installation", label: "Install" },
+    { value: "system-prompt", label: "AI Prompt" },
+    { value: "Flow", label: "Flow" },
+    { value: "contact", label: "Contact" },
+    { value: "registration", label: "Multi-Page" },
+    { value: "survey", label: "Conditional" },
+  ];
+
   return (
-    <Tabs defaultValue="installation" className="w-full">
+    <>
+      {/* Mobile Select Navigation */}
+      <div className="block sm:hidden mb-4">
+        <Select value={selectedExample} onValueChange={setSelectedExample}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select an example" />
+          </SelectTrigger>
+          <SelectContent>
+            {examples.map((example) => (
+              <SelectItem key={example.value} value={example.value}>
+                {example.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <Tabs value={selectedExample} onValueChange={setSelectedExample} className="w-full">
       <AnimatePresence mode="wait">
         <TabsContent key="installation" value="installation">
           <motion.div
@@ -145,7 +175,8 @@ export const HeroExamples: React.FC = () => {
         </TabsContent>
       </AnimatePresence>
 
-      <TabsList className="grid w-full grid-cols-6 mt-2">
+      {/* Desktop Tab Navigation */}
+      <TabsList className="hidden sm:grid w-full grid-cols-6 mt-2">
         <TabsTrigger value="installation" className="text-xs">
           Install
         </TabsTrigger>
@@ -166,5 +197,6 @@ export const HeroExamples: React.FC = () => {
         </TabsTrigger>
       </TabsList>
     </Tabs>
+    </>
   );
 };

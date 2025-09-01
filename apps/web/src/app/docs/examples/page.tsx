@@ -3,6 +3,7 @@
 import React from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -49,6 +50,29 @@ import { RentalCarFlowForm } from "./rental-car-flow-form";
 // import MyForm from "./conditional-in-obj";
 
 export default function ExamplesPage() {
+  const [selectedTab, setSelectedTab] = React.useState("contact");
+
+  // Define all examples with their categories
+  const basicExamples = [
+    { value: "contact", label: "Contact Form" },
+    { value: "registration", label: "Registration" },
+    { value: "survey", label: "Survey" },
+    { value: "checkout", label: "Checkout" },
+    { value: "job", label: "Job Application" },
+    { value: "tabbed", label: "Tabbed Form" },
+  ];
+
+  const advancedExamples = [
+    { value: "rental-flow", label: "Flow Form" },
+    { value: "analytics", label: "Analytics & Tracking" },
+    { value: "persistence", label: "Form Persistence" },
+    { value: "arrays", label: "Array Fields" },
+    { value: "conditional-pages", label: "Conditional Pages" },
+    { value: "advanced-fields", label: "Advanced Field Types" },
+  ];
+
+  const allExamples = [...basicExamples, ...advancedExamples];
+
   return (
     <>
       <div className="min-h-screen bg-background">
@@ -79,8 +103,39 @@ export default function ExamplesPage() {
               </motion.div>
             </div>
 
-            <Tabs defaultValue="contact" className="w-full">
+            {/* Mobile Select Navigation */}
+            <div className="block sm:hidden">
               <div className="space-y-4">
+                <h2 className="text-2xl font-semibold">Examples</h2>
+                <Select value={selectedTab} onValueChange={setSelectedTab}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select an example" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem disabled value="basic-header">
+                      <span className="font-semibold text-muted-foreground">Basic Examples</span>
+                    </SelectItem>
+                    {basicExamples.map((example) => (
+                      <SelectItem key={example.value} value={example.value}>
+                        {example.label}
+                      </SelectItem>
+                    ))}
+                    <SelectItem disabled value="advanced-header">
+                      <span className="font-semibold text-muted-foreground">Advanced Examples</span>
+                    </SelectItem>
+                    {advancedExamples.map((example) => (
+                      <SelectItem key={example.value} value={example.value}>
+                        {example.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
+              {/* Desktop Tab Navigation */}
+              <div className="hidden sm:block space-y-4">
                 <div>
                   <h2 className="text-2xl font-semibold mb-4">
                     Basic Examples
