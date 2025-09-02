@@ -4,7 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger, SheetClose } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+  SheetClose,
+} from "@/components/ui/sheet";
 import { ModeToggle } from "./mode-toggle";
 
 export default function Header() {
@@ -15,7 +20,7 @@ export default function Header() {
     { to: "/", label: "Home" },
     { to: "/docs", label: "Documentation" },
     { to: "/builder", label: "Form Builder" },
-    // { to: "/ai-builder", label: "AI Builder" },
+    { to: "/ai-builder", label: "AI Builder" },
     {
       to: "https://github.com/DimitriGilbert/FormEdible",
       label: "Github",
@@ -52,7 +57,8 @@ export default function Header() {
                         <Link
                           href={to}
                           className={`text-lg font-medium transition-colors hover:text-primary p-2 rounded-md ${
-                            pathname === to || (to !== "/" && pathname.startsWith(to))
+                            pathname === to ||
+                            (to !== "/" && pathname.startsWith(to))
                               ? "text-primary bg-primary/10"
                               : "text-muted-foreground hover:bg-muted"
                           }`}

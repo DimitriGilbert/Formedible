@@ -15,6 +15,8 @@ import {
   BarChart3,
   Wrench,
   Settings,
+  FileJson,
+  Bot,
 } from "lucide-react";
 import {
   Card,
@@ -131,6 +133,24 @@ export default function DocsPage() {
       href: "/docs/advanced-features",
       color: "text-accent",
       badge: "Overview",
+    },
+    {
+      title: "Formedible Parser",
+      description:
+        "Safe parser for form definitions supporting JSON, JavaScript objects, and Zod schemas",
+      icon: FileJson,
+      href: "/docs/formedible-parser",
+      color: "text-info",
+      badge: "Parser",
+    },
+    {
+      title: "AI Form Builder",
+      description:
+        "AI-powered form generation with multiple providers and conversational interface",
+      icon: Bot,
+      href: "/docs/ai-builder",
+      color: "text-primary",
+      badge: "AI-Powered",
     },
     {
       title: "API Reference",
