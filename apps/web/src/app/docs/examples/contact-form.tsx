@@ -38,13 +38,21 @@ const contactForm = useFormedible({
     },
     {
       name: "subject",
-      type: "select",
+      type: "combobox",
       label: "Subject",
       options: [
         { value: "general", label: "General Inquiry" },
         { value: "support", label: "Technical Support" },
         { value: "sales", label: "Sales Question" },
+        { value: "billing", label: "Billing Question" },
+        { value: "feature", label: "Feature Request" },
       ],
+      comboboxConfig: {
+        searchable: true,
+        placeholder: "Select subject...",
+        searchPlaceholder: "Search subjects...",
+        noOptionsText: "No subjects found."
+      },
     },
     {
       name: "message",
@@ -92,13 +100,21 @@ export function ContactFormExample() {
       },
       {
         name: "subject",
-        type: "select",
+        type: "combobox",
         label: "Subject",
         options: [
           { value: "general", label: "General Inquiry" },
           { value: "support", label: "Technical Support" },
           { value: "sales", label: "Sales Question" },
+          { value: "billing", label: "Billing Question" },
+          { value: "feature", label: "Feature Request" },
         ],
+        comboboxConfig: {
+          searchable: true,
+          placeholder: "Select subject...",
+          searchPlaceholder: "Search subjects...",
+          noOptionsText: "No subjects found."
+        },
       },
       {
         name: "message",

@@ -201,6 +201,13 @@ This is the dictionary of all available field `type`s and their specific configu
     - `maxSelections?: number`.
     - `searchable?: boolean`.
     - `creatable?: boolean`: Allow adding new options on the fly.
+- **`combobox`**: A searchable dropdown with command palette-style interface.
+  - **`comboboxConfig: { ... }`**
+    - `searchable?: boolean`: Enable/disable search functionality (default: true).
+    - `placeholder?: string`: Placeholder text for the trigger button.
+    - `searchPlaceholder?: string`: Placeholder text for the search input.
+    - `noOptionsText?: string`: Text to show when no options are found.
+    - `allowClear?: boolean`: Allow clearing the selection.
 
 - **`number`**: A number input.
   - **`numberConfig: { ... }`**

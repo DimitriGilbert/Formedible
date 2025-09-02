@@ -23,6 +23,7 @@ import { DurationPickerField } from './duration-picker-field';
 import { LocationPickerField } from './location-picker-field';
 import { MaskedInputField } from './masked-input-field';
 import { ObjectField } from './object-field';
+import { ComboboxField } from './combobox-field';
 
 // Type-safe field component registry with flexible props
 export interface FieldComponentProps extends BaseFieldProps {
@@ -37,6 +38,7 @@ export const fieldComponents: Record<string, FieldComponent> = {
   number: NumberField,
   select: SelectField,
   multiselect: MultiSelectField,
+  combobox: ComboboxField,
   checkbox: CheckboxField,
   switch: SwitchField,
   radio: RadioField,

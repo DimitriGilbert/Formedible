@@ -33,7 +33,9 @@
     "zod": "^4.0.5"
   },
   "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.15",
     "clsx": "^2.1.1",
+    "cmdk": "^1.1.1",
     "tailwind-merge": "^2.5.4"
   },
   "devDependencies": {

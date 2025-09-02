@@ -18,6 +18,7 @@
         "label",
         "calendar",
         "popover",
+        "command",
         "badge",
         "slider",
         "radio-group",
@@ -122,6 +123,10 @@
         },
         {
           "path": "src/components/formedible/fields/multi-select-field.tsx",
+          "type": "registry:component"
+        },
+        {
+          "path": "src/components/formedible/fields/combobox-field.tsx",
           "type": "registry:component"
         },
         {

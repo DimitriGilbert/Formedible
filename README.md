@@ -122,6 +122,7 @@ const registrationSchema = z.object({
   // Preferences (Page 3)
   notifications: z.boolean(),
   newsletter: z.boolean(),
+  primarySkill: z.string().min(1, "Please select your primary skill"),
   interests: z.array(z.string()),
 });
 
@@ -143,9 +144,29 @@ export function RegistrationWizard() {
       { name: "notifications", type: "switch", label: "Enable Notifications", page: 3 },
       { name: "newsletter", type: "checkbox", label: "Subscribe to Newsletter", page: 3 },
       { 
+        name: "primarySkill", 
+        type: "combobox", 
+        label: "Primary Skill", 
+        page: 3,
+        options: [
+          { value: "frontend", label: "Frontend Development" },
+          { value: "backend", label: "Backend Development" },
+          { value: "fullstack", label: "Full Stack Development" },
+          { value: "mobile", label: "Mobile Development" },
+          { value: "devops", label: "DevOps" },
+          { value: "design", label: "UI/UX Design" },
+        ],
+        comboboxConfig: {
+          searchable: true,
+          placeholder: "Select your primary skill...",
+          searchPlaceholder: "Search skills...",
+          noOptionsText: "No skills found."
+        }
+      },
+      { 
         name: "interests", 
         type: "multiSelect", 
-        label: "Interests", 
+        label: "Additional Interests", 
         page: 3,
         options: [
           { value: "tech", label: "Technology" },
@@ -175,7 +196,7 @@ export function RegistrationWizard() {
       defaultValues: {
         firstName: "", lastName: "", dateOfBirth: "",
         email: "", phone: "", address: "",
-        notifications: true, newsletter: false, interests: [],
+        notifications: true, newsletter: false, primarySkill: "", interests: [],
       },
       onSubmit: async ({ value }) => {
         // Process registration
@@ -254,6 +275,7 @@ const EnergyRatingComponent: React.FC<{
 | `number` | `NumberField` | Number input with validation | Min/max, step, precision, spin buttons |
 | `date` | `DateField` | Date picker with calendar | Min/max dates, disabled dates, time support |
 | `select` | `SelectField` | Dropdown selection | Searchable, clearable, custom options |
+| `combobox` | `ComboboxField` | Searchable dropdown with command palette | Fast search, keyboard navigation, click-to-select |
 | `multiSelect` | `MultiSelectField` | Multiple selection dropdown | Search, create new options, max selections |
 | `checkbox` | `CheckboxField` | Boolean checkbox input | Custom styling, indeterminate state |
 | `switch` | `SwitchField` | Toggle switch | Smooth animations, custom labels |

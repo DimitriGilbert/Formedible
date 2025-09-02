@@ -176,6 +176,34 @@ export default function FieldsPage() {
                 </div>
 
                 <div>
+                  <h4 className="font-semibold text-lg mb-2">Combobox Field</h4>
+                  <p className="text-muted-foreground text-sm mb-4">
+                    Searchable dropdown with command palette interface and keyboard navigation.
+                  </p>
+                  <CodeBlock
+                    code={`{
+  name: 'framework',
+  type: 'combobox',
+  label: 'Framework',
+  options: [
+    { value: 'react', label: 'React' },
+    { value: 'vue', label: 'Vue.js' },
+    { value: 'angular', label: 'Angular' },
+    { value: 'svelte', label: 'Svelte' }
+  ],
+  comboboxConfig: {
+    searchable: true,
+    placeholder: 'Select framework...',
+    searchPlaceholder: 'Search frameworks...',
+    noOptionsText: 'No framework found.'
+  }
+}`}
+                    language="tsx"
+                    darkMode={darkMode}
+                  />
+                </div>
+
+                <div>
                   <h4 className="font-semibold text-lg mb-2">Radio Field</h4>
                   <p className="text-muted-foreground text-sm mb-4">
                     Radio button group for single selection.

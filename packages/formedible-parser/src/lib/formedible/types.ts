@@ -120,6 +120,17 @@ export interface MultiSelectFieldProps extends BaseFieldProps {
   maxSelections?: number;
 }
 
+export interface ComboboxFieldProps extends BaseFieldProps {
+  options: FieldOptions;
+  placeholder?: string;
+  comboboxConfig?: {
+    searchable?: boolean;
+    searchPlaceholder?: string;
+    noOptionsText?: string;
+    allowClear?: boolean;
+  };
+}
+
 // Shared object configuration interface - DRY!
 export interface ObjectConfig {
   title?: string;
@@ -347,6 +358,17 @@ export interface MultiSelectFieldSpecificProps extends BaseFieldProps {
   };
 }
 
+export interface ComboboxFieldSpecificProps extends BaseFieldProps {
+  options: Array<{ value: string; label: string }> | string[];
+  comboboxConfig?: {
+    searchable?: boolean;
+    placeholder?: string;
+    searchPlaceholder?: string;
+    noOptionsText?: string;
+    allowClear?: boolean;
+  };
+}
+
 export interface ColorPickerFieldSpecificProps extends BaseFieldProps {
   colorConfig?: {
     format?: "hex" | "rgb" | "hsl";
@@ -523,6 +545,7 @@ export type FieldComponentProps = BaseFieldProps & {
     noOptionsText?: string;
     loadingText?: string;
   };
+  comboboxConfig?: ComboboxConfig;
   maskedInputConfig?: MaskedInputConfig;
   // Allow additional props for extensibility
   [key: string]: unknown;
@@ -1000,6 +1023,15 @@ export interface MultiSelectConfig {
   loadingText?: string;
 }
 
+// Combobox configuration
+export interface ComboboxConfig {
+  searchable?: boolean;
+  placeholder?: string;
+  searchPlaceholder?: string;
+  noOptionsText?: string;
+  allowClear?: boolean;
+}
+
 // Hook interfaces moved from use-formedible.tsx for centralization
 export interface FormProps {
   className?: string;
@@ -1263,6 +1295,7 @@ export interface FieldConfig {
   phoneConfig?: PhoneFieldProps["phoneConfig"];
   colorConfig?: ColorPickerFieldProps["colorConfig"];
   multiSelectConfig?: MultiSelectConfig;
+  comboboxConfig?: ComboboxConfig;
   locationConfig?: LocationConfig;
   durationConfig?: DurationConfig;
   autocompleteConfig?: AutocompleteConfig;
