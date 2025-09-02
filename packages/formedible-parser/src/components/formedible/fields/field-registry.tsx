@@ -24,6 +24,7 @@ import { LocationPickerField } from './location-picker-field';
 import { MaskedInputField } from './masked-input-field';
 import { ObjectField } from './object-field';
 import { ComboboxField } from './combobox-field';
+import { MultiComboboxField } from './multicombobox-field';
 
 // Type-safe field component registry with flexible props
 export interface FieldComponentProps extends BaseFieldProps {
@@ -39,6 +40,7 @@ export const fieldComponents: Record<string, FieldComponent> = {
   select: SelectField,
   multiselect: MultiSelectField,
   combobox: ComboboxField,
+  multicombobox: MultiComboboxField,
   checkbox: CheckboxField,
   switch: SwitchField,
   radio: RadioField,

@@ -10,6 +10,7 @@ export const contactSchema = z.object({
   email: z.string().email("Please enter a valid email"),
   subject: z.enum(["general", "support", "sales"]),
   message: z.string().min(10, "Message must be at least 10 characters"),
+  categories: z.array(z.string()).optional(),
   urgent: z.boolean().default(false),
 });
 
@@ -18,6 +19,7 @@ export const contactFormCode = `const contactSchema = z.object({
   email: z.string().email("Please enter a valid email"),
   subject: z.enum(["general", "support", "sales"]),
   message: z.string().min(10, "Message must be at least 10 characters"),
+  categories: z.array(z.string()).optional(),
   urgent: z.boolean().default(false),
 });
 
@@ -60,6 +62,26 @@ const contactForm = useFormedible({
       label: "Message",
       placeholder: "How can we help?",
     },
+    {
+      name: "categories",
+      type: "multicombobox",
+      label: "Categories",
+      options: [
+        { value: "bug", label: "Bug Report" },
+        { value: "feature", label: "Feature Request" },
+        { value: "documentation", label: "Documentation" },
+        { value: "performance", label: "Performance Issue" },
+        { value: "security", label: "Security Concern" },
+      ],
+      multiComboboxConfig: {
+        searchable: true,
+        creatable: true,
+        maxSelections: 3,
+        placeholder: "Select categories...",
+        searchPlaceholder: "Search categories...",
+        noOptionsText: "No categories found."
+      }
+    },
     { name: "urgent", type: "checkbox", label: "This is urgent" },
   ],
   submitLabel: "Send Message",
@@ -71,6 +93,7 @@ const contactForm = useFormedible({
       email: "",
       subject: "general" as const,
       message: "",
+      categories: [],
       urgent: false,
     },
     onSubmit: async ({ value }) => {
@@ -122,6 +145,26 @@ export function ContactFormExample() {
         label: "Message",
         placeholder: "How can we help?",
       },
+      {
+        name: "categories",
+        type: "multicombobox",
+        label: "Categories",
+        options: [
+          { value: "bug", label: "Bug Report" },
+          { value: "feature", label: "Feature Request" },
+          { value: "documentation", label: "Documentation" },
+          { value: "performance", label: "Performance Issue" },
+          { value: "security", label: "Security Concern" },
+        ],
+        multiComboboxConfig: {
+          searchable: true,
+          creatable: true,
+          maxSelections: 3,
+          placeholder: "Select categories...",
+          searchPlaceholder: "Search categories...",
+          noOptionsText: "No categories found."
+        }
+      },
       { name: "urgent", type: "checkbox", label: "This is urgent" },
     ],
     submitLabel: "Send Message",
@@ -133,6 +176,7 @@ export function ContactFormExample() {
         email: "",
         subject: "general" as const,
         message: "",
+        categories: [],
         urgent: false,
       },
       onSubmit: async ({ value }) => {

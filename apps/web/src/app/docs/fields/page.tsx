@@ -204,6 +204,37 @@ export default function FieldsPage() {
                 </div>
 
                 <div>
+                  <h4 className="font-semibold text-lg mb-2">Multi-Combobox Field</h4>
+                  <p className="text-muted-foreground text-sm mb-4">
+                    Multi-select combobox with command palette interface, search, and keyboard navigation.
+                  </p>
+                  <CodeBlock
+                    code={`{
+  name: 'skills',
+  type: 'multicombobox',
+  label: 'Skills',
+  options: [
+    { value: 'react', label: 'React' },
+    { value: 'vue', label: 'Vue.js' },
+    { value: 'angular', label: 'Angular' },
+    { value: 'svelte', label: 'Svelte' },
+    { value: 'typescript', label: 'TypeScript' },
+    { value: 'javascript', label: 'JavaScript' }
+  ],
+  multiComboboxConfig: {
+    searchable: true,
+    creatable: true,
+    maxSelections: 3,
+    placeholder: 'Select skills...',
+    searchPlaceholder: 'Search skills...',
+    noOptionsText: 'No skills found.'
+  }
+}`}
+                    language="tsx"
+                    darkMode={darkMode}
+                  />
+                </div>
+                <div>
                   <h4 className="font-semibold text-lg mb-2">Radio Field</h4>
                   <p className="text-muted-foreground text-sm mb-4">
                     Radio button group for single selection.

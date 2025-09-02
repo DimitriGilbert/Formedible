@@ -120,6 +120,17 @@ export interface MultiSelectFieldProps extends BaseFieldProps {
   maxSelections?: number;
 }
 
+export interface ComboboxFieldSpecificProps extends BaseFieldProps {
+  options: Array<{ value: string; label: string }> | string[];
+  comboboxConfig?: {
+    searchable?: boolean;
+    placeholder?: string;
+    searchPlaceholder?: string;
+    noOptionsText?: string;
+    allowClear?: boolean;
+  };
+}
+
 export interface ComboboxFieldProps extends BaseFieldProps {
   options: FieldOptions;
   placeholder?: string;
@@ -128,6 +139,32 @@ export interface ComboboxFieldProps extends BaseFieldProps {
     searchPlaceholder?: string;
     noOptionsText?: string;
     allowClear?: boolean;
+  };
+}
+
+export interface MultiComboboxFieldSpecificProps extends BaseFieldProps {
+  options: Array<{ value: string; label: string }> | string[];
+  placeholder?: string;
+  multiComboboxConfig?: {
+    maxSelections?: number;
+    searchable?: boolean;
+    creatable?: boolean;
+    placeholder?: string;
+    searchPlaceholder?: string;
+    noOptionsText?: string;
+  };
+}
+
+export interface MultiComboboxFieldProps extends BaseFieldProps {
+  options: FieldOptions;
+  placeholder?: string;
+  multiComboboxConfig?: {
+    maxSelections?: number;
+    searchable?: boolean;
+    creatable?: boolean;
+    placeholder?: string;
+    searchPlaceholder?: string;
+    noOptionsText?: string;
   };
 }
 

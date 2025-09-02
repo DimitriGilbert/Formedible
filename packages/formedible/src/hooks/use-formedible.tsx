@@ -41,6 +41,7 @@ import { AutocompleteField } from "@/components/formedible/fields/autocomplete-f
 import { MaskedInputField } from "@/components/formedible/fields/masked-input-field";
 import { ObjectField } from "@/components/formedible/fields/object-field";
 import { ComboboxField } from "@/components/formedible/fields/combobox-field";
+import { MultiComboboxField } from "@/components/formedible/fields/multicombobox-field";
 import { InlineValidationWrapper } from "@/components/formedible/fields/inline-validation-wrapper";
 import { FieldHelp } from "@/components/formedible/fields/field-help";
 import { FormGrid, GridItem } from "@/components/formedible/layout/form-grid";
@@ -134,6 +135,7 @@ const defaultFieldComponents: Record<string, React.ComponentType<any>> = {
   masked: MaskedInputField,
   object: ObjectField,
   combobox: ComboboxField,
+  multicombobox: MultiComboboxField,
 };
 
 const DefaultProgressComponent: React.FC<{
@@ -1778,6 +1780,12 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
                               ...props,
                               options: normalizedOptions,
                               comboboxConfig: fieldConfig.comboboxConfig,
+                            };
+                          } else if (type === "multicombobox") {
+                            props = {
+                              ...props,
+                              options: normalizedOptions,
+                              multiComboboxConfig: fieldConfig.multiComboboxConfig,
                             };
                           } else if (type === "colorPicker") {
                             props = { ...props, colorConfig };

@@ -15,19 +15,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { BaseFieldProps } from '@/lib/formedible/types';
+import type { ComboboxFieldSpecificProps } from '@/lib/formedible/types';
 import { FieldWrapper } from './base-field-wrapper';
-
-interface ComboboxFieldSpecificProps extends BaseFieldProps {
-  options: Array<{ value: string; label: string }> | string[];
-  comboboxConfig?: {
-    searchable?: boolean;
-    placeholder?: string;
-    searchPlaceholder?: string;
-    noOptionsText?: string;
-    allowClear?: boolean;
-  };
-}
 
 export const ComboboxField: React.FC<ComboboxFieldSpecificProps> = ({
   fieldApi,

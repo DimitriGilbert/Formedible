@@ -130,6 +130,10 @@
           "type": "registry:component"
         },
         {
+          "path": "src/components/formedible/fields/multicombobox-field.tsx",
+          "type": "registry:component"
+        },
+        {
           "path": "src/components/formedible/fields/number-field.tsx",
           "type": "registry:component"
         },

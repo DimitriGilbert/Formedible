@@ -276,6 +276,7 @@ const EnergyRatingComponent: React.FC<{
 | `date` | `DateField` | Date picker with calendar | Min/max dates, disabled dates, time support |
 | `select` | `SelectField` | Dropdown selection | Searchable, clearable, custom options |
 | `combobox` | `ComboboxField` | Searchable dropdown with command palette | Fast search, keyboard navigation, click-to-select |
+| `multicombobox` | `MultiComboboxField` | Multi-select combobox with command palette | Fast search, keyboard navigation, multiple selections |
 | `multiSelect` | `MultiSelectField` | Multiple selection dropdown | Search, create new options, max selections |
 | `checkbox` | `CheckboxField` | Boolean checkbox input | Custom styling, indeterminate state |
 | `switch` | `SwitchField` | Toggle switch | Smooth animations, custom labels |

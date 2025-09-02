@@ -208,6 +208,14 @@ This is the dictionary of all available field `type`s and their specific configu
     - `searchPlaceholder?: string`: Placeholder text for the search input.
     - `noOptionsText?: string`: Text to show when no options are found.
     - `allowClear?: boolean`: Allow clearing the selection.
+- **`multicombobox`**: A multi-select combobox with command palette-style interface.
+  - **`multiComboboxConfig: { ... }`**
+    - `maxSelections?: number`: Maximum number of selections allowed.
+    - `searchable?: boolean`: Enable/disable search functionality (default: true).
+    - `creatable?: boolean`: Allow creating new options (default: false).
+    - `placeholder?: string`: Placeholder text for the trigger button.
+    - `searchPlaceholder?: string`: Placeholder text for the search input.
+    - `noOptionsText?: string`: Text to show when no options are found.
 
 - **`number`**: A number input.
   - **`numberConfig: { ... }`**
