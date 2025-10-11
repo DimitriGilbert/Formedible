@@ -34,7 +34,9 @@
         "react-day-picker",
         "lucide-react",
         "clsx",
-        "tailwind-merge"
+        "tailwind-merge",
+        "@dnd-kit/core",
+        "@dnd-kit/sortable"
       ],
       "files": [
         {
@@ -47,6 +49,10 @@
         },
         {
           "path": "src/lib/formedible/colors.ts",
+          "type": "registry:lib"
+        },
+        {
+          "path": "src/lib/formedible/date.ts",
           "type": "registry:lib"
         },
         {
@@ -192,4 +198,4 @@
       ]
     }
   ]
-} 
+}

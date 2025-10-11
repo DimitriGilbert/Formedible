@@ -9,10 +9,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import type { BaseFieldProps } from "@/lib/formedible/types";
+import type { DateFieldProps } from "@/lib/formedible/types";
+import { buildDisabledMatchers } from "@/lib/formedible/date";
 import { FieldWrapper } from "./base-field-wrapper";
 
-export const DateField: React.FC<BaseFieldProps> = ({
+export const DateField: React.FC<DateFieldProps> = ({
   fieldApi,
   label,
   description,
@@ -20,12 +21,26 @@ export const DateField: React.FC<BaseFieldProps> = ({
   inputClassName,
   labelClassName,
   wrapperClassName,
+  dateConfig,
 }) => {
   const isDisabled = fieldApi.form?.state?.isSubmitting ?? false;
   const hasErrors =
     fieldApi.state?.meta?.isTouched && fieldApi.state?.meta?.errors?.length > 0;
 
   const [isOpen, setIsOpen] = React.useState(false);
+
+  // Subscribe to form values for dynamic date restrictions
+  const [formValues, setFormValues] = React.useState(
+    fieldApi.form?.state?.values || {}
+  );
+
+  React.useEffect(() => {
+    if (!fieldApi.form) return;
+    const unsubscribe = fieldApi.form.store.subscribe((state) => {
+      setFormValues((state as any).values);
+    });
+    return unsubscribe;
+  }, [fieldApi.form]);
 
   const value = fieldApi.state?.value;
   const selectedDate = value
@@ -35,6 +50,27 @@ export const DateField: React.FC<BaseFieldProps> = ({
       ? parseISO(value)
       : undefined
     : undefined;
+
+  // Build disabled matchers from dateConfig with access to form values
+  const disabledMatchers = React.useMemo(() => {
+    // If disableDate is a function that needs form values, call it with form values
+    let enhancedDateConfig = dateConfig;
+    if (dateConfig?.disableDate && typeof dateConfig.disableDate === 'function') {
+      // Create a wrapper that provides form values to the disable function
+      const originalDisableDate = dateConfig.disableDate;
+      enhancedDateConfig = {
+        ...dateConfig,
+        disableDate: (date: Date) => originalDisableDate(date, formValues)
+      };
+    }
+
+    const matchers = buildDisabledMatchers(enhancedDateConfig);
+    // If form is disabled, add a matcher that disables all dates
+    if (isDisabled) {
+      return true; // Disable all dates when form is disabled
+    }
+    return matchers.length > 0 ? matchers : undefined;
+  }, [dateConfig, isDisabled, formValues]);
 
   const handleDateSelect = (date: Date | undefined) => {
     fieldApi.handleChange(date);
@@ -80,7 +116,7 @@ export const DateField: React.FC<BaseFieldProps> = ({
             selected={selectedDate}
             onSelect={handleDateSelect}
             initialFocus
-            disabled={isDisabled}
+            disabled={disabledMatchers}
           />
         </PopoverContent>
       </Popover>

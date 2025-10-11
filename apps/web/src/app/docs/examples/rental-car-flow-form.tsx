@@ -150,6 +150,9 @@ export function RentalCarFlowForm() {
         label: "When does {{firstName}}'s trip to {{destination}} begin?",
         description: "Pick your rental start date",
         page: 4,
+        dateConfig: {
+          disablePastDates: true, // Disable all past dates
+        },
       },
 
       // Page 5: Return Date
@@ -159,6 +162,18 @@ export function RentalCarFlowForm() {
         label: "When will {{firstName}} return from {{destination}}?",
         description: "Select your rental return date",
         page: 5,
+        dateConfig: {
+          // Disable dates before the pickup date
+          disableDate: (date, formValues) => {
+            if (!formValues?.pickupDate) return false;
+            
+            const pickupDate = new Date(formValues.pickupDate);
+            const returnDate = new Date(date);
+            
+            // Disable return dates that are before or same as pickup date
+            return returnDate <= pickupDate;
+          },
+        },
       },
 
       // Page 6: Passenger Count

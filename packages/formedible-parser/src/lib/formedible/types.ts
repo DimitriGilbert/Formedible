@@ -241,6 +241,22 @@ export interface DateFieldProps extends BaseFieldProps {
     disabledDates?: Date[];
     showTime?: boolean;
     timeFormat?: string;
+    
+    // Days of week restrictions (0=Sunday, 6=Saturday)
+    disabledDaysOfWeek?: number[];
+    
+    // Date range restrictions  
+    disabledDateRanges?: Array<{
+      from: Date;
+      to: Date;
+    }>;
+    
+    // Past/Future restrictions
+    disablePastDates?: boolean;
+    disableFutureDates?: boolean;
+    
+    // Custom disable function (with optional form values access)
+    disableDate?: (date: Date, formValues?: Record<string, any>) => boolean;
   };
 }
 
