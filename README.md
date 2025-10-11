@@ -266,6 +266,79 @@ const EnergyRatingComponent: React.FC<{
 - **📍 Value Indicators**: Floating tooltips that follow the slider thumb
 - **🔗 Visual Connections**: Connecting lines between visualizations and slider
 
+### 2.2. **Enhanced Date Field with Advanced Restrictions**
+
+The date field now supports sophisticated date restrictions and dynamic validation based on form values:
+
+```tsx
+const appointmentForm = useFormedible({
+  fields: [
+    {
+      name: "appointmentDate",
+      type: "date",
+      label: "Select Appointment Date",
+      dateConfig: {
+        // Disable all past dates
+        disablePastDates: true,
+        
+        // Disable weekends (0=Sunday, 6=Saturday)
+        disabledDaysOfWeek: [0, 6],
+        
+        // Disable specific date ranges
+        disabledDateRanges: [
+          { from: new Date('2024-12-25'), to: new Date('2024-12-25') }, // Christmas
+          { from: new Date('2024-07-01'), to: new Date('2024-07-07') }  // Holiday week
+        ],
+        
+        // Custom disable function with access to form values
+        disableDate: (date, formValues) => {
+          // Dynamic restrictions based on other fields
+          if (formValues?.urgency === 'urgent') {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            return date < tomorrow; // Only allow dates after tomorrow
+          }
+          
+          if (formValues?.department === 'surgery') {
+            // Surgery department only works Mon-Thu
+            const dayOfWeek = date.getDay();
+            return dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0; // Disable Fri-Sun
+          }
+          
+          return false;
+        }
+      }
+    },
+    {
+      name: "urgency",
+      type: "select",
+      label: "Appointment Urgency",
+      options: [
+        { value: "routine", label: "Routine (2+ weeks)" },
+        { value: "urgent", label: "Urgent (1-2 days)" }
+      ]
+    },
+    {
+      name: "department",
+      type: "select", 
+      label: "Department",
+      options: [
+        { value: "general", label: "General Practice" },
+        { value: "surgery", label: "Surgery" }
+      ]
+    }
+  ]
+});
+```
+
+**Enhanced Date Field Features:**
+- **📅 Past/Future Restrictions**: Easily disable all past or future dates
+- **📆 Day-of-Week Control**: Block specific weekdays (e.g., weekends)
+- **🎯 Date Range Blocking**: Disable specific date ranges (holidays, maintenance)
+- **🧠 Dynamic Validation**: Create rules based on other form field values
+- **⚡ Real-time Updates**: Restrictions update instantly as form values change
+- **🎨 Full Accessibility**: Complete keyboard navigation and screen reader support
+
 ## 🎨 Complete Field Types Reference
 
 | Field Type | Component | Description | Special Features |
@@ -273,7 +346,7 @@ const EnergyRatingComponent: React.FC<{
 | `text` | `TextField` | Standard text input | Support for email, password, url, tel subtypes |
 | `textarea` | `TextareaField` | Multi-line text input | Word count, auto-resize, max length |
 | `number` | `NumberField` | Number input with validation | Min/max, step, precision, spin buttons |
-| `date` | `DateField` | Date picker with calendar | Min/max dates, disabled dates, time support |
+| `date` | `DateField` | Advanced date picker with calendar | Min/max dates, disabled dates, time support, day-of-week restrictions, date ranges, dynamic form-based restrictions |
 | `select` | `SelectField` | Dropdown selection | Searchable, clearable, custom options |
 | `combobox` | `ComboboxField` | Searchable dropdown with command palette | Fast search, keyboard navigation, click-to-select |
 | `multicombobox` | `MultiComboboxField` | Multi-select combobox with command palette | Fast search, keyboard navigation, multiple selections |

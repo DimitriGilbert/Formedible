@@ -3,7 +3,13 @@
 import React from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -45,7 +51,7 @@ import {
   AdvancedFieldTypesFormExample,
   advancedFieldTypesFormCode,
 } from "./advanced-field-types-form";
-import { RentalCarFlowForm } from "./rental-car-flow-form";
+import { RentalCarFlowForm, RentalCarFlowCode } from "./rental-car-flow-form";
 
 // import MyForm from "./conditional-in-obj";
 
@@ -113,7 +119,9 @@ export default function ExamplesPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem disabled value="basic-header">
-                      <span className="font-semibold text-muted-foreground">Basic Examples</span>
+                      <span className="font-semibold text-muted-foreground">
+                        Basic Examples
+                      </span>
                     </SelectItem>
                     {basicExamples.map((example) => (
                       <SelectItem key={example.value} value={example.value}>
@@ -121,7 +129,9 @@ export default function ExamplesPage() {
                       </SelectItem>
                     ))}
                     <SelectItem disabled value="advanced-header">
-                      <span className="font-semibold text-muted-foreground">Advanced Examples</span>
+                      <span className="font-semibold text-muted-foreground">
+                        Advanced Examples
+                      </span>
                     </SelectItem>
                     {advancedExamples.map((example) => (
                       <SelectItem key={example.value} value={example.value}>
@@ -133,7 +143,11 @@ export default function ExamplesPage() {
               </div>
             </div>
 
-            <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
+            <Tabs
+              value={selectedTab}
+              onValueChange={setSelectedTab}
+              className="w-full"
+            >
               {/* Desktop Tab Navigation */}
               <div className="hidden sm:block space-y-4">
                 <div>
@@ -299,7 +313,7 @@ export default function ExamplesPage() {
                       { text: "Personal", variant: "default" },
                     ]}
                     preview={<RentalCarFlowForm />}
-                    code={``}
+                    code={RentalCarFlowCode}
                     codeTitle="Rental Car Flow Form"
                     codeDescription="Comprehensive flow form with 19 personalized pages, dynamic text throughout, and conditional navigation based on user choices"
                   />

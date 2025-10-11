@@ -478,10 +478,11 @@ export default function FieldsPage() {
                 <div>
                   <h4 className="font-semibold text-lg mb-2">Date Field</h4>
                   <p className="text-muted-foreground text-sm mb-4">
-                    Date picker with calendar interface.
+                    Advanced date picker with calendar interface and comprehensive date restrictions.
                   </p>
                   <CodeBlock
-                    code={`{
+                    code={`// Basic date picker
+{
   name: 'birthDate',
   type: 'date',
   label: 'Birth Date',
@@ -489,10 +490,46 @@ export default function FieldsPage() {
     format: 'yyyy-MM-dd',
     placeholder: 'Select your birth date'
   }
+}
+
+// Advanced date picker with restrictions
+{
+  name: 'appointmentDate',
+  type: 'date',
+  label: 'Appointment Date',
+  dateConfig: {
+    // Disable past dates
+    disablePastDates: true,
+    
+    // Disable specific days of week (0=Sunday, 6=Saturday)
+    disabledDaysOfWeek: [0, 6], // Disable weekends
+    
+    // Disable date ranges
+    disabledDateRanges: [
+      { from: new Date('2024-12-25'), to: new Date('2024-12-25') }, // Christmas
+      { from: new Date('2024-07-01'), to: new Date('2024-07-07') }  // Holiday week
+    ],
+    
+    // Custom disable function with access to form values
+    disableDate: (date, formValues) => {
+      // Disable dates based on other form field values
+      if (formValues?.urgency === 'urgent') {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        return date < tomorrow; // Only allow dates after tomorrow
+      }
+      return false;
+    }
+  }
 }`}
                     language="tsx"
                     darkMode={darkMode}
                   />
+                  <div className="mt-4 p-3 bg-muted/30 rounded-lg">
+                    <p className="text-sm text-muted-foreground">
+                      <strong>Enhanced Features:</strong> Disable past/future dates • Block specific weekdays • Custom date ranges • Dynamic restrictions based on form values • Full calendar accessibility
+                    </p>
+                  </div>
                 </div>
 
                 <div>
