@@ -27,7 +27,7 @@
     "dist"
   ],
   "peerDependencies": {
-    "@tanstack/react-form": "^1.19.2",
+    "@tanstack/react-form": "^1.23.7",
     "react": "^19.1.1",
     "react-dom": "^19.1.0",
     "zod": "^4.0.5"

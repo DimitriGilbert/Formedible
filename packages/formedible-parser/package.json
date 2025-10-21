@@ -27,7 +27,7 @@
   "license": "MIT",
   "description": "Safe parser for Formedible form definitions - handles JSON, JavaScript object literals, and Zod schema expressions",
   "peerDependencies": {
-    "@tanstack/react-form": "^1.19.2",
+    "@tanstack/react-form": "^1.23.7",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "zod": "^4.0.5"
