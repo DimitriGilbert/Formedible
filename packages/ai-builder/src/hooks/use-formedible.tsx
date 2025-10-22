@@ -667,71 +667,70 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
   // Setup form with schema validation if provided
   const formConfig = {
     ...formOptions,
-    ...(resetOnSubmitSuccess &&
-      formOptions?.onSubmit && {
-        onSubmit: async (props: {
-          value: TFormValues;
-          formApi: FormedibleFormApi<TFormValues>;
-        }) => {
-          // Run cross-field validation before submit
-          const crossFieldErrors = validateCrossFields(
-            props.value as Partial<TFormValues>
-          );
-          if (Object.keys(crossFieldErrors).length > 0) {
-            throw new Error("Cross-field validation failed");
-          }
+    ...(formOptions?.onSubmit && {
+      onSubmit: async (props: {
+        value: TFormValues;
+        formApi: FormedibleFormApi<TFormValues>;
+      }) => {
+        // Run cross-field validation before submit
+        const crossFieldErrors = validateCrossFields(
+          props.value as Partial<TFormValues>
+        );
+        if (Object.keys(crossFieldErrors).length > 0) {
+          throw new Error("Cross-field validation failed");
+        }
 
-          // Track submission start time for performance metrics
-          const submissionStartTime = Date.now();
+        // Track submission start time for performance metrics
+        const submissionStartTime = Date.now();
 
-          // Enhanced analytics tracking for form completion
-          if (analytics) {
-            const context = analyticsContextRef.current;
-            const timeSpent = Date.now() - context.startTime;
+        // Enhanced analytics tracking for form completion
+        if (analytics) {
+          const context = analyticsContextRef.current;
+          const timeSpent = Date.now() - context.startTime;
 
-            // Update performance metrics
-            context.performanceMetrics.submissionMetrics.totalTime = timeSpent;
+          // Update performance metrics
+          context.performanceMetrics.submissionMetrics.totalTime = timeSpent;
 
-            // Call enhanced completion analytics
-            analytics.onFormComplete?.(timeSpent, props.value);
-          }
+          // Call enhanced completion analytics
+          analytics.onFormComplete?.(timeSpent, props.value);
+        }
 
-          let result: unknown;
-          if (formOptions.onSubmit) {
-            try {
-              result = await formOptions.onSubmit(props);
+        let result: unknown;
+        if (formOptions.onSubmit) {
+          try {
+            result = await formOptions.onSubmit(props);
 
-              // Mark form as completed to prevent abandonment tracking
-              formCompletedRef.current = true;
+            // Mark form as completed to prevent abandonment tracking
+            formCompletedRef.current = true;
 
-              // Track submission performance after successful completion
-              if (analytics) {
-                const processingTime = Date.now() - submissionStartTime;
-                const context = analyticsContextRef.current;
-                context.performanceMetrics.submissionMetrics.processingTime =
-                  processingTime;
-                analytics.onSubmissionPerformance?.(
-                  Date.now() - context.startTime,
-                  context.performanceMetrics.submissionMetrics.validationTime,
-                  processingTime
-                );
-              }
-            } catch (error) {
-              // Re-throw the error after analytics
-              throw error;
+            // Track submission performance after successful completion
+            if (analytics) {
+              const processingTime = Date.now() - submissionStartTime;
+              const context = analyticsContextRef.current;
+              context.performanceMetrics.submissionMetrics.processingTime =
+                processingTime;
+              analytics.onSubmissionPerformance?.(
+                Date.now() - context.startTime,
+                context.performanceMetrics.submissionMetrics.validationTime,
+                processingTime
+              );
             }
+          } catch (error) {
+            // Re-throw the error after analytics
+            throw error;
           }
+        }
 
-          // Clear storage on successful submit
-          clearStorage();
+        // Clear storage on successful submit
+        clearStorage();
 
-          // Reset form on successful submit if option is enabled
-          if (formRef.current) {
-            formRef.current?.reset();
-          }
-          return result;
-        },
-      }),
+        // Reset form on successful submit if option is enabled
+        if (formRef.current) {
+          formRef.current?.reset();
+        }
+        return result;
+      },
+    }),
   };
 
   const form = useForm(formConfig);
@@ -1455,14 +1454,19 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     tabIndex,
   }) => {
     const handleSubmit = (e: React.FormEvent) => {
+      console.log("handleSubmit");
       e.preventDefault();
       e.stopPropagation();
 
       if (onSubmit) {
+        console.log("onSubmit");
         onSubmit(e);
+        form.handleSubmit();
       } else if (isLastPage) {
+        console.log("isLastPage");
         form.handleSubmit();
       } else {
+        console.log("goToNextPage");
         goToNextPage();
       }
     };
@@ -1785,7 +1789,8 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
                             props = {
                               ...props,
                               options: normalizedOptions,
-                              multiComboboxConfig: fieldConfig.multiComboboxConfig,
+                              multiComboboxConfig:
+                                fieldConfig.multiComboboxConfig,
                             };
                           } else if (type === "colorPicker") {
                             props = { ...props, colorConfig };

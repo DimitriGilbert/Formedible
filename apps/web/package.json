@@ -1,6 +1,6 @@
 {
   "name": "web",
-  "version": "0.3.10",
+  "version": "0.3.11",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack --port=3001",
@@ -12,10 +12,10 @@
     "deploy": "gh-pages --dotfiles -d out"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^2.0.27",
-    "@ai-sdk/google": "^2.0.20",
+    "@ai-sdk/anthropic": "^2.0.35",
+    "@ai-sdk/google": "^2.0.23",
     "@ai-sdk/mistral": "^2.0.19",
-    "@ai-sdk/openai": "^2.0.49",
+    "@ai-sdk/openai": "^2.0.53",
     "@ai-sdk/openai-compatible": "^1.0.22",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
@@ -42,7 +42,7 @@
     "@tanstack/react-form": "^1.23.7",
     "@tanstack/react-query": "^5.80.5",
     "@types/mdx": "^2.0.13",
-    "ai": "^5.0.68",
+    "ai": "^5.0.76",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",

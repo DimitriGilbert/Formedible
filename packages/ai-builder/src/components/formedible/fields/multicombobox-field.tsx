@@ -7,12 +7,12 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from '@/components/ui/command';
+} from "@/components/ui/command";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
+} from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -47,50 +47,13 @@ export const MultiComboboxField: React.FC<MultiComboboxFieldSpecificProps> = ({
     typeof option === "string" ? { value: option, label: option } : option
   );
 
-  // Filter options based on search query
-  const filteredOptions = normalizedOptions.filter(
-    (option) =>
-      option.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      option.value.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  type DisplayOption = {
+    value: string;
+    label: string;
+    isCreateOption?: boolean;
+  };
 
-  // Add create option if enabled and query doesn't match existing options
-  const canCreate =
-    creatable &&
-    searchQuery.trim() &&
-    !normalizedOptions.some(
-      (opt) =>
-        opt.value.toLowerCase() === searchQuery.toLowerCase() ||
-        opt.label.toLowerCase() === searchQuery.toLowerCase()
-    ) &&
-    !selectedValues.includes(searchQuery.trim());
-
-  type DisplayOption = { value: string; label: string; isCreateOption?: boolean };
-  
-  const displayOptions: DisplayOption[] = [...filteredOptions];
-  if (canCreate) {
-    displayOptions.unshift({
-      value: searchQuery.trim(),
-      label: `Create "${searchQuery.trim()}"`,
-      isCreateOption: true,
-    });
-  }
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
-        setSearchQuery("");
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  const displayOptions: DisplayOption[] = [...normalizedOptions];
 
   const handleSelect = (optionValue: string) => {
     if (selectedValues.includes(optionValue)) {
@@ -155,30 +118,39 @@ export const MultiComboboxField: React.FC<MultiComboboxFieldSpecificProps> = ({
                         className="text-xs h-6 px-2 gap-1"
                       >
                         {label}
-                        <button
-                          type="button"
+                        <span
                           className="h-3 w-3 p-0 rounded-sm hover:bg-destructive hover:text-destructive-foreground flex items-center justify-center"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleRemove(value);
+                            !isDisabled && handleRemove(value);
                           }}
-                          disabled={isDisabled}
                         >
                           <X className="h-2 w-2" />
-                        </button>
+                        </span>
                       </Badge>
                     );
                   })
                 ) : (
                   <span className="text-muted-foreground">{placeholder}</span>
                 )}
-                
+
                 <ChevronDown className="h-4 w-4 shrink-0 opacity-50 ml-auto" />
               </div>
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-full p-0" align="start">
-            <Command>
+            <Command
+              filter={(value, search) => {
+                const option = displayOptions.find(
+                  (opt) => opt.value === value
+                );
+                return option?.label
+                  .toLowerCase()
+                  .includes(search.toLowerCase())
+                  ? 1
+                  : 0;
+              }}
+            >
               {searchable && (
                 <CommandInput
                   placeholder={searchPlaceholder}
@@ -199,12 +171,18 @@ export const MultiComboboxField: React.FC<MultiComboboxFieldSpecificProps> = ({
                       <CommandItem
                         key={`${option.value}-${index}`}
                         value={option.value}
-                        onSelect={() => !isDisabledOption && handleSelect(option.value)}
+                        onSelect={() =>
+                          !isDisabledOption && handleSelect(option.value)
+                        }
                         className={cn(
                           "flex items-center justify-between",
                           isSelected ? "bg-accent" : "",
-                          isDisabledOption ? "opacity-50 cursor-not-allowed" : "",
-                          option.isCreateOption ? "font-medium text-primary" : ""
+                          isDisabledOption
+                            ? "opacity-50 cursor-not-allowed"
+                            : "",
+                          option.isCreateOption
+                            ? "font-medium text-primary"
+                            : ""
                         )}
                         disabled={isDisabledOption}
                       >
