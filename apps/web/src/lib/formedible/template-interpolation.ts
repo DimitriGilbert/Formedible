@@ -1,3 +1,9 @@
+/**
+ * Template interpolation utilities for dynamic form titles, labels, and descriptions
+ * Supports {{fieldName}}, {{fieldName.property}}, {{fieldName[index]}}, and {{fieldName|formatter}} syntax
+ */
+
+// Supported formatters for template interpolation
 export type TemplateFormatter = 
   | 'uppercase' 
   | 'lowercase' 

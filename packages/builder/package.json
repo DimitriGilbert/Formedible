@@ -1,6 +1,6 @@
 {
   "name": "formedible-builder",
-  "version": "0.3.11",
+  "version": "0.3.12",
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsup src/index.ts --format esm,cjs --dts --watch",

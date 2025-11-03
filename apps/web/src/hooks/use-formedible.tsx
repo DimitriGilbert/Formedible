@@ -697,7 +697,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
 
         let result: unknown;
         if (formOptions.onSubmit) {
-          try {
+          // try {
             result = await formOptions.onSubmit(props);
 
             // Mark form as completed to prevent abandonment tracking
@@ -715,10 +715,10 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
                 processingTime
               );
             }
-          } catch (error) {
-            // Re-throw the error after analytics
-            throw error;
-          }
+          // } catch (error) {
+          //   // Re-throw the error after analytics
+          //   throw error;
+          // }
         }
 
         // Clear storage on successful submit
@@ -1458,17 +1458,24 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
       e.preventDefault();
       e.stopPropagation();
 
-      if (onSubmit) {
-        console.log("onSubmit");
-        onSubmit(e);
-        form.handleSubmit();
-      } else if (isLastPage) {
-        console.log("isLastPage");
-        form.handleSubmit();
-      } else {
-        console.log("goToNextPage");
-        goToNextPage();
-      }
+      const submission = async () => {
+        if (onSubmit) {
+          console.log("onSubmit");
+          onSubmit(e);
+          await form.handleSubmit();
+        } else if (isLastPage) {
+          console.log("isLastPage");
+          await form.handleSubmit();
+        } else {
+          console.log("goToNextPage");
+          goToNextPage();
+        }
+      };
+
+      submission().catch((error) => {
+        // This will catch rejections from handleSubmit
+        console.error("Submission failed:", error);
+      });
     };
 
     const handleReset = (e: React.FormEvent) => {

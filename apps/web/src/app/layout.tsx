@@ -63,13 +63,7 @@ export default function RootLayout({
           <Header />
           {children}
         </Providers>
-        <script src="https://unhvpnwemnndqhfoovyb.supabase.co/functions/v1/widget/v2.js" client-id="8e9494df-5d24-4dda-b0e8-be0600a0cf67" async></script>
-        {/*<script
-          src="https://tasu.ai/widget/v1.js"
-          data-company="formedible-dev"
-          data-color="#F7931A"
-          async
-        ></script>*/}
+        <script src="https://app.tasu.ai/widget/v2.js" client-id="8e9494df-5d24-4dda-b0e8-be0600a0cf67" async></script>
       </body>
     </html>
   );
