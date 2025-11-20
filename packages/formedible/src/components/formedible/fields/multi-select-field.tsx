@@ -1,13 +1,15 @@
 "use client";
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
-import { cn } from "@/lib/utils";
+import { cn, normalizeOptions } from "@/lib/utils";
 import { X, ChevronDown, Check } from "lucide-react";
 import type { MultiSelectFieldSpecificProps } from "@/lib/formedible/types";
 import { FieldWrapper } from "./base-field-wrapper";
+import { useFieldState } from "@/hooks/use-field-state";
+import { useDropdown } from "@/hooks/use-dropdown";
 
 export const MultiSelectField: React.FC<MultiSelectFieldSpecificProps> = ({
   fieldApi,
@@ -24,18 +26,14 @@ export const MultiSelectField: React.FC<MultiSelectFieldSpecificProps> = ({
     noOptionsText = "No options found",
   } = multiSelectConfig;
 
-  const selectedValues = Array.isArray(fieldApi.state?.value)
-    ? fieldApi.state?.value
-    : [];
+  const { value, onChange, onBlur } = useFieldState(fieldApi);
+  const selectedValues = Array.isArray(value) ? value : [];
 
-  const [isOpen, setIsOpen] = useState(false);
+  const { isOpen, setIsOpen, containerRef } = useDropdown();
   const [searchQuery, setSearchQuery] = useState("");
-  const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const normalizedOptions = options.map((option) =>
-    typeof option === "string" ? { value: option, label: option } : option
-  );
+  const normalizedOptions = normalizeOptions(options);
 
   // Filter options based on search query
   const filteredOptions = normalizedOptions.filter(
@@ -64,31 +62,15 @@ export const MultiSelectField: React.FC<MultiSelectFieldSpecificProps> = ({
     } as { value: string; label: string; isCreateOption: true });
   }
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
-        setSearchQuery("");
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
   const handleSelect = (optionValue: string) => {
     if (selectedValues.includes(optionValue)) {
       // Remove if already selected
       const newValues = selectedValues.filter((v) => v !== optionValue);
-      fieldApi.handleChange(newValues);
+      onChange(newValues);
     } else if (selectedValues.length < maxSelections) {
       // Add if not at max selections
       const newValues = [...selectedValues, optionValue];
-      fieldApi.handleChange(newValues);
+      onChange(newValues);
     }
 
     setSearchQuery("");
@@ -100,8 +82,8 @@ export const MultiSelectField: React.FC<MultiSelectFieldSpecificProps> = ({
 
   const handleRemove = (valueToRemove: string) => {
     const newValues = selectedValues.filter((v) => v !== valueToRemove);
-    fieldApi.handleChange(newValues);
-    fieldApi.handleBlur();
+    onChange(newValues);
+    onBlur();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { ChevronDown, Phone } from "lucide-react";
 import type { PhoneFieldSpecificProps } from "@/lib/formedible/types";
 import { FieldWrapper } from "./base-field-wrapper";
+import { useFieldState } from "@/hooks/use-field-state";
 
 // Common country codes and their formatting
 const COUNTRY_CODES = {
@@ -78,10 +79,8 @@ export const PhoneField: React.FC<PhoneFieldSpecificProps> = ({
     placeholder,
   } = phoneConfig;
 
-  const value = (fieldApi.state?.value as string) || "";
-  const isDisabled = fieldApi.form?.state?.isSubmitting ?? false;
-  const hasErrors =
-    fieldApi.state?.meta?.isTouched && fieldApi.state?.meta?.errors?.length > 0;
+  const { value: fieldValue, isDisabled, hasErrors, onChange, onBlur } = useFieldState(fieldApi);
+  const value = (fieldValue as string) || "";
 
   const [selectedCountry, setSelectedCountry] = useState(defaultCountry);
   const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
@@ -137,7 +136,7 @@ export const PhoneField: React.FC<PhoneFieldSpecificProps> = ({
         ? `${currentCountry.code} ${formatted}`.trim()
         : formatted;
 
-    fieldApi.handleChange(finalValue);
+    onChange(finalValue);
   };
 
   const handleCountryChange = (countryCode: string) => {
@@ -154,7 +153,7 @@ export const PhoneField: React.FC<PhoneFieldSpecificProps> = ({
         ? `${newCountry.code} ${formatted}`.trim()
         : formatted;
 
-    fieldApi.handleChange(finalValue);
+    onChange(finalValue);
   };
 
   const getPlaceholder = (): string => {
@@ -234,7 +233,7 @@ export const PhoneField: React.FC<PhoneFieldSpecificProps> = ({
           <Input
             value={phoneNumber}
             onChange={handlePhoneNumberChange}
-            onBlur={() => fieldApi.handleBlur()}
+            onBlur={onBlur}
             placeholder={getPlaceholder()}
             className={cn(
               "rounded-l-none flex-1",

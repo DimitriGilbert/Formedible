@@ -3,6 +3,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import type { TextareaFieldSpecificProps } from '@/lib/formedible/types';
 import { FieldWrapper } from './base-field-wrapper';
+import { useFieldState } from '@/hooks/use-field-state';
 
 
 export const TextareaField: React.FC<TextareaFieldSpecificProps> = ({
@@ -15,17 +16,10 @@ export const TextareaField: React.FC<TextareaFieldSpecificProps> = ({
   wrapperClassName,
   rows = 3,
 }) => {
-  const name = fieldApi.name;
-  const value = (fieldApi.state?.value as string) || '';
-  const isDisabled = fieldApi.form?.state?.isSubmitting ?? false;
-  const hasErrors = fieldApi.state?.meta?.isTouched && fieldApi.state?.meta?.errors?.length > 0;
+  const { name, value, isDisabled, hasErrors, onChange: onFieldChange, onBlur } = useFieldState(fieldApi);
 
   const onChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    fieldApi.handleChange(e.target.value);
-  };
-
-  const onBlur = () => {
-    fieldApi.handleBlur();
+    onFieldChange(e.target.value);
   };
 
   const computedInputClassName = cn(
@@ -45,7 +39,7 @@ export const TextareaField: React.FC<TextareaFieldSpecificProps> = ({
       <Textarea
         id={name}
         name={name}
-        value={value}
+        value={(value as string) || ''}
         onBlur={onBlur}
         onChange={onChange}
         placeholder={placeholder}

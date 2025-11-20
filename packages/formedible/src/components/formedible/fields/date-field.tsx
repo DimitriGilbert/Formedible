@@ -12,6 +12,7 @@ import {
 import type { DateFieldProps } from "@/lib/formedible/types";
 import { buildDisabledMatchers } from "@/lib/formedible/date";
 import { FieldWrapper } from "./base-field-wrapper";
+import { useFieldState } from "@/hooks/use-field-state";
 
 export const DateField: React.FC<DateFieldProps> = ({
   fieldApi,
@@ -23,9 +24,7 @@ export const DateField: React.FC<DateFieldProps> = ({
   wrapperClassName,
   dateConfig,
 }) => {
-  const isDisabled = fieldApi.form?.state?.isSubmitting ?? false;
-  const hasErrors =
-    fieldApi.state?.meta?.isTouched && fieldApi.state?.meta?.errors?.length > 0;
+  const { value, isDisabled, hasErrors, onChange, onBlur } = useFieldState(fieldApi);
 
   const [isOpen, setIsOpen] = React.useState(false);
 
@@ -41,8 +40,6 @@ export const DateField: React.FC<DateFieldProps> = ({
     });
     return unsubscribe;
   }, [fieldApi.form]);
-
-  const value = fieldApi.state?.value;
   const selectedDate = value
     ? value instanceof Date
       ? value
@@ -73,8 +70,8 @@ export const DateField: React.FC<DateFieldProps> = ({
   }, [dateConfig, isDisabled, formValues]);
 
   const handleDateSelect = (date: Date | undefined) => {
-    fieldApi.handleChange(date);
-    fieldApi.handleBlur();
+    onChange(date);
+    onBlur();
     setIsOpen(false);
   };
 

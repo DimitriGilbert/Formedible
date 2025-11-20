@@ -6,9 +6,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { cn } from '@/lib/utils';
+import { cn, normalizeOptions } from '@/lib/utils';
 import type { BaseFieldProps } from '@/lib/formedible/types';
 import { FieldWrapper } from './base-field-wrapper';
+import { useFieldState } from '@/hooks/use-field-state';
 
 interface SelectFieldSpecificProps extends BaseFieldProps {
   options: Array<{ value: string; label: string }> | string[];
@@ -24,17 +25,11 @@ export const SelectField: React.FC<SelectFieldSpecificProps> = ({
   wrapperClassName,
   options = [],
 }) => {
-  const name = fieldApi.name;
-  const value = (fieldApi.state?.value as string) || '';
-  const isDisabled = fieldApi.form?.state?.isSubmitting ?? false;
-  const hasErrors = fieldApi.state?.meta?.isTouched && fieldApi.state?.meta?.errors?.length > 0;
+  const { name, value, isDisabled, hasErrors, onChange, onBlur } = useFieldState(fieldApi);
+  const normalizedOptions = normalizeOptions(options);
 
-  const onValueChange = (value: string) => {
-    fieldApi.handleChange(value);
-  };
-
-  const onBlur = () => {
-    fieldApi.handleBlur();
+  const onValueChange = (newValue: string) => {
+    onChange(newValue);
   };
 
   const computedInputClassName = cn(
@@ -52,7 +47,7 @@ export const SelectField: React.FC<SelectFieldSpecificProps> = ({
       wrapperClassName={wrapperClassName}
     >
       <Select
-        value={value}
+        value={(value as string) || ''}
         onValueChange={onValueChange}
         disabled={isDisabled}
       >
@@ -64,15 +59,11 @@ export const SelectField: React.FC<SelectFieldSpecificProps> = ({
           <SelectValue placeholder={placeholder || "Select an option"} />
         </SelectTrigger>
         <SelectContent>
-          {options.map((option, index) => {
-            const optionValue = typeof option === 'string' ? option : option.value;
-            const optionLabel = typeof option === 'string' ? option : option.label;
-            return (
-              <SelectItem key={optionValue + index} value={optionValue}>
-                {optionLabel}
-              </SelectItem>
-            );
-          })}
+          {normalizedOptions.map((option, index) => (
+            <SelectItem key={option.value + index} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
     </FieldWrapper>

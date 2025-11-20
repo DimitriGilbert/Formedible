@@ -4,6 +4,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import type { BaseFieldProps } from "@/lib/formedible/types";
 import { FieldWrapper } from "./base-field-wrapper";
+import { useFieldState } from "@/hooks/use-field-state";
 
 export const SwitchField: React.FC<BaseFieldProps> = ({
   fieldApi,
@@ -13,16 +14,10 @@ export const SwitchField: React.FC<BaseFieldProps> = ({
   labelClassName,
   wrapperClassName,
 }) => {
-  const name = fieldApi.name;
-  const value = fieldApi.state?.value as boolean | undefined;
-  const isDisabled = fieldApi.form?.state?.isSubmitting ?? false;
+  const { name, value, isDisabled, onChange, onBlur } = useFieldState(fieldApi);
 
   const onCheckedChange = (checked: boolean) => {
-    fieldApi.handleChange(checked);
-  };
-
-  const onBlur = () => {
-    fieldApi.handleBlur();
+    onChange(checked);
   };
 
   return (

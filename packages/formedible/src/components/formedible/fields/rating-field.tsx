@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { Star, Heart, ThumbsUp } from "lucide-react";
 import type { RatingFieldSpecificProps } from "@/lib/formedible/types";
 import { FieldWrapper } from "./base-field-wrapper";
+import { useFieldState } from "@/hooks/use-field-state";
 
 const ICON_COMPONENTS = {
   star: Star,
@@ -34,20 +35,20 @@ export const RatingField: React.FC<RatingFieldSpecificProps> = ({
     showValue = false,
   } = ratingConfig;
 
-  const value = (fieldApi.state?.value as number) || 0;
-  const isDisabled = fieldApi.form?.state?.isSubmitting ?? false;
+  const { value: rawValue, isDisabled, onChange, onBlur } = useFieldState(fieldApi);
+  const value = (rawValue as number) || 0;
 
   const [hoverValue, setHoverValue] = useState<number | null>(null);
   const IconComponent = ICON_COMPONENTS[icon];
   const iconSizeClass = SIZE_CLASSES[size];
 
   const handleRatingClick = (rating: number) => {
-    fieldApi.handleChange(rating);
-    fieldApi.handleBlur();
+    onChange(rating);
+    onBlur();
   };
 
   const handleMouseEnter = (rating: number) => {
-    if (!fieldApi.form.state.isSubmitting) {
+    if (!isDisabled) {
       setHoverValue(rating);
     }
   };

@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { TextFieldSpecificProps } from "@/lib/formedible/types";
 import { FieldWrapper } from "./base-field-wrapper";
+import { useFieldState } from "@/hooks/use-field-state";
 
 
 export const TextField: React.FC<TextFieldSpecificProps> = ({
@@ -17,10 +18,7 @@ export const TextField: React.FC<TextFieldSpecificProps> = ({
   type = "text",
   datalist,
 }) => {
-  const name = fieldApi.name;
-  const value = fieldApi.state?.value as string | number | undefined;
-  const isDisabled = fieldApi.form?.state?.isSubmitting ?? false;
-  const hasErrors = fieldApi.state?.meta?.isTouched && fieldApi.state?.meta?.errors?.length > 0;
+  const { name, value, isDisabled, hasErrors, onChange: onFieldChange, onBlur } = useFieldState(fieldApi);
 
   // Datalist state
   const [datalistOptions, setDatalistOptions] = useState<string[]>(
@@ -90,11 +88,7 @@ export const TextField: React.FC<TextFieldSpecificProps> = ({
   );
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    fieldApi.handleChange(e.target.value);
-  };
-
-  const onBlur = () => {
-    fieldApi.handleBlur();
+    onFieldChange(e.target.value);
   };
 
   const computedInputClassName = cn(

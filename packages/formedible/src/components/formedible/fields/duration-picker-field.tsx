@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useFieldState } from "@/hooks/use-field-state";
 
 interface DurationPickerFieldProps extends BaseFieldProps {
   durationConfig?: DurationConfig;
@@ -69,7 +70,7 @@ export const DurationPickerField: React.FC<DurationPickerFieldProps> = ({
   inputClassName,
   durationConfig,
 }) => {
-  const name = fieldApi.name;
+  const { name, onChange } = useFieldState(fieldApi);
   const format = durationConfig?.format || "hms";
   const maxHours = durationConfig?.maxHours || 23;
   const maxMinutes = durationConfig?.maxMinutes || 59;
@@ -83,7 +84,7 @@ export const DurationPickerField: React.FC<DurationPickerFieldProps> = ({
 
   const updateField = (h: number, m: number, s: number) => {
     const output = formatOutput(h, m, s, format);
-    fieldApi.handleChange(output);
+    onChange(output);
   };
 
   const handleHoursChange = (h: number) => {
