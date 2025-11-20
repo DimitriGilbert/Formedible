@@ -1,7 +1,7 @@
 'use client';
 import React from 'react';
 import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
+import { getFieldInputClassName } from '@/lib/utils';
 import type { NumberFieldSpecificProps } from '@/lib/formedible/types';
 import { FieldWrapper } from './base-field-wrapper';
 import { useFieldState } from '@/hooks/use-field-state';
@@ -42,10 +42,7 @@ export const NumberField: React.FC<NumberFieldSpecificProps> = ({
     displayValue = value;
   }
 
-  const computedInputClassName = cn(
-    inputClassName,
-    hasErrors ? "border-destructive" : ""
-  );
+  const computedInputClassName = getFieldInputClassName(inputClassName, hasErrors);
 
   return (
     <FieldWrapper

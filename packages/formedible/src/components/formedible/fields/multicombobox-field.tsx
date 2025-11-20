@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { cn, normalizeOptions } from "@/lib/utils";
+import { cn, normalizeOptions, getFieldInputClassName } from "@/lib/utils";
 import { X, ChevronDown, Check } from "lucide-react";
 import type { MultiComboboxFieldSpecificProps } from "@/lib/formedible/types";
 import { FieldWrapper } from "./base-field-wrapper";
@@ -98,7 +98,7 @@ export const MultiComboboxField: React.FC<MultiComboboxFieldSpecificProps> = ({
               aria-expanded={isOpen}
               className={cn(
                 "w-full justify-start min-h-10 h-auto px-3 py-2",
-                hasErrors ? "border-destructive" : ""
+                getFieldInputClassName(undefined, hasErrors)
               )}
               disabled={isDisabled}
             >

@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn, getFieldInputClassName } from "@/lib/utils";
 import { Palette, Check } from "lucide-react";
 import type { ColorPickerFieldSpecificProps } from "@/lib/formedible/types";
 import { FieldWrapper } from "./base-field-wrapper";
@@ -163,8 +163,7 @@ export const ColorPickerField: React.FC<ColorPickerFieldSpecificProps> = ({
               variant="outline"
               className={cn(
                 "w-12 h-10 p-0 border-2",
-                hasErrors ? "border-destructive" : "",
-                inputClassName
+                getFieldInputClassName(inputClassName, hasErrors)
               )}
               onClick={() => setIsOpen(!isOpen)}
               disabled={isDisabled}
@@ -200,7 +199,7 @@ export const ColorPickerField: React.FC<ColorPickerFieldSpecificProps> = ({
             placeholder={"#000000"}
             className={cn(
               "flex-1",
-              hasErrors ? "border-destructive" : ""
+              getFieldInputClassName(undefined, hasErrors)
             )}
             disabled={isDisabled}
           />

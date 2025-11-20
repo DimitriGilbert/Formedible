@@ -1,6 +1,6 @@
 import React from 'react';
 import { Textarea } from '@/components/ui/textarea';
-import { cn } from '@/lib/utils';
+import { getFieldInputClassName } from '@/lib/utils';
 import type { TextareaFieldSpecificProps } from '@/lib/formedible/types';
 import { FieldWrapper } from './base-field-wrapper';
 import { useFieldState } from '@/hooks/use-field-state';
@@ -22,10 +22,7 @@ export const TextareaField: React.FC<TextareaFieldSpecificProps> = ({
     onFieldChange(e.target.value);
   };
 
-  const computedInputClassName = cn(
-    inputClassName,
-    hasErrors ? "border-destructive" : ""
-  );
+  const computedInputClassName = getFieldInputClassName(inputClassName, hasErrors);
 
   return (
     <FieldWrapper

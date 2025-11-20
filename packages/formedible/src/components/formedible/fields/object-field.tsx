@@ -5,6 +5,7 @@ import type { BaseFieldProps, ObjectFieldProps } from "@/lib/formedible/types";
 import { FieldWrapper } from "./base-field-wrapper";
 import { NestedFieldRenderer } from "./shared-field-renderer";
 import { resolveDynamicText } from "@/lib/formedible/template-interpolation";
+import { useFormValues } from "@/hooks/use-form-values";
 
 export const ObjectField: React.FC<ObjectFieldProps> = ({
   fieldApi,
@@ -18,17 +19,7 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
   );
 
   // Subscribe to form values for dynamic text resolution
-  const [subscribedValues, setSubscribedValues] = React.useState(
-    fieldApi.form?.state?.values || {}
-  );
-
-  React.useEffect(() => {
-    if (!fieldApi.form) return;
-    const unsubscribe = fieldApi.form.store.subscribe((state) => {
-      setSubscribedValues((state as any).values);
-    });
-    return unsubscribe;
-  }, [fieldApi.form]);
+  const { formValues: subscribedValues } = useFormValues(fieldApi);
 
   // Create a properly typed mockFieldApi that includes the form property
   const createMockFieldApi = (fieldName: string, fieldValue: unknown) => {

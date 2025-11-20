@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn, getFieldInputClassName } from "@/lib/utils";
 import { ChevronDown, Phone } from "lucide-react";
 import type { PhoneFieldSpecificProps } from "@/lib/formedible/types";
 import { FieldWrapper } from "./base-field-wrapper";
@@ -186,7 +186,7 @@ export const PhoneField: React.FC<PhoneFieldSpecificProps> = ({
               variant="outline"
               className={cn(
                 "rounded-r-none border-r-0 px-3 h-10 min-w-[80px]",
-                hasErrors ? "border-destructive" : ""
+                getFieldInputClassName(undefined, hasErrors)
               )}
               onClick={() => setIsCountryDropdownOpen(!isCountryDropdownOpen)}
               disabled={isDisabled}
@@ -237,8 +237,7 @@ export const PhoneField: React.FC<PhoneFieldSpecificProps> = ({
             placeholder={getPlaceholder()}
             className={cn(
               "rounded-l-none flex-1",
-              hasErrors ? "border-destructive" : "",
-              inputClassName
+              getFieldInputClassName(inputClassName, hasErrors)
             )}
             disabled={isDisabled}
           />

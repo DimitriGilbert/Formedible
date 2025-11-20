@@ -2,7 +2,7 @@
 import React from "react";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { cn, normalizeOptions } from "@/lib/utils";
+import { cn, normalizeOptions, getFieldInputClassName } from "@/lib/utils";
 import type { RadioFieldSpecificProps } from "@/lib/formedible/types";
 import { FieldWrapper } from "./base-field-wrapper";
 import { useFieldState } from "@/hooks/use-field-state";
@@ -53,7 +53,7 @@ export const RadioField: React.FC<RadioFieldSpecificProps> = ({
             <RadioGroupItem
               value={option.value}
               id={`${name}-${option.value}`}
-              className={cn(hasErrors ? "border-destructive" : "")}
+              className={getFieldInputClassName(undefined, hasErrors)}
             />
             <Label
               htmlFor={`${name}-${option.value}`}

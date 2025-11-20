@@ -6,7 +6,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { cn, normalizeOptions } from '@/lib/utils';
+import { getFieldInputClassName, normalizeOptions } from '@/lib/utils';
 import type { BaseFieldProps } from '@/lib/formedible/types';
 import { FieldWrapper } from './base-field-wrapper';
 import { useFieldState } from '@/hooks/use-field-state';
@@ -32,10 +32,7 @@ export const SelectField: React.FC<SelectFieldSpecificProps> = ({
     onChange(newValue);
   };
 
-  const computedInputClassName = cn(
-    inputClassName,
-    hasErrors ? "border-destructive" : ""
-  );
+  const computedInputClassName = getFieldInputClassName(inputClassName, hasErrors);
 
   return (
     <FieldWrapper

@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+import { cn, getFieldInputClassName } from "@/lib/utils";
 import type { TextFieldSpecificProps } from "@/lib/formedible/types";
 import { FieldWrapper } from "./base-field-wrapper";
 import { useFieldState } from "@/hooks/use-field-state";
@@ -91,9 +91,9 @@ export const TextField: React.FC<TextFieldSpecificProps> = ({
     onFieldChange(e.target.value);
   };
 
-  const computedInputClassName = cn(
+  const computedInputClassName = getFieldInputClassName(
     inputClassName,
-    hasErrors ? "border-destructive" : "",
+    hasErrors,
     isLoadingOptions ? "pr-8" : ""
   );
 

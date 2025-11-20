@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Check, ChevronsUpDown } from "lucide-react";
-import { cn, normalizeOptions } from "@/lib/utils";
+import { cn, normalizeOptions, getFieldInputClassName } from "@/lib/utils";
 import type { ComboboxFieldSpecificProps } from "@/lib/formedible/types";
 import { FieldWrapper } from "./base-field-wrapper";
 import { useFieldState } from "@/hooks/use-field-state";
@@ -48,8 +48,7 @@ export const ComboboxField: React.FC<ComboboxFieldSpecificProps> = ({
 
   const triggerClassName = cn(
     "w-full justify-between",
-    inputClassName,
-    hasErrors ? "border-destructive" : ""
+    getFieldInputClassName(inputClassName, hasErrors)
   );
 
   const displayPlaceholder =
