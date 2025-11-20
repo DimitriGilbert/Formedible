@@ -5,6 +5,7 @@ import { Plus, Trash2, GripVertical } from "lucide-react";
 import type { ArrayFieldProps } from "@/lib/formedible/types";
 import { FieldWrapper } from "./base-field-wrapper";
 import { NestedFieldRenderer } from "./shared-field-renderer";
+import { useFieldState } from "@/hooks/use-field-state";
 import {
   DndContext,
   closestCenter,
@@ -114,12 +115,11 @@ export const ArrayField: React.FC<ArrayFieldProps> = ({
   wrapperClassName,
   arrayConfig,
 }) => {
-  const name = fieldApi.name;
-  const isDisabled = fieldApi.form?.state?.isSubmitting ?? false;
+  const { name, value: fieldValue, isDisabled, onChange, onBlur } = useFieldState(fieldApi);
 
   const value = useMemo(
-    () => (fieldApi.state?.value as unknown[]) || [],
-    [fieldApi.state?.value]
+    () => (fieldValue as unknown[]) || [],
+    [fieldValue]
   );
 
   const {
@@ -171,27 +171,27 @@ export const ArrayField: React.FC<ArrayFieldProps> = ({
     if (value.length >= maxItems) return;
 
     const newValue = [...value, defaultValue];
-    fieldApi.handleChange(newValue);
-  }, [value, maxItems, defaultValue, fieldApi]);
+    onChange(newValue);
+  }, [value, maxItems, defaultValue, onChange]);
 
   const removeItem = useCallback(
     (index: number) => {
       if (value.length <= minItems) return;
 
       const newValue = value.filter((_, i) => i !== index);
-      fieldApi.handleChange(newValue);
-      fieldApi.handleBlur();
+      onChange(newValue);
+      onBlur();
     },
-    [value, minItems, fieldApi]
+    [value, minItems, onChange, onBlur]
   );
 
   const updateItem = useCallback(
     (index: number, newItemValue: unknown) => {
       const newValue = [...value];
       newValue[index] = newItemValue;
-      fieldApi.handleChange(newValue);
+      onChange(newValue);
     },
-    [value, fieldApi]
+    [value, onChange]
   );
 
   // DnD Kit state and handlers
@@ -231,16 +231,16 @@ export const ArrayField: React.FC<ArrayFieldProps> = ({
     if (active.id !== over?.id && sortable) {
       const oldIndex = itemIds.indexOf(active.id.toString());
       const newIndex = itemIds.indexOf(over!.id.toString());
-      
+
       if (oldIndex !== -1 && newIndex !== -1) {
         const newValue = arrayMove(value, oldIndex, newIndex);
-        fieldApi.handleChange(newValue);
+        onChange(newValue);
       }
     }
 
     setActiveId(null);
     setDraggedItemIndex(null);
-  }, [itemIds, value, fieldApi, sortable]);
+  }, [itemIds, value, onChange, sortable]);
 
   // Create a mock field API for each item
   const createItemFieldApi = useCallback(

@@ -5,6 +5,7 @@ import { PaperclipIcon, XIcon, UploadCloudIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { BaseFieldProps } from "@/lib/formedible/types";
 import { FieldWrapper } from "./base-field-wrapper";
+import { useFieldState } from "@/hooks/use-field-state";
 
 interface FileUploadFieldSpecificProps extends BaseFieldProps {
   accept?: string;
@@ -21,26 +22,22 @@ export const FileUploadField: React.FC<FileUploadFieldSpecificProps> = ({
   accept,
   className,
 }) => {
-  const name = fieldApi.name;
-  const isDisabled = fieldApi.form?.state?.isSubmitting ?? false;
-  const hasErrors =
-    fieldApi.state?.meta?.isTouched && fieldApi.state?.meta?.errors?.length > 0;
-
-  const file = fieldApi.state?.value as File | null;
+  const { name, value, isDisabled, hasErrors, onChange, onBlur } = useFieldState(fieldApi);
+  const file = value as File | null;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0] ?? null;
-    fieldApi.handleChange(selectedFile);
-    fieldApi.handleBlur();
+    onChange(selectedFile);
+    onBlur();
   };
 
   const handleRemoveFile = () => {
-    fieldApi.handleChange(null);
+    onChange(null);
     const inputElement = document.getElementById(name) as HTMLInputElement;
     if (inputElement) {
       inputElement.value = "";
     }
-    fieldApi.handleBlur();
+    onBlur();
   };
 
   const triggerFileInput = () => {

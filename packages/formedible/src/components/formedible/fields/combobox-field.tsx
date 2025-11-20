@@ -14,9 +14,10 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Check, ChevronsUpDown } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, normalizeOptions, getFieldInputClassName } from "@/lib/utils";
 import type { ComboboxFieldSpecificProps } from "@/lib/formedible/types";
 import { FieldWrapper } from "./base-field-wrapper";
+import { useFieldState } from "@/hooks/use-field-state";
 
 export const ComboboxField: React.FC<ComboboxFieldSpecificProps> = ({
   fieldApi,
@@ -29,40 +30,25 @@ export const ComboboxField: React.FC<ComboboxFieldSpecificProps> = ({
   options = [],
   comboboxConfig,
 }) => {
-  const name = fieldApi.name;
-  const value = (fieldApi.state?.value as string) || "";
-  const isDisabled = fieldApi.form?.state?.isSubmitting ?? false;
-  const hasErrors =
-    fieldApi.state?.meta?.isTouched && fieldApi.state?.meta?.errors?.length > 0;
+  const { name, value, isDisabled, hasErrors, onChange, onBlur } = useFieldState(fieldApi);
 
   const [open, setOpen] = useState(false);
 
-  // Normalize options to consistent format
-  const normalizedOptions = options.map((option) => {
-    if (typeof option === "string") {
-      return { value: option, label: option };
-    }
-    return option;
-  });
+  const normalizedOptions = normalizeOptions(options);
 
   const selectedOption = normalizedOptions.find(
-    (option) => option.value === value
+    (option) => option.value === (value as string)
   );
 
   const onSelect = (selectedValue: string) => {
     const newValue = selectedValue === value ? "" : selectedValue;
-    fieldApi.handleChange(newValue);
+    onChange(newValue);
     setOpen(false);
-  };
-
-  const onBlur = () => {
-    fieldApi.handleBlur();
   };
 
   const triggerClassName = cn(
     "w-full justify-between",
-    inputClassName,
-    hasErrors ? "border-destructive" : ""
+    getFieldInputClassName(inputClassName, hasErrors)
   );
 
   const displayPlaceholder =

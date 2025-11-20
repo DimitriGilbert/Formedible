@@ -15,10 +15,11 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { cn, normalizeOptions, getFieldInputClassName } from "@/lib/utils";
 import { X, ChevronDown, Check } from "lucide-react";
 import type { MultiComboboxFieldSpecificProps } from "@/lib/formedible/types";
 import { FieldWrapper } from "./base-field-wrapper";
+import { useFieldState } from "@/hooks/use-field-state";
 
 export const MultiComboboxField: React.FC<MultiComboboxFieldSpecificProps> = ({
   fieldApi,
@@ -35,17 +36,14 @@ export const MultiComboboxField: React.FC<MultiComboboxFieldSpecificProps> = ({
     noOptionsText = "No options found",
   } = multiComboboxConfig;
 
-  const selectedValues = Array.isArray(fieldApi.state?.value)
-    ? fieldApi.state?.value
-    : [];
+  const { value, isDisabled, hasErrors, onChange, onBlur } = useFieldState(fieldApi);
+  const selectedValues = Array.isArray(value) ? value : [];
 
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const normalizedOptions = options.map((option) =>
-    typeof option === "string" ? { value: option, label: option } : option
-  );
+  const normalizedOptions = normalizeOptions(options);
 
   type DisplayOption = {
     value: string;
@@ -59,11 +57,11 @@ export const MultiComboboxField: React.FC<MultiComboboxFieldSpecificProps> = ({
     if (selectedValues.includes(optionValue)) {
       // Remove if already selected
       const newValues = selectedValues.filter((v) => v !== optionValue);
-      fieldApi.handleChange(newValues);
+      onChange(newValues);
     } else if (selectedValues.length < maxSelections) {
       // Add if not at max selections
       const newValues = [...selectedValues, optionValue];
-      fieldApi.handleChange(newValues);
+      onChange(newValues);
     }
 
     setSearchQuery("");
@@ -72,8 +70,8 @@ export const MultiComboboxField: React.FC<MultiComboboxFieldSpecificProps> = ({
 
   const handleRemove = (valueToRemove: string) => {
     const newValues = selectedValues.filter((v) => v !== valueToRemove);
-    fieldApi.handleChange(newValues);
-    fieldApi.handleBlur();
+    onChange(newValues);
+    onBlur();
   };
 
   const getSelectedLabels = () => {
@@ -82,8 +80,6 @@ export const MultiComboboxField: React.FC<MultiComboboxFieldSpecificProps> = ({
       return option ? option.label : value;
     });
   };
-
-  const isDisabled = fieldApi.form?.state?.isSubmitting ?? false;
 
   return (
     <FieldWrapper fieldApi={fieldApi} {...wrapperProps}>
@@ -102,7 +98,7 @@ export const MultiComboboxField: React.FC<MultiComboboxFieldSpecificProps> = ({
               aria-expanded={isOpen}
               className={cn(
                 "w-full justify-start min-h-10 h-auto px-3 py-2",
-                fieldApi.state?.meta?.errors.length ? "border-destructive" : ""
+                getFieldInputClassName(undefined, hasErrors)
               )}
               disabled={isDisabled}
             >

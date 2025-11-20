@@ -2,9 +2,10 @@
 import React from "react";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { cn } from "@/lib/utils";
+import { cn, normalizeOptions, getFieldInputClassName } from "@/lib/utils";
 import type { RadioFieldSpecificProps } from "@/lib/formedible/types";
 import { FieldWrapper } from "./base-field-wrapper";
+import { useFieldState } from "@/hooks/use-field-state";
 
 export const RadioField: React.FC<RadioFieldSpecificProps> = ({
   fieldApi,
@@ -16,22 +17,11 @@ export const RadioField: React.FC<RadioFieldSpecificProps> = ({
   options = [],
   direction = "vertical",
 }) => {
-  const name = fieldApi.name;
-  const value = fieldApi.state?.value as string | undefined;
-  const isDisabled = fieldApi.form?.state?.isSubmitting ?? false;
-  const hasErrors =
-    fieldApi.state?.meta?.isTouched && fieldApi.state?.meta?.errors?.length > 0;
+  const { name, value, isDisabled, hasErrors, onChange, onBlur } = useFieldState(fieldApi);
+  const normalizedOptions = normalizeOptions(options);
 
-  const normalizedOptions = options.map((option) =>
-    typeof option === "string" ? { value: option, label: option } : option
-  );
-
-  const onValueChange = (value: string) => {
-    fieldApi.handleChange(value);
-  };
-
-  const onBlur = () => {
-    fieldApi.handleBlur();
+  const onValueChange = (newValue: string) => {
+    onChange(newValue);
   };
 
   return (
@@ -44,7 +34,7 @@ export const RadioField: React.FC<RadioFieldSpecificProps> = ({
       wrapperClassName={wrapperClassName}
     >
       <RadioGroup
-        value={value || ""}
+        value={(value as string) || ""}
         onValueChange={onValueChange}
         onBlur={onBlur}
         disabled={isDisabled}
@@ -63,7 +53,7 @@ export const RadioField: React.FC<RadioFieldSpecificProps> = ({
             <RadioGroupItem
               value={option.value}
               id={`${name}-${option.value}`}
-              className={cn(hasErrors ? "border-destructive" : "")}
+              className={getFieldInputClassName(undefined, hasErrors)}
             />
             <Label
               htmlFor={`${name}-${option.value}`}

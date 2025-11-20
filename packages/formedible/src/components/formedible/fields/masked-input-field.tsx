@@ -4,6 +4,7 @@ import type { BaseFieldProps } from "@/lib/formedible/types";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useFieldState } from "@/hooks/use-field-state";
 
 interface MaskedInputFieldProps extends BaseFieldProps {
   maskedInputConfig?: {
@@ -41,7 +42,7 @@ export const MaskedInputField: React.FC<MaskedInputFieldProps> = ({
   inputClassName,
   maskedInputConfig = {},
 }) => {
-  const name = fieldApi.name;
+  const { name, onChange } = useFieldState(fieldApi);
 
   const {
     mask = "",
@@ -172,7 +173,7 @@ export const MaskedInputField: React.FC<MaskedInputFieldProps> = ({
 
     setRawValue(newRawValue);
     setDisplayValue(newDisplayValue);
-    fieldApi.handleChange(newRawValue);
+    onChange(newRawValue);
   };
 
   // Handle key down for better UX

@@ -1,7 +1,7 @@
 import React from "react";
 import { format, parseISO } from "date-fns";
 import { Calendar as CalendarIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, getFieldInputClassName } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -12,6 +12,8 @@ import {
 import type { DateFieldProps } from "@/lib/formedible/types";
 import { buildDisabledMatchers } from "@/lib/formedible/date";
 import { FieldWrapper } from "./base-field-wrapper";
+import { useFieldState } from "@/hooks/use-field-state";
+import { useFormValues } from "@/hooks/use-form-values";
 
 export const DateField: React.FC<DateFieldProps> = ({
   fieldApi,
@@ -23,26 +25,10 @@ export const DateField: React.FC<DateFieldProps> = ({
   wrapperClassName,
   dateConfig,
 }) => {
-  const isDisabled = fieldApi.form?.state?.isSubmitting ?? false;
-  const hasErrors =
-    fieldApi.state?.meta?.isTouched && fieldApi.state?.meta?.errors?.length > 0;
+  const { value, isDisabled, hasErrors, onChange, onBlur } = useFieldState(fieldApi);
+  const { formValues } = useFormValues(fieldApi);
 
   const [isOpen, setIsOpen] = React.useState(false);
-
-  // Subscribe to form values for dynamic date restrictions
-  const [formValues, setFormValues] = React.useState(
-    fieldApi.form?.state?.values || {}
-  );
-
-  React.useEffect(() => {
-    if (!fieldApi.form) return;
-    const unsubscribe = fieldApi.form.store.subscribe((state) => {
-      setFormValues((state as any).values);
-    });
-    return unsubscribe;
-  }, [fieldApi.form]);
-
-  const value = fieldApi.state?.value;
   const selectedDate = value
     ? value instanceof Date
       ? value
@@ -73,16 +59,15 @@ export const DateField: React.FC<DateFieldProps> = ({
   }, [dateConfig, isDisabled, formValues]);
 
   const handleDateSelect = (date: Date | undefined) => {
-    fieldApi.handleChange(date);
-    fieldApi.handleBlur();
+    onChange(date);
+    onBlur();
     setIsOpen(false);
   };
 
   const computedInputClassName = cn(
     "w-full justify-start text-left font-normal",
     !selectedDate && "text-muted-foreground",
-    hasErrors ? "border-destructive" : "",
-    inputClassName
+    getFieldInputClassName(inputClassName, hasErrors)
   );
 
   return (

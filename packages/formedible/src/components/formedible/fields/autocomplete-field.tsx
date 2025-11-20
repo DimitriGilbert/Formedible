@@ -4,7 +4,7 @@ import type { BaseFieldProps } from "@/lib/formedible/types";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn, normalizeOptions } from "@/lib/utils";
 import { FieldWrapper } from "./base-field-wrapper";
 
 interface AutocompleteOption {
@@ -55,15 +55,6 @@ export const AutocompleteField: React.FC<AutocompleteFieldProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Normalize options to consistent format
-  const normalizeOptions = (
-    opts: string[] | AutocompleteOption[]
-  ): AutocompleteOption[] => {
-    return opts.map((opt) =>
-      typeof opt === "string" ? { value: opt, label: opt } : opt
-    );
-  };
 
   // Filter static options
   const filterStaticOptions = React.useCallback(

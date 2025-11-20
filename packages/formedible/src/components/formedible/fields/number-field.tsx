@@ -1,9 +1,10 @@
 'use client';
 import React from 'react';
 import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
+import { getFieldInputClassName } from '@/lib/utils';
 import type { NumberFieldSpecificProps } from '@/lib/formedible/types';
 import { FieldWrapper } from './base-field-wrapper';
+import { useFieldState } from '@/hooks/use-field-state';
 
 
 export const NumberField: React.FC<NumberFieldSpecificProps> = ({
@@ -18,27 +19,20 @@ export const NumberField: React.FC<NumberFieldSpecificProps> = ({
   max,
   step,
 }) => {
-  const name = fieldApi.name;
-  const value = fieldApi.state?.value as number | string | undefined;
-  const isDisabled = fieldApi.form?.state?.isSubmitting ?? false;
-  const hasErrors = fieldApi.state?.meta?.isTouched && fieldApi.state?.meta?.errors?.length > 0;
+  const { name, value, isDisabled, hasErrors, onChange: onFieldChange, onBlur } = useFieldState(fieldApi);
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     let parsedValue: number | string | undefined;
-    
+
     if (val === '') {
       parsedValue = undefined;
     } else {
       const num = parseFloat(val);
       parsedValue = isNaN(num) ? val : num;
     }
-    
-    fieldApi.handleChange(parsedValue);
-  };
 
-  const onBlur = () => {
-    fieldApi.handleBlur();
+    onFieldChange(parsedValue);
   };
 
   let displayValue: string | number = '';
@@ -48,10 +42,7 @@ export const NumberField: React.FC<NumberFieldSpecificProps> = ({
     displayValue = value;
   }
 
-  const computedInputClassName = cn(
-    inputClassName,
-    hasErrors ? "border-destructive" : ""
-  );
+  const computedInputClassName = getFieldInputClassName(inputClassName, hasErrors);
 
   return (
     <FieldWrapper

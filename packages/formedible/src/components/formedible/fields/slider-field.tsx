@@ -3,6 +3,7 @@ import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import type { SliderFieldSpecificProps } from "@/lib/formedible/types";
 import { FieldWrapper } from "./base-field-wrapper";
+import { useFieldState } from "@/hooks/use-field-state";
 
 
 export const SliderField: React.FC<SliderFieldSpecificProps> = ({
@@ -22,8 +23,7 @@ export const SliderField: React.FC<SliderFieldSpecificProps> = ({
   valueDisplayPrecision: directPrecision = 0,
   showRawValue: directShowRaw = false,
 }) => {
-  const name = fieldApi.name;
-  const isDisabled = fieldApi.form?.state?.isSubmitting ?? false;
+  const { name, value, isDisabled, onChange, onBlur } = useFieldState(fieldApi);
 
   // Use sliderConfig if provided, otherwise use direct props
   const config = sliderConfig || {
@@ -51,8 +51,7 @@ export const SliderField: React.FC<SliderFieldSpecificProps> = ({
     marks = [],
   } = config;
 
-  const fieldValue =
-    typeof fieldApi.state?.value === "number" ? fieldApi.state?.value : min;
+  const fieldValue = typeof value === "number" ? value : min;
 
   // Get display value from mapping or calculate it
   const getDisplayValue = (sliderValue: number) => {
@@ -68,11 +67,7 @@ export const SliderField: React.FC<SliderFieldSpecificProps> = ({
 
   const onValueChange = (valueArray: number[]) => {
     const newValue = valueArray[0];
-    fieldApi.handleChange(newValue);
-  };
-
-  const onBlur = () => {
-    fieldApi.handleBlur();
+    onChange(newValue);
   };
 
   // Custom label with value display
@@ -131,7 +126,7 @@ export const SliderField: React.FC<SliderFieldSpecificProps> = ({
       <div className="space-y-4">
         {showRawValue && (
           <div className="text-xs text-muted-foreground">
-            Raw: {fieldApi.state?.value}
+            Raw: {String(value)}
           </div>
         )}
 
@@ -142,7 +137,7 @@ export const SliderField: React.FC<SliderFieldSpecificProps> = ({
               <div
                 key={index}
                 className="cursor-pointer"
-                onClick={() => fieldApi.handleChange(mapping.sliderValue)}
+                onClick={() => onChange(mapping.sliderValue)}
               >
                 <VisualizationComponent
                   value={mapping.sliderValue}

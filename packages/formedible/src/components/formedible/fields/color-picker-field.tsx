@@ -2,10 +2,12 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn, getFieldInputClassName } from "@/lib/utils";
 import { Palette, Check } from "lucide-react";
 import type { ColorPickerFieldSpecificProps } from "@/lib/formedible/types";
 import { FieldWrapper } from "./base-field-wrapper";
+import { useFieldState } from "@/hooks/use-field-state";
+import { useDropdown } from "@/hooks/use-dropdown";
 
 const DEFAULT_PRESETS = [
   "#FF0000",
@@ -109,38 +111,23 @@ export const ColorPickerField: React.FC<ColorPickerFieldSpecificProps> = ({
     allowCustom = true,
   } = colorConfig;
 
-  const value = (fieldApi.state?.value as string) || "#000000";
+  const { value: fieldValue, isDisabled, hasErrors, onChange, onBlur } = useFieldState(fieldApi);
+  const value = (fieldValue as string) || "#000000";
 
-  const [isOpen, setIsOpen] = useState(false);
+  const { isOpen, setIsOpen, containerRef } = useDropdown();
   const [customInput, setCustomInput] = useState(value);
-  const containerRef = useRef<HTMLDivElement>(null);
   const colorInputRef = useRef<HTMLInputElement>(null);
 
   // Ensure value is always a valid hex color
   const normalizedValue = value.startsWith("#") ? value : `#${value}`;
   const displayValue = formatColor(normalizedValue, format);
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
   const handleColorSelect = (color: string) => {
     const formattedColor = formatColor(color, format);
-    fieldApi.handleChange(formattedColor);
+    onChange(formattedColor);
     setCustomInput(color);
     setIsOpen(false);
-    fieldApi.handleBlur();
+    onBlur();
   };
 
   const handleCustomInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -150,22 +137,20 @@ export const ColorPickerField: React.FC<ColorPickerFieldSpecificProps> = ({
     // Validate and update if it's a valid color
     if (inputValue.match(/^#[0-9A-Fa-f]{6}$/)) {
       const formattedColor = formatColor(inputValue, format);
-      fieldApi.handleChange(formattedColor);
+      onChange(formattedColor);
     }
   };
 
   const handleNativeColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const color = e.target.value;
     const formattedColor = formatColor(color, format);
-    fieldApi.handleChange(formattedColor);
+    onChange(formattedColor);
     setCustomInput(color);
   };
 
   const isValidColor = (color: string): boolean => {
     return /^#[0-9A-Fa-f]{6}$/.test(color);
   };
-
-  const isDisabled = fieldApi.form.state.isSubmitting;
 
   return (
     <FieldWrapper fieldApi={fieldApi} {...wrapperProps}>
@@ -178,8 +163,7 @@ export const ColorPickerField: React.FC<ColorPickerFieldSpecificProps> = ({
               variant="outline"
               className={cn(
                 "w-12 h-10 p-0 border-2",
-                fieldApi.state?.meta?.errors.length ? "border-destructive" : "",
-                inputClassName
+                getFieldInputClassName(inputClassName, hasErrors)
               )}
               onClick={() => setIsOpen(!isOpen)}
               disabled={isDisabled}
@@ -194,7 +178,7 @@ export const ColorPickerField: React.FC<ColorPickerFieldSpecificProps> = ({
               type="color"
               value={normalizedValue}
               onChange={handleNativeColorChange}
-              onBlur={() => fieldApi.handleBlur()}
+              onBlur={onBlur}
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               disabled={isDisabled}
             />
@@ -205,19 +189,17 @@ export const ColorPickerField: React.FC<ColorPickerFieldSpecificProps> = ({
             value={displayValue}
             onChange={(e) => {
               const inputValue = e.target.value;
-              fieldApi.handleChange(inputValue);
+              onChange(inputValue);
               // Try to extract hex value for internal use
               if (inputValue.startsWith("#")) {
                 setCustomInput(inputValue);
               }
             }}
-            onBlur={() => {
-              fieldApi.handleBlur();
-            }}
+            onBlur={onBlur}
             placeholder={"#000000"}
             className={cn(
               "flex-1",
-              fieldApi.state?.meta?.errors.length ? "border-destructive" : ""
+              getFieldInputClassName(undefined, hasErrors)
             )}
             disabled={isDisabled}
           />
