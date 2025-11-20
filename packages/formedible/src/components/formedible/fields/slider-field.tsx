@@ -126,7 +126,7 @@ export const SliderField: React.FC<SliderFieldSpecificProps> = ({
       <div className="space-y-4">
         {showRawValue && (
           <div className="text-xs text-muted-foreground">
-            Raw: {value}
+            Raw: {String(value)}
           </div>
         )}
 
