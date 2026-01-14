@@ -1,7 +1,6 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "form-builder",
-  "type": "registry:block",
   "title": "Formedible Form Builder",
   "description": "A visual drag-and-drop form builder component for creating forms with live preview and code generation. Includes field configurator, preview panel, and TypeScript code output.",
   "dependencies": [
@@ -133,5 +132,6 @@
       "type": "registry:lib",
       "target": "lib/formedible/code-generation.ts"
     }
-  ]
+  ],
+  "type": "registry:block"
 }

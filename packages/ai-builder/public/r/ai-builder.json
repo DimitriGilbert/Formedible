@@ -1,7 +1,6 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "ai-builder",
-  "type": "registry:block",
   "title": "Formedible AI Builder",
   "description": "An AI-powered form builder component that generates forms from natural language descriptions. Features chat interface, real-time form generation, and multiple AI provider support.",
   "dependencies": [
@@ -113,5 +112,6 @@
       "type": "registry:lib",
       "target": "lib/form-extraction-utils.ts"
     }
-  ]
+  ],
+  "type": "registry:block"
 }
