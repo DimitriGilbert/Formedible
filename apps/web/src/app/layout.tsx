@@ -63,7 +63,11 @@ export default function RootLayout({
           <Header />
           {children}
         </Providers>
-        <script src="https://app.tasu.ai/widget/v2.js" client-id="8e9494df-5d24-4dda-b0e8-be0600a0cf67" async></script>
+        <script
+          src="https://app.tasu.ai/widget/v2.js"
+          client-id="8e9494df-5d24-4dda-b0e8-be0600a0cf67"
+          // data-target="body > header > div > div > div.flex.items-center.gap-4 > nav"
+          async></script>
       </body>
     </html>
   );

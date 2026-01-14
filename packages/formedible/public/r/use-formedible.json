@@ -1,11 +1,11 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "use-formedible",
-  "type": "registry:block",
   "title": "Formedible Form Builder",
   "description": "A powerful React hook for creating schema-driven forms with TanStack Form and shadcn/ui components. Includes field components, validation, and advanced features.",
   "dependencies": [
     "@tanstack/react-form",
+    "@tanstack/form-core",
     "zod",
     "date-fns",
     "react-day-picker",
@@ -13,7 +13,8 @@
     "clsx",
     "tailwind-merge",
     "@dnd-kit/core",
-    "@dnd-kit/sortable"
+    "@dnd-kit/sortable",
+    "@dnd-kit/utilities"
   ],
   "registryDependencies": [
     "button",
@@ -230,5 +231,6 @@
       "content": "\"use client\";\nimport React from \"react\";\nimport { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from \"@/components/ui/accordion\";\nimport { cn } from \"@/lib/utils\";\nimport type { FormAccordionProps } from \"@/lib/formedible/types\";\n\n\nexport const FormAccordion: React.FC<FormAccordionProps> = ({\n  children,\n  sections,\n  type = 'single',\n  className,\n}) => {\n  return (\n    <div className={cn(\"space-y-4\", className)}>\n      {children}\n      \n      {type === 'single' ? (\n        <Accordion \n          type=\"single\" \n          defaultValue={sections.find(s => s.defaultOpen)?.id}\n          collapsible\n        >\n          {sections.map((section) => (\n            <AccordionItem key={section.id} value={section.id}>\n              <AccordionTrigger>{section.title}</AccordionTrigger>\n              <AccordionContent>\n                <div className=\"space-y-4\">\n                  {section.content}\n                </div>\n              </AccordionContent>\n            </AccordionItem>\n          ))}\n        </Accordion>\n      ) : (\n        <Accordion \n          type=\"multiple\" \n          defaultValue={sections.filter(s => s.defaultOpen).map(s => s.id)}\n        >\n          {sections.map((section) => (\n            <AccordionItem key={section.id} value={section.id}>\n              <AccordionTrigger>{section.title}</AccordionTrigger>\n              <AccordionContent>\n                <div className=\"space-y-4\">\n                  {section.content}\n                </div>\n              </AccordionContent>\n            </AccordionItem>\n          ))}\n        </Accordion>\n      )}\n    </div>\n  );\n};",
       "type": "registry:component"
     }
-  ]
+  ],
+  "type": "registry:block"
 }

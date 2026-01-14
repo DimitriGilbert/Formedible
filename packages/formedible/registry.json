@@ -29,6 +29,7 @@
       ],
       "dependencies": [
         "@tanstack/react-form",
+        "@tanstack/form-core",
         "zod",
         "date-fns",
         "react-day-picker",
@@ -36,7 +37,8 @@
         "clsx",
         "tailwind-merge",
         "@dnd-kit/core",
-        "@dnd-kit/sortable"
+        "@dnd-kit/sortable",
+        "@dnd-kit/utilities"
       ],
       "files": [
         {
