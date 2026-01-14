@@ -127,7 +127,7 @@ export const DurationPickerField: React.FC<DurationPickerFieldProps> = ({
         )}
         <Select
           value={value.toString()}
-          onValueChange={(val) => onChange(parseInt(val))}
+          onValueChange={(val) => onChange(parseInt(val, 10))}
         >
           <SelectTrigger className={cn("w-20", inputClassName)}>
             <SelectValue />

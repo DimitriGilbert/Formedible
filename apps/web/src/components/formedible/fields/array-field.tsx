@@ -12,9 +12,11 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  DragOverlay,
+} from "@dnd-kit/core";
+import type {
   DragEndEvent,
   DragStartEvent,
-  DragOverlay,
   UniqueIdentifier,
 } from "@dnd-kit/core";
 import {
