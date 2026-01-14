@@ -1,7 +1,6 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "formedible-parser",
-  "type": "registry:block",
   "title": "Formedible Parser",
   "description": "Safe parser for Formedible form definitions - handles JSON, JavaScript object literals, and Zod schema expressions",
   "dependencies": [
@@ -46,5 +45,6 @@
       "type": "registry:lib",
       "target": "lib/utils.ts"
     }
-  ]
+  ],
+  "type": "registry:block"
 }
