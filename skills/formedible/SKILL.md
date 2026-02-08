@@ -5,11 +5,15 @@ description: Expert knowledge for Formedible - A React form library built on Tan
 
 # Formedible Skill
 
+**Formedible is a DECLARATIVE and SCHEMA-DRIVEN form library.**
+
+The schema is the single source of truth. Define forms via `fields` array configuration, NOT manual JSX.
+
 Use this skill when working with Formedible forms - creating, debugging, or extending functionality.
 
 ## Quick Start
 
-```tsx
+**⚠️ Formedible is DECLARATIVE and SCHEMA-DRIVEN. Do NOT write manual JSX for fields!**
 import { useFormedible } from "@/hooks/use-formedible";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -451,6 +455,33 @@ const { Form } = useFormedible({
 ```
 
 ## Critical Patterns
+
+### 0. FORMEDIBLE IS DECLARATIVE AND SCHEMA DRIVEN (MOST IMPORTANT!)
+
+```tsx
+// ❌ WRONG - Never write manual JSX for fields!
+<form>
+  <input name="name" />
+  <input name="email" />
+</form>
+
+// ✅ CORRECT - Define fields declaratively via configuration!
+const { Form } = useFormedible({
+  schema: z.object({
+    name: z.string(),
+    email: z.string().email(),
+  }),
+  fields: [
+    { name: "name", type: "text", label: "Name" },
+    { name: "email", type: "email", label: "Email" },
+  ],
+  formOptions: {
+    onSubmit: async ({ value }) => console.log(value),
+  },
+});
+```
+
+**THE SCHEMA IS THE SINGLE SOURCE OF TRUTH.** Field names in `fields` MUST match schema keys exactly!
 
 ### 1. Always Use className on Form
 
