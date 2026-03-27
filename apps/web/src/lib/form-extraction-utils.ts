@@ -1,8 +1,3 @@
-/**
- * Shared utility functions for extracting formedible code from messages
- * This ensures DRY principle and consistent behavior between streaming and loading
- */
-
 export interface ExtractedForm {
   id: string;
   code: string;
