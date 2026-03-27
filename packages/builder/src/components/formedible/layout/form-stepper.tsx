@@ -2,8 +2,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { FormStepperStep, FormStepperProps } from "@/lib/formedible/types";
-
+import type { FormStepperProps } from "@/lib/formedible/types";
 
 export const FormStepper: React.FC<FormStepperProps> = ({
   children,
@@ -24,21 +23,19 @@ export const FormStepper: React.FC<FormStepperProps> = ({
   };
 
   const markStepComplete = (stepIndex: number) => {
-    setCompletedSteps(prev => new Set(prev).add(stepIndex));
+    setCompletedSteps((prev) => new Set(prev).add(stepIndex));
   };
 
   const handleNext = () => {
     // Mark current step as completed when moving to next
     markStepComplete(activeStep);
-    
+
     if (activeStep < steps.length - 1) {
       handleStepChange(activeStep + 1);
     } else {
       onComplete?.();
     }
   };
-
-
 
   const handlePrevious = () => {
     if (activeStep > 0) {
@@ -68,7 +65,7 @@ export const FormStepper: React.FC<FormStepperProps> = ({
   return (
     <div className={cn("space-y-6", className)}>
       {children}
-      
+
       {/* Step indicator */}
       <div className="flex items-center justify-between">
         {steps.map((step, index) => (
@@ -79,35 +76,42 @@ export const FormStepper: React.FC<FormStepperProps> = ({
                 onClick={() => canGoToStep(index) && handleStepChange(index)}
                 disabled={!canGoToStep(index)}
                 aria-label={`Go to step ${index + 1}: ${step.title}`}
-                aria-current={isStepActive(index) ? 'step' : undefined}
+                aria-current={isStepActive(index) ? "step" : undefined}
                 tabIndex={canGoToStep(index) ? 0 : -1}
                 className={cn(
                   "w-10 h-10 rounded-full border-2 flex items-center justify-center text-sm font-medium transition-colors",
-                  isStepActive(index) && "border-primary bg-primary text-primary-foreground",
-                  isStepCompleted(index) && !isStepActive(index) && "border-primary bg-primary text-primary-foreground",
-                  !isStepActive(index) && !isStepCompleted(index) && "border-muted-foreground text-muted-foreground",
+                  isStepActive(index) &&
+                    "border-primary bg-primary text-primary-foreground",
+                  isStepCompleted(index) &&
+                    !isStepActive(index) &&
+                    "border-primary bg-primary text-primary-foreground",
+                  !isStepActive(index) &&
+                    !isStepCompleted(index) &&
+                    "border-muted-foreground text-muted-foreground",
                   canGoToStep(index) && "cursor-pointer hover:border-primary",
                   !canGoToStep(index) && "cursor-not-allowed opacity-50"
                 )}
               >
-                {isStepCompleted(index) ? (
-                  "✓"
-                ) : showStepNumbers ? (
-                  index + 1
-                ) : (
-                  "○"
-                )}
+                {isStepCompleted(index)
+                  ? "✓"
+                  : showStepNumbers
+                  ? index + 1
+                  : "○"}
               </button>
-              
+
               <div className="mt-2 text-center">
-                <div className={cn(
-                  "text-sm font-medium",
-                  isStepActive(index) && "text-primary",
-                  !isStepActive(index) && "text-muted-foreground"
-                )}>
+                <div
+                  className={cn(
+                    "text-sm font-medium",
+                    isStepActive(index) && "text-primary",
+                    !isStepActive(index) && "text-muted-foreground"
+                  )}
+                >
                   {step.title}
                   {step.optional && (
-                    <span className="text-xs text-muted-foreground ml-1">(optional)</span>
+                    <span className="text-xs text-muted-foreground ml-1">
+                      (optional)
+                    </span>
                   )}
                 </div>
                 {step.description && (
@@ -117,22 +121,22 @@ export const FormStepper: React.FC<FormStepperProps> = ({
                 )}
               </div>
             </div>
-            
+
             {/* Connector line */}
             {index < steps.length - 1 && (
-              <div className={cn(
-                "flex-1 h-0.5 mx-4",
-                isStepCompleted(index) ? "bg-primary" : "bg-muted"
-              )} />
+              <div
+                className={cn(
+                  "flex-1 h-0.5 mx-4",
+                  isStepCompleted(index) ? "bg-primary" : "bg-muted"
+                )}
+              />
             )}
           </React.Fragment>
         ))}
       </div>
 
       {/* Step content */}
-      <div className="min-h-[200px]">
-        {steps[activeStep]?.content}
-      </div>
+      <div className="min-h-[200px]">{steps[activeStep]?.content}</div>
 
       {/* Navigation buttons */}
       <div className="flex justify-between">
@@ -147,20 +151,13 @@ export const FormStepper: React.FC<FormStepperProps> = ({
 
         <div className="flex gap-2">
           {allowSkip && steps[activeStep]?.optional && (
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={handleSkip}
-            >
+            <Button type="button" variant="ghost" onClick={handleSkip}>
               Skip
             </Button>
           )}
-          
-          <Button
-            type="button"
-            onClick={handleNext}
-          >
-            {activeStep === steps.length - 1 ? 'Complete' : 'Next'}
+
+          <Button type="button" onClick={handleNext}>
+            {activeStep === steps.length - 1 ? "Complete" : "Next"}
           </Button>
         </div>
       </div>

@@ -148,6 +148,9 @@ function main() {
   const parserDestBase = 'packages/formedible-parser/src';
   totalCopied += processRegistry(formedibleRegistry, formedibleSourceBase, parserDestBase);
 
+  // Process formedible registry -> builder
+  totalCopied += processRegistry(formedibleRegistry, formedibleSourceBase, builderDestBase);
+
   logSuccess(`Quick sync complete! ${totalCopied} files copied. 🎉`);
 }
 

@@ -1,15 +1,14 @@
-import React from 'react';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { cn } from '@/lib/utils';
-import type { BaseFieldProps } from '@/lib/formedible/types';
-import { FieldWrapper } from './base-field-wrapper';
+import React from "react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
+import type { BaseFieldProps } from "@/lib/formedible/types";
+import { FieldWrapper } from "./base-field-wrapper";
 
 export const SwitchField: React.FC<BaseFieldProps> = ({
   fieldApi,
   label,
   description,
-  placeholder,
   inputClassName,
   labelClassName,
   wrapperClassName,
@@ -29,8 +28,8 @@ export const SwitchField: React.FC<BaseFieldProps> = ({
   return (
     // Note: We pass label={undefined} to FieldWrapper and render the label manually
     // because Switch components need the label positioned next to (not above) the control
-    <FieldWrapper 
-      fieldApi={fieldApi} 
+    <FieldWrapper
+      fieldApi={fieldApi}
       label={undefined}
       description={description}
       inputClassName={inputClassName}
@@ -47,9 +46,12 @@ export const SwitchField: React.FC<BaseFieldProps> = ({
           aria-describedby={description ? `${name}-description` : undefined}
         />
         {label && (
-          <Label 
-            htmlFor={name} 
-            className={cn("text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70", labelClassName)}
+          <Label
+            htmlFor={name}
+            className={cn(
+              "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
+              labelClassName
+            )}
           >
             {label}
           </Label>

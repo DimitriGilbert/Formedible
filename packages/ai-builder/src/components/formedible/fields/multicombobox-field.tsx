@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import {
   Command,
   CommandEmpty,
@@ -29,7 +29,7 @@ export const MultiComboboxField: React.FC<MultiComboboxFieldSpecificProps> = ({
   const {
     maxSelections = Infinity,
     searchable = true,
-    creatable = false,
+    creatable: _creatable = false,
     placeholder = "Select options...",
     searchPlaceholder = "Search options...",
     noOptionsText = "No options found",

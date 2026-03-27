@@ -30,5 +30,28 @@
 - Unused vars: Prefix with underscore to ignore ESLint warnings
 - NEVER USE confirm OR alert ! anti pattern terrible UX ! NEVER !
 
-## formedible work
-- Always work on the package first then unse `scripts/sync-components` to sync the changes to the web app.
+## Formedible Work - CRITICAL WORKFLOW
+
+### The Rule
+- ALWAYS fix formedible component/hook issues in `packages/formedible/src/` then SYNC to other packages
+- NEVER fix formedible issues directly in `apps/web`, `packages/builder`, `packages/ai-builder`, or `packages/formedible-parser`
+- Package-specific errors (e.g. a file only in `packages/parser/`) are fixed in that package directly
+
+### The Workflow (MUST follow this exact order)
+1. **Fix** code in `packages/formedible/src/`
+2. **Build** with `npm run build:pkg` (required - the sync reads from built output)
+3. **Sync** with `node scripts/quick-sync.js`
+4. **Fix** any package-specific errors in their own packages
+5. **Verify** with `npm run check-types` (all packages must pass)
+
+### Why `check-types:pkg` is NOT enough
+- `npm run check-types:pkg` only checks the formedible package in isolation
+- Many TS errors only surface when consumer packages import the synced files
+- ALWAYS use `npm run check-types` (all packages) as the final verification
+
+### What quick-sync.js syncs
+- `packages/formedible` → `apps/web`, `packages/ai-builder`, `packages/builder`, `packages/formedible-parser`
+- `packages/builder` → `apps/web`, `packages/ai-builder`
+- `packages/ai-builder` → `apps/web`
+- `packages/formedible-parser` → `apps/web`, `packages/ai-builder`, `packages/builder`
+- If you discover a missing sync route, add it to `scripts/quick-sync.js`

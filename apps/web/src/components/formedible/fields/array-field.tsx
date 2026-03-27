@@ -42,7 +42,7 @@ interface SortableItemProps {
 
 const SortableItem: React.FC<SortableItemProps> = ({
   id,
-  index,
+  index: _index,
   children,
   isDisabled = false,
   onRemove,

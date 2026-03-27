@@ -12,9 +12,11 @@ import {
   PointerSensor,
   useSensor,
   useSensors,
+  DragOverlay,
+} from "@dnd-kit/core";
+import type {
   DragEndEvent,
   DragStartEvent,
-  DragOverlay,
   UniqueIdentifier,
 } from "@dnd-kit/core";
 import {
@@ -40,7 +42,7 @@ interface SortableItemProps {
 
 const SortableItem: React.FC<SortableItemProps> = ({
   id,
-  index,
+  index: _index,
   children,
   isDisabled = false,
   onRemove,

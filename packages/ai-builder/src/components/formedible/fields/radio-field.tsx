@@ -26,8 +26,8 @@ export const RadioField: React.FC<RadioFieldSpecificProps> = ({
     typeof option === "string" ? { value: option, label: option } : option
   );
 
-  const onValueChange = (value: string) => {
-    fieldApi.handleChange(value);
+  const onValueChange = (value: unknown) => {
+    fieldApi.handleChange(value as string);
   };
 
   const onBlur = () => {

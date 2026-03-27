@@ -24,10 +24,10 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
 
   React.useEffect(() => {
     if (!fieldApi.form) return;
-    const unsubscribe = fieldApi.form.store.subscribe((state) => {
+    const subscription = fieldApi.form.store.subscribe((state) => {
       setSubscribedValues((state as any).values);
     });
-    return unsubscribe;
+    return () => { subscription.unsubscribe(); };
   }, [fieldApi.form]);
 
   // Create a properly typed mockFieldApi that includes the form property

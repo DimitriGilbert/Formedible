@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useMemo, memo, useRef } from "react";
-import { useForm, AnyFormApi, AnyFieldApi } from "@tanstack/react-form";
+import { useForm } from "@tanstack/react-form";
+import type { AnyFormApi, AnyFieldApi } from "@tanstack/react-form";
 import { cn } from "@/lib/utils";
 import type {
   FormedibleFormApi,
@@ -39,6 +40,8 @@ import { DurationPickerField } from "@/components/formedible/fields/duration-pic
 import { AutocompleteField } from "@/components/formedible/fields/autocomplete-field";
 import { MaskedInputField } from "@/components/formedible/fields/masked-input-field";
 import { ObjectField } from "@/components/formedible/fields/object-field";
+import { ComboboxField } from "@/components/formedible/fields/combobox-field";
+import { MultiComboboxField } from "@/components/formedible/fields/multicombobox-field";
 import { InlineValidationWrapper } from "@/components/formedible/fields/inline-validation-wrapper";
 import { FieldHelp } from "@/components/formedible/fields/field-help";
 import { FormGrid, GridItem } from "@/components/formedible/layout/form-grid";
@@ -131,6 +134,8 @@ const defaultFieldComponents: Record<string, React.ComponentType<any>> = {
   autocomplete: AutocompleteField,
   masked: MaskedInputField,
   object: ObjectField,
+  combobox: ComboboxField,
+  multicombobox: MultiComboboxField,
 };
 
 const DefaultProgressComponent: React.FC<{
@@ -207,16 +212,16 @@ const SectionRenderer: React.FC<
   );
 
   // Subscribe to form values for dynamic text resolution - always at top level
-  const [subscribedValues, setSubscribedValues] = React.useState<Record<string, unknown>>(
-    form?.state?.values || {}
-  );
+  const [subscribedValues, setSubscribedValues] = React.useState<
+    Record<string, unknown>
+  >(form?.state?.values || {});
 
   React.useEffect(() => {
     if (!form) return;
-    const unsubscribe = form.store.subscribe((state) => {
+    const subscription = form.store.subscribe((state) => {
       setSubscribedValues((state as any).values);
     });
-    return unsubscribe;
+    return () => { subscription.unsubscribe(); };
   }, [form]);
 
   // Check if any fields in this section will actually render
@@ -261,7 +266,7 @@ const SectionRenderer: React.FC<
           className={layout.className}
         >
           {allVisibleFields.map((field) => (
-            <GridItem 
+            <GridItem
               key={field.name}
               gridColumn={field.gridColumn}
               gridRow={field.gridRow}
@@ -409,7 +414,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     autoSubmitDebounceMs,
     disabled,
     loading,
-    resetOnSubmitSuccess,
+    resetOnSubmitSuccess: _resetOnSubmitSuccess,
     showSubmitButton = true,
     autoScroll = false,
     onFormReset,
@@ -662,71 +667,70 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
   // Setup form with schema validation if provided
   const formConfig = {
     ...formOptions,
-    ...(resetOnSubmitSuccess &&
-      formOptions?.onSubmit && {
-        onSubmit: async (props: {
-          value: TFormValues;
-          formApi: FormedibleFormApi<TFormValues>;
-        }) => {
-          // Run cross-field validation before submit
-          const crossFieldErrors = validateCrossFields(
-            props.value as Partial<TFormValues>
-          );
-          if (Object.keys(crossFieldErrors).length > 0) {
-            throw new Error("Cross-field validation failed");
-          }
+    ...(formOptions?.onSubmit && {
+      onSubmit: async (props: {
+        value: TFormValues;
+        formApi: FormedibleFormApi<TFormValues>;
+      }) => {
+        // Run cross-field validation before submit
+        const crossFieldErrors = validateCrossFields(
+          props.value as Partial<TFormValues>
+        );
+        if (Object.keys(crossFieldErrors).length > 0) {
+          throw new Error("Cross-field validation failed");
+        }
 
-          // Track submission start time for performance metrics
-          const submissionStartTime = Date.now();
+        // Track submission start time for performance metrics
+        const submissionStartTime = Date.now();
 
-          // Enhanced analytics tracking for form completion
-          if (analytics) {
-            const context = analyticsContextRef.current;
-            const timeSpent = Date.now() - context.startTime;
+        // Enhanced analytics tracking for form completion
+        if (analytics) {
+          const context = analyticsContextRef.current;
+          const timeSpent = Date.now() - context.startTime;
 
-            // Update performance metrics
-            context.performanceMetrics.submissionMetrics.totalTime = timeSpent;
+          // Update performance metrics
+          context.performanceMetrics.submissionMetrics.totalTime = timeSpent;
 
-            // Call enhanced completion analytics
-            analytics.onFormComplete?.(timeSpent, props.value);
-          }
+          // Call enhanced completion analytics
+          analytics.onFormComplete?.(timeSpent, props.value);
+        }
 
-          let result: unknown;
-          if (formOptions.onSubmit) {
-            try {
-              result = await formOptions.onSubmit(props);
+        let result: unknown;
+        if (formOptions.onSubmit) {
+          // try {
+            result = await formOptions.onSubmit(props);
 
-              // Mark form as completed to prevent abandonment tracking
-              formCompletedRef.current = true;
+            // Mark form as completed to prevent abandonment tracking
+            formCompletedRef.current = true;
 
-              // Track submission performance after successful completion
-              if (analytics) {
-                const processingTime = Date.now() - submissionStartTime;
-                const context = analyticsContextRef.current;
-                context.performanceMetrics.submissionMetrics.processingTime =
-                  processingTime;
-                analytics.onSubmissionPerformance?.(
-                  Date.now() - context.startTime,
-                  context.performanceMetrics.submissionMetrics.validationTime,
-                  processingTime
-                );
-              }
-            } catch (error) {
-              // Re-throw the error after analytics
-              throw error;
+            // Track submission performance after successful completion
+            if (analytics) {
+              const processingTime = Date.now() - submissionStartTime;
+              const context = analyticsContextRef.current;
+              context.performanceMetrics.submissionMetrics.processingTime =
+                processingTime;
+              analytics.onSubmissionPerformance?.(
+                Date.now() - context.startTime,
+                context.performanceMetrics.submissionMetrics.validationTime,
+                processingTime
+              );
             }
-          }
+          // } catch (error) {
+          //   // Re-throw the error after analytics
+          //   throw error;
+          // }
+        }
 
-          // Clear storage on successful submit
-          clearStorage();
+        // Clear storage on successful submit
+        clearStorage();
 
-          // Reset form on successful submit if option is enabled
-          if (formRef.current) {
-            formRef.current?.reset();
-          }
-          return result;
-        },
-      }),
+        // Reset form on successful submit if option is enabled
+        if (formRef.current) {
+          formRef.current?.reset();
+        }
+        return result;
+      },
+    }),
   };
 
   const form = useForm(formConfig);
@@ -987,12 +991,12 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     };
 
     // Set up subscription
-    const unsubscribe = form.store.subscribe(updateVisiblePages);
+    const subscription = form.store.subscribe(updateVisiblePages);
 
     // Initialize on mount
     updateVisiblePages();
 
-    return unsubscribe;
+    return () => { subscription.unsubscribe(); };
   }, [form, getVisiblePages]);
 
   // Form persistence logic
@@ -1139,13 +1143,13 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
           }, autoSubmitDebounceMs);
         }
       });
-      unsubscribers.push(unsubscribe);
+      unsubscribers.push(() => { unsubscribe.unsubscribe(); });
     }
 
     // Enhanced analytics using TanStack Form subscriptions instead of document event listeners
     if (analytics) {
       // Subscribe to form state changes for field validation analytics
-      const fieldValidationUnsubscribe = form.store.subscribe(() => {
+      const fieldValidationSubscription = form.store.subscribe(() => {
         const formState = form.state;
         const fieldMeta = formState.fieldMeta;
 
@@ -1162,10 +1166,10 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
           }
         });
       });
-      unsubscribers.push(fieldValidationUnsubscribe);
+      unsubscribers.push(() => { fieldValidationSubscription.unsubscribe(); });
 
       // Subscribe to field changes with optimized tracking
-      const fieldChangeUnsubscribe = form.store.subscribe(() => {
+      const fieldChangeSubscription = form.store.subscribe(() => {
         const values = form.state.values;
         const context = analyticsContextRef.current;
 
@@ -1198,11 +1202,11 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
           }
         );
       });
-      unsubscribers.push(fieldChangeUnsubscribe);
+      unsubscribers.push(() => { fieldChangeSubscription.unsubscribe(); });
 
       // User's onBlur handler using subscription
       if (formOptions?.onBlur) {
-        const blurUnsubscribe = form.store.subscribe(() => {
+        const blurSubscription = form.store.subscribe(() => {
           clearTimeout(onBlurTimeout);
           onBlurTimeout = setTimeout(() => {
             if (!formOptions.onBlur) return;
@@ -1211,7 +1215,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
             formOptions.onBlur({ value: values as TFormValues, formApi });
           }, 100); // 100ms debounce for blur
         });
-        unsubscribers.push(blurUnsubscribe);
+        unsubscribers.push(() => { blurSubscription.unsubscribe(); });
       }
     }
 
@@ -1450,16 +1454,28 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
     tabIndex,
   }) => {
     const handleSubmit = (e: React.FormEvent) => {
+      console.log("handleSubmit");
       e.preventDefault();
       e.stopPropagation();
 
-      if (onSubmit) {
-        onSubmit(e);
-      } else if (isLastPage) {
-        form.handleSubmit();
-      } else {
-        goToNextPage();
-      }
+      const submission = async () => {
+        if (onSubmit) {
+          console.log("onSubmit");
+          onSubmit(e);
+          await form.handleSubmit();
+        } else if (isLastPage) {
+          console.log("isLastPage");
+          await form.handleSubmit();
+        } else {
+          console.log("goToNextPage");
+          goToNextPage();
+        }
+      };
+
+      submission().catch((error) => {
+        // This will catch rejections from handleSubmit
+        console.error("Submission failed:", error);
+      });
     };
 
     const handleReset = (e: React.FormEvent) => {
@@ -1769,6 +1785,19 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
                               ...props,
                               options: normalizedOptions,
                               multiSelectConfig,
+                            };
+                          } else if (type === "combobox") {
+                            props = {
+                              ...props,
+                              options: normalizedOptions,
+                              comboboxConfig: fieldConfig.comboboxConfig,
+                            };
+                          } else if (type === "multicombobox") {
+                            props = {
+                              ...props,
+                              options: normalizedOptions,
+                              multiComboboxConfig:
+                                fieldConfig.multiComboboxConfig,
                             };
                           } else if (type === "colorPicker") {
                             props = { ...props, colorConfig };

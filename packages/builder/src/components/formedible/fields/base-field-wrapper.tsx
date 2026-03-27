@@ -10,7 +10,6 @@ export const FieldWrapper: React.FC<FieldWrapperProps> = ({
   fieldApi,
   label,
   description,
-  inputClassName,
   labelClassName,
   wrapperClassName,
   children,

@@ -76,17 +76,17 @@ try {
   console.log('Testing JSON form parsing...');
   const parsedJson = FormedibleParser.parse(jsonForm);
   console.log('✅ JSON form parsed successfully');
-  console.log(`Found ${parsedJson.fields.length} fields`);
+  console.log(`Found ${parsedJson.fields!.length} fields`);
 
   console.log('\nTesting JavaScript object literal parsing...');
   const parsedJs = FormedibleParser.parse(jsForm);
   console.log('✅ JavaScript form parsed successfully');
-  console.log(`Found ${parsedJs.fields.length} fields`);
+  console.log(`Found ${parsedJs.fields!.length} fields`);
 
   console.log('\nTesting complex form with object and array fields...');
   const parsedComplex = FormedibleParser.parse(complexForm);
   console.log('✅ Complex form parsed successfully');
-  console.log(`Found ${parsedComplex.fields.length} fields`);
+  console.log(`Found ${parsedComplex.fields!.length} fields`);
 
   console.log('\nTesting field type validation...');
   console.log(`Supported field types: ${FormedibleParser.getSupportedFieldTypes().join(', ')}`);
