@@ -58,7 +58,7 @@ export const MultiComboboxField: React.FC<MultiComboboxFieldSpecificProps> = ({
   const handleSelect = (optionValue: string) => {
     if (selectedValues.includes(optionValue)) {
       // Remove if already selected
-      const newValues = selectedValues.filter((v) => v !== optionValue);
+      const newValues = selectedValues.filter((v: string) => v !== optionValue);
       fieldApi.handleChange(newValues);
     } else if (selectedValues.length < maxSelections) {
       // Add if not at max selections
@@ -71,13 +71,13 @@ export const MultiComboboxField: React.FC<MultiComboboxFieldSpecificProps> = ({
   };
 
   const handleRemove = (valueToRemove: string) => {
-    const newValues = selectedValues.filter((v) => v !== valueToRemove);
+    const newValues = selectedValues.filter((v: string) => v !== valueToRemove);
     fieldApi.handleChange(newValues);
     fieldApi.handleBlur();
   };
 
   const getSelectedLabels = () => {
-    return selectedValues.map((value) => {
+    return selectedValues.map((value: string) => {
       const option = normalizedOptions.find((opt) => opt.value === value);
       return option ? option.label : value;
     });
@@ -109,7 +109,7 @@ export const MultiComboboxField: React.FC<MultiComboboxFieldSpecificProps> = ({
               <div className="flex flex-wrap gap-1 items-center w-full">
                 {/* Selected tags */}
                 {selectedValues.length > 0 ? (
-                  selectedValues.map((value, index) => {
+                  selectedValues.map((value: string, index: number) => {
                     const label = getSelectedLabels()[index];
                     return (
                       <Badge
@@ -120,7 +120,7 @@ export const MultiComboboxField: React.FC<MultiComboboxFieldSpecificProps> = ({
                         {label}
                         <span
                           className="h-3 w-3 p-0 rounded-sm hover:bg-destructive hover:text-destructive-foreground flex items-center justify-center"
-                          onClick={(e) => {
+                          onClick={(e: React.MouseEvent) => {
                             e.stopPropagation();
                             !isDisabled && handleRemove(value);
                           }}
@@ -140,7 +140,7 @@ export const MultiComboboxField: React.FC<MultiComboboxFieldSpecificProps> = ({
           </PopoverTrigger>
           <PopoverContent className="w-full p-0" align="start">
             <Command
-              filter={(value, search) => {
+              filter={(value: string, search: string) => {
                 const option = displayOptions.find(
                   (opt) => opt.value === value
                 );

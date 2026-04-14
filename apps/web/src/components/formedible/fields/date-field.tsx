@@ -36,8 +36,8 @@ export const DateField: React.FC<DateFieldProps> = ({
 
   React.useEffect(() => {
     if (!fieldApi.form) return;
-    const subscription = fieldApi.form.store.subscribe((state) => {
-      setFormValues((state as any).values);
+    const subscription = fieldApi.form.store.subscribe((state: any) => {
+      setFormValues(state.values);
     });
     return () => { subscription.unsubscribe(); };
   }, [fieldApi.form]);
@@ -95,21 +95,11 @@ export const DateField: React.FC<DateFieldProps> = ({
       wrapperClassName={wrapperClassName}
     >
       <Popover open={isOpen} onOpenChange={setIsOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            className={computedInputClassName}
-            disabled={isDisabled}
-            onClick={() => setIsOpen(true)}
-          >
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {selectedDate ? (
-              format(selectedDate, "PPP")
-            ) : (
-              <span>{placeholder || "Pick a date"}</span>
-            )}
-          </Button>
-        </PopoverTrigger>
+        <PopoverTrigger render={<Button variant="outline" className={computedInputClassName} disabled={isDisabled} onClick={() => setIsOpen(true)} />}><CalendarIcon className="mr-2 h-4 w-4" />{selectedDate ? (
+                            format(selectedDate, "PPP")
+                          ) : (
+                            <span>{placeholder || "Pick a date"}</span>
+                          )}</PopoverTrigger>
         <PopoverContent className="w-auto p-0">
           <Calendar
             mode="single"

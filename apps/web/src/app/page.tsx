@@ -53,16 +53,7 @@ export default function Home() {
         className="min-h-screen bg-background"
         // className="min-h-screen bg-white dark:bg-white bg-[radial-gradient(circle_at_15.71%_21.78%,rgba(180,83,9,0.35)_0%,rgba(180,83,9,0)_60.86%),radial-gradient(circle_at_46.23%_67.83%,rgba(120,113,108,0.60)_0%,rgba(120,113,108,0)_82.54%),radial-gradient(circle_at_11.18%_83.46%,rgba(161,98,7,0.35)_0%,rgba(161,98,7,0)_50.85%),radial-gradient(circle_at_89.46%_33.40%,rgba(202,138,4,0.35)_0%,rgba(202,138,4,0)_88.26%),radial-gradient(circle_at_86.03%_86.63%,rgba(249,115,22,0.30)_0%,rgba(249,115,22,0)_57.14%)]"
       >
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.2 }}
-          className="text-center"
-        >
-          <Badge variant="secondary" className="mt-8">
-            Schema driven form made simple
-          </Badge>
-        </motion.div>
+
         {/* Hero Section */}
         <section className="container mx-auto px-4 py-8">
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-16 xl:gap-24 max-w-7xl mx-auto items-center">
@@ -146,11 +137,9 @@ export default function Home() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <Button size="lg" className="text-lg px-8" asChild>
-                    <a href="#installation">
+                  <Button size="lg" className="text-lg px-8" render={<a href="#installation" aria-label="Install Now" />} nativeButton={false}>
                       <Terminal className="w-5 h-5 mr-2" />
                       Install Now
-                    </a>
                   </Button>
                 </motion.div>
                 <motion.div
@@ -161,12 +150,11 @@ export default function Home() {
                     variant="outline"
                     size="lg"
                     className="text-lg px-8"
-                    asChild
+                    render={<Link href="/builder" />}
+                    nativeButton={false}
                   >
-                    <Link href="/builder">
                       <Sparkles className="w-5 h-5 mr-2" />
                       Try Builder
-                    </Link>
                   </Button>
                 </motion.div>
               </motion.div>

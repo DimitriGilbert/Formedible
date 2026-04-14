@@ -203,7 +203,7 @@ export const ColorPickerField: React.FC<ColorPickerFieldSpecificProps> = ({
           {/* Color value input */}
           <Input
             value={displayValue}
-            onChange={(e) => {
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
               const inputValue = e.target.value;
               fieldApi.handleChange(inputValue);
               // Try to extract hex value for internal use

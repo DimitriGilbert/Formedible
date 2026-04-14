@@ -83,20 +83,7 @@ export const ComboboxField: React.FC<ComboboxFieldSpecificProps> = ({
       htmlFor={name + "-trigger"}
     >
       <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className={triggerClassName}
-            disabled={isDisabled}
-            id={name + "-trigger"}
-            onBlur={onBlur}
-          >
-            {selectedOption ? selectedOption.label : displayPlaceholder}
-            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
+        <PopoverTrigger render={<Button variant="outline" role="combobox" aria-expanded={open} className={triggerClassName} disabled={isDisabled} id={name + "-trigger"} onBlur={onBlur} />}>{selectedOption ? selectedOption.label : displayPlaceholder}<ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" /></PopoverTrigger>
         <PopoverContent className="w-full p-0" align="start">
           <Command>
             {searchable && (

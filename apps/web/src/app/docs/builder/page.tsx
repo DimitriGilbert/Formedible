@@ -35,11 +35,9 @@ export default function BuilderPage() {
           {/* Header */}
           <div className="mb-12">
             <div className="flex items-center gap-4 mb-6">
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/docs">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Docs
-                </Link>
+              <Button variant="ghost" size="sm" render={<Link href="/docs" />} nativeButton={false}>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Docs
               </Button>
             </div>
 
@@ -85,9 +83,7 @@ export default function BuilderPage() {
                   workflow needs.
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                  <Button size="lg" asChild>
-                    <Link href="/builder">Open Builder</Link>
-                  </Button>
+                  <Button size="lg" render={<Link href="/builder" />} nativeButton={false}>Open Builder</Button>
                 </div>
               </div>
             </div>
@@ -360,12 +356,8 @@ const customTabs = [
                 workflow needs.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button size="lg" asChild>
-                  <Link href="/builder">Open Builder</Link>
-                </Button>
-                <Button variant="outline" size="lg" asChild>
-                  <Link href="/docs/getting-started">Get Started</Link>
-                </Button>
+                <Button size="lg" render={<Link href="/builder" />} nativeButton={false}>Open Builder</Button>
+                <Button variant="outline" size="lg" render={<Link href="/docs/getting-started" />} nativeButton={false}>Get Started</Button>
               </div>
             </div>
           </div>

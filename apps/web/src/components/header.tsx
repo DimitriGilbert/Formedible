@@ -35,11 +35,9 @@ export default function Header() {
           {/* Mobile Menu Button */}
           <div className="flex items-center gap-4">
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
-              <SheetTrigger asChild className="md:hidden">
-                <Button variant="ghost" size="sm">
-                  <Menu className="h-6 w-6" />
-                  <span className="sr-only">Toggle navigation menu</span>
-                </Button>
+              <SheetTrigger className="md:hidden" render={<Button variant="ghost" size="sm" />}>
+                <Menu className="h-6 w-6" />
+                <span className="sr-only">Toggle navigation menu</span>
               </SheetTrigger>
               <SheetContent side="left" className="w-[300px] sm:w-[400px]">
                 <div className="flex flex-col space-y-6 mt-6">
@@ -53,20 +51,23 @@ export default function Header() {
                   </div>
                   <nav className="flex flex-col space-y-4">
                     {links.map(({ to, label, target }) => (
-                      <SheetClose asChild key={to}>
-                        <Link
-                          href={to}
-                          className={`text-lg font-medium transition-colors hover:text-primary p-2 rounded-md ${
-                            pathname === to ||
-                            (to !== "/" && pathname.startsWith(to))
-                              ? "text-primary bg-primary/10"
-                              : "text-muted-foreground hover:bg-muted"
-                          }`}
-                          target={target}
-                          onClick={() => setIsOpen(false)}
-                        >
-                          {label}
-                        </Link>
+                      <SheetClose
+                        key={to}
+                        render={
+                          <Link
+                            href={to}
+                            className={`text-lg font-medium transition-colors hover:text-primary p-2 rounded-md ${
+                              pathname === to ||
+                              (to !== "/" && pathname.startsWith(to))
+                                ? "text-primary bg-primary/10"
+                                : "text-muted-foreground hover:bg-muted"
+                            }`}
+                            target={target}
+                            onClick={() => setIsOpen(false)}
+                          />
+                        }
+                      >
+                        {label}
                       </SheetClose>
                     ))}
                   </nav>

@@ -27,11 +27,9 @@ export default function ValidationPage() {
           {/* Header */}
           <div className="mb-12">
             <div className="flex items-center gap-4 mb-6">
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/docs">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Docs
-                </Link>
+              <Button variant="ghost" size="sm" render={<Link href="/docs" />} nativeButton={false}>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Docs
               </Button>
             </div>
 
@@ -292,12 +290,8 @@ console.log(asyncValidationStates);
                 experience.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button size="lg" asChild>
-                  <Link href="/docs/getting-started">Get Started</Link>
-                </Button>
-                <Button variant="outline" size="lg" asChild>
-                  <Link href="/docs/examples">View Examples</Link>
-                </Button>
+                <Button size="lg" render={<Link href="/docs/getting-started" />} nativeButton={false}>Get Started</Button>
+                <Button variant="outline" size="lg" render={<Link href="/docs/examples" />} nativeButton={false}>View Examples</Button>
               </div>
             </div>
           </div>

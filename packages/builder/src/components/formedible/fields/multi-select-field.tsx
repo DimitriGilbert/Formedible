@@ -83,7 +83,7 @@ export const MultiSelectField: React.FC<MultiSelectFieldSpecificProps> = ({
   const handleSelect = (optionValue: string) => {
     if (selectedValues.includes(optionValue)) {
       // Remove if already selected
-      const newValues = selectedValues.filter((v) => v !== optionValue);
+      const newValues = selectedValues.filter((v: string) => v !== optionValue);
       fieldApi.handleChange(newValues);
     } else if (selectedValues.length < maxSelections) {
       // Add if not at max selections
@@ -99,7 +99,7 @@ export const MultiSelectField: React.FC<MultiSelectFieldSpecificProps> = ({
   };
 
   const handleRemove = (valueToRemove: string) => {
-    const newValues = selectedValues.filter((v) => v !== valueToRemove);
+    const newValues = selectedValues.filter((v: string) => v !== valueToRemove);
     fieldApi.handleChange(newValues);
     fieldApi.handleBlur();
   };
@@ -118,7 +118,7 @@ export const MultiSelectField: React.FC<MultiSelectFieldSpecificProps> = ({
   };
 
   const getSelectedLabels = () => {
-    return selectedValues.map((value) => {
+    return selectedValues.map((value: string) => {
       const option = normalizedOptions.find((opt) => opt.value === value);
       return option ? option.label : value;
     });
@@ -153,7 +153,7 @@ export const MultiSelectField: React.FC<MultiSelectFieldSpecificProps> = ({
           >
             <div className="flex flex-wrap gap-1 items-center">
               {/* Selected tags */}
-              {selectedValues.map((value, index) => {
+              {selectedValues.map((value: string, index: number) => {
                 const label = getSelectedLabels()[index];
                 return (
                   <Badge
@@ -167,7 +167,7 @@ export const MultiSelectField: React.FC<MultiSelectFieldSpecificProps> = ({
                       variant="ghost"
                       size="sm"
                       className="h-3 w-3 p-0 hover:bg-destructive hover:text-destructive-foreground"
-                      onClick={(e) => {
+                      onClick={(e: React.MouseEvent) => {
                         e.stopPropagation();
                         handleRemove(value);
                       }}
@@ -184,7 +184,7 @@ export const MultiSelectField: React.FC<MultiSelectFieldSpecificProps> = ({
                 <Input
                   ref={inputRef}
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
                   onKeyDown={handleKeyDown}
                   onFocus={() => setIsOpen(true)}
                   onBlur={fieldApi.handleBlur}

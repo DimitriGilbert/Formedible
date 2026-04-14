@@ -11,44 +11,26 @@ export const FormAccordion: React.FC<FormAccordionProps> = ({
   type = 'single',
   className,
 }) => {
+  const defaultOpenIds = sections.filter(s => s.defaultOpen).map(s => s.id);
+
   return (
     <div className={cn("space-y-4", className)}>
       {children}
-      
-      {type === 'single' ? (
-        <Accordion 
-          type="single" 
-          defaultValue={sections.find(s => s.defaultOpen)?.id}
-          collapsible
-        >
-          {sections.map((section) => (
-            <AccordionItem key={section.id} value={section.id}>
-              <AccordionTrigger>{section.title}</AccordionTrigger>
-              <AccordionContent>
-                <div className="space-y-4">
-                  {section.content}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
-      ) : (
-        <Accordion 
-          type="multiple" 
-          defaultValue={sections.filter(s => s.defaultOpen).map(s => s.id)}
-        >
-          {sections.map((section) => (
-            <AccordionItem key={section.id} value={section.id}>
-              <AccordionTrigger>{section.title}</AccordionTrigger>
-              <AccordionContent>
-                <div className="space-y-4">
-                  {section.content}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
-      )}
+      <Accordion
+        multiple={type === 'multiple'}
+        defaultValue={defaultOpenIds}
+      >
+        {sections.map((section) => (
+          <AccordionItem key={section.id} value={section.id}>
+            <AccordionTrigger>{section.title}</AccordionTrigger>
+            <AccordionContent>
+              <div className="space-y-4">
+                {section.content}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        ))}
+      </Accordion>
     </div>
   );
 };

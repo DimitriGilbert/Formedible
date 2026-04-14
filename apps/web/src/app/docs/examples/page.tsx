@@ -87,11 +87,9 @@ export default function ExamplesPage() {
             {/* Header */}
             <div className="mb-12">
               <div className="flex items-center gap-4 mb-6">
-                <Button variant="ghost" size="sm" asChild>
-                  <Link href="/docs">
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Back to Docs
-                  </Link>
+                <Button variant="ghost" size="sm" render={<Link href="/docs" />} nativeButton={false}>
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Docs
                 </Button>
               </div>
               <motion.div
@@ -113,7 +111,7 @@ export default function ExamplesPage() {
             <div className="block sm:hidden">
               <div className="space-y-4">
                 <h2 className="text-2xl font-semibold">Examples</h2>
-                <Select value={selectedTab} onValueChange={setSelectedTab}>
+                <Select value={selectedTab} onValueChange={(value) => { if (value !== null) setSelectedTab(value) }}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select an example" />
                   </SelectTrigger>

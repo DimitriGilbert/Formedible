@@ -66,8 +66,8 @@ export const SliderField: React.FC<SliderFieldSpecificProps> = ({
   const displayValue = getDisplayValue(fieldValue);
   const mappingItem = valueMapping?.find((m) => m.sliderValue === fieldValue);
 
-  const onValueChange = (valueArray: number[]) => {
-    const newValue = valueArray[0];
+  const onValueChange = (valueArray: number | readonly number[]) => {
+    const newValue = Array.isArray(valueArray) ? valueArray[0] : valueArray;
     fieldApi.handleChange(newValue);
   };
 

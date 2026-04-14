@@ -36,8 +36,8 @@ export const DateField: React.FC<DateFieldProps> = ({
 
   React.useEffect(() => {
     if (!fieldApi.form) return;
-    const subscription = fieldApi.form.store.subscribe((state) => {
-      setFormValues((state as any).values);
+    const subscription = fieldApi.form.store.subscribe((state: any) => {
+      setFormValues(state.values);
     });
     return () => { subscription.unsubscribe(); };
   }, [fieldApi.form]);

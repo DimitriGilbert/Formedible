@@ -81,11 +81,9 @@ export function ContactForm() {
           {/* Header */}
           <div className="mb-12">
             <div className="flex items-center gap-4 mb-6">
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/docs">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Docs
-                </Link>
+              <Button variant="ghost" size="sm" render={<Link href="/docs" />} nativeButton={false}>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Docs
               </Button>
             </div>
             
@@ -294,17 +292,13 @@ export function ContactForm() {
               If you run into any issues or have questions, we're here to help.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
-              <Button variant="outline" asChild>
-                <Link href="/docs/examples">
-                  View Examples
-                  <ExternalLink className="w-4 h-4 ml-2" />
-                </Link>
+              <Button variant="outline" render={<Link href="/docs/examples" />} nativeButton={false}>
+                View Examples
+                <ExternalLink className="w-4 h-4 ml-2" />
               </Button>
-              <Button variant="outline" asChild>
-                <a href="https://github.com/your-repo/formedible/issues" target="_blank" rel="noopener noreferrer">
-                  Report Issue
-                  <ExternalLink className="w-4 h-4 ml-2" />
-                </a>
+              <Button variant="outline" render={<a href="https://github.com/your-repo/formedible/issues" target="_blank" rel="noopener noreferrer" aria-label="Report Issue" />} nativeButton={false}>
+                Report Issue
+                <ExternalLink className="w-4 h-4 ml-2" />
               </Button>
             </div>
           </div>

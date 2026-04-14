@@ -595,7 +595,7 @@ export const LocationPickerField: React.FC<LocationPickerFieldProps> = ({
               <Input
                 id={fieldApi.name}
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
                 placeholder={placeholder || searchPlaceholder}
                 className={cn(
                   "pl-10 pr-4",
@@ -707,11 +707,8 @@ export const LocationPickerField: React.FC<LocationPickerFieldProps> = ({
               open={isManualDialogOpen}
               onOpenChange={setIsManualDialogOpen}
             >
-              <DialogTrigger asChild>
-                <Button type="button" variant="outline" size="sm">
-                  🎯 Enter Coordinates
-                </Button>
-              </DialogTrigger>
+              <DialogTrigger render={<Button type="button" variant="outline" size="sm" />}>🎯 Enter Coordinates
+                                          </DialogTrigger>
               <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
                   <DialogTitle>Enter Coordinates</DialogTitle>
@@ -727,7 +724,7 @@ export const LocationPickerField: React.FC<LocationPickerFieldProps> = ({
                     <Input
                       id="latitude"
                       value={manualLat}
-                      onChange={(e) => setManualLat(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setManualLat(e.target.value)}
                       className="col-span-3"
                       placeholder="e.g., 40.7128"
                     />
@@ -739,7 +736,7 @@ export const LocationPickerField: React.FC<LocationPickerFieldProps> = ({
                     <Input
                       id="longitude"
                       value={manualLng}
-                      onChange={(e) => setManualLng(e.target.value)}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setManualLng(e.target.value)}
                       className="col-span-3"
                       placeholder="e.g., -74.0060"
                     />

@@ -24,8 +24,8 @@ export const ObjectField: React.FC<ObjectFieldProps> = ({
 
   React.useEffect(() => {
     if (!fieldApi.form) return;
-    const subscription = fieldApi.form.store.subscribe((state) => {
-      setSubscribedValues((state as any).values);
+    const subscription = fieldApi.form.store.subscribe((state: any) => {
+      setSubscribedValues(state.values);
     });
     return () => { subscription.unsubscribe(); };
   }, [fieldApi.form]);

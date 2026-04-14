@@ -58,7 +58,7 @@ export const MultiComboboxField: React.FC<MultiComboboxFieldSpecificProps> = ({
   const handleSelect = (optionValue: string) => {
     if (selectedValues.includes(optionValue)) {
       // Remove if already selected
-      const newValues = selectedValues.filter((v) => v !== optionValue);
+      const newValues = selectedValues.filter((v: string) => v !== optionValue);
       fieldApi.handleChange(newValues);
     } else if (selectedValues.length < maxSelections) {
       // Add if not at max selections
@@ -71,13 +71,13 @@ export const MultiComboboxField: React.FC<MultiComboboxFieldSpecificProps> = ({
   };
 
   const handleRemove = (valueToRemove: string) => {
-    const newValues = selectedValues.filter((v) => v !== valueToRemove);
+    const newValues = selectedValues.filter((v: string) => v !== valueToRemove);
     fieldApi.handleChange(newValues);
     fieldApi.handleBlur();
   };
 
   const getSelectedLabels = () => {
-    return selectedValues.map((value) => {
+    return selectedValues.map((value: string) => {
       const option = normalizedOptions.find((opt) => opt.value === value);
       return option ? option.label : value;
     });
@@ -95,52 +95,42 @@ export const MultiComboboxField: React.FC<MultiComboboxFieldSpecificProps> = ({
         )}
 
         <Popover open={isOpen} onOpenChange={setIsOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              role="combobox"
-              aria-expanded={isOpen}
-              className={cn(
-                "w-full justify-start min-h-10 h-auto px-3 py-2",
-                fieldApi.state?.meta?.errors.length ? "border-destructive" : ""
-              )}
-              disabled={isDisabled}
-            >
-              <div className="flex flex-wrap gap-1 items-center w-full">
-                {/* Selected tags */}
-                {selectedValues.length > 0 ? (
-                  selectedValues.map((value, index) => {
-                    const label = getSelectedLabels()[index];
-                    return (
-                      <Badge
-                        key={value}
-                        variant="secondary"
-                        className="text-xs h-6 px-2 gap-1"
-                      >
-                        {label}
-                        <span
-                          className="h-3 w-3 p-0 rounded-sm hover:bg-destructive hover:text-destructive-foreground flex items-center justify-center"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            !isDisabled && handleRemove(value);
-                          }}
-                        >
-                          <X className="h-2 w-2" />
-                        </span>
-                      </Badge>
-                    );
-                  })
-                ) : (
-                  <span className="text-muted-foreground">{placeholder}</span>
-                )}
+          <PopoverTrigger render={<Button variant="outline" role="combobox" aria-expanded={isOpen} className={cn(
+                                  "w-full justify-start min-h-10 h-auto px-3 py-2",
+                                  fieldApi.state?.meta?.errors.length ? "border-destructive" : ""
+                                )} disabled={isDisabled} />}><div className="flex flex-wrap gap-1 items-center w-full">
+                                  {/* Selected tags */}
+                                  {selectedValues.length > 0 ? (
+                                    selectedValues.map((value: string, index: number) => {
+                                      const label = getSelectedLabels()[index];
+                                      return (
+                                        <Badge
+                                          key={value}
+                                          variant="secondary"
+                                          className="text-xs h-6 px-2 gap-1"
+                                        >
+                                          {label}
+                                          <span
+                                            className="h-3 w-3 p-0 rounded-sm hover:bg-destructive hover:text-destructive-foreground flex items-center justify-center"
+                                            onClick={(e: React.MouseEvent) => {
+                                              e.stopPropagation();
+                                              !isDisabled && handleRemove(value);
+                                            }}
+                                          >
+                                            <X className="h-2 w-2" />
+                                          </span>
+                                        </Badge>
+                                      );
+                                    })
+                                  ) : (
+                                    <span className="text-muted-foreground">{placeholder}</span>
+                                  )}
 
-                <ChevronDown className="h-4 w-4 shrink-0 opacity-50 ml-auto" />
-              </div>
-            </Button>
-          </PopoverTrigger>
+                                  <ChevronDown className="h-4 w-4 shrink-0 opacity-50 ml-auto" />
+                                </div></PopoverTrigger>
           <PopoverContent className="w-full p-0" align="start">
             <Command
-              filter={(value, search) => {
+              filter={(value: string, search: string) => {
                 const option = displayOptions.find(
                   (opt) => opt.value === value
                 );

@@ -29,11 +29,9 @@ export default function AnalyticsPage() {
           {/* Header */}
           <div className="mb-12">
             <div className="flex items-center gap-4 mb-6">
-              <Button variant="ghost" size="sm" asChild>
-                <Link href="/docs">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Docs
-                </Link>
+              <Button variant="ghost" size="sm" render={<Link href="/docs" />} nativeButton={false}>
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Docs
               </Button>
             </div>
 

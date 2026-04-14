@@ -218,8 +218,8 @@ const SectionRenderer: React.FC<
 
   React.useEffect(() => {
     if (!form) return;
-    const subscription = form.store.subscribe((state) => {
-      setSubscribedValues((state as any).values);
+    const subscription = form.store.subscribe((state: any) => {
+      setSubscribedValues(state.values);
     });
     return () => { subscription.unsubscribe(); };
   }, [form]);
@@ -648,7 +648,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
 
           // Update form field error if needed
           if (formRef.current) {
-            formRef.current?.setFieldMeta(fieldName, (prev) => ({
+            formRef.current?.setFieldMeta(fieldName, (prev: any) => ({
               ...prev,
               errors: error ? [error] : [],
             }));
@@ -1331,7 +1331,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
       if (hasPageErrors) {
         // Mark all fields on current page as touched to show validation errors
         currentPageFields.forEach((field) => {
-          form.setFieldMeta(field.name, (prev) => ({
+          form.setFieldMeta(field.name, (prev: any) => ({
             ...prev,
             isTouched: true,
           }));
@@ -1408,7 +1408,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
         if (hasPageErrors) {
           // Mark all fields on this page as touched to show validation errors
           pageFields.forEach((field) => {
-            form.setFieldMeta(field.name, (prev) => ({
+            form.setFieldMeta(field.name, (prev: any) => ({
               ...prev,
               isTouched: true,
             }));
@@ -1643,7 +1643,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
             validators={
               validation
                 ? {
-                    onChange: ({ value }) => {
+                    onChange: ({ value }: { value: unknown }) => {
                       const result = validation.safeParse(value);
                       return result.success
                         ? undefined
@@ -1653,7 +1653,7 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
                 : undefined
             }
           >
-            {(field) => {
+            {(field: any) => {
               // TanStack Form Best Practice: Use FieldConditionalRenderer to prevent parent re-renders
               return (
                 <FieldConditionalRenderer form={form} fieldConfig={fieldConfig}>
@@ -2137,12 +2137,12 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
       if (!hasPages) {
         return (
           <form.Subscribe
-            selector={(state) => ({
+            selector={(state: any) => ({
               canSubmit: state.canSubmit,
               isSubmitting: state.isSubmitting,
             })}
           >
-            {(state) => {
+            {(state: any) => {
               const { canSubmit, isSubmitting } = state as {
                 canSubmit: boolean;
                 isSubmitting: boolean;
@@ -2172,12 +2172,12 @@ export function useFormedible<TFormValues extends Record<string, unknown>>(
 
       return (
         <form.Subscribe
-          selector={(state) => ({
+          selector={(state: any) => ({
             canSubmit: state.canSubmit,
             isSubmitting: state.isSubmitting,
           })}
         >
-          {(state) => {
+          {(state: any) => {
             const { canSubmit, isSubmitting } = state as {
               canSubmit: boolean;
               isSubmitting: boolean;

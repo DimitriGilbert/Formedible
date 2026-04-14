@@ -47,7 +47,7 @@ export const HeroExamples: React.FC = () => {
     <>
       {/* Mobile Select Navigation */}
       <div className="block sm:hidden mb-4">
-        <Select value={selectedExample} onValueChange={setSelectedExample}>
+        <Select value={selectedExample} onValueChange={(value) => { if (value !== null) setSelectedExample(value) }}>
           <SelectTrigger className="w-full">
             <SelectValue placeholder="Select an example" />
           </SelectTrigger>

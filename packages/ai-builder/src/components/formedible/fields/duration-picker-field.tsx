@@ -127,7 +127,7 @@ export const DurationPickerField: React.FC<DurationPickerFieldProps> = ({
         )}
         <Select
           value={value.toString()}
-          onValueChange={(val) => onChange(parseInt(val, 10))}
+          onValueChange={(val: string | null) => { if (val !== null) onChange(parseInt(val, 10)); }}
         >
           <SelectTrigger className={cn("w-20", inputClassName)}>
             <SelectValue />
@@ -210,7 +210,7 @@ export const DurationPickerField: React.FC<DurationPickerFieldProps> = ({
             value={formatDuration()}
             placeholder={placeholder || "Enter duration (e.g., 1h 30m 45s)"}
             className={inputClassName}
-            onChange={(e) => handleManualInput(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleManualInput(e.target.value)}
           />
           <div className="text-xs text-muted-foreground">
             Format:{" "}
