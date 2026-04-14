@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
@@ -53,7 +54,7 @@ body {
   --font-sans: Oxanium, sans-serif;
   --font-serif: Merriweather, serif;
   --font-mono: Fira Code, monospace;
-  --radius: 0.3rem;
+  --radius: 0.625rem;
   --shadow-2xs: 0px 2px 3px 0px hsl(28 18% 25% / 0.09);
   --shadow-xs: 0px 2px 3px 0px hsl(28 18% 25% / 0.09);
   --shadow-sm: 0px 2px 3px 0px hsl(28 18% 25% / 0.18),
@@ -69,6 +70,8 @@ body {
   --shadow-2xl: 0px 2px 3px 0px hsl(28 18% 25% / 0.45);
   --tracking-normal: 0em;
   --spacing: 0.25rem;
+  /*--background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);*/
 }
 
 .dark {
@@ -186,6 +189,10 @@ body {
   --shadow-lg: var(--shadow-lg);
   --shadow-xl: var(--shadow-xl);
   --shadow-2xl: var(--shadow-2xl);
+  --font-heading: var(--font-sans);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
 @layer base {
@@ -194,5 +201,8 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
   }
 }
