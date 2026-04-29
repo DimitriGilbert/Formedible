@@ -1,3 +1,3 @@
 {
-  "extends": "@re-formedible/config/tsconfig.base.json"
+  "extends": "@formedible/config/tsconfig.base.json",
 }

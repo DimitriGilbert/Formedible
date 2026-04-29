@@ -1,5 +1,5 @@
 {
-  "name": "re-formedible",
+  "name": "formedible",
   "private": true,
   "workspaces": [
     "apps/*",
@@ -13,12 +13,12 @@
     "dev:web": "turbo -F web dev"
   },
   "dependencies": {
-    "@re-formedible/env": "workspace:*",
+    "@formedible/env": "workspace:*",
     "dotenv": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@re-formedible/config": "workspace:*",
+    "@formedible/config": "workspace:*",
     "turbo": "^2.8.12",
     "typescript": "catalog:"
   },

@@ -21,7 +21,7 @@
     "noUncheckedSideEffectImports": true,
     "paths": {
       "@/*": ["./src/*"],
-      "@re-formedible/ui/*": ["../../packages/ui/src/*"]
+      "@formedible/ui/*": ["../../packages/ui/src/*"]
     }
   }
 }

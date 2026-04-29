@@ -12,11 +12,11 @@
   },
   "iconLibrary": "lucide",
   "aliases": {
-    "components": "@re-formedible/ui/components",
-    "utils": "@re-formedible/ui/lib/utils",
-    "hooks": "@re-formedible/ui/hooks",
-    "lib": "@re-formedible/ui/lib",
-    "ui": "@re-formedible/ui/components"
+    "components": "@formedible/ui/components",
+    "utils": "@formedible/ui/lib/utils",
+    "hooks": "@formedible/ui/hooks",
+    "lib": "@formedible/ui/lib",
+    "ui": "@formedible/ui/components"
   },
   "menuColor": "default",
   "menuAccent": "subtle",

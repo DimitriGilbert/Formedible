@@ -1,4 +1,4 @@
-import { cn } from "@re-formedible/ui/lib/utils";
+import { cn } from "@formedible/ui/lib/utils";
 
 function Skeleton({ className, ...props }: React.ComponentProps<"div">) {
   return (

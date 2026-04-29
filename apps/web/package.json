@@ -8,8 +8,8 @@
     "dev": "vite dev"
   },
   "dependencies": {
-    "@re-formedible/env": "workspace:*",
-    "@re-formedible/ui": "workspace:*",
+    "@formedible/env": "workspace:*",
+    "@formedible/ui": "workspace:*",
     "@tailwindcss/vite": "^4.2.2",
     "@tanstack/react-query": "^5.99.0",
     "@tanstack/react-router": "^1.168.22",
@@ -24,7 +24,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@re-formedible/config": "workspace:*",
+    "@formedible/config": "workspace:*",
     "@tanstack/react-router-devtools": "^1.166.13",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.2",

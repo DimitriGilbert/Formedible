@@ -13,8 +13,8 @@
   "iconLibrary": "lucide",
   "aliases": {
     "components": "@/components",
-    "utils": "@re-formedible/ui/lib/utils",
-    "ui": "@re-formedible/ui/components",
+    "utils": "@formedible/ui/lib/utils",
+    "ui": "@formedible/ui/components",
     "lib": "@/lib",
     "hooks": "@/hooks"
   },

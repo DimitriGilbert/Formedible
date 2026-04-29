@@ -13,7 +13,7 @@
   "$schema": "https://r2.better-t-stack.dev/schema.json",
   "version": "3.27.5",
   "createdAt": "2026-04-29T09:03:59.772Z",
-  "reproducibleCommand": "pnpm create better-t-stack@latest re-formedible --frontend tanstack-start --backend none --runtime none --database none --orm none --api none --auth none --payments none --addons turborepo --examples none --db-setup none --web-deploy none --server-deploy none --git --package-manager pnpm --install",
+  "reproducibleCommand": "pnpm create better-t-stack@latest formedible --frontend tanstack-start --backend none --runtime none --database none --orm none --api none --auth none --payments none --addons turborepo --examples none --db-setup none --web-deploy none --server-deploy none --git --package-manager pnpm --install",
   "database": "none",
   "orm": "none",
   "backend": "none",
