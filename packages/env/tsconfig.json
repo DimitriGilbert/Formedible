@@ -1,0 +1,3 @@
+{
+  "extends": "@re-formedible/config/tsconfig.base.json"
+}

@@ -1,0 +1,39 @@
+{
+  "name": "web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "serve": "vite preview",
+    "dev": "vite dev"
+  },
+  "dependencies": {
+    "@re-formedible/env": "workspace:*",
+    "@re-formedible/ui": "workspace:*",
+    "@tailwindcss/vite": "^4.2.2",
+    "@tanstack/react-query": "^5.99.0",
+    "@tanstack/react-router": "^1.168.22",
+    "@tanstack/react-start": "^1.167.41",
+    "dotenv": "catalog:",
+    "lucide-react": "^1.8.0",
+    "next-themes": "catalog:",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "sonner": "^2.0.7",
+    "tailwindcss": "^4.2.2",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@re-formedible/config": "workspace:*",
+    "@tanstack/react-router-devtools": "^1.166.13",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "catalog:",
+    "@vitejs/plugin-react": "^6.0.1",
+    "jsdom": "^29.0.2",
+    "typescript": "catalog:",
+    "vite": "^8.0.8",
+    "web-vitals": "^5.2.0"
+  }
+}
