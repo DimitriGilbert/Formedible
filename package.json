@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
-    "check-types": "turbo check-types",
+    "check-types": "turbo check-types && tsc -p tests/compatibility-examples/tsconfig.json",
     "dev:web": "turbo -F web dev"
   },
   "dependencies": {
