@@ -15,6 +15,8 @@
     "test:formedible:validation": "tsc -p tests/formedible/validation/tsconfig.json && tsx --tsconfig tests/formedible/validation/tsconfig.json --test tests/formedible/validation/*.test.tsx",
     "test:architecture": "tsc -p tests/architecture/tsconfig.json && node --test tests/architecture/.compiled/*.test.js",
     "test:formedible:basic-fields": "tsc -p tests/formedible/tsconfig.basic-fields.json && tsx --tsconfig tests/formedible/tsconfig.basic-fields.json --test tests/formedible/basic-fields.test.tsx",
+    "test:formedible:advanced-fields": "tsc -p tests/formedible/tsconfig.advanced-fields.json && tsx --tsconfig tests/formedible/tsconfig.advanced-fields.json --test tests/formedible/advanced-fields.test.tsx",
+    "test:formedible:advanced-fields:ssr": "tsc -p tests/formedible/tsconfig.advanced-fields.json && tsx --tsconfig tests/formedible/tsconfig.advanced-fields.json --test tests/formedible/advanced-fields-ssr-import.test.tsx",
     "test:sync": "tsc -p tests/sync/tsconfig.json && node --test tests/sync/.compiled/*.test.js",
     "dev:web": "turbo -F web dev"
   },

@@ -1,15 +1,12 @@
 import { FieldWrapper } from '@/components/formedible/fields/field-wrapper';
+import { resolveFieldOptions } from '@/components/formedible/fields/advanced-field-utils';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import type { FormedibleFieldOption, FormedibleFieldRenderProps, FormedibleFormValues, FormedibleOptionConfig } from '@/lib/formedible/types';
-
-function normalizeOption(option: FormedibleFieldOption): FormedibleOptionConfig {
-  return typeof option === 'string' ? { value: option, label: option } : option;
-}
+import type { FormedibleFieldRenderProps, FormedibleFormValues } from '@/lib/formedible/types';
 
 export function RadioField<TFormValues extends FormedibleFormValues>({ fieldConfig, field }: FormedibleFieldRenderProps<TFormValues>) {
   const value = typeof field.value === 'string' ? field.value : '';
-  const options = Array.isArray(fieldConfig.options) ? fieldConfig.options.map(normalizeOption) : [];
+  const options = resolveFieldOptions(fieldConfig, field.formValues);
 
   return (
     <FieldWrapper fieldConfig={fieldConfig} field={field}>

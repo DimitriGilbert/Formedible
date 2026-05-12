@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.basic-fields.json",
+  "include": [
+    "advanced-fields.test.tsx",
+    "advanced-fields-ssr-import.test.tsx",
+    "../compatibility-examples/**/*.ts",
+    "../../packages/formedible/src/**/*.ts",
+    "../../packages/formedible/src/**/*.tsx"
+  ]
+}

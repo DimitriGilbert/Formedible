@@ -50,6 +50,7 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
                     id: `${formId}-${fieldConfig.name}`,
                     name: fieldConfig.name,
                     value: field.state.value,
+                    formValues: form.state.values,
                     error,
                     onBlur: field.handleBlur,
                     onChange: (nextValue) => field.handleChange(nextValue as FieldValueUpdate),

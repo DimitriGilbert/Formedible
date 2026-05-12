@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import type { ComponentType } from 'react';
 
 export type FormedibleFormValues = Record<string, unknown>;
 
@@ -127,6 +128,17 @@ export interface FormedibleFieldConfig<TFormValues extends FormedibleFormValues 
   readonly step?: number;
   readonly rows?: number;
   readonly maxLength?: number;
+  readonly dateConfig?: FormedibleDateConfig<TFormValues>;
+  readonly sliderConfig?: FormedibleSliderConfig;
+  readonly ratingConfig?: FormedibleRatingConfig;
+  readonly multiSelectConfig?: FormedibleMultiSelectConfig;
+  readonly comboboxConfig?: FormedibleComboboxConfig;
+  readonly multiComboboxConfig?: FormedibleMultiSelectConfig & FormedibleComboboxConfig;
+  readonly colorConfig?: FormedibleColorConfig;
+  readonly phoneConfig?: FormediblePhoneConfig;
+  readonly durationConfig?: FormedibleDurationConfig;
+  readonly locationConfig?: FormedibleLocationConfig;
+  readonly fileConfig?: FormedibleFileConfig;
   readonly validation?: FormedibleFieldValidation<TFormValues>;
   readonly inlineValidation?: FormedibleInlineValidation<TFormValues>;
   readonly [customProp: string]: unknown;
@@ -156,6 +168,17 @@ export interface NormalizedFieldConfig<TFormValues extends FormedibleFormValues 
   readonly step?: number;
   readonly rows?: number;
   readonly maxLength?: number;
+  readonly dateConfig?: FormedibleDateConfig<TFormValues>;
+  readonly sliderConfig?: FormedibleSliderConfig;
+  readonly ratingConfig?: FormedibleRatingConfig;
+  readonly multiSelectConfig?: FormedibleMultiSelectConfig;
+  readonly comboboxConfig?: FormedibleComboboxConfig;
+  readonly multiComboboxConfig?: FormedibleMultiSelectConfig & FormedibleComboboxConfig;
+  readonly colorConfig?: FormedibleColorConfig;
+  readonly phoneConfig?: FormediblePhoneConfig;
+  readonly durationConfig?: FormedibleDurationConfig;
+  readonly locationConfig?: FormedibleLocationConfig;
+  readonly fileConfig?: FormedibleFileConfig;
   readonly validation?: FormedibleFieldValidation<TFormValues>;
   readonly inlineValidation?: FormedibleInlineValidation<TFormValues>;
   readonly [customProp: string]: unknown;
@@ -241,6 +264,7 @@ export interface FormedibleFieldController {
   readonly id: string;
   readonly name: string;
   readonly value: unknown;
+  readonly formValues?: FormedibleFormValues;
   readonly error?: string;
   readonly onBlur: () => void;
   readonly onChange: (value: unknown) => void;
@@ -249,4 +273,144 @@ export interface FormedibleFieldController {
 export interface FormedibleFieldRenderProps<TFormValues extends FormedibleFormValues = FormedibleFormValues> {
   readonly fieldConfig: NormalizedFieldConfig<TFormValues>;
   readonly field: FormedibleFieldController;
+}
+
+export interface FormedibleDateConfig<TFormValues extends FormedibleFormValues = FormedibleFormValues> {
+  readonly minDate?: Date | string;
+  readonly maxDate?: Date | string;
+  readonly disableDate?: (date: Date, values: TFormValues) => boolean;
+  readonly format?: string;
+  readonly [customProp: string]: unknown;
+}
+
+export interface FormedibleSliderValueMapping {
+  readonly sliderValue: number;
+  readonly displayValue: ReactNode;
+  readonly label?: ReactNode;
+}
+
+export interface FormedibleSliderMark {
+  readonly value: number;
+  readonly label: ReactNode;
+}
+
+export interface FormedibleSliderVisualizationProps {
+  readonly value: number;
+  readonly displayValue: ReactNode;
+  readonly label?: ReactNode;
+  readonly isActive: boolean;
+}
+
+export interface FormedibleSliderConfig {
+  readonly min?: number;
+  readonly max?: number;
+  readonly step?: number;
+  readonly valueMapping?: readonly FormedibleSliderValueMapping[];
+  readonly visualizationComponent?: ComponentType<FormedibleSliderVisualizationProps>;
+  readonly valueLabelPrefix?: string;
+  readonly valueLabelSuffix?: string;
+  readonly valueDisplayPrecision?: number;
+  readonly showRawValue?: boolean;
+  readonly showValue?: boolean;
+  readonly marks?: readonly FormedibleSliderMark[];
+  readonly [customProp: string]: unknown;
+}
+
+export interface FormedibleRatingConfig {
+  readonly max?: number;
+  readonly allowHalf?: boolean;
+  readonly icon?: 'star' | 'heart' | 'thumbs';
+  readonly size?: 'sm' | 'md' | 'lg';
+  readonly showValue?: boolean;
+  readonly [customProp: string]: unknown;
+}
+
+export interface FormedibleMultiSelectConfig {
+  readonly maxSelections?: number;
+  readonly searchable?: boolean;
+  readonly creatable?: boolean;
+  readonly placeholder?: string;
+  readonly noOptionsText?: string;
+  readonly [customProp: string]: unknown;
+}
+
+export interface FormedibleComboboxConfig {
+  readonly searchable?: boolean;
+  readonly placeholder?: string;
+  readonly searchPlaceholder?: string;
+  readonly noOptionsText?: string;
+  readonly [customProp: string]: unknown;
+}
+
+export interface FormedibleColorConfig {
+  readonly format?: 'hex' | 'rgb' | 'hsl';
+  readonly showPreview?: boolean;
+  readonly presetColors?: readonly string[];
+  readonly allowCustom?: boolean;
+  readonly [customProp: string]: unknown;
+}
+
+export interface FormediblePhoneConfig {
+  readonly defaultCountry?: string;
+  readonly format?: 'national' | 'international';
+  readonly allowedCountries?: readonly string[];
+  readonly placeholder?: string;
+  readonly [customProp: string]: unknown;
+}
+
+export interface FormedibleDurationValue {
+  readonly hours: number;
+  readonly minutes: number;
+  readonly seconds: number;
+  readonly totalSeconds: number;
+}
+
+export interface FormedibleDurationConfig {
+  readonly format?: 'hms' | 'hm' | 'ms' | 'hours' | 'minutes' | 'seconds';
+  readonly maxHours?: number;
+  readonly maxMinutes?: number;
+  readonly maxSeconds?: number;
+  readonly showLabels?: boolean;
+  readonly [customProp: string]: unknown;
+}
+
+export interface FormedibleLocationValue {
+  readonly lat: number;
+  readonly lng: number;
+  readonly address?: string;
+  readonly city?: string;
+  readonly state?: string;
+  readonly country?: string;
+  readonly [customProp: string]: unknown;
+}
+
+export interface FormedibleLocationSearchOptions {
+  readonly limit?: number;
+}
+
+export interface FormedibleLocationConfig {
+  readonly defaultLocation?: FormedibleLocationValue;
+  readonly enableSearch?: boolean;
+  readonly enableGeolocation?: boolean;
+  readonly enableManualEntry?: boolean;
+  readonly showMap?: boolean;
+  readonly searchPlaceholder?: string;
+  readonly searchOptions?: {
+    readonly debounceMs?: number;
+    readonly minQueryLength?: number;
+    readonly maxResults?: number;
+  };
+  readonly searchCallback?: (query: string, options: FormedibleLocationSearchOptions) => readonly FormedibleLocationValue[] | Promise<readonly FormedibleLocationValue[]>;
+  readonly reverseGeocodeCallback?: (lat: number, lng: number) => FormedibleLocationValue | Promise<FormedibleLocationValue>;
+  readonly [customProp: string]: unknown;
+}
+
+export interface FormedibleFileConfig {
+  readonly accept?: string;
+  readonly multiple?: boolean;
+  readonly maxSize?: number;
+  readonly maxFiles?: number;
+  readonly onFilesChange?: (files: readonly File[]) => void;
+  readonly onFileRemove?: (file: File) => void;
+  readonly [customProp: string]: unknown;
 }
