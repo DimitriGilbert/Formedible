@@ -8,8 +8,10 @@
     "build": "pnpm run check-types"
   },
   "dependencies": {
+    "@base-ui/react": "catalog:",
     "@tanstack/react-form": "^1.27.1",
     "clsx": "^2.1.1",
+    "lucide-react": "catalog:",
     "react": "catalog:",
     "tailwind-merge": "^3.3.1"
   },

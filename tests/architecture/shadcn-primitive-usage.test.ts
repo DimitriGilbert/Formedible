@@ -3,7 +3,7 @@ import { describe, it } from 'node:test';
 import { assertHasViolations, assertNoViolations, collectRepositoryTextFiles, type RepositoryFile } from './utils.js';
 
 const formedibleFieldPathPattern = /^packages\/formedible\/src\/components\/formedible\/fields\/.*\.(?:tsx|jsx)$/;
-const rawHtmlPrimitivePattern = /<(input|select|textarea|button|label|checkbox)\b/gi;
+const rawHtmlPrimitivePattern = /<(input|select|textarea|button|label|checkbox)\b/g;
 
 export function findRawHtmlFieldPrimitiveViolations(files: readonly RepositoryFile[]): string[] {
   return files

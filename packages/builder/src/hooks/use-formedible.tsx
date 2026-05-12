@@ -32,7 +32,6 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
         {fields.map((fieldConfig) => (
           <form.Field key={fieldConfig.name} name={fieldConfig.name}>
             {(field) => {
-              const value = typeof field.state.value === 'string' ? field.state.value : '';
               const error = field.state.meta.errors.map((item) => String(item)).at(0);
               type FieldValueUpdate = Parameters<typeof field.handleChange>[0];
 
@@ -42,7 +41,7 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
                   field={{
                     id: `${formId}-${fieldConfig.name}`,
                     name: fieldConfig.name,
-                    value,
+                    value: field.state.value,
                     error,
                     onBlur: field.handleBlur,
                     onChange: (nextValue) => field.handleChange(nextValue as FieldValueUpdate),

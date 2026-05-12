@@ -1,17 +1,21 @@
 import type { ReactNode } from 'react';
 
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
-import type { FormedibleFormValues, FormedibleTextController, NormalizedFieldConfig } from '@/lib/formedible/types';
+import type { FormedibleFieldController, FormedibleFormValues, NormalizedFieldConfig } from '@/lib/formedible/types';
 
 export interface FieldWrapperProps<TFormValues extends FormedibleFormValues = FormedibleFormValues> {
   readonly fieldConfig: NormalizedFieldConfig<TFormValues>;
-  readonly field: FormedibleTextController;
+  readonly field: FormedibleFieldController;
   readonly children: ReactNode;
 }
 
 export function FieldWrapper<TFormValues extends FormedibleFormValues>({ fieldConfig, field, children }: FieldWrapperProps<TFormValues>) {
   return (
-    <Field className={fieldConfig.className} data-disabled={fieldConfig.disabled ? 'true' : undefined}>
+    <Field
+      className={fieldConfig.className}
+      data-disabled={fieldConfig.disabled ? 'true' : undefined}
+      data-invalid={field.error ? 'true' : undefined}
+    >
       {fieldConfig.label ? (
         <FieldLabel htmlFor={field.id}>
           {fieldConfig.label}

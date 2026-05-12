@@ -9,8 +9,10 @@
       "title": "Formedible Core",
       "description": "Minimal Formedible shadcn install surface for a TanStack Form text field.",
       "dependencies": [
+        "@base-ui/react",
         "@tanstack/react-form",
         "clsx",
+        "lucide-react",
         "tailwind-merge"
       ],
       "files": [
@@ -40,6 +42,36 @@
           "target": "components/formedible/fields/text-field.tsx"
         },
         {
+          "path": "src/components/formedible/fields/textarea-field.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/fields/textarea-field.tsx"
+        },
+        {
+          "path": "src/components/formedible/fields/number-field.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/fields/number-field.tsx"
+        },
+        {
+          "path": "src/components/formedible/fields/select-field.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/fields/select-field.tsx"
+        },
+        {
+          "path": "src/components/formedible/fields/checkbox-field.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/fields/checkbox-field.tsx"
+        },
+        {
+          "path": "src/components/formedible/fields/switch-field.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/fields/switch-field.tsx"
+        },
+        {
+          "path": "src/components/formedible/fields/radio-field.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/fields/radio-field.tsx"
+        },
+        {
           "path": "src/components/formedible/fields/field-registry.tsx",
           "type": "registry:component",
           "target": "components/formedible/fields/field-registry.tsx"
@@ -55,6 +87,31 @@
           "target": "components/ui/input.tsx"
         },
         {
+          "path": "src/components/ui/textarea.tsx",
+          "type": "registry:ui",
+          "target": "components/ui/textarea.tsx"
+        },
+        {
+          "path": "src/components/ui/select.tsx",
+          "type": "registry:ui",
+          "target": "components/ui/select.tsx"
+        },
+        {
+          "path": "src/components/ui/checkbox.tsx",
+          "type": "registry:ui",
+          "target": "components/ui/checkbox.tsx"
+        },
+        {
+          "path": "src/components/ui/switch.tsx",
+          "type": "registry:ui",
+          "target": "components/ui/switch.tsx"
+        },
+        {
+          "path": "src/components/ui/radio-group.tsx",
+          "type": "registry:ui",
+          "target": "components/ui/radio-group.tsx"
+        },
+        {
           "path": "src/lib/formedible/types.ts",
           "type": "registry:lib",
           "target": "lib/formedible/types.ts"
@@ -63,6 +120,11 @@
           "path": "src/lib/formedible/normalize-field-config.ts",
           "type": "registry:lib",
           "target": "lib/formedible/normalize-field-config.ts"
+        },
+        {
+          "path": "src/lib/formedible/normalize-options.ts",
+          "type": "registry:lib",
+          "target": "lib/formedible/normalize-options.ts"
         },
         {
           "path": "src/lib/utils.ts",

@@ -198,16 +198,16 @@ export interface NormalizedUseFormedibleOptions<TFormValues extends FormedibleFo
   readonly fields: readonly NormalizedFieldConfig<TFormValues>[];
 }
 
-export interface FormedibleTextController {
+export interface FormedibleFieldController {
   readonly id: string;
   readonly name: string;
-  readonly value: string;
+  readonly value: unknown;
   readonly error?: string;
   readonly onBlur: () => void;
-  readonly onChange: (value: string) => void;
+  readonly onChange: (value: unknown) => void;
 }
 
 export interface FormedibleFieldRenderProps<TFormValues extends FormedibleFormValues = FormedibleFormValues> {
   readonly fieldConfig: NormalizedFieldConfig<TFormValues>;
-  readonly field: FormedibleTextController;
+  readonly field: FormedibleFieldController;
 }

@@ -13,6 +13,7 @@
     "test:formedible:types": "tsc -p tests/formedible/tsconfig.types.json",
     "test:formedible:normalization": "tsc -p tests/formedible/tsconfig.json && node --test tests/formedible/.compiled/tests/formedible/*.test.js",
     "test:architecture": "tsc -p tests/architecture/tsconfig.json && node --test tests/architecture/.compiled/*.test.js",
+    "test:formedible:basic-fields": "tsc -p tests/formedible/tsconfig.basic-fields.json && tsx --tsconfig tests/formedible/tsconfig.basic-fields.json --test tests/formedible/basic-fields.test.tsx",
     "test:sync": "tsc -p tests/sync/tsconfig.json && node --test tests/sync/.compiled/*.test.js",
     "dev:web": "turbo -F web dev"
   },
@@ -24,7 +25,12 @@
   "devDependencies": {
     "@formedible/config": "workspace:*",
     "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
     "turbo": "^2.8.12",
+    "tsx": "^4.21.0",
     "typescript": "catalog:"
   },
   "packageManager": "pnpm@10.10.0"
