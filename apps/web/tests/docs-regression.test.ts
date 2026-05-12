@@ -168,6 +168,26 @@ describe('docs compatibility examples', () => {
     }
   });
 
+  it('keeps the examples route as a full rendered examples page', async () => {
+    const routeSource = await readFile(join(appRoot, 'src/routes/docs.examples.tsx'), 'utf8');
+
+    assert.match(routeSource, /<DocsExampleForm example=\{example\}/);
+    assert.match(routeSource, /Current consumer snippet/);
+    assert.match(routeSource, /data-example-id=\{example\.id\}/);
+    assert.match(routeSource, /createExampleSnippet\(example\)/);
+    assert.doesNotMatch(routeSource, /old_version_for_knowledge_purpose|tests\/compatibility-examples|generated\/formedible|@formedible\/formedible|packages\/formedible/);
+  });
+
+  it('keeps all required example definitions substantial and consumer-safe', () => {
+    for (const expectedId of requiredExampleIds) {
+      const example = docsCompatibilityExamples.find((candidate) => candidate.id === expectedId);
+
+      assert.ok(example, `${expectedId} must be documented`);
+      assert.ok(example.summary.length >= 40, `${expectedId} must include useful copy`);
+      assert.ok(example.options.fields.length >= 1, `${expectedId} must render at least one field`);
+    }
+  });
+
   it('keeps runtime docs imports on consumer-safe paths', async () => {
     const docsFile = await readFile(join(appRoot, 'src/docs/compatibility-examples.tsx'), 'utf8');
 
