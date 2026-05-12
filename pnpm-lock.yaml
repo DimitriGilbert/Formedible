@@ -60,6 +60,9 @@ importers:
       '@formedible/config':
         specifier: workspace:*
         version: link:packages/config
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.12.4
       turbo:
         specifier: ^2.8.12
         version: 2.9.6
@@ -3671,7 +3674,6 @@ snapshots:
   '@types/node@25.6.0':
     dependencies:
       undici-types: 7.19.2
-    optional: true
 
   '@types/react-dom@19.2.3(@types/react@19.2.14)':
     dependencies:
@@ -3683,7 +3685,7 @@ snapshots:
 
   '@types/set-cookie-parser@2.4.10':
     dependencies:
-      '@types/node': 24.12.4
+      '@types/node': 25.6.0
 
   '@types/statuses@2.0.6': {}
 
@@ -5088,8 +5090,7 @@ snapshots:
 
   undici-types@7.16.0: {}
 
-  undici-types@7.19.2:
-    optional: true
+  undici-types@7.19.2: {}
 
   undici@7.25.0: {}
 

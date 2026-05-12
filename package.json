@@ -9,7 +9,8 @@
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
-    "check-types": "turbo check-types && tsc -p tests/compatibility-examples/tsconfig.json",
+    "check-types": "turbo check-types && tsc -p tests/compatibility-examples/tsconfig.json && tsc -p tests/architecture/tsconfig.json",
+    "test:architecture": "tsc -p tests/architecture/tsconfig.json && node --test tests/architecture/.compiled/*.test.js",
     "dev:web": "turbo -F web dev"
   },
   "dependencies": {
@@ -19,6 +20,7 @@
   },
   "devDependencies": {
     "@formedible/config": "workspace:*",
+    "@types/node": "catalog:",
     "turbo": "^2.8.12",
     "typescript": "catalog:"
   },
