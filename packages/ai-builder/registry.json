@@ -1,0 +1,57 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "formedible-ai-builder",
+  "homepage": "https://formedible.dev",
+  "items": [
+    {
+      "name": "ai-builder",
+      "type": "registry:block",
+      "title": "Formedible AI Builder",
+      "description": "AI-assisted Formedible builder with provider selection, chat, parser integration, and live renderer.",
+      "dependencies": [
+        "@base-ui/react",
+        "@tanstack/react-form",
+        "clsx",
+        "lucide-react",
+        "tailwind-merge"
+      ],
+      "files": [
+        {
+          "path": "src/index.ts",
+          "type": "registry:lib",
+          "target": "components/formedible/ai/index.ts"
+        },
+        {
+          "path": "src/components/formedible/ai/ai-builder.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/ai/ai-builder.tsx"
+        },
+        {
+          "path": "src/components/formedible/ai/ai-form-renderer.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/ai/ai-form-renderer.tsx"
+        },
+        {
+          "path": "src/components/formedible/ai/provider-selection.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/ai/provider-selection.tsx"
+        },
+        {
+          "path": "src/components/formedible/ai/chat-interface.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/ai/chat-interface.tsx"
+        },
+        {
+          "path": "src/lib/formedible/ai-parser.ts",
+          "type": "registry:lib",
+          "target": "lib/formedible/ai-parser.ts"
+        },
+        {
+          "path": "src/lib/formedible/ai-types.ts",
+          "type": "registry:lib",
+          "target": "lib/formedible/ai-types.ts"
+        }
+      ]
+    }
+  ]
+}
