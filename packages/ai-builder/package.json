@@ -1,0 +1,16 @@
+{
+  "name": "@formedible/ai-builder",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check-types": "sh -c 'if find src -type f \\( -name \"*.ts\" -o -name \"*.tsx\" \\) | read; then tsc --noEmit; fi'",
+    "build": "pnpm run check-types"
+  },
+  "devDependencies": {
+    "@formedible/config": "workspace:*",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "typescript": "catalog:"
+  }
+}

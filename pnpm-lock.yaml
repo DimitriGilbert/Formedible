@@ -146,6 +146,36 @@ importers:
         specifier: ^5.2.0
         version: 5.2.0
 
+  packages/ai-builder:
+    devDependencies:
+      '@formedible/config':
+        specifier: workspace:*
+        version: link:../config
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.14
+      '@types/react-dom':
+        specifier: 'catalog:'
+        version: 19.2.3(@types/react@19.2.14)
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  packages/builder:
+    devDependencies:
+      '@formedible/config':
+        specifier: workspace:*
+        version: link:../config
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.14
+      '@types/react-dom':
+        specifier: 'catalog:'
+        version: 19.2.3(@types/react@19.2.14)
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
   packages/config: {}
 
   packages/env:
@@ -166,6 +196,36 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.12.4
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  packages/formedible:
+    devDependencies:
+      '@formedible/config':
+        specifier: workspace:*
+        version: link:../config
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.14
+      '@types/react-dom':
+        specifier: 'catalog:'
+        version: 19.2.3(@types/react@19.2.14)
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+
+  packages/formedible-parser:
+    devDependencies:
+      '@formedible/config':
+        specifier: workspace:*
+        version: link:../config
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.14
+      '@types/react-dom':
+        specifier: 'catalog:'
+        version: 19.2.3(@types/react@19.2.14)
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
