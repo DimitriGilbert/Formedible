@@ -1,0 +1,8 @@
+{
+  "routes": [
+    {
+      "ownerRoot": "packages/formedible-parser",
+      "destinationRoots": ["apps/web/src", "packages/builder/src", "packages/ai-builder/src"]
+    }
+  ]
+}

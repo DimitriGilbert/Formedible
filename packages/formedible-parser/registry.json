@@ -1,0 +1,35 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "formedible-parser",
+  "homepage": "https://github.com/DimitriGilbert/Formedible",
+  "items": [
+    {
+      "name": "formedible-parser",
+      "type": "registry:block",
+      "title": "Formedible Parser",
+      "description": "Safe parser for Formedible form definitions with JSON, object literal, and Zod expression input support",
+      "dependencies": [
+        "react",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "files": [
+        {
+          "path": "src/lib/formedible/formedible-parser.ts",
+          "type": "registry:lib",
+          "target": "lib/formedible/formedible-parser.ts"
+        },
+        {
+          "path": "src/lib/formedible/parser-types.ts",
+          "type": "registry:lib",
+          "target": "lib/formedible/parser-types.ts"
+        },
+        {
+          "path": "src/lib/formedible/parser-config-schema.ts",
+          "type": "registry:lib",
+          "target": "lib/formedible/parser-config-schema.ts"
+        }
+      ]
+    }
+  ]
+}

@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "check-types": "sh -c 'if find src -type f \\( -name \"*.ts\" -o -name \"*.tsx\" \\) | read; then tsc --noEmit; fi'",
-    "build": "pnpm run check-types"
+    "test": "tsx --test src/**/*.test.ts",
+    "build": "pnpm run check-types",
+    "build:registry": "shadcn build",
+    "sync": "node ../../scripts/quick-sync.js --root ../.. --config packages/formedible-parser/sync.config.json"
   },
   "dependencies": {
     "@base-ui/react": "catalog:",
@@ -19,6 +22,8 @@
     "@formedible/config": "workspace:*",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "shadcn": "^3.6.2",
+    "tsx": "^4.21.0",
     "typescript": "catalog:"
   }
 }
