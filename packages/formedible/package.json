@@ -5,12 +5,20 @@
   "type": "module",
   "scripts": {
     "check-types": "sh -c 'if find src -type f \\( -name \"*.ts\" -o -name \"*.tsx\" \\) | read; then tsc --noEmit; fi'",
-    "build": "pnpm run check-types"
+    "build": "pnpm run check-types",
+    "build:registry": "shadcn build"
+  },
+  "dependencies": {
+    "@tanstack/react-form": "^1.27.1",
+    "clsx": "^2.1.1",
+    "react": "catalog:",
+    "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
     "@formedible/config": "workspace:*",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "shadcn": "^3.6.2",
     "typescript": "catalog:"
   }
 }

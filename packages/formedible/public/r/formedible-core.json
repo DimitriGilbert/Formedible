@@ -1,0 +1,80 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "formedible-core",
+  "title": "Formedible Core",
+  "description": "Minimal Formedible shadcn install surface for a TanStack Form text field.",
+  "dependencies": [
+    "@tanstack/react-form",
+    "clsx",
+    "tailwind-merge"
+  ],
+  "files": [
+    {
+      "path": "src/hooks/use-formedible.tsx",
+      "content": "import { useId } from 'react';\nimport { useForm } from '@tanstack/react-form';\n\nimport { FieldRenderer } from '@/components/formedible/field-renderer';\nimport { Form as FormRoot } from '@/components/formedible/form';\nimport type { FormProps } from '@/components/formedible/form';\nimport { normalizeFieldConfig } from '@/lib/formedible/normalize-field-config';\nimport type { UseFormedibleOptions } from '@/lib/formedible/types';\n\nexport function useFormedible<TFormValues extends Record<string, string> = Record<string, string>>(config: UseFormedibleOptions<TFormValues>) {\n  const formId = useId();\n  const fields = config.fields.map((field) => normalizeFieldConfig(field));\n  const form = useForm({\n    defaultValues: config.formOptions.defaultValues,\n    onSubmit: async ({ value }) => {\n      await config.formOptions.onSubmit?.({ value });\n    },\n  });\n\n  function Form({ className, ...props }: FormProps) {\n    return (\n      <FormRoot\n        className={className}\n        onSubmit={(event) => {\n          event.preventDefault();\n          event.stopPropagation();\n          form.handleSubmit();\n        }}\n        {...props}\n      >\n        {fields.map((fieldConfig) => (\n          <form.Field key={fieldConfig.name} name={fieldConfig.name}>\n            {(field) => {\n              const value = typeof field.state.value === 'string' ? field.state.value : '';\n              const error = field.state.meta.errors.map((item) => String(item)).at(0);\n              type FieldValueUpdate = Parameters<typeof field.handleChange>[0];\n\n              return (\n                <FieldRenderer\n                  fieldConfig={fieldConfig}\n                  field={{\n                    id: `${formId}-${fieldConfig.name}`,\n                    name: fieldConfig.name,\n                    value,\n                    error,\n                    onBlur: field.handleBlur,\n                    onChange: (nextValue) => field.handleChange(nextValue as FieldValueUpdate),\n                  }}\n                />\n              );\n            }}\n          </form.Field>\n        ))}\n      </FormRoot>\n    );\n  }\n\n  return { Form, form };\n}\n",
+      "type": "registry:hook",
+      "target": "hooks/use-formedible.tsx"
+    },
+    {
+      "path": "src/components/formedible/form.tsx",
+      "content": "import type { ComponentProps } from 'react';\n\nimport { cn } from '@/lib/utils';\n\nexport type FormProps = ComponentProps<'form'>;\n\nexport function Form({ className, ...props }: FormProps) {\n  return <form className={cn(className)} {...props} />;\n}\n",
+      "type": "registry:component",
+      "target": "components/formedible/form.tsx"
+    },
+    {
+      "path": "src/components/formedible/field-renderer.tsx",
+      "content": "import type { FormedibleFieldRenderProps } from '@/lib/formedible/types';\n\nimport { getFieldComponent } from './fields/field-registry';\n\nexport function FieldRenderer<TFormValues extends Record<string, string>>(props: FormedibleFieldRenderProps<TFormValues>) {\n  const FieldComponent = getFieldComponent<TFormValues>(props.fieldConfig.type);\n\n  return <FieldComponent fieldConfig={props.fieldConfig} field={props.field} />;\n}\n",
+      "type": "registry:component",
+      "target": "components/formedible/field-renderer.tsx"
+    },
+    {
+      "path": "src/components/formedible/fields/field-wrapper.tsx",
+      "content": "import type { ReactNode } from 'react';\n\nimport { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';\nimport type { FormedibleTextController, NormalizedFieldConfig } from '@/lib/formedible/types';\n\nexport interface FieldWrapperProps<TFormValues extends Record<string, string> = Record<string, string>> {\n  readonly fieldConfig: NormalizedFieldConfig<TFormValues>;\n  readonly field: FormedibleTextController;\n  readonly children: ReactNode;\n}\n\nexport function FieldWrapper<TFormValues extends Record<string, string>>({ fieldConfig, field, children }: FieldWrapperProps<TFormValues>) {\n  return (\n    <Field className={fieldConfig.className} data-disabled={fieldConfig.disabled ? 'true' : undefined}>\n      {fieldConfig.label ? (\n        <FieldLabel htmlFor={field.id}>\n          {fieldConfig.label}\n          {fieldConfig.required ? <span aria-hidden=\"true\"> *</span> : undefined}\n        </FieldLabel>\n      ) : undefined}\n      {children}\n      {fieldConfig.description ? <FieldDescription>{fieldConfig.description}</FieldDescription> : undefined}\n      {field.error ? <FieldError>{field.error}</FieldError> : undefined}\n    </Field>\n  );\n}\n",
+      "type": "registry:component",
+      "target": "components/formedible/fields/field-wrapper.tsx"
+    },
+    {
+      "path": "src/components/formedible/fields/text-field.tsx",
+      "content": "import { Input as TextInput } from '@/components/ui/input';\nimport type { FormedibleFieldRenderProps } from '@/lib/formedible/types';\n\nimport { FieldWrapper } from './field-wrapper';\n\nexport function TextField<TFormValues extends Record<string, string>>({ fieldConfig, field }: FormedibleFieldRenderProps<TFormValues>) {\n  return (\n    <FieldWrapper fieldConfig={fieldConfig} field={field}>\n      <TextInput\n        id={field.id}\n        name={field.name}\n        type={fieldConfig.type}\n        value={field.value}\n        placeholder={fieldConfig.placeholder}\n        disabled={fieldConfig.disabled}\n        required={fieldConfig.required}\n        aria-invalid={field.error ? true : undefined}\n        className={fieldConfig.inputClassName}\n        onBlur={field.onBlur}\n        onChange={(event) => field.onChange(event.target.value)}\n      />\n    </FieldWrapper>\n  );\n}\n",
+      "type": "registry:component",
+      "target": "components/formedible/fields/text-field.tsx"
+    },
+    {
+      "path": "src/components/formedible/fields/field-registry.tsx",
+      "content": "import type { ReactNode } from 'react';\n\nimport type { FormedibleFieldRenderProps, FormedibleFieldType } from '@/lib/formedible/types';\n\nimport { TextField } from './text-field';\n\nconst fieldRegistry = {\n  text: TextField,\n} satisfies Record<FormedibleFieldType, typeof TextField>;\n\nexport function getFieldComponent<TFormValues extends Record<string, string>>(\n  type: FormedibleFieldType,\n): (props: FormedibleFieldRenderProps<TFormValues>) => ReactNode {\n  return fieldRegistry[type];\n}\n",
+      "type": "registry:component",
+      "target": "components/formedible/fields/field-registry.tsx"
+    },
+    {
+      "path": "src/components/ui/field.tsx",
+      "content": "import type { ComponentProps } from 'react';\n\nimport { cn } from '@/lib/utils';\n\nfunction Field({ className, ...props }: ComponentProps<'div'>) {\n  return <div data-slot=\"field\" className={cn('grid gap-2', className)} {...props} />;\n}\n\nfunction FieldLabel({ className, ...props }: ComponentProps<'label'>) {\n  return <label data-slot=\"field-label\" className={cn('text-sm font-medium leading-none', className)} {...props} />;\n}\n\nfunction FieldDescription({ className, ...props }: ComponentProps<'p'>) {\n  return <p data-slot=\"field-description\" className={cn('text-sm text-muted-foreground', className)} {...props} />;\n}\n\nfunction FieldError({ className, ...props }: ComponentProps<'p'>) {\n  return <p data-slot=\"field-error\" className={cn('text-sm font-medium text-destructive', className)} {...props} />;\n}\n\nexport { Field, FieldDescription, FieldError, FieldLabel };\n",
+      "type": "registry:ui",
+      "target": "components/ui/field.tsx"
+    },
+    {
+      "path": "src/components/ui/input.tsx",
+      "content": "import type { ComponentProps } from 'react';\n\nimport { cn } from '@/lib/utils';\n\nfunction Input({ className, type, ...props }: ComponentProps<'input'>) {\n  return (\n    <input\n      data-slot=\"input\"\n      type={type}\n      className={cn(\n        'flex h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none file:inline-flex file:h-7 file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',\n        'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 aria-invalid:border-destructive',\n        className,\n      )}\n      {...props}\n    />\n  );\n}\n\nexport { Input };\n",
+      "type": "registry:ui",
+      "target": "components/ui/input.tsx"
+    },
+    {
+      "path": "src/lib/formedible/types.ts",
+      "content": "import type { ReactNode } from 'react';\n\nexport type FormedibleFieldType = 'text';\n\nexport interface FormedibleFieldConfig<TFormValues extends Record<string, string> = Record<string, string>> {\n  readonly name: Extract<keyof TFormValues, string>;\n  readonly type?: FormedibleFieldType;\n  readonly label?: ReactNode;\n  readonly description?: ReactNode;\n  readonly placeholder?: string;\n  readonly disabled?: boolean;\n  readonly required?: boolean;\n  readonly className?: string;\n  readonly inputClassName?: string;\n}\n\nexport interface NormalizedFieldConfig<TFormValues extends Record<string, string> = Record<string, string>> {\n  readonly name: Extract<keyof TFormValues, string>;\n  readonly type: FormedibleFieldType;\n  readonly label?: ReactNode;\n  readonly description?: ReactNode;\n  readonly placeholder?: string;\n  readonly disabled: boolean;\n  readonly required: boolean;\n  readonly className?: string;\n  readonly inputClassName?: string;\n}\n\nexport interface FormedibleSubmitContext<TFormValues extends Record<string, string>> {\n  readonly value: TFormValues;\n}\n\nexport interface FormedibleFormOptions<TFormValues extends Record<string, string>> {\n  readonly defaultValues: TFormValues;\n  readonly onSubmit?: (context: FormedibleSubmitContext<TFormValues>) => void | Promise<void>;\n}\n\nexport interface UseFormedibleOptions<TFormValues extends Record<string, string> = Record<string, string>> {\n  readonly fields: readonly FormedibleFieldConfig<TFormValues>[];\n  readonly formOptions: FormedibleFormOptions<TFormValues>;\n}\n\nexport interface FormedibleTextController {\n  readonly id: string;\n  readonly name: string;\n  readonly value: string;\n  readonly error?: string;\n  readonly onBlur: () => void;\n  readonly onChange: (value: string) => void;\n}\n\nexport interface FormedibleFieldRenderProps<TFormValues extends Record<string, string> = Record<string, string>> {\n  readonly fieldConfig: NormalizedFieldConfig<TFormValues>;\n  readonly field: FormedibleTextController;\n}\n",
+      "type": "registry:lib",
+      "target": "lib/formedible/types.ts"
+    },
+    {
+      "path": "src/lib/formedible/normalize-field-config.ts",
+      "content": "import type { FormedibleFieldConfig, NormalizedFieldConfig } from '@/lib/formedible/types';\n\nexport function normalizeFieldConfig<TFormValues extends Record<string, string>>(\n  field: FormedibleFieldConfig<TFormValues>,\n): NormalizedFieldConfig<TFormValues> {\n  return {\n    name: field.name,\n    type: field.type ?? 'text',\n    label: field.label,\n    description: field.description,\n    placeholder: field.placeholder,\n    disabled: field.disabled ?? false,\n    required: field.required ?? false,\n    className: field.className,\n    inputClassName: field.inputClassName,\n  };\n}\n",
+      "type": "registry:lib",
+      "target": "lib/formedible/normalize-field-config.ts"
+    },
+    {
+      "path": "src/lib/utils.ts",
+      "content": "import { clsx } from 'clsx';\nimport type { ClassValue } from 'clsx';\nimport { twMerge } from 'tailwind-merge';\n\nexport function cn(...inputs: ClassValue[]): string {\n  return twMerge(clsx(inputs));\n}\n",
+      "type": "registry:lib",
+      "target": "lib/utils.ts"
+    }
+  ],
+  "type": "registry:block"
+}

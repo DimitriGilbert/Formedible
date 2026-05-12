@@ -1,0 +1,75 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "formedible",
+  "homepage": "https://formedible.dev",
+  "items": [
+    {
+      "name": "formedible-core",
+      "type": "registry:block",
+      "title": "Formedible Core",
+      "description": "Minimal Formedible shadcn install surface for a TanStack Form text field.",
+      "dependencies": [
+        "@tanstack/react-form",
+        "clsx",
+        "tailwind-merge"
+      ],
+      "files": [
+        {
+          "path": "src/hooks/use-formedible.tsx",
+          "type": "registry:hook",
+          "target": "hooks/use-formedible.tsx"
+        },
+        {
+          "path": "src/components/formedible/form.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/form.tsx"
+        },
+        {
+          "path": "src/components/formedible/field-renderer.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/field-renderer.tsx"
+        },
+        {
+          "path": "src/components/formedible/fields/field-wrapper.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/fields/field-wrapper.tsx"
+        },
+        {
+          "path": "src/components/formedible/fields/text-field.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/fields/text-field.tsx"
+        },
+        {
+          "path": "src/components/formedible/fields/field-registry.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/fields/field-registry.tsx"
+        },
+        {
+          "path": "src/components/ui/field.tsx",
+          "type": "registry:ui",
+          "target": "components/ui/field.tsx"
+        },
+        {
+          "path": "src/components/ui/input.tsx",
+          "type": "registry:ui",
+          "target": "components/ui/input.tsx"
+        },
+        {
+          "path": "src/lib/formedible/types.ts",
+          "type": "registry:lib",
+          "target": "lib/formedible/types.ts"
+        },
+        {
+          "path": "src/lib/formedible/normalize-field-config.ts",
+          "type": "registry:lib",
+          "target": "lib/formedible/normalize-field-config.ts"
+        },
+        {
+          "path": "src/lib/utils.ts",
+          "type": "registry:lib",
+          "target": "lib/utils.ts"
+        }
+      ]
+    }
+  ]
+}
