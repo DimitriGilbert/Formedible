@@ -1,9 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute } from '@tanstack/react-router';
 
-export const Route = createFileRoute("/")({
-  component: HomeComponent,
+import { DocsHome } from '@/docs/docs-home';
+
+export const Route = createFileRoute('/')({
+  component: DocsHome,
 });
-
-function HomeComponent() {
-  return <main className="min-h-0" />;
-}

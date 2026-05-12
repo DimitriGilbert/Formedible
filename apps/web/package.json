@@ -5,6 +5,8 @@
   "scripts": {
     "build": "vite build",
     "check-types": "tsc --noEmit",
+    "test:docs": "tsc -p tests/tsconfig.json && tsx --test tests/*.test.ts",
+    "test:route-tree": "tsx --test tests/route-tree.test.ts",
     "serve": "vite preview",
     "dev": "vite dev"
   },

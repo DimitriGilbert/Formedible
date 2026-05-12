@@ -1,0 +1,8 @@
+{
+  "extends": "../tsconfig.json",
+  "include": ["*.ts", "../src/docs/**/*.tsx", "../src/routeTree.gen.ts", "../src/router.tsx", "../src/routes/**/*.tsx"],
+  "compilerOptions": {
+    "types": ["node", "vite/client"],
+    "noEmit": true
+  }
+}
