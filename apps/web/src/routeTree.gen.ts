@@ -10,6 +10,8 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as DocsRouteImport } from './routes/docs'
+import { Route as BuilderRouteImport } from './routes/builder'
+import { Route as AiBuilderRouteImport } from './routes/ai-builder'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DocsValidationRouteImport } from './routes/docs.validation'
 import { Route as DocsPersistenceRouteImport } from './routes/docs.persistence'
@@ -27,6 +29,16 @@ import { Route as DocsAdvancedFeaturesRouteImport } from './routes/docs.advanced
 const DocsRoute = DocsRouteImport.update({
   id: '/docs',
   path: '/docs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BuilderRoute = BuilderRouteImport.update({
+  id: '/builder',
+  path: '/builder',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AiBuilderRoute = AiBuilderRouteImport.update({
+  id: '/ai-builder',
+  path: '/ai-builder',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -97,6 +109,8 @@ const DocsAdvancedFeaturesRoute = DocsAdvancedFeaturesRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/ai-builder': typeof AiBuilderRoute
+  '/builder': typeof BuilderRoute
   '/docs': typeof DocsRouteWithChildren
   '/docs/advanced-features': typeof DocsAdvancedFeaturesRoute
   '/docs/ai-builder': typeof DocsAiBuilderRoute
@@ -113,6 +127,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/ai-builder': typeof AiBuilderRoute
+  '/builder': typeof BuilderRoute
   '/docs': typeof DocsRouteWithChildren
   '/docs/advanced-features': typeof DocsAdvancedFeaturesRoute
   '/docs/ai-builder': typeof DocsAiBuilderRoute
@@ -130,6 +146,8 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/ai-builder': typeof AiBuilderRoute
+  '/builder': typeof BuilderRoute
   '/docs': typeof DocsRouteWithChildren
   '/docs/advanced-features': typeof DocsAdvancedFeaturesRoute
   '/docs/ai-builder': typeof DocsAiBuilderRoute
@@ -148,6 +166,8 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/ai-builder'
+    | '/builder'
     | '/docs'
     | '/docs/advanced-features'
     | '/docs/ai-builder'
@@ -164,6 +184,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/ai-builder'
+    | '/builder'
     | '/docs'
     | '/docs/advanced-features'
     | '/docs/ai-builder'
@@ -180,6 +202,8 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/ai-builder'
+    | '/builder'
     | '/docs'
     | '/docs/advanced-features'
     | '/docs/ai-builder'
@@ -197,6 +221,8 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AiBuilderRoute: typeof AiBuilderRoute
+  BuilderRoute: typeof BuilderRoute
   DocsRoute: typeof DocsRouteWithChildren
 }
 
@@ -207,6 +233,20 @@ declare module '@tanstack/react-router' {
       path: '/docs'
       fullPath: '/docs'
       preLoaderRoute: typeof DocsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/builder': {
+      id: '/builder'
+      path: '/builder'
+      fullPath: '/builder'
+      preLoaderRoute: typeof BuilderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ai-builder': {
+      id: '/ai-builder'
+      path: '/ai-builder'
+      fullPath: '/ai-builder'
+      preLoaderRoute: typeof AiBuilderRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -337,6 +377,8 @@ const DocsRouteWithChildren = DocsRoute._addFileChildren(DocsRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AiBuilderRoute: AiBuilderRoute,
+  BuilderRoute: BuilderRoute,
   DocsRoute: DocsRouteWithChildren,
 }
 export const routeTree = rootRouteImport

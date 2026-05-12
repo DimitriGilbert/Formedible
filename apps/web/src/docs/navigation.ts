@@ -35,13 +35,13 @@ export const siteNavigation: readonly SiteNavigationItem[] = [
   {
     id: 'builder',
     label: 'Builder',
-    href: '/docs/builder',
-    description: 'Review Formedible builder integration guidance.',
+    href: '/builder',
+    description: 'Open the interactive Formedible builder workspace.',
   },
   {
     id: 'ai-builder',
     label: 'AI Builder',
-    href: '/docs/ai-builder',
-    description: 'Explore AI-assisted Formedible generation patterns.',
+    href: '/ai-builder',
+    description: 'Open the interactive AI-assisted Formedible builder workspace.',
   },
 ];

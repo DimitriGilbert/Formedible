@@ -10,9 +10,13 @@ describe('docs route tree', () => {
     assert.match(routeTree, /import \{ Route as IndexRouteImport \} from '\.\/routes\/index'/);
     assert.match(routeTree, /import \{ Route as DocsRouteImport \} from '\.\/routes\/docs'/);
     assert.match(routeTree, /'\/': typeof IndexRoute/);
+    assert.match(routeTree, /'\/builder': typeof BuilderRoute/);
+    assert.match(routeTree, /'\/ai-builder': typeof AiBuilderRoute/);
     assert.match(routeTree, /'\/docs': typeof DocsRouteWithChildren/);
     assert.match(routeTree, /'\/docs\/examples': typeof DocsExamplesRoute/);
     assert.match(routeTree, /IndexRoute: IndexRoute/);
+    assert.match(routeTree, /BuilderRoute: BuilderRoute/);
+    assert.match(routeTree, /AiBuilderRoute: AiBuilderRoute/);
     assert.match(routeTree, /DocsRoute: DocsRouteWithChildren/);
   });
 });
