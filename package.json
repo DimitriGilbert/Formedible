@@ -9,8 +9,9 @@
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
-    "check-types": "turbo check-types && tsc -p tests/compatibility-examples/tsconfig.json && tsc -p tests/architecture/tsconfig.json",
+    "check-types": "turbo check-types && tsc -p tests/compatibility-examples/tsconfig.json && tsc -p tests/architecture/tsconfig.json && tsc -p tests/sync/tsconfig.json",
     "test:architecture": "tsc -p tests/architecture/tsconfig.json && node --test tests/architecture/.compiled/*.test.js",
+    "test:sync": "tsc -p tests/sync/tsconfig.json && node --test tests/sync/.compiled/*.test.js",
     "dev:web": "turbo -F web dev"
   },
   "dependencies": {

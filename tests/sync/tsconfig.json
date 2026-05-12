@@ -1,0 +1,12 @@
+{
+  "extends": "../../packages/config/tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": ".compiled",
+    "rootDir": ".",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ESNext"]
+  },
+  "include": ["*.ts"],
+  "exclude": [".compiled", ".tmp"]
+}
