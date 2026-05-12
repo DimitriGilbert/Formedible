@@ -70,6 +70,39 @@ export interface FormedibleArrayConfig<TFormValues extends FormedibleFormValues 
   readonly [customProp: string]: unknown;
 }
 
+export type FormedibleValidationResult = string | null | undefined | false;
+
+export interface FormedibleFieldValidationContext<TFormValues extends FormedibleFormValues = FormedibleFormValues> {
+  readonly value: unknown;
+  readonly values: TFormValues;
+  readonly fieldName: string;
+}
+
+export type FormedibleFieldValidation<TFormValues extends FormedibleFormValues = FormedibleFormValues> =
+  | ((value: unknown, values: TFormValues, context: FormedibleFieldValidationContext<TFormValues>) => FormedibleValidationResult)
+  | {
+      readonly validator: (value: unknown, values: TFormValues) => FormedibleValidationResult;
+      readonly message?: string;
+    };
+
+export interface FormedibleCrossFieldValidation<TFormValues extends FormedibleFormValues = FormedibleFormValues> {
+  readonly fields: readonly (Extract<keyof TFormValues, string> | string)[];
+  readonly validator: (values: TFormValues) => FormedibleValidationResult;
+}
+
+export interface FormedibleAsyncValidation<TFormValues extends FormedibleFormValues = FormedibleFormValues> {
+  readonly validator: (value: unknown, values: TFormValues, signal: AbortSignal) => FormedibleValidationResult | Promise<FormedibleValidationResult>;
+  readonly debounceMs?: number;
+  readonly loadingMessage?: string;
+}
+
+export interface FormedibleInlineValidation<TFormValues extends FormedibleFormValues = FormedibleFormValues> {
+  readonly enabled?: boolean;
+  readonly debounceMs?: number;
+  readonly validator?: (value: unknown, values: TFormValues, signal: AbortSignal) => FormedibleValidationResult | Promise<FormedibleValidationResult>;
+  readonly showSuccess?: boolean;
+}
+
 export interface FormedibleFieldConfig<TFormValues extends FormedibleFormValues = FormedibleFormValues> {
   readonly name: Extract<keyof TFormValues, string> | string;
   readonly type?: FormedibleFieldType;
@@ -94,6 +127,8 @@ export interface FormedibleFieldConfig<TFormValues extends FormedibleFormValues 
   readonly step?: number;
   readonly rows?: number;
   readonly maxLength?: number;
+  readonly validation?: FormedibleFieldValidation<TFormValues>;
+  readonly inlineValidation?: FormedibleInlineValidation<TFormValues>;
   readonly [customProp: string]: unknown;
 }
 
@@ -121,6 +156,8 @@ export interface NormalizedFieldConfig<TFormValues extends FormedibleFormValues 
   readonly step?: number;
   readonly rows?: number;
   readonly maxLength?: number;
+  readonly validation?: FormedibleFieldValidation<TFormValues>;
+  readonly inlineValidation?: FormedibleInlineValidation<TFormValues>;
   readonly [customProp: string]: unknown;
 }
 
@@ -179,6 +216,8 @@ export interface UseFormedibleOptions<TFormValues extends FormedibleFormValues =
   readonly fields: readonly FormedibleFieldConfig<TFormValues>[];
   readonly formOptions: FormedibleFormOptions<TFormValues>;
   readonly schema?: unknown;
+  readonly crossFieldValidation?: readonly FormedibleCrossFieldValidation<TFormValues>[];
+  readonly asyncValidation?: Partial<Record<Extract<keyof TFormValues, string> | string, FormedibleAsyncValidation<TFormValues>>>;
   readonly pages?: readonly FormediblePageConfig<TFormValues>[];
   readonly tabs?: readonly (string | FormedibleTabConfig<TFormValues>)[];
   readonly progress?: FormedibleProgressConfig;

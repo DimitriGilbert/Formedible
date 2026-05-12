@@ -1,7 +1,6 @@
+import { FieldWrapper } from '@/components/formedible/fields/field-wrapper';
 import { Input } from '@/components/ui/input';
 import type { FormedibleFieldRenderProps, FormedibleFormValues } from '@/lib/formedible/types';
-
-import { FieldWrapper } from './field-wrapper';
 
 export function NumberField<TFormValues extends FormedibleFormValues>({ fieldConfig, field }: FormedibleFieldRenderProps<TFormValues>) {
   const value = typeof field.value === 'number' || typeof field.value === 'string' ? field.value : '';

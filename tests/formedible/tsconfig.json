@@ -1,10 +1,7 @@
 {
   "extends": "../../packages/config/tsconfig.base.json",
   "compilerOptions": {
-    "outDir": ".compiled",
-    "rootDir": "../..",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "noEmit": true,
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "baseUrl": "../..",
     "ignoreDeprecations": "6.0",

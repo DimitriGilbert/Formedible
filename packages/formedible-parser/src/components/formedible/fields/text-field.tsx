@@ -1,7 +1,6 @@
 import { Input as TextInput } from '@/components/ui/input';
+import { FieldWrapper } from '@/components/formedible/fields/field-wrapper';
 import type { FormedibleFieldRenderProps, FormedibleFormValues } from '@/lib/formedible/types';
-
-import { FieldWrapper } from './field-wrapper';
 
 const textInputTypes = ['email', 'password', 'url', 'tel'] as const;
 

@@ -127,6 +127,16 @@
           "target": "lib/formedible/normalize-options.ts"
         },
         {
+          "path": "src/lib/formedible/validation.ts",
+          "type": "registry:lib",
+          "target": "lib/formedible/validation.ts"
+        },
+        {
+          "path": "src/lib/formedible/zod-errors.ts",
+          "type": "registry:lib",
+          "target": "lib/formedible/zod-errors.ts"
+        },
+        {
           "path": "src/lib/utils.ts",
           "type": "registry:lib",
           "target": "lib/utils.ts"

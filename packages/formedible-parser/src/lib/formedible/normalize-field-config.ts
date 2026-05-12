@@ -1,4 +1,4 @@
-import type { FormedibleFieldConfig, FormedibleFieldType, FormedibleFormValues, NormalizedFieldConfig, NormalizedFieldType } from './types.js';
+import type { FormedibleFieldConfig, FormedibleFieldType, FormedibleFormValues, NormalizedFieldConfig, NormalizedFieldType } from '@/lib/formedible/types';
 
 const fieldTypeAliases: Partial<Record<FormedibleFieldType, NormalizedFieldType>> = {
   multiselect: 'multiSelect',

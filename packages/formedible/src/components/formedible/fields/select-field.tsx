@@ -1,7 +1,6 @@
+import { FieldWrapper } from '@/components/formedible/fields/field-wrapper';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { FormedibleFieldOption, FormedibleFieldRenderProps, FormedibleFormValues, FormedibleOptionConfig } from '@/lib/formedible/types';
-
-import { FieldWrapper } from './field-wrapper';
 
 function normalizeOption(option: FormedibleFieldOption): FormedibleOptionConfig {
   return typeof option === 'string' ? { value: option, label: option } : option;

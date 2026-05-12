@@ -1,6 +1,5 @@
-import type { FormedibleFormValues, NormalizedUseFormedibleOptions, UseFormedibleOptions } from './types.js';
-
-import { normalizeFieldConfig } from './normalize-field-config.js';
+import { normalizeFieldConfig } from '@/lib/formedible/normalize-field-config';
+import type { FormedibleFormValues, NormalizedUseFormedibleOptions, UseFormedibleOptions } from '@/lib/formedible/types';
 
 export function normalizeOptions<TFormValues extends FormedibleFormValues>(
   options: UseFormedibleOptions<TFormValues>,

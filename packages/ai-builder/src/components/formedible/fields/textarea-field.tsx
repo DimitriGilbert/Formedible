@@ -1,7 +1,6 @@
+import { FieldWrapper } from '@/components/formedible/fields/field-wrapper';
 import { Textarea } from '@/components/ui/textarea';
 import type { FormedibleFieldRenderProps, FormedibleFormValues } from '@/lib/formedible/types';
-
-import { FieldWrapper } from './field-wrapper';
 
 export function TextareaField<TFormValues extends FormedibleFormValues>({ fieldConfig, field }: FormedibleFieldRenderProps<TFormValues>) {
   const value = typeof field.value === 'string' ? field.value : '';

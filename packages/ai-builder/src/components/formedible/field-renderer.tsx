@@ -1,6 +1,5 @@
+import { getFieldComponent } from '@/components/formedible/fields/field-registry';
 import type { FormedibleFieldRenderProps, FormedibleFormValues } from '@/lib/formedible/types';
-
-import { getFieldComponent } from './fields/field-registry';
 
 export function FieldRenderer<TFormValues extends FormedibleFormValues>(props: FormedibleFieldRenderProps<TFormValues>) {
   const FieldComponent = getFieldComponent<TFormValues>(props.fieldConfig.type);

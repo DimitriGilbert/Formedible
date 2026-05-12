@@ -1,8 +1,7 @@
+import { FieldWrapper } from '@/components/formedible/fields/field-wrapper';
 import { Field, FieldLabel } from '@/components/ui/field';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import type { FormedibleFieldOption, FormedibleFieldRenderProps, FormedibleFormValues, FormedibleOptionConfig } from '@/lib/formedible/types';
-
-import { FieldWrapper } from './field-wrapper';
 
 function normalizeOption(option: FormedibleFieldOption): FormedibleOptionConfig {
   return typeof option === 'string' ? { value: option, label: option } : option;
