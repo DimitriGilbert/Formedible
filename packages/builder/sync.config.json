@@ -1,0 +1,8 @@
+{
+  "routes": [
+    {
+      "ownerRoot": "packages/builder",
+      "destinationRoots": ["apps/web/src", "packages/ai-builder/src"]
+    }
+  ]
+}
