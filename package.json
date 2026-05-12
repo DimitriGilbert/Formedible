@@ -9,7 +9,9 @@
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
-    "check-types": "turbo check-types && tsc -p tests/compatibility-examples/tsconfig.json && tsc -p tests/architecture/tsconfig.json && tsc -p tests/sync/tsconfig.json",
+    "check-types": "turbo check-types && tsc -p tests/compatibility-examples/tsconfig.json && pnpm test:formedible:types && tsc -p tests/architecture/tsconfig.json && tsc -p tests/sync/tsconfig.json",
+    "test:formedible:types": "tsc -p tests/formedible/tsconfig.types.json",
+    "test:formedible:normalization": "tsc -p tests/formedible/tsconfig.json && node --test tests/formedible/.compiled/tests/formedible/*.test.js",
     "test:architecture": "tsc -p tests/architecture/tsconfig.json && node --test tests/architecture/.compiled/*.test.js",
     "test:sync": "tsc -p tests/sync/tsconfig.json && node --test tests/sync/.compiled/*.test.js",
     "dev:web": "turbo -F web dev"

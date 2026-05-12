@@ -81,6 +81,9 @@ importers:
       '@tailwindcss/vite':
         specifier: ^4.2.2
         version: 4.2.4(vite@8.0.10(@types/node@25.6.0)(jiti@2.6.1))
+      '@tanstack/react-form':
+        specifier: ^1.27.1
+        version: 1.32.0(@tanstack/react-start@1.167.50(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(vite@8.0.10(@types/node@25.6.0)(jiti@2.6.1)))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@tanstack/react-query':
         specifier: ^5.99.0
         version: 5.100.6(react@19.2.5)
@@ -90,6 +93,9 @@ importers:
       '@tanstack/react-start':
         specifier: ^1.167.41
         version: 1.167.50(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(vite@8.0.10(@types/node@25.6.0)(jiti@2.6.1))
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
       dotenv:
         specifier: 'catalog:'
         version: 17.4.2
@@ -108,6 +114,9 @@ importers:
       sonner:
         specifier: 'catalog:'
         version: 2.0.7(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      tailwind-merge:
+        specifier: ^3.3.1
+        version: 3.5.0
       tailwindcss:
         specifier: 'catalog:'
         version: 4.2.4
@@ -150,6 +159,19 @@ importers:
         version: 5.2.0
 
   packages/ai-builder:
+    dependencies:
+      '@tanstack/react-form':
+        specifier: ^1.27.1
+        version: 1.32.0(@tanstack/react-start@1.167.50(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(vite@8.0.10(@types/node@25.6.0)(jiti@2.6.1)))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      react:
+        specifier: 'catalog:'
+        version: 19.2.5
+      tailwind-merge:
+        specifier: ^3.3.1
+        version: 3.5.0
     devDependencies:
       '@formedible/config':
         specifier: workspace:*
@@ -165,6 +187,19 @@ importers:
         version: 6.0.3
 
   packages/builder:
+    dependencies:
+      '@tanstack/react-form':
+        specifier: ^1.27.1
+        version: 1.32.0(@tanstack/react-start@1.167.50(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(vite@8.0.10(@types/node@25.6.0)(jiti@2.6.1)))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      react:
+        specifier: 'catalog:'
+        version: 19.2.5
+      tailwind-merge:
+        specifier: ^3.3.1
+        version: 3.5.0
     devDependencies:
       '@formedible/config':
         specifier: workspace:*
@@ -207,7 +242,7 @@ importers:
     dependencies:
       '@tanstack/react-form':
         specifier: ^1.27.1
-        version: 1.32.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+        version: 1.32.0(@tanstack/react-start@1.167.50(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(vite@8.0.10(@types/node@25.6.0)(jiti@2.6.1)))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
@@ -235,6 +270,19 @@ importers:
         version: 6.0.3
 
   packages/formedible-parser:
+    dependencies:
+      '@tanstack/react-form':
+        specifier: ^1.27.1
+        version: 1.32.0(@tanstack/react-start@1.167.50(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(vite@8.0.10(@types/node@25.6.0)(jiti@2.6.1)))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
+      react:
+        specifier: 'catalog:'
+        version: 19.2.5
+      tailwind-merge:
+        specifier: ^3.3.1
+        version: 3.5.0
     devDependencies:
       '@formedible/config':
         specifier: workspace:*
@@ -3463,11 +3511,13 @@ snapshots:
 
   '@tanstack/query-core@5.100.6': {}
 
-  '@tanstack/react-form@1.32.0(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
+  '@tanstack/react-form@1.32.0(@tanstack/react-start@1.167.50(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(vite@8.0.10(@types/node@25.6.0)(jiti@2.6.1)))(react-dom@19.2.5(react@19.2.5))(react@19.2.5)':
     dependencies:
       '@tanstack/form-core': 1.32.0
       '@tanstack/react-store': 0.9.3(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       react: 19.2.5
+    optionalDependencies:
+      '@tanstack/react-start': 1.167.50(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(vite@8.0.10(@types/node@25.6.0)(jiti@2.6.1))
     transitivePeerDependencies:
       - react-dom
 

@@ -1,0 +1,14 @@
+{
+  "extends": "../../packages/config/tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "baseUrl": "../..",
+    "ignoreDeprecations": "6.0",
+    "paths": {
+      "@/*": ["packages/formedible/src/*"]
+    }
+  },
+  "include": ["types/*.test-d.ts", "../../packages/formedible/src/**/*.ts", "../../packages/formedible/src/**/*.tsx"]
+}

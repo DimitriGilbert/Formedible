@@ -65,6 +65,11 @@
           "target": "lib/formedible/normalize-field-config.ts"
         },
         {
+          "path": "src/lib/formedible/normalize-options.ts",
+          "type": "registry:lib",
+          "target": "lib/formedible/normalize-options.ts"
+        },
+        {
           "path": "src/lib/utils.ts",
           "type": "registry:lib",
           "target": "lib/utils.ts"

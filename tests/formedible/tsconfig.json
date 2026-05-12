@@ -1,0 +1,17 @@
+{
+  "extends": "../../packages/config/tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": ".compiled",
+    "rootDir": "../..",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "baseUrl": "../..",
+    "ignoreDeprecations": "6.0",
+    "paths": {
+      "@/*": ["packages/formedible/src/*"]
+    }
+  },
+  "include": ["*.test.ts", "../../packages/formedible/src/lib/formedible/**/*.ts"],
+  "exclude": [".compiled"]
+}
