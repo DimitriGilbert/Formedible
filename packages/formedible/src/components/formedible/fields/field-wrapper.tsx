@@ -15,6 +15,7 @@ export function FieldWrapper<TFormValues extends FormedibleFormValues>({ fieldCo
       className={fieldConfig.className}
       data-disabled={fieldConfig.disabled ? 'true' : undefined}
       data-invalid={field.error ? 'true' : undefined}
+      onFocusCapture={field.onFocus}
     >
       {fieldConfig.label ? (
         <FieldLabel htmlFor={field.id}>

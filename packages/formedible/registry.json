@@ -22,9 +22,49 @@
           "target": "hooks/use-formedible.tsx"
         },
         {
+          "path": "src/hooks/use-multi-page.ts",
+          "type": "registry:hook",
+          "target": "hooks/use-multi-page.ts"
+        },
+        {
+          "path": "src/hooks/use-form-tabs.ts",
+          "type": "registry:hook",
+          "target": "hooks/use-form-tabs.ts"
+        },
+        {
+          "path": "src/hooks/use-form-persistence.ts",
+          "type": "registry:hook",
+          "target": "hooks/use-form-persistence.ts"
+        },
+        {
+          "path": "src/hooks/use-form-analytics.ts",
+          "type": "registry:hook",
+          "target": "hooks/use-form-analytics.ts"
+        },
+        {
           "path": "src/components/formedible/form.tsx",
           "type": "registry:component",
           "target": "components/formedible/form.tsx"
+        },
+        {
+          "path": "src/components/formedible/layout/form-layout.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/layout/form-layout.tsx"
+        },
+        {
+          "path": "src/components/formedible/layout/form-navigation.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/layout/form-navigation.tsx"
+        },
+        {
+          "path": "src/components/formedible/layout/form-progress.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/layout/form-progress.tsx"
+        },
+        {
+          "path": "src/components/formedible/layout/form-tabs.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/layout/form-tabs.tsx"
         },
         {
           "path": "src/components/formedible/field-renderer.tsx",
@@ -225,6 +265,11 @@
           "path": "src/lib/formedible/field-path.ts",
           "type": "registry:lib",
           "target": "lib/formedible/field-path.ts"
+        },
+        {
+          "path": "src/lib/formedible/dynamic-text.ts",
+          "type": "registry:lib",
+          "target": "lib/formedible/dynamic-text.ts"
         },
         {
           "path": "src/lib/utils.ts",

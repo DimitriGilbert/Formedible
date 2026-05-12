@@ -1,11 +1,22 @@
-import { useId } from 'react';
+import { useId, useRef } from 'react';
 import { useForm } from '@tanstack/react-form';
 import type { DeepKeys } from '@tanstack/react-form';
 
 import { FieldRenderer } from '@/components/formedible/field-renderer';
 import { Form as FormRoot } from '@/components/formedible/form';
+import { FormLayout } from '@/components/formedible/layout/form-layout';
+import { FormNavigation } from '@/components/formedible/layout/form-navigation';
+import { FormProgress } from '@/components/formedible/layout/form-progress';
+import { FormTabs } from '@/components/formedible/layout/form-tabs';
 import type { FormProps } from '@/components/formedible/form';
+import { Button } from '@/components/ui/button';
+import { useFormAnalytics } from '@/hooks/use-form-analytics';
+import type { FormAnalyticsAbandonContext, FormAnalyticsPageValidationState } from '@/hooks/use-form-analytics';
+import { useFormPersistence } from '@/hooks/use-form-persistence';
+import { useFormTabs } from '@/hooks/use-form-tabs';
+import { useMultiPage } from '@/hooks/use-multi-page';
 import { getValueAtFieldPath } from '@/lib/formedible/field-path';
+import { resolveDynamicText } from '@/lib/formedible/dynamic-text';
 import { normalizeFieldConfig } from '@/lib/formedible/normalize-field-config';
 import { normalizeOptions } from '@/lib/formedible/normalize-options';
 import type { FormedibleFormValues, UseFormedibleOptions } from '@/lib/formedible/types';
@@ -17,13 +28,75 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
   const formId = useId();
   const normalizedOptions = normalizeOptions(config);
   const fields = normalizedOptions.fields;
+  const pageValidationStateRef = useRef<(pageNumber: number) => FormAnalyticsPageValidationState>(() => ({ hasErrors: false, completionPercentage: 0 }));
+  const abandonContextRef = useRef<FormAnalyticsAbandonContext>({ completionPercentage: 0 });
+  const analytics = useFormAnalytics(config.analytics, {
+    getPageValidationState: (pageNumber) => pageValidationStateRef.current(pageNumber),
+    getAbandonContext: () => abandonContextRef.current,
+  });
   const form = useForm({
     defaultValues: config.formOptions.defaultValues,
     validators: buildFormValidators(config.schema, config.crossFieldValidation),
     onSubmit: async ({ value }) => {
+      analytics.trackFormComplete(value as TFormValues);
       await config.formOptions.onSubmit?.({ value });
+      clearStorage();
     },
   });
+  const multiPage = useMultiPage({
+    fields,
+    pages: config.pages,
+    values: form.state.values,
+    onPageChange: analytics.trackPageChange,
+  });
+  const tabs = useFormTabs({ fields, tabs: config.tabs, values: form.state.values });
+  const { saveToStorage, loadFromStorage, clearStorage } = useFormPersistence(form, config.persistence, {
+    currentPage: multiPage.currentPage,
+    totalPages: multiPage.totalPages,
+    setCurrentPage: multiPage.setCurrentPage,
+  });
+  const hasConfiguredPages = fields.some((fieldConfig) => fieldConfig.page !== undefined) || Boolean(config.pages?.length);
+  const hasConfiguredTabs = tabs.visibleTabs.length > 0;
+
+  function isCompletedValue(value: unknown) {
+    if (Array.isArray(value)) {
+      return value.length > 0;
+    }
+
+    return value !== undefined && value !== null && value !== '';
+  }
+
+  function getPageValidationState(pageNumber: number): FormAnalyticsPageValidationState {
+    const pageFields = fields.filter((fieldConfig) => (fieldConfig.page ?? 1) === pageNumber);
+    const formState = form.state as {
+      readonly values: TFormValues;
+      readonly fieldMeta?: Record<string, { readonly errors?: readonly unknown[] } | undefined>;
+    };
+    const completedFields = pageFields.filter((fieldConfig) => isCompletedValue(getValueAtFieldPath(formState.values, fieldConfig.name))).length;
+    const hasErrors = pageFields.some((fieldConfig) => (formState.fieldMeta?.[fieldConfig.name]?.errors?.length ?? 0) > 0);
+
+    return {
+      hasErrors,
+      completionPercentage: pageFields.length > 0 ? (completedFields / pageFields.length) * 100 : 0,
+    };
+  }
+
+  function getAbandonContext(): FormAnalyticsAbandonContext {
+    const completedFields = fields.filter((fieldConfig) => isCompletedValue(getValueAtFieldPath(form.state.values, fieldConfig.name))).length;
+    const context: FormAnalyticsAbandonContext = {
+      completionPercentage: fields.length > 0 ? (completedFields / fields.length) * 100 : 0,
+      currentPage: multiPage.currentPage,
+    };
+
+    if (tabs.activeTab !== undefined) {
+      return { ...context, currentTab: tabs.activeTab };
+    }
+
+    return context;
+  }
+
+  pageValidationStateRef.current = getPageValidationState;
+  abandonContextRef.current = getAbandonContext();
 
   function shouldRenderField(fieldConfig: NormalizedFieldConfig<TFormValues>, localValues: FormedibleFormValues | undefined) {
     if (!fieldConfig.conditional) {
@@ -39,9 +112,19 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
     return fieldConfig.conditional(conditionalValues as TFormValues);
   }
 
+  function withDynamicText(fieldConfig: NormalizedFieldConfig<TFormValues>, values: FormedibleFormValues) {
+    return {
+      ...fieldConfig,
+      label: resolveDynamicText(fieldConfig.label, values),
+      description: resolveDynamicText(fieldConfig.description, values),
+      placeholder: typeof fieldConfig.placeholder === 'string' ? String(resolveDynamicText(fieldConfig.placeholder, values)) : fieldConfig.placeholder,
+    } satisfies NormalizedFieldConfig<TFormValues>;
+  }
+
   function renderField(fieldConfig: NormalizedFieldConfig<TFormValues>, options?: { readonly name?: string; readonly key?: string; readonly localValues?: FormedibleFormValues }) {
     const fieldName = options?.name ?? fieldConfig.name;
-    const renderConfig = fieldName === fieldConfig.name ? fieldConfig : normalizeFieldConfig<TFormValues>({ ...fieldConfig, name: fieldName });
+    const dynamicConfig = withDynamicText(fieldConfig, options?.localValues ?? form.state.values);
+    const renderConfig = fieldName === fieldConfig.name ? dynamicConfig : normalizeFieldConfig<TFormValues>({ ...dynamicConfig, name: fieldName });
     const localValues = options?.localValues;
 
     if (!shouldRenderField(fieldConfig, localValues)) {
@@ -67,7 +150,11 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
                 value: field.state.value,
                 formValues: localValues ?? form.state.values,
                 error,
-                onBlur: field.handleBlur,
+                onFocus: () => analytics.trackFieldFocus(fieldName),
+                onBlur: () => {
+                  field.handleBlur();
+                  analytics.trackFieldBlur(fieldName);
+                },
                 onChange: (nextValue) => field.handleChange(nextValue as FieldValueUpdate),
               }}
               renderField={renderField}
@@ -75,6 +162,43 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
           );
         }}
       </form.Field>
+    );
+  }
+
+  function renderFields(values: FormedibleFormValues) {
+    const activeFields = fields.filter((fieldConfig) => {
+      if (hasConfiguredTabs) {
+        return fieldConfig.tab === tabs.activeTab;
+      }
+
+      if (hasConfiguredPages) {
+        return (fieldConfig.page ?? 1) === multiPage.currentPage;
+      }
+
+      return true;
+    });
+
+    return activeFields.map((fieldConfig) => renderField(fieldConfig, { localValues: values }));
+  }
+
+  function renderPageHeader(values: FormedibleFormValues) {
+    if (!hasConfiguredPages) {
+      return undefined;
+    }
+
+    const pageConfig = config.pages?.find((page) => page.page === multiPage.currentPage);
+    const currentStep = Math.max(multiPage.visiblePages.indexOf(multiPage.currentPage), 0) + 1;
+
+    return (
+      <FormProgress
+        currentPage={currentStep}
+        totalPages={multiPage.totalPages}
+        value={multiPage.progressValue}
+        showSteps={config.progress?.showSteps}
+        showPercentage={config.progress?.showPercentage}
+        title={resolveDynamicText(pageConfig?.title, values)}
+        description={resolveDynamicText(pageConfig?.description, values)}
+      />
     );
   }
 
@@ -89,10 +213,66 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
         }}
         {...props}
       >
-        {fields.map((fieldConfig) => renderField(fieldConfig))}
+        <form.Subscribe selector={(state) => state.values}>
+          {(values) => {
+            const formValues = values as FormedibleFormValues;
+            const fieldsContent = renderFields(formValues);
+
+            return (
+              <FormLayout className={config.formClassName}>
+                {hasConfiguredTabs ? (
+                  <FormTabs
+                    tabs={tabs.visibleTabs.map((tab) => ({
+                      id: tab.id,
+                      label: resolveDynamicText(tab.label, formValues),
+                      description: resolveDynamicText(tab.description, formValues),
+                    }))}
+                    activeTab={tabs.activeTab}
+                    onTabChange={tabs.setActiveTab}
+                  >
+                    {fieldsContent}
+                  </FormTabs>
+                ) : (
+                  <>
+                    {renderPageHeader(formValues)}
+                    {fieldsContent}
+                  </>
+                )}
+                {hasConfiguredPages ? (
+                  <FormNavigation
+                    isFirstPage={multiPage.isFirstPage}
+                    isLastPage={multiPage.isLastPage}
+                    previousLabel={config.previousLabel ?? 'Previous'}
+                    nextLabel={config.nextLabel ?? 'Next'}
+                    submitLabel={config.submitLabel ?? 'Submit'}
+                    onPrevious={multiPage.goToPreviousPage}
+                    onNext={multiPage.goToNextPage}
+                  />
+                ) : (
+                  <Button type="submit">{config.submitLabel ?? 'Submit'}</Button>
+                )}
+              </FormLayout>
+            );
+          }}
+        </form.Subscribe>
       </FormRoot>
     );
   }
 
-  return { Form, form };
+  return {
+    Form,
+    form,
+    currentPage: multiPage.currentPage,
+    totalPages: multiPage.totalPages,
+    visiblePages: multiPage.visiblePages,
+    goToNextPage: multiPage.goToNextPage,
+    goToPreviousPage: multiPage.goToPreviousPage,
+    setCurrentPage: multiPage.setCurrentPage,
+    isFirstPage: multiPage.isFirstPage,
+    isLastPage: multiPage.isLastPage,
+    progressValue: multiPage.progressValue,
+    saveToStorage,
+    loadFromStorage,
+    clearStorage,
+  };
 }

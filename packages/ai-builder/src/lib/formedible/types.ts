@@ -235,12 +235,20 @@ export interface FormediblePersistenceConfig<TFormValues extends FormedibleFormV
 }
 
 export interface FormedibleAnalyticsConfig<TFormValues extends FormedibleFormValues = FormedibleFormValues> {
-  readonly onFormStart?: () => void;
-  readonly onFieldFocus?: (fieldName: Extract<keyof TFormValues, string> | string) => void;
-  readonly onFieldBlur?: (fieldName: Extract<keyof TFormValues, string> | string) => void;
-  readonly onPageChange?: (context: { readonly fromPage: number; readonly toPage: number; readonly timeSpent: number }) => void;
-  readonly onFormComplete?: (context: { readonly formData: TFormValues; readonly timeSpent: number }) => void;
-  readonly onFormAbandon?: (context: { readonly formData: Partial<TFormValues>; readonly timeSpent: number }) => void;
+  readonly onFormStart?: (timestamp: number) => void;
+  readonly onFieldFocus?: (fieldName: Extract<keyof TFormValues, string> | string, timestamp: number) => void;
+  readonly onFieldBlur?: (fieldName: Extract<keyof TFormValues, string> | string, timeSpent: number) => void;
+  readonly onPageChange?: (
+    fromPage: number,
+    toPage: number,
+    timeSpent: number,
+    pageValidationState?: { readonly hasErrors: boolean; readonly completionPercentage: number },
+  ) => void;
+  readonly onFormComplete?: (timeSpent: number, formData: TFormValues) => void;
+  readonly onFormAbandon?: (
+    completionPercentage: number,
+    context?: { readonly currentPage?: number; readonly currentTab?: string; readonly lastActiveField?: string },
+  ) => void;
   readonly [customProp: string]: unknown;
 }
 
@@ -275,6 +283,7 @@ export interface FormedibleFieldController {
   readonly value: unknown;
   readonly formValues?: FormedibleFormValues;
   readonly error?: string;
+  readonly onFocus?: () => void;
   readonly onBlur: () => void;
   readonly onChange: (value: unknown) => void;
 }
