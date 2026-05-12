@@ -17,20 +17,21 @@
     "@base-ui/react": "^1.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "lucide-react": "^0.546.0",
+    "lucide-react": "catalog:",
     "next-themes": "catalog:",
-    "react": "^19.2.3",
-    "react-dom": "^19.2.3",
+    "react": "catalog:",
+    "react-dom": "catalog:",
     "shadcn": "^3.6.2",
-    "sonner": "^2.0.5",
+    "sonner": "catalog:",
     "tailwind-merge": "^3.3.1",
     "tw-animate-css": "^1.3.4"
   },
   "devDependencies": {
     "@formedible/config": "workspace:*",
-    "@types/react": "^19.2.10",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "tailwindcss": "^4.1.18",
+    "tailwindcss": "catalog:",
     "typescript": "catalog:"
   }
 }
