@@ -12,7 +12,7 @@ export type DocsCardContent = {
   readonly title: string;
   readonly eyebrow: string;
   readonly description: string;
-  readonly href: `#${string}`;
+  readonly href: `#${string}` | `/docs/${string}`;
   readonly tone: DocsCardTone;
   readonly bullets: readonly string[];
 };
@@ -68,7 +68,7 @@ export const docsCards = [
     title: 'Examples',
     eyebrow: 'Verify behavior',
     description: 'Run real Formedible examples that exercise the current app-local hook instead of stale package-era docs snippets.',
-    href: '#examples',
+    href: '/docs/examples',
     tone: 'rose',
     bullets: ['Compatibility coverage', 'Accessible live forms', 'No removed helpers'],
   },

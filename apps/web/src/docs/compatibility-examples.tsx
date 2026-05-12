@@ -1,7 +1,22 @@
 import { useFormedible } from '@/hooks/use-formedible';
-import type { UseFormedibleOptions } from '@/lib/formedible/types';
+import type { FormedibleSubmitContext, UseFormedibleOptions } from '@/lib/formedible/types';
 
 type DocsFormValues = Record<string, unknown>;
+
+type DocsInteractionRecord = {
+  readonly event: string;
+  readonly details: DocsFormValues;
+};
+
+let latestDocsInteraction: DocsInteractionRecord | null = null;
+
+function rememberDocsInteraction(record: DocsInteractionRecord) {
+  latestDocsInteraction = record;
+
+  if (typeof window !== 'undefined') {
+    window.sessionStorage.setItem('formedible-docs-last-interaction', JSON.stringify(record));
+  }
+}
 
 export interface DocsCompatibilityExample {
   readonly id: string;
@@ -24,8 +39,12 @@ function hasValue(values: DocsFormValues, fieldName: string): boolean {
   return value !== undefined && value !== null && value !== '';
 }
 
-function handleExampleSubmit() {
-  return undefined;
+function handleExampleSubmit(context: FormedibleSubmitContext<DocsFormValues>) {
+  rememberDocsInteraction({ event: 'example-submit', details: context.value });
+}
+
+function handleAnalyticsEvent(event: string, details: DocsFormValues) {
+  rememberDocsInteraction({ event, details: { ...details, previousEvent: latestDocsInteraction?.event ?? 'none' } });
 }
 
 export function DocsExampleForm({ example }: { readonly example: DocsCompatibilityExample }) {
@@ -452,12 +471,12 @@ export const docsCompatibilityExamples = [
         { page: 3, title: 'Timeline & Details' },
       ],
       analytics: {
-        onFormStart: (_timestamp) => undefined,
-        onFieldFocus: (_fieldName, _timestamp) => undefined,
-        onFieldBlur: (_fieldName, _timeSpent) => undefined,
-        onPageChange: (_fromPage, _toPage, _timeSpent, _pageValidationState) => undefined,
-        onFormComplete: (_timeSpent, _formData) => undefined,
-        onFormAbandon: (_completionPercentage, _context) => undefined,
+        onFormStart: (timestamp) => handleAnalyticsEvent('form-start', { timestamp }),
+        onFieldFocus: (fieldName, timestamp) => handleAnalyticsEvent('field-focus', { fieldName, timestamp }),
+        onFieldBlur: (fieldName, timeSpent) => handleAnalyticsEvent('field-blur', { fieldName, timeSpent }),
+        onPageChange: (fromPage, toPage, timeSpent, pageValidationState) => handleAnalyticsEvent('page-change', { fromPage, toPage, timeSpent, pageValidationState }),
+        onFormComplete: (timeSpent, formData) => handleAnalyticsEvent('form-complete', { timeSpent, formData }),
+        onFormAbandon: (completionPercentage, context) => handleAnalyticsEvent('form-abandon', { completionPercentage, context }),
       },
       formOptions: {
         defaultValues: { email: '', companySize: '1-10', interests: [], budget: '<10k', timeline: 'ASAP', description: '' },

@@ -9,38 +9,206 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as DocsRouteImport } from './routes/docs'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DocsValidationRouteImport } from './routes/docs.validation'
+import { Route as DocsPersistenceRouteImport } from './routes/docs.persistence'
+import { Route as DocsParserRouteImport } from './routes/docs.parser'
+import { Route as DocsGettingStartedRouteImport } from './routes/docs.getting-started'
+import { Route as DocsFieldsRouteImport } from './routes/docs.fields'
+import { Route as DocsExamplesRouteImport } from './routes/docs.examples'
+import { Route as DocsDynamicTextRouteImport } from './routes/docs.dynamic-text'
+import { Route as DocsBuilderRouteImport } from './routes/docs.builder'
+import { Route as DocsApiRouteImport } from './routes/docs.api'
+import { Route as DocsAnalyticsRouteImport } from './routes/docs.analytics'
+import { Route as DocsAiBuilderRouteImport } from './routes/docs.ai-builder'
+import { Route as DocsAdvancedFeaturesRouteImport } from './routes/docs.advanced-features'
 
+const DocsRoute = DocsRouteImport.update({
+  id: '/docs',
+  path: '/docs',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DocsValidationRoute = DocsValidationRouteImport.update({
+  id: '/validation',
+  path: '/validation',
+  getParentRoute: () => DocsRoute,
+} as any)
+const DocsPersistenceRoute = DocsPersistenceRouteImport.update({
+  id: '/persistence',
+  path: '/persistence',
+  getParentRoute: () => DocsRoute,
+} as any)
+const DocsParserRoute = DocsParserRouteImport.update({
+  id: '/parser',
+  path: '/parser',
+  getParentRoute: () => DocsRoute,
+} as any)
+const DocsGettingStartedRoute = DocsGettingStartedRouteImport.update({
+  id: '/getting-started',
+  path: '/getting-started',
+  getParentRoute: () => DocsRoute,
+} as any)
+const DocsFieldsRoute = DocsFieldsRouteImport.update({
+  id: '/fields',
+  path: '/fields',
+  getParentRoute: () => DocsRoute,
+} as any)
+const DocsExamplesRoute = DocsExamplesRouteImport.update({
+  id: '/examples',
+  path: '/examples',
+  getParentRoute: () => DocsRoute,
+} as any)
+const DocsDynamicTextRoute = DocsDynamicTextRouteImport.update({
+  id: '/dynamic-text',
+  path: '/dynamic-text',
+  getParentRoute: () => DocsRoute,
+} as any)
+const DocsBuilderRoute = DocsBuilderRouteImport.update({
+  id: '/builder',
+  path: '/builder',
+  getParentRoute: () => DocsRoute,
+} as any)
+const DocsApiRoute = DocsApiRouteImport.update({
+  id: '/api',
+  path: '/api',
+  getParentRoute: () => DocsRoute,
+} as any)
+const DocsAnalyticsRoute = DocsAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => DocsRoute,
+} as any)
+const DocsAiBuilderRoute = DocsAiBuilderRouteImport.update({
+  id: '/ai-builder',
+  path: '/ai-builder',
+  getParentRoute: () => DocsRoute,
+} as any)
+const DocsAdvancedFeaturesRoute = DocsAdvancedFeaturesRouteImport.update({
+  id: '/advanced-features',
+  path: '/advanced-features',
+  getParentRoute: () => DocsRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/docs': typeof DocsRouteWithChildren
+  '/docs/advanced-features': typeof DocsAdvancedFeaturesRoute
+  '/docs/ai-builder': typeof DocsAiBuilderRoute
+  '/docs/analytics': typeof DocsAnalyticsRoute
+  '/docs/api': typeof DocsApiRoute
+  '/docs/builder': typeof DocsBuilderRoute
+  '/docs/dynamic-text': typeof DocsDynamicTextRoute
+  '/docs/examples': typeof DocsExamplesRoute
+  '/docs/fields': typeof DocsFieldsRoute
+  '/docs/getting-started': typeof DocsGettingStartedRoute
+  '/docs/parser': typeof DocsParserRoute
+  '/docs/persistence': typeof DocsPersistenceRoute
+  '/docs/validation': typeof DocsValidationRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/docs': typeof DocsRouteWithChildren
+  '/docs/advanced-features': typeof DocsAdvancedFeaturesRoute
+  '/docs/ai-builder': typeof DocsAiBuilderRoute
+  '/docs/analytics': typeof DocsAnalyticsRoute
+  '/docs/api': typeof DocsApiRoute
+  '/docs/builder': typeof DocsBuilderRoute
+  '/docs/dynamic-text': typeof DocsDynamicTextRoute
+  '/docs/examples': typeof DocsExamplesRoute
+  '/docs/fields': typeof DocsFieldsRoute
+  '/docs/getting-started': typeof DocsGettingStartedRoute
+  '/docs/parser': typeof DocsParserRoute
+  '/docs/persistence': typeof DocsPersistenceRoute
+  '/docs/validation': typeof DocsValidationRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/docs': typeof DocsRouteWithChildren
+  '/docs/advanced-features': typeof DocsAdvancedFeaturesRoute
+  '/docs/ai-builder': typeof DocsAiBuilderRoute
+  '/docs/analytics': typeof DocsAnalyticsRoute
+  '/docs/api': typeof DocsApiRoute
+  '/docs/builder': typeof DocsBuilderRoute
+  '/docs/dynamic-text': typeof DocsDynamicTextRoute
+  '/docs/examples': typeof DocsExamplesRoute
+  '/docs/fields': typeof DocsFieldsRoute
+  '/docs/getting-started': typeof DocsGettingStartedRoute
+  '/docs/parser': typeof DocsParserRoute
+  '/docs/persistence': typeof DocsPersistenceRoute
+  '/docs/validation': typeof DocsValidationRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/docs'
+    | '/docs/advanced-features'
+    | '/docs/ai-builder'
+    | '/docs/analytics'
+    | '/docs/api'
+    | '/docs/builder'
+    | '/docs/dynamic-text'
+    | '/docs/examples'
+    | '/docs/fields'
+    | '/docs/getting-started'
+    | '/docs/parser'
+    | '/docs/persistence'
+    | '/docs/validation'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/docs'
+    | '/docs/advanced-features'
+    | '/docs/ai-builder'
+    | '/docs/analytics'
+    | '/docs/api'
+    | '/docs/builder'
+    | '/docs/dynamic-text'
+    | '/docs/examples'
+    | '/docs/fields'
+    | '/docs/getting-started'
+    | '/docs/parser'
+    | '/docs/persistence'
+    | '/docs/validation'
+  id:
+    | '__root__'
+    | '/'
+    | '/docs'
+    | '/docs/advanced-features'
+    | '/docs/ai-builder'
+    | '/docs/analytics'
+    | '/docs/api'
+    | '/docs/builder'
+    | '/docs/dynamic-text'
+    | '/docs/examples'
+    | '/docs/fields'
+    | '/docs/getting-started'
+    | '/docs/parser'
+    | '/docs/persistence'
+    | '/docs/validation'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DocsRoute: typeof DocsRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/docs': {
+      id: '/docs'
+      path: '/docs'
+      fullPath: '/docs'
+      preLoaderRoute: typeof DocsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +216,128 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/docs/validation': {
+      id: '/docs/validation'
+      path: '/validation'
+      fullPath: '/docs/validation'
+      preLoaderRoute: typeof DocsValidationRouteImport
+      parentRoute: typeof DocsRoute
+    }
+    '/docs/persistence': {
+      id: '/docs/persistence'
+      path: '/persistence'
+      fullPath: '/docs/persistence'
+      preLoaderRoute: typeof DocsPersistenceRouteImport
+      parentRoute: typeof DocsRoute
+    }
+    '/docs/parser': {
+      id: '/docs/parser'
+      path: '/parser'
+      fullPath: '/docs/parser'
+      preLoaderRoute: typeof DocsParserRouteImport
+      parentRoute: typeof DocsRoute
+    }
+    '/docs/getting-started': {
+      id: '/docs/getting-started'
+      path: '/getting-started'
+      fullPath: '/docs/getting-started'
+      preLoaderRoute: typeof DocsGettingStartedRouteImport
+      parentRoute: typeof DocsRoute
+    }
+    '/docs/fields': {
+      id: '/docs/fields'
+      path: '/fields'
+      fullPath: '/docs/fields'
+      preLoaderRoute: typeof DocsFieldsRouteImport
+      parentRoute: typeof DocsRoute
+    }
+    '/docs/examples': {
+      id: '/docs/examples'
+      path: '/examples'
+      fullPath: '/docs/examples'
+      preLoaderRoute: typeof DocsExamplesRouteImport
+      parentRoute: typeof DocsRoute
+    }
+    '/docs/dynamic-text': {
+      id: '/docs/dynamic-text'
+      path: '/dynamic-text'
+      fullPath: '/docs/dynamic-text'
+      preLoaderRoute: typeof DocsDynamicTextRouteImport
+      parentRoute: typeof DocsRoute
+    }
+    '/docs/builder': {
+      id: '/docs/builder'
+      path: '/builder'
+      fullPath: '/docs/builder'
+      preLoaderRoute: typeof DocsBuilderRouteImport
+      parentRoute: typeof DocsRoute
+    }
+    '/docs/api': {
+      id: '/docs/api'
+      path: '/api'
+      fullPath: '/docs/api'
+      preLoaderRoute: typeof DocsApiRouteImport
+      parentRoute: typeof DocsRoute
+    }
+    '/docs/analytics': {
+      id: '/docs/analytics'
+      path: '/analytics'
+      fullPath: '/docs/analytics'
+      preLoaderRoute: typeof DocsAnalyticsRouteImport
+      parentRoute: typeof DocsRoute
+    }
+    '/docs/ai-builder': {
+      id: '/docs/ai-builder'
+      path: '/ai-builder'
+      fullPath: '/docs/ai-builder'
+      preLoaderRoute: typeof DocsAiBuilderRouteImport
+      parentRoute: typeof DocsRoute
+    }
+    '/docs/advanced-features': {
+      id: '/docs/advanced-features'
+      path: '/advanced-features'
+      fullPath: '/docs/advanced-features'
+      preLoaderRoute: typeof DocsAdvancedFeaturesRouteImport
+      parentRoute: typeof DocsRoute
+    }
   }
 }
 
+interface DocsRouteChildren {
+  DocsAdvancedFeaturesRoute: typeof DocsAdvancedFeaturesRoute
+  DocsAiBuilderRoute: typeof DocsAiBuilderRoute
+  DocsAnalyticsRoute: typeof DocsAnalyticsRoute
+  DocsApiRoute: typeof DocsApiRoute
+  DocsBuilderRoute: typeof DocsBuilderRoute
+  DocsDynamicTextRoute: typeof DocsDynamicTextRoute
+  DocsExamplesRoute: typeof DocsExamplesRoute
+  DocsFieldsRoute: typeof DocsFieldsRoute
+  DocsGettingStartedRoute: typeof DocsGettingStartedRoute
+  DocsParserRoute: typeof DocsParserRoute
+  DocsPersistenceRoute: typeof DocsPersistenceRoute
+  DocsValidationRoute: typeof DocsValidationRoute
+}
+
+const DocsRouteChildren: DocsRouteChildren = {
+  DocsAdvancedFeaturesRoute: DocsAdvancedFeaturesRoute,
+  DocsAiBuilderRoute: DocsAiBuilderRoute,
+  DocsAnalyticsRoute: DocsAnalyticsRoute,
+  DocsApiRoute: DocsApiRoute,
+  DocsBuilderRoute: DocsBuilderRoute,
+  DocsDynamicTextRoute: DocsDynamicTextRoute,
+  DocsExamplesRoute: DocsExamplesRoute,
+  DocsFieldsRoute: DocsFieldsRoute,
+  DocsGettingStartedRoute: DocsGettingStartedRoute,
+  DocsParserRoute: DocsParserRoute,
+  DocsPersistenceRoute: DocsPersistenceRoute,
+  DocsValidationRoute: DocsValidationRoute,
+}
+
+const DocsRouteWithChildren = DocsRoute._addFileChildren(DocsRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DocsRoute: DocsRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

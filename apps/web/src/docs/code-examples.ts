@@ -27,6 +27,12 @@ type LeadFormValues = {
   interests: string[];
 };
 
+const savedLeadRequests: LeadFormValues[] = [];
+
+function saveLead(values: LeadFormValues) {
+  savedLeadRequests.push(values);
+}
+
 export function LeadCaptureForm() {
   const { Form } = useFormedible<LeadFormValues>({
     fields: [
@@ -47,8 +53,8 @@ export function LeadCaptureForm() {
     ],
     formOptions: {
       defaultValues: { email: '', companySize: '1-10', interests: [] },
-      onSubmit: async ({ value }) => {
-        await saveLead(value);
+      onSubmit: ({ value }) => {
+        saveLead(value);
       },
     },
     submitLabel: 'Request a walkthrough',
@@ -74,6 +80,22 @@ const onboardingSchema = z.object({
 
 type OnboardingValues = z.infer<typeof onboardingSchema>;
 
+type WorkspaceRecord = OnboardingValues & {
+  slug: string;
+};
+
+const workspaceRecords: WorkspaceRecord[] = [];
+
+function createWorkspace(values: OnboardingValues): WorkspaceRecord {
+  const workspace = {
+    ...values,
+    slug: values.name.trim().toLowerCase().replace(/\\s+/g, '-'),
+  };
+
+  workspaceRecords.push(workspace);
+  return workspace;
+}
+
 export function OnboardingForm() {
   const { Form } = useFormedible<OnboardingValues>({
     fields: [
@@ -84,8 +106,8 @@ export function OnboardingForm() {
     formOptions: {
       defaultValues: { name: '', plan: 'team', needsMigration: false },
       validators: { onSubmit: onboardingSchema },
-      onSubmit: async ({ value }) => {
-        await createWorkspace(value);
+      onSubmit: ({ value }) => {
+        createWorkspace(value);
       },
     },
   });
@@ -119,28 +141,44 @@ export function BuilderWorkspace() {
     title: 'AI Builder shell path',
     description: 'AI-assisted generation stays reviewable because it produces the same field model used by hand-written forms.',
     language: 'tsx',
-    code: `import { AIBuilder } from '@/components/formedible/ai/ai-builder';
-import { ProviderSelection } from '@/components/formedible/ai/provider-selection';
+    code: `import { useState } from 'react';
+
+import { AIBuilder } from '@/components/formedible/ai/ai-builder';
+import { createDefaultProviderConfig, ProviderSelection } from '@/components/formedible/ai/provider-selection';
 
 export function AiBuilderWorkspace() {
+  const [providerConfig, setProviderConfig] = useState(() => createDefaultProviderConfig('openrouter'));
+
   return (
     <main className="grid gap-8 lg:grid-cols-[22rem_1fr]">
-      <ProviderSelection />
-      <AIBuilder />
+      <ProviderSelection value={providerConfig} onChange={setProviderConfig} />
+      <AIBuilder providerConfig={providerConfig} onProviderConfigChange={setProviderConfig} />
     </main>
   );
 }`,
   },
   'field-registry-extension': {
     id: 'field-registry-extension',
-    title: 'Extend the copied registry',
-    description: 'Custom fields live in the consumer codebase and plug into the copied registry instead of patching a package.',
+    title: 'Customize the copied registry',
+    description: 'The registry is copied into your app, so customize supported field types by editing the local mapping directly.',
     language: 'tsx',
-    code: `import { fieldRegistry } from '@/components/formedible/fields/field-registry';
-import { CurrencyField } from '@/components/forms/currency-field';
+    code: `import type { ReactNode } from 'react';
 
-export function registerCommerceFields() {
-  fieldRegistry.register('currency', CurrencyField);
+import { NumberField } from '@/components/formedible/fields/number-field';
+import { TextField } from '@/components/formedible/fields/text-field';
+import type { FormedibleFieldRenderProps, FormedibleFormValues, NormalizedFieldType } from '@/lib/formedible/types';
+
+type FieldComponent = <TFormValues extends FormedibleFormValues>(props: FormedibleFieldRenderProps<TFormValues>) => ReactNode;
+
+const fieldRegistry: Partial<Record<NormalizedFieldType, FieldComponent>> = {
+  number: NumberField,
+  text: TextField,
+};
+
+export function getFieldComponent<TFormValues extends FormedibleFormValues>(
+  type: NormalizedFieldType,
+): (props: FormedibleFieldRenderProps<TFormValues>) => ReactNode {
+  return fieldRegistry[type] ?? TextField;
 }`,
   },
 };
