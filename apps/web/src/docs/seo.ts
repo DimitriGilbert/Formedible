@@ -1,4 +1,4 @@
-import { formatPageTitle, siteMeta } from './site-meta';
+import { formatPageTitle, getPublicRouteMeta, siteMeta, type PublicRoutePath } from './site-meta';
 
 export type SeoOptions = {
   readonly title?: string;
@@ -53,7 +53,7 @@ export function createSeoHead(options: SeoOptions = {}): SeoHead {
   const pageTitle = formatPageTitle(options.title);
   const description = options.description ?? siteMeta.description;
   const canonicalUrl = absoluteUrl(options.path ?? '/');
-  const imageUrl = absoluteUrl(options.imagePath ?? '/og-image.png');
+  const imageUrl = absoluteUrl(options.imagePath ?? siteMeta.ogImagePath);
 
   return {
     meta: [
@@ -69,6 +69,7 @@ export function createSeoHead(options: SeoOptions = {}): SeoHead {
       { property: 'og:description', content: description },
       { property: 'og:url', content: canonicalUrl },
       { property: 'og:image', content: imageUrl },
+      { property: 'og:image:alt', content: `${siteMeta.name} documentation preview` },
       { name: 'twitter:card', content: 'summary_large_image' },
       { name: 'twitter:site', content: siteMeta.twitterSite },
       { name: 'twitter:title', content: pageTitle },
@@ -77,4 +78,14 @@ export function createSeoHead(options: SeoOptions = {}): SeoHead {
     ],
     links: [{ rel: 'canonical', href: canonicalUrl }],
   };
+}
+
+export function createRouteSeoHead(path: PublicRoutePath): SeoHead {
+  const routeMeta = getPublicRouteMeta(path);
+
+  return createSeoHead({
+    title: routeMeta.title,
+    description: routeMeta.description,
+    path: routeMeta.path,
+  });
 }

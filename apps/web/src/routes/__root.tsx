@@ -4,13 +4,13 @@ import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 
 import Header from '../components/header';
 
-import { createSeoHead } from '../docs/seo';
+import { createRouteSeoHead } from '../docs/seo';
 
 import appCss from '../index.css?url';
 
 export interface RouterAppContext {}
 
-const rootHead = createSeoHead();
+const rootHead = createRouteSeoHead('/');
 
 export const Route = createRootRouteWithContext<RouterAppContext>()({
   head: () => ({

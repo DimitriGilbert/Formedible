@@ -2,8 +2,12 @@ import { createFileRoute } from '@tanstack/react-router';
 
 import { DocsExampleForm, docsCompatibilityExamples } from '@/docs/compatibility-examples';
 import { PageHeader } from '@/docs/page-header';
+import { createRouteSeoHead } from '@/docs/seo';
+
+const routeHead = createRouteSeoHead('/docs/examples');
 
 export const Route = createFileRoute('/docs/examples')({
+  head: () => routeHead,
   component: ExamplesRoute,
 });
 

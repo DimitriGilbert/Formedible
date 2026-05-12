@@ -1,8 +1,12 @@
 import { createFileRoute } from '@tanstack/react-router';
 
 import { AIBuilder } from '@/components/formedible/ai/ai-builder';
+import { createRouteSeoHead } from '@/docs/seo';
+
+const routeHead = createRouteSeoHead('/ai-builder');
 
 export const Route = createFileRoute('/ai-builder')({
+  head: () => routeHead,
   component: AiBuilderRoute,
 });
 
