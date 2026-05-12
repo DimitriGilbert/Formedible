@@ -1,5 +1,8 @@
 import type { StandardSchemaV1Issue } from '@tanstack/react-form';
 
+import { pathSegmentsToFieldPath } from '@/lib/formedible/field-path';
+import type { FormediblePathSegment } from '@/lib/formedible/field-path';
+
 export interface FormedibleFieldIssueMap {
   readonly fields?: Readonly<Record<string, readonly StandardSchemaV1Issue[]>>;
 }
@@ -9,21 +12,31 @@ export function isStandardSchemaIssue(value: unknown): value is StandardSchemaV1
 }
 
 export function getIssueFieldName(issue: StandardSchemaV1Issue): string | undefined {
-  const firstSegment = issue.path?.at(0);
+  const segments: FormediblePathSegment[] = [];
 
-  if (typeof firstSegment === 'string' || typeof firstSegment === 'number' || typeof firstSegment === 'symbol') {
-    return String(firstSegment);
-  }
+  for (const segment of issue.path ?? []) {
+    if (typeof segment === 'string' || typeof segment === 'number') {
+      segments.push(segment);
+      continue;
+    }
 
-  if (typeof firstSegment === 'object' && firstSegment !== null && 'key' in firstSegment) {
-    const key = firstSegment.key;
+    if (typeof segment === 'symbol') {
+      segments.push(String(segment));
+      continue;
+    }
 
-    if (typeof key === 'string' || typeof key === 'number' || typeof key === 'symbol') {
-      return String(key);
+    if (typeof segment === 'object' && segment !== null && 'key' in segment) {
+      const key = segment.key;
+
+      if (typeof key === 'string' || typeof key === 'number') {
+        segments.push(key);
+      } else if (typeof key === 'symbol') {
+        segments.push(String(key));
+      }
     }
   }
 
-  return undefined;
+  return pathSegmentsToFieldPath(segments);
 }
 
 export function firstIssueMessage(issues: readonly StandardSchemaV1Issue[] | undefined): string | undefined {

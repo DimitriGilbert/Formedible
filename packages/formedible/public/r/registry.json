@@ -127,6 +127,16 @@
           "target": "components/formedible/fields/file-upload-field.tsx"
         },
         {
+          "path": "src/components/formedible/fields/array-field.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/fields/array-field.tsx"
+        },
+        {
+          "path": "src/components/formedible/fields/object-field.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/fields/object-field.tsx"
+        },
+        {
           "path": "src/components/formedible/fields/advanced-field-utils.ts",
           "type": "registry:component",
           "target": "components/formedible/fields/advanced-field-utils.ts"
@@ -210,6 +220,11 @@
           "path": "src/lib/formedible/zod-errors.ts",
           "type": "registry:lib",
           "target": "lib/formedible/zod-errors.ts"
+        },
+        {
+          "path": "src/lib/formedible/field-path.ts",
+          "type": "registry:lib",
+          "target": "lib/formedible/field-path.ts"
         },
         {
           "path": "src/lib/utils.ts",

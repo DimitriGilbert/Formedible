@@ -61,6 +61,13 @@ export interface FormedibleArrayObjectConfig<TFormValues extends FormedibleFormV
   readonly [customProp: string]: unknown;
 }
 
+export interface FormedibleObjectConfig<TFormValues extends FormedibleFormValues = FormedibleFormValues> {
+  readonly fields?: readonly FormedibleFieldConfig<TFormValues>[];
+  readonly layout?: 'stack' | 'grid';
+  readonly columns?: number;
+  readonly [customProp: string]: unknown;
+}
+
 export interface FormedibleArrayConfig<TFormValues extends FormedibleFormValues = FormedibleFormValues> {
   readonly itemType?: FormedibleFieldType | 'string' | 'email';
   readonly minItems?: number;
@@ -123,6 +130,7 @@ export interface FormedibleFieldConfig<TFormValues extends FormedibleFormValues 
   readonly optionSets?: Readonly<Record<string, readonly FormedibleFieldOption[]>>;
   readonly nestedFields?: readonly FormedibleFieldConfig<TFormValues>[];
   readonly arrayConfig?: FormedibleArrayConfig<TFormValues>;
+  readonly objectConfig?: FormedibleObjectConfig<TFormValues>;
   readonly min?: number;
   readonly max?: number;
   readonly step?: number;
@@ -163,6 +171,7 @@ export interface NormalizedFieldConfig<TFormValues extends FormedibleFormValues 
   readonly optionSets?: Readonly<Record<string, readonly FormedibleFieldOption[]>>;
   readonly nestedFields?: readonly FormedibleFieldConfig<TFormValues>[];
   readonly arrayConfig?: FormedibleArrayConfig<TFormValues>;
+  readonly objectConfig?: FormedibleObjectConfig<TFormValues>;
   readonly min?: number;
   readonly max?: number;
   readonly step?: number;
@@ -270,9 +279,16 @@ export interface FormedibleFieldController {
   readonly onChange: (value: unknown) => void;
 }
 
+export interface FormedibleNestedRenderOptions {
+  readonly name?: string;
+  readonly key?: string;
+  readonly localValues?: FormedibleFormValues;
+}
+
 export interface FormedibleFieldRenderProps<TFormValues extends FormedibleFormValues = FormedibleFormValues> {
   readonly fieldConfig: NormalizedFieldConfig<TFormValues>;
   readonly field: FormedibleFieldController;
+  readonly renderField?: (fieldConfig: NormalizedFieldConfig<TFormValues>, options?: FormedibleNestedRenderOptions) => ReactNode;
 }
 
 export interface FormedibleDateConfig<TFormValues extends FormedibleFormValues = FormedibleFormValues> {
