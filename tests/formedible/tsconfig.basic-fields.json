@@ -12,6 +12,7 @@
   },
   "include": [
     "basic-fields.test.tsx",
+    "section-rendering.test.tsx",
     "../compatibility-examples/**/*.ts",
     "../../packages/formedible/src/**/*.ts",
     "../../packages/formedible/src/**/*.tsx"

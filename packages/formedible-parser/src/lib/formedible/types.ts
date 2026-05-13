@@ -51,6 +51,17 @@ export type FormedibleConditional<TFormValues extends FormedibleFormValues = For
   | string
   | ((values: TFormValues) => boolean);
 
+export interface FormedibleFieldSection {
+  /**
+   * Section heading rendered before the first visible field in a consecutive section group.
+   * Legacy `collapsible` and `defaultExpanded` section options are intentionally unsupported;
+   * section metadata is rendered as a static compatibility header.
+   */
+  readonly title: ReactNode;
+  /** Supporting text rendered below the section heading. */
+  readonly description?: ReactNode;
+}
+
 export interface FormedibleArrayObjectConfig<TFormValues extends FormedibleFormValues = FormedibleFormValues> {
   readonly fields?: readonly FormedibleFieldConfig<TFormValues>[];
   readonly collapsible?: boolean;
@@ -124,7 +135,7 @@ export interface FormedibleFieldConfig<TFormValues extends FormedibleFormValues 
   readonly inputClassName?: string;
   readonly page?: number;
   readonly tab?: string;
-  readonly section?: string;
+  readonly section?: string | FormedibleFieldSection;
   readonly conditional?: FormedibleConditional<TFormValues>;
   readonly options?: readonly FormedibleFieldOption[] | ((values: TFormValues) => readonly FormedibleFieldOption[]);
   readonly optionSets?: Readonly<Record<string, readonly FormedibleFieldOption[]>>;
@@ -165,7 +176,7 @@ export interface NormalizedFieldConfig<TFormValues extends FormedibleFormValues 
   readonly inputClassName?: string;
   readonly page?: number;
   readonly tab?: string;
-  readonly section?: string;
+  readonly section?: string | FormedibleFieldSection;
   readonly conditional?: FormedibleConditional<TFormValues>;
   readonly options?: readonly FormedibleFieldOption[] | ((values: TFormValues) => readonly FormedibleFieldOption[]);
   readonly optionSets?: Readonly<Record<string, readonly FormedibleFieldOption[]>>;

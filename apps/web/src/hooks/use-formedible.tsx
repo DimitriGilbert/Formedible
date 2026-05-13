@@ -1,6 +1,7 @@
-import { useId, useRef } from 'react';
+import { Fragment, useId, useRef } from 'react';
 import { useForm } from '@tanstack/react-form';
 import type { DeepKeys } from '@tanstack/react-form';
+import type { ReactNode } from 'react';
 
 import { FieldRenderer } from '@/components/formedible/field-renderer';
 import { Form as FormRoot } from '@/components/formedible/form';
@@ -19,7 +20,7 @@ import { getValueAtFieldPath } from '@/lib/formedible/field-path';
 import { resolveDynamicText } from '@/lib/formedible/dynamic-text';
 import { normalizeFieldConfig } from '@/lib/formedible/normalize-field-config';
 import { normalizeOptions } from '@/lib/formedible/normalize-options';
-import type { FormedibleFormValues, UseFormedibleOptions } from '@/lib/formedible/types';
+import type { FormedibleFieldSection, FormedibleFormValues, UseFormedibleOptions } from '@/lib/formedible/types';
 import type { NormalizedFieldConfig } from '@/lib/formedible/types';
 import { buildFieldValidators, buildFormValidators } from '@/lib/formedible/validation';
 import { formatValidationError } from '@/lib/formedible/zod-errors';
@@ -118,7 +119,52 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
       label: resolveDynamicText(fieldConfig.label, values),
       description: resolveDynamicText(fieldConfig.description, values),
       placeholder: typeof fieldConfig.placeholder === 'string' ? String(resolveDynamicText(fieldConfig.placeholder, values)) : fieldConfig.placeholder,
+      section: resolveFieldSection(fieldConfig.section, values),
     } satisfies NormalizedFieldConfig<TFormValues>;
+  }
+
+  function resolveFieldSection(section: string | FormedibleFieldSection | undefined, values: FormedibleFormValues) {
+    if (section === undefined || typeof section === 'string') {
+      return resolveDynamicText(section, values) as string | undefined;
+    }
+
+    return {
+      title: resolveDynamicText(section.title, values),
+      description: resolveDynamicText(section.description, values),
+    } satisfies FormedibleFieldSection;
+  }
+
+  function getSectionTitle(section: string | FormedibleFieldSection): ReactNode {
+    return typeof section === 'string' ? section : section.title;
+  }
+
+  function getSectionDescription(section: string | FormedibleFieldSection): ReactNode {
+    return typeof section === 'string' ? undefined : section.description;
+  }
+
+  function getSectionKey(section: string | FormedibleFieldSection | undefined): string | undefined {
+    if (section === undefined) {
+      return undefined;
+    }
+
+    if (typeof section === 'string') {
+      return section;
+    }
+
+    const description = typeof section.description === 'string' ? section.description : '';
+
+    return typeof section.title === 'string' ? `${section.title}\u0000${description}` : undefined;
+  }
+
+  function renderSectionHeader(section: string | FormedibleFieldSection, key: string) {
+    const description = getSectionDescription(section);
+
+    return (
+      <div key={key} data-formedible-section="true" className="space-y-1">
+        <h2 className="text-lg font-semibold leading-none tracking-tight">{getSectionTitle(section)}</h2>
+        {description ? <p className="text-sm text-muted-foreground">{description}</p> : undefined}
+      </div>
+    );
   }
 
   function renderField(fieldConfig: NormalizedFieldConfig<TFormValues>, options?: { readonly name?: string; readonly key?: string; readonly localValues?: FormedibleFormValues }) {
@@ -178,7 +224,33 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
       return true;
     });
 
-    return activeFields.map((fieldConfig) => renderField(fieldConfig, { localValues: values }));
+    const renderedFields: ReactNode[] = [];
+    let previousSectionKey: string | undefined;
+    let previousFieldHadSection = false;
+
+    activeFields.forEach((fieldConfig) => {
+      if (!shouldRenderField(fieldConfig, values)) {
+        return;
+      }
+
+      const dynamicConfig = withDynamicText(fieldConfig, values);
+      const sectionKey = getSectionKey(dynamicConfig.section);
+      const shouldRenderHeader = !previousFieldHadSection || sectionKey === undefined || sectionKey !== previousSectionKey;
+
+      if (dynamicConfig.section !== undefined && shouldRenderHeader) {
+        renderedFields.push(renderSectionHeader(dynamicConfig.section, `${fieldConfig.name}-section`));
+      }
+
+      renderedFields.push(
+        <Fragment key={fieldConfig.name}>
+          {renderField(dynamicConfig, { localValues: values })}
+        </Fragment>,
+      );
+      previousFieldHadSection = dynamicConfig.section !== undefined;
+      previousSectionKey = sectionKey;
+    });
+
+    return renderedFields;
   }
 
   function renderPageHeader(values: FormedibleFormValues) {
