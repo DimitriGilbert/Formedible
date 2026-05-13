@@ -1,0 +1,14 @@
+{
+  "extends": "../../packages/config/tsconfig.base.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "verbatimModuleSyntax": false,
+    "ignoreDeprecations": "6.0",
+    "noEmit": false,
+    "outDir": ".compiled",
+    "rootDir": ".",
+    "lib": ["ESNext", "DOM"]
+  },
+  "include": ["*.test.ts", "utils/**/*.ts"]
+}
