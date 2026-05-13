@@ -52,6 +52,16 @@
           "target": "lib/formedible/ai-adapters.ts"
         },
         {
+          "path": "src/lib/formedible/ai-errors.ts",
+          "type": "registry:lib",
+          "target": "lib/formedible/ai-errors.ts"
+        },
+        {
+          "path": "src/lib/formedible/ai-generation.ts",
+          "type": "registry:lib",
+          "target": "lib/formedible/ai-generation.ts"
+        },
+        {
           "path": "src/lib/formedible/ai-parser.ts",
           "type": "registry:lib",
           "target": "lib/formedible/ai-parser.ts"

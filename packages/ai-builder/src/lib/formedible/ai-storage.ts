@@ -284,19 +284,42 @@ function parseProviderSettings(value: unknown): ProviderSettings | undefined {
     return undefined;
   }
 
-  const settingsBase = {
-    provider: value.provider,
-    model: value.model,
-  };
+  if ('endpoint' in value || 'baseURL' in value) {
+    return undefined;
+  }
+
   const temperature = parseOptionalNumber(value.temperature);
   const maxTokens = parseOptionalNumber(value.maxTokens);
   const thinkingBudgetTokens = parseOptionalNumber(value.thinkingBudgetTokens);
 
-  return {
-    ...settingsBase,
+  if (value.provider !== 'anthropic' && thinkingBudgetTokens !== undefined) {
+    return undefined;
+  }
+
+  const sharedSettings = {
+    model: value.model,
     ...(temperature === undefined ? {} : { temperature }),
     ...(maxTokens === undefined ? {} : { maxTokens }),
-    ...(thinkingBudgetTokens === undefined ? {} : { thinkingBudgetTokens }),
+  };
+
+  if (value.provider === 'openai') {
+    return {
+      provider: value.provider,
+      ...sharedSettings,
+    };
+  }
+
+  if (value.provider === 'anthropic') {
+    return {
+      provider: value.provider,
+      ...sharedSettings,
+      ...(thinkingBudgetTokens === undefined ? {} : { thinkingBudgetTokens }),
+    };
+  }
+
+  return {
+    provider: value.provider,
+    ...sharedSettings,
   };
 }
 

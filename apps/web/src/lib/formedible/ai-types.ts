@@ -16,22 +16,30 @@ export type AiJsonValue = string | number | boolean | null | readonly AiJsonValu
 export interface ProviderModelSettings {
   readonly temperature?: number;
   readonly maxTokens?: number;
-  readonly thinkingBudgetTokens?: number;
 }
 
 export interface OpenAIProviderSettings extends ProviderModelSettings {
   readonly provider: 'openai';
   readonly model: string;
+  readonly endpoint?: never;
+  readonly baseURL?: never;
+  readonly thinkingBudgetTokens?: never;
 }
 
 export interface AnthropicProviderSettings extends ProviderModelSettings {
   readonly provider: 'anthropic';
   readonly model: string;
+  readonly endpoint?: never;
+  readonly baseURL?: never;
+  readonly thinkingBudgetTokens?: number;
 }
 
 export interface OpenRouterProviderSettings extends ProviderModelSettings {
   readonly provider: 'openrouter';
   readonly model: string;
+  readonly endpoint?: never;
+  readonly baseURL?: never;
+  readonly thinkingBudgetTokens?: never;
 }
 
 export type ProviderSettings = OpenAIProviderSettings | AnthropicProviderSettings | OpenRouterProviderSettings;

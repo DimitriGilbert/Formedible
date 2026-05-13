@@ -1,7 +1,10 @@
 import type { AnyTextAdapter } from '@tanstack/ai';
 import { createAnthropicChat } from '@tanstack/ai-anthropic';
+import type { AnthropicTextProviderOptions } from '@tanstack/ai-anthropic';
 import { createOpenaiChat } from '@tanstack/ai-openai';
+import type { OpenAITextProviderOptions } from '@tanstack/ai-openai';
 import { createOpenRouterText } from '@tanstack/ai-openrouter';
+import type { OpenRouterTextModelOptions } from '@tanstack/ai-openrouter';
 
 import type { AIProvider, ProviderSecrets, ProviderSettings } from '@/lib/formedible/ai-types';
 
@@ -50,10 +53,32 @@ const SUPPORTED_OPENROUTER_MODELS = [
   DEFAULT_TANSTACK_AI_MODELS.openrouter,
   'anthropic/claude-sonnet-4',
   'anthropic/claude-3.7-sonnet',
-  'google/gemini-2.5-flash',
-  'google/gemini-2.5-pro',
   'meta-llama/llama-3.3-70b-instruct',
 ] as const satisfies readonly OpenRouterAdapterModel[];
+
+export interface AiProviderFeatureSupport {
+  readonly temperature: boolean;
+  readonly maxTokens: boolean;
+  readonly thinkingBudgetTokens: boolean;
+}
+
+export const AI_PROVIDER_FEATURE_SUPPORT = {
+  openai: {
+    temperature: true,
+    maxTokens: true,
+    thinkingBudgetTokens: false,
+  },
+  anthropic: {
+    temperature: true,
+    maxTokens: true,
+    thinkingBudgetTokens: true,
+  },
+  openrouter: {
+    temperature: true,
+    maxTokens: true,
+    thinkingBudgetTokens: false,
+  },
+} as const satisfies Record<AIProvider, AiProviderFeatureSupport>;
 
 function assertMatchingSecrets(settings: ProviderSettings, secrets: ProviderSecrets): void {
   if (settings.provider !== secrets.provider) {
@@ -61,8 +86,19 @@ function assertMatchingSecrets(settings: ProviderSettings, secrets: ProviderSecr
   }
 }
 
+function assertNoUnsupportedRuntimeOptions(settings: ProviderSettings): void {
+  if ('endpoint' in settings || 'baseURL' in settings) {
+    throw new Error('Custom provider endpoints are not supported by the AI builder. Select OpenAI, Anthropic, or OpenRouter without endpoint/baseURL overrides.');
+  }
+
+  if (settings.provider !== 'anthropic' && 'thinkingBudgetTokens' in settings) {
+    throw new Error('Thinking budget tokens are only supported for Anthropic provider settings.');
+  }
+}
+
 export function createTanStackTextAdapter(settings: ProviderSettings, secrets: ProviderSecrets): AnyTextAdapter {
   assertMatchingSecrets(settings, secrets);
+  assertNoUnsupportedRuntimeOptions(settings);
 
   if (settings.provider === 'openai') {
     return createOpenaiChat(resolveSupportedModel(settings.model, SUPPORTED_OPENAI_MODELS, DEFAULT_TANSTACK_AI_MODELS.openai), secrets.apiKey);
@@ -73,6 +109,21 @@ export function createTanStackTextAdapter(settings: ProviderSettings, secrets: P
   }
 
   return createOpenRouterText(resolveSupportedModel(settings.model, SUPPORTED_OPENROUTER_MODELS, DEFAULT_TANSTACK_AI_MODELS.openrouter), secrets.apiKey);
+}
+
+export function createTanStackModelOptions(settings: ProviderSettings): OpenAITextProviderOptions | AnthropicTextProviderOptions | OpenRouterTextModelOptions | undefined {
+  assertNoUnsupportedRuntimeOptions(settings);
+
+  if (settings.provider !== 'anthropic' || !settings.thinkingBudgetTokens || settings.thinkingBudgetTokens <= 0) {
+    return undefined;
+  }
+
+  return {
+    thinking: {
+      type: 'enabled',
+      budget_tokens: settings.thinkingBudgetTokens,
+    },
+  } satisfies AnthropicTextProviderOptions;
 }
 
 function resolveSupportedModel<TModel extends string>(model: string, supportedModels: readonly TModel[], fallbackModel: TModel): TModel {

@@ -7,7 +7,8 @@ import { AI_BUILDER_DEFAULT_MODE, AIBuilder, resolveInitialProviderAccess } from
 import { AiFormRenderer, parseAiToFormedible } from '@/components/formedible/ai/ai-form-renderer';
 import { generateAiFormCode } from '@/components/formedible/ai/chat-interface';
 import { createDefaultProviderSecrets, createDefaultProviderSettings, providerOptions, validateProviderAccess } from '@/components/formedible/ai/provider-selection';
-import { createTanStackTextAdapter, DEFAULT_TANSTACK_AI_MODELS, SUPPORTED_TANSTACK_AI_PROVIDERS } from '@/lib/formedible/ai-adapters';
+import { createTanStackModelOptions, createTanStackTextAdapter, DEFAULT_TANSTACK_AI_MODELS, SUPPORTED_TANSTACK_AI_PROVIDERS } from '@/lib/formedible/ai-adapters';
+import { collectAiGenerationResult, streamAiResponse } from '@/lib/formedible/ai-generation';
 import { parseAiToFormedible as parseAiCode } from '@/lib/formedible/ai-parser';
 import { canUseStorage, clearConversations, clearStoredProviderSecrets, exportConversation, persistConversations, persistProviderSecrets, persistProviderSettings, persistUiState, readPersistedAIBuilderState, readStoredProviderSecrets, STORAGE_KEYS, upsertConversation, writeJson } from '@/lib/formedible/ai-storage';
 import type { AiConversation, AiMessage, ProviderSecrets, ProviderSettings } from '@/lib/formedible/ai-types';
@@ -20,6 +21,46 @@ const sampleFormCode = `{
   submitLabel: 'Join',
   formOptions: { defaultValues: { email: 'test@example.com' } }
 }`;
+
+const generationProviderSettings: ProviderSettings = {
+  provider: 'openrouter',
+  model: 'openai/gpt-4o-mini',
+  temperature: 0.2,
+  maxTokens: 1000,
+};
+
+const generationProviderSecrets: ProviderSecrets = {
+  provider: 'openrouter',
+  apiKey: 'openrouter-key',
+};
+
+const generationUserMessage: AiMessage = {
+  id: 'user-generation',
+  role: 'user',
+  content: 'Create a form',
+};
+
+function createGenerationRequest() {
+  return {
+    prompt: generationUserMessage.content,
+    providerSettings: generationProviderSettings,
+    providerSecrets: generationProviderSecrets,
+    messages: [generationUserMessage],
+    systemPrompt: 'Return formedible code when needed.',
+    userMessage: generationUserMessage,
+    conversationId: 'conversation-generation',
+  };
+}
+
+async function collectStreamEvents(stream: AsyncIterable<unknown>) {
+  const events: unknown[] = [];
+
+  for await (const event of stream) {
+    events.push(event);
+  }
+
+  return events;
+}
 
 class MemoryStorage implements Storage {
   private readonly values = new Map<string, string>();
@@ -158,6 +199,17 @@ test('TanStack AI adapter boundary builds supported provider adapters', () => {
   assert.equal(createTanStackTextAdapter({ provider: 'openrouter', model: DEFAULT_TANSTACK_AI_MODELS.openrouter }, { provider: 'openrouter', apiKey: 'openrouter-key' }).name, 'openrouter');
 });
 
+test('provider-specific options only emit Anthropic thinking configuration', () => {
+  assert.equal(createTanStackModelOptions({ provider: 'openai', model: DEFAULT_TANSTACK_AI_MODELS.openai }), undefined);
+  assert.equal(createTanStackModelOptions({ provider: 'openrouter', model: DEFAULT_TANSTACK_AI_MODELS.openrouter }), undefined);
+  assert.deepEqual(createTanStackModelOptions({ provider: 'anthropic', model: DEFAULT_TANSTACK_AI_MODELS.anthropic, thinkingBudgetTokens: 512 }), {
+    thinking: {
+      type: 'enabled',
+      budget_tokens: 512,
+    },
+  });
+});
+
 test('AI builder persists provider settings without API keys, plus UI state and conversation history', () => {
   const storage = new MemoryStorage();
   const restoreWindow = installWindowStorage(storage);
@@ -201,6 +253,38 @@ test('AI builder persists provider settings without API keys, plus UI state and 
 
     assert.deepEqual(readPersistedAIBuilderState(createDefaultProviderSettings()).providerSettings, nextProviderSettings);
     assert.equal(readPersistedAIBuilderState(createDefaultProviderSettings()).currentConversationId, 'conversation-1');
+  } finally {
+    restoreWindow();
+  }
+});
+
+test('AI builder rejects legacy provider settings with unsupported endpoints or thinking budgets', () => {
+  const storage = new MemoryStorage();
+  const restoreWindow = installWindowStorage(storage);
+  const fallbackProviderSettings = createDefaultProviderSettings('openai');
+
+  try {
+    writeJson(STORAGE_KEYS.providerSettings, {
+      version: 1,
+      data: {
+        provider: 'openrouter',
+        model: 'openai/gpt-4o-mini',
+        endpoint: 'https://example.test/v1',
+      },
+    });
+
+    assert.deepEqual(readPersistedAIBuilderState(fallbackProviderSettings).providerSettings, fallbackProviderSettings);
+
+    writeJson(STORAGE_KEYS.providerSettings, {
+      version: 1,
+      data: {
+        provider: 'openai',
+        model: 'gpt-4o-mini',
+        thinkingBudgetTokens: 512,
+      },
+    });
+
+    assert.deepEqual(readPersistedAIBuilderState(fallbackProviderSettings).providerSettings, fallbackProviderSettings);
   } finally {
     restoreWindow();
   }
@@ -389,6 +473,88 @@ test('adapter configuration remains scoped to supported providers without custom
   assert.equal(createTanStackTextAdapter({ provider: 'openrouter', model: DEFAULT_TANSTACK_AI_MODELS.openrouter }, { provider: 'openrouter', apiKey: 'openrouter-key' }).name, 'openrouter');
 });
 
+test('generation layer streams text chunks from mocked async iterables', async () => {
+  async function* mockStream() {
+    yield { type: 'TEXT_MESSAGE_CONTENT', delta: 'Hello ' };
+    yield { type: 'TEXT_MESSAGE_CONTENT', delta: 'builder' };
+    yield { type: 'RUN_FINISHED', finishReason: 'stop', usage: { promptTokens: 4, completionTokens: 2, totalTokens: 6 } };
+  }
+
+  const result = await collectAiGenerationResult(createGenerationRequest(), {
+    streamFactory: () => mockStream(),
+  });
+
+  assert.equal(result.content, 'Hello builder');
+  assert.deepEqual(result.rawOutput?.chunks, ['Hello ', 'builder']);
+  assert.equal(result.finishReason, 'stop');
+  assert.deepEqual(result.usage, { inputTokens: 4, outputTokens: 2, totalTokens: 6, cachedInputTokens: undefined, reasoningTokens: undefined });
+});
+
+test('generation layer streams thinking chunks when TanStack emits reasoning events', async () => {
+  async function* mockStream() {
+    yield { type: 'REASONING_MESSAGE_CONTENT', delta: 'Plan. ' };
+    yield { type: 'STEP_FINISHED', delta: 'Check fields. ' };
+    yield { type: 'TEXT_MESSAGE_CONTENT', delta: 'Done' };
+  }
+
+  const result = await collectAiGenerationResult(createGenerationRequest(), {
+    streamFactory: () => mockStream(),
+  });
+
+  assert.equal(result.content, 'Done');
+  assert.equal(result.thinkingOutput?.text, 'Plan. Check fields. ');
+  assert.deepEqual(result.thinkingOutput?.chunks, ['Plan. ', 'Check fields. ']);
+});
+
+test('generation layer preserves unknown raw provider events as unknown metadata', async () => {
+  const rawProviderEvent = { type: 'PROVIDER_VENDOR_EVENT', payload: { traceId: 'trace-1' } };
+
+  const events = await collectStreamEvents(streamAiResponse(createGenerationRequest(), {
+    streamFactory: async function* streamFactory() {
+      yield rawProviderEvent;
+    },
+  }));
+
+  assert.equal(events.length, 1);
+  assert.deepEqual(events[0], { type: 'raw', event: rawProviderEvent, receivedAt: events[0] && typeof events[0] === 'object' && 'receivedAt' in events[0] ? events[0].receivedAt : undefined, source: 'PROVIDER_VENDOR_EVENT' });
+});
+
+test('generation layer supports abort through AbortController', async () => {
+  const abortController = new AbortController();
+
+  async function* mockStream(_request: unknown, controller: AbortController) {
+    yield { type: 'TEXT_MESSAGE_CONTENT', delta: 'Partial' };
+    controller.abort('User stopped generation');
+  }
+
+  const events = await collectStreamEvents(streamAiResponse(createGenerationRequest(), {
+    abortController,
+    streamFactory: mockStream,
+  }));
+
+  assert.equal(events.length, 2);
+  assert.deepEqual(events[0], { type: 'text-delta', delta: 'Partial', raw: { type: 'TEXT_MESSAGE_CONTENT', delta: 'Partial' }, receivedAt: events[0] && typeof events[0] === 'object' && 'receivedAt' in events[0] ? events[0].receivedAt : undefined });
+  assert.equal(events[1] && typeof events[1] === 'object' && 'type' in events[1] ? events[1].type : undefined, 'finish');
+  assert.equal(events[1] && typeof events[1] === 'object' && 'finishReason' in events[1] ? events[1].finishReason : undefined, 'abort');
+  assert.equal(abortController.signal.aborted, true);
+});
+
+test('generation layer normalizes errors while retaining raw debug metadata', async () => {
+  async function* mockStream() {
+    throw new Error('401 invalid API key sk-secret');
+  }
+
+  const result = await collectAiGenerationResult(createGenerationRequest(), {
+    streamFactory: () => mockStream(),
+  });
+
+  assert.equal(result.errors?.length, 1);
+  assert.match(result.errors?.[0]?.message ?? '', /provider rejected/i);
+  assert.doesNotMatch(result.errors?.[0]?.message ?? '', /sk-secret/);
+  assert.equal(result.events?.[0]?.type, 'error');
+  assert.match(String(result.events?.[0]?.raw), /401 invalid API key sk-secret/);
+});
+
 test('conversation updates reuse the synchronously created conversation for one prompt', () => {
   const userMessage: AiMessage = { id: 'user-1', role: 'user', content: 'Create a signup form' };
   const assistantMessage: AiMessage = { id: 'assistant-1', role: 'assistant', content: sampleFormCode, formCode: sampleFormCode };
@@ -431,6 +597,8 @@ test('AI builder install source uses lower-level installed aliases', () => {
     'src/components/formedible/ai/chat-interface.tsx',
     'src/components/formedible/ai/provider-selection.tsx',
     'src/lib/formedible/ai-adapters.ts',
+    'src/lib/formedible/ai-errors.ts',
+    'src/lib/formedible/ai-generation.ts',
     'src/lib/formedible/ai-messages.ts',
     'src/lib/formedible/ai-parser.ts',
     'src/lib/formedible/ai-safe-persistence.ts',

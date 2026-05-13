@@ -1,14 +1,10 @@
 'use client';
 
-import { chat } from '@tanstack/ai';
-import type { ModelMessage, StreamChunk } from '@tanstack/ai';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { validateProviderAccess } from '@/components/formedible/ai/provider-selection';
-import { createTanStackTextAdapter } from '@/lib/formedible/ai-adapters';
-import { extractFormCode } from '@/lib/formedible/ai-parser';
+import { collectAiGenerationResult } from '@/lib/formedible/ai-generation';
 import type {
   AiGenerationRequest,
   AiGenerationResult,
@@ -43,53 +39,21 @@ function createMessage(role: AiMessage['role'], content: string, formCode?: stri
   };
 }
 
-function toModelMessages(messages: readonly AiMessage[]): ModelMessage<string>[] {
-  return messages
-    .filter((message) => message.role !== 'system')
-    .map((message) => ({ role: message.role === 'assistant' ? 'assistant' : 'user', content: message.content }));
-}
-
-function readTextChunk(chunk: StreamChunk): string {
-  return 'delta' in chunk && typeof chunk.delta === 'string' ? chunk.delta : '';
-}
-
-async function requestAdapterGeneration(request: AiGenerationRequest): Promise<AiGenerationResult> {
-  const validationError = validateProviderAccess(request.providerSettings, request.providerSecrets);
-
-  if (validationError) {
-    throw new Error(validationError);
-  }
-
-  const providerSettings = request.providerSettings;
-  const providerSecrets = request.providerSecrets;
-
-  if (!providerSettings || !providerSecrets) {
-    throw new Error('Provider settings and secrets are required.');
-  }
-
-  const adapter = createTanStackTextAdapter(providerSettings, providerSecrets);
-  let content = '';
-
-  for await (const chunk of chat({
-    adapter,
-    messages: toModelMessages(request.messages),
-    systemPrompts: [request.systemPrompt],
-    temperature: providerSettings.temperature,
-    maxTokens: providerSettings.maxTokens,
-    conversationId: request.conversationId,
-  })) {
-    content += readTextChunk(chunk);
-  }
-
-  return { content, formCode: extractFormCode(content) };
-}
-
 export async function generateAiFormCode(
   request: AiGenerationRequest,
   mode: AIBuilderMode,
+  abortController?: AbortController,
 ): Promise<AiGenerationResult> {
   if (mode === 'client') {
-    return requestAdapterGeneration(request);
+    if (!request.providerSettings) {
+      throw new Error('Provider settings are required.');
+    }
+
+    if (!request.providerSecrets) {
+      throw new Error('Provider secrets are required.');
+    }
+
+    return collectAiGenerationResult(request, { abortController });
   }
 
   throw new Error('AI Builder requires client mode to generate a form.');
@@ -109,6 +73,7 @@ export function ChatInterface({
   const [prompt, setPrompt] = useState('');
   const [error, setError] = useState<string>();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [abortController, setAbortController] = useState<AbortController>();
 
   async function submitPrompt() {
     const trimmedPrompt = prompt.trim();
@@ -123,13 +88,25 @@ export function ChatInterface({
     setPrompt('');
     setError(undefined);
     setIsGenerating(true);
+    const nextAbortController = new AbortController();
+    setAbortController(nextAbortController);
 
     try {
       const result = await generateAiFormCode(
         { prompt: trimmedPrompt, providerSettings, providerSecrets, messages: nextMessages, systemPrompt, userMessage, conversationId },
         mode,
+        nextAbortController,
       );
-      const assistantMessage = createMessage('assistant', result.content, result.formCode);
+      const assistantMessage: AiMessage = {
+        ...createMessage('assistant', result.content, result.formCode),
+        rawContent: result.rawOutput?.text,
+        thinking: result.thinkingOutput?.text,
+        events: result.events,
+        provider: result.provider,
+        model: result.model,
+        generation: result.metadata,
+        status: result.finishReason === 'abort' ? 'aborted' : result.errors && result.errors.length > 0 ? 'error' : 'completed',
+      };
       onMessagesChange([...nextMessages, assistantMessage]);
 
       if (result.formCode) {
@@ -140,6 +117,7 @@ export function ChatInterface({
       onMessagesChange(nextMessages);
     } finally {
       setIsGenerating(false);
+      setAbortController(undefined);
     }
   }
 
@@ -157,9 +135,16 @@ export function ChatInterface({
       {error ? <p className="rounded-md border border-destructive/40 p-2 text-sm text-destructive">{error}</p> : null}
       <div className="grid gap-2">
         <Textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} placeholder="Create a multi-step onboarding form..." />
-        <Button type="button" disabled={isGenerating || prompt.trim().length === 0} onClick={submitPrompt}>
-          {isGenerating ? 'Generating...' : 'Generate form'}
-        </Button>
+        <div className="flex gap-2">
+          <Button type="button" disabled={isGenerating || prompt.trim().length === 0} onClick={submitPrompt}>
+            {isGenerating ? 'Generating...' : 'Generate form'}
+          </Button>
+          {isGenerating ? (
+            <Button type="button" variant="outline" onClick={() => abortController?.abort('User stopped generation')}>
+              Stop
+            </Button>
+          ) : null}
+        </div>
       </div>
     </div>
   );
