@@ -27,7 +27,9 @@ function ParsedForm({ className, options }: { readonly className?: string; reado
 }
 
 export function AiFormRenderer({ code, isStreaming, onParseComplete, onSubmit, className, parserConfig }: AiFormRendererProps) {
-  const [parseResult, setParseResult] = useState<AiFormParseResult>(() => parseAiToFormedible(code, parserConfig));
+  const [parseResult, setParseResult] = useState<AiFormParseResult>(() =>
+    isStreaming ? { schema: undefined, formOptions: { fields: [], formOptions: { defaultValues: {} } }, success: false } : parseAiToFormedible(code, parserConfig),
+  );
 
   useEffect(() => {
     if (isStreaming) {

@@ -251,6 +251,7 @@ export interface AiFormParseResult<TFormData extends FormedibleFormValues = Form
   readonly formOptions: UseFormedibleOptions<TFormData>;
   readonly success: boolean;
   readonly error?: string;
+  readonly errors?: readonly AiParseError[];
 }
 
 export interface AiParserConfig {

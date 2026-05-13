@@ -9,7 +9,7 @@ import { generateAiFormCode } from '@/components/formedible/ai/chat-interface';
 import { createDefaultProviderSecrets, createDefaultProviderSettings, providerOptions, validateProviderAccess } from '@/components/formedible/ai/provider-selection';
 import { createTanStackModelOptions, createTanStackTextAdapter, DEFAULT_TANSTACK_AI_MODELS, SUPPORTED_TANSTACK_AI_PROVIDERS } from '@/lib/formedible/ai-adapters';
 import { collectAiGenerationResult, streamAiResponse } from '@/lib/formedible/ai-generation';
-import { parseAiToFormedible as parseAiCode } from '@/lib/formedible/ai-parser';
+import { extractFormCode, parseAiToFormedible as parseAiCode } from '@/lib/formedible/ai-parser';
 import { canUseStorage, clearConversations, clearStoredProviderSecrets, exportConversation, persistConversations, persistProviderSecrets, persistProviderSettings, persistUiState, readPersistedAIBuilderState, readStoredProviderSecrets, STORAGE_KEYS, upsertConversation, writeJson } from '@/lib/formedible/ai-storage';
 import type { AiConversation, AiMessage, ProviderSecrets, ProviderSettings } from '@/lib/formedible/ai-types';
 
@@ -171,6 +171,50 @@ test('parser integration reports invalid generated schema without throwing', () 
   assert.equal(result.success, false);
   assert.equal(result.formOptions.fields.length, 0);
   assert.match(result.error ?? '', /name|type|field/i);
+  assert.equal(result.errors?.length, 1);
+});
+
+test('AI builder extraction delegates to lowercase formedible parser contract', () => {
+  assert.match(extractFormCode('```formedible\n{ fields: [{ name: "email", type: "email" }] }\n```') ?? '', /fields/);
+  assert.equal(extractFormCode('```json\n{ "fields": [] }\n```'), undefined);
+  assert.equal(extractFormCode('```ts\n{ fields: [{ name: "email", type: "email" }] }\n```'), undefined);
+  assert.equal(extractFormCode('{ fields: [{ name: "email", type: "email" }] }'), undefined);
+});
+
+test('generation form extraction requires lowercase formedible fences', async () => {
+  async function* lowerCaseFormedibleStream() {
+    yield { type: 'TEXT_MESSAGE_CONTENT', delta: '```formedible\n{ fields: [{ name: "email", type: "email" }] }\n```' };
+  }
+
+  async function* unfencedObjectStream() {
+    yield { type: 'TEXT_MESSAGE_CONTENT', delta: '{ fields: [{ name: "email", type: "email" }] }' };
+  }
+
+  async function* jsonFenceStream() {
+    yield { type: 'TEXT_MESSAGE_CONTENT', delta: '```json\n{ "fields": [{ "name": "email", "type": "email" }] }\n```' };
+  }
+
+  async function* tsFenceStream() {
+    yield { type: 'TEXT_MESSAGE_CONTENT', delta: '```ts\n{ fields: [{ name: "email", type: "email" }] }\n```' };
+  }
+
+  const fencedResult = await collectAiGenerationResult(createGenerationRequest(), {
+    streamFactory: () => lowerCaseFormedibleStream(),
+  });
+  const unfencedResult = await collectAiGenerationResult(createGenerationRequest(), {
+    streamFactory: () => unfencedObjectStream(),
+  });
+  const jsonFenceResult = await collectAiGenerationResult(createGenerationRequest(), {
+    streamFactory: () => jsonFenceStream(),
+  });
+  const tsFenceResult = await collectAiGenerationResult(createGenerationRequest(), {
+    streamFactory: () => tsFenceStream(),
+  });
+
+  assert.match(fencedResult.formCode ?? '', /fields/);
+  assert.equal(unfencedResult.formCode, undefined);
+  assert.equal(jsonFenceResult.formCode, undefined);
+  assert.equal(tsFenceResult.formCode, undefined);
 });
 
 test('provider selection preserves provider-specific default models', () => {

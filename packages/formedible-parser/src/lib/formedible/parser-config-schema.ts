@@ -214,6 +214,9 @@ export function generateSystemPrompt(config: ParserConfig): string {
     `Use the ${config.mergeStrategy} merge strategy.`,
     `Maximum code length: ${config.maxCodeLength} characters.`,
     `Maximum nesting depth: ${config.maxNestingDepth} levels.`,
+    'Normal prose conversation is allowed when no form is requested.',
+    'When generating a form, return the Formedible config object inside a lowercase ```formedible fenced block.',
+    'Do not include executable callbacks, React components, JSX, imports, classes, functions, or unsupported config keys in generated forms.',
   ];
 
   if (config.customInstructions) {

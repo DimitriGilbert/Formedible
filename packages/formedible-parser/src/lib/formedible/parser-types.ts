@@ -17,6 +17,12 @@ export type ParsedFormConfig = UseFormedibleOptions<FormedibleFormValues> & {
 
 export interface ParserOptions {
   readonly strictValidation?: boolean;
+  readonly allowedKeys?: readonly string[];
+  readonly allowedFieldTypes?: readonly string[];
+  readonly allowedFieldKeys?: readonly string[];
+  readonly allowedPageKeys?: readonly string[];
+  readonly allowedProgressKeys?: readonly string[];
+  readonly allowedFormOptionsKeys?: readonly string[];
 }
 
 export interface ParserError extends Error {
@@ -66,6 +72,30 @@ export interface ValidationWithSuggestionsResult {
   readonly errors: readonly EnhancedParserError[];
   readonly suggestions: readonly string[];
 }
+
+export interface FormedibleExtractionResult {
+  readonly code?: string;
+  readonly source: 'structured' | 'fenced' | 'none';
+  readonly errors: readonly EnhancedParserError[];
+}
+
+export interface FormedibleParseResult {
+  readonly success: boolean;
+  readonly config?: ParsedFormConfig;
+  readonly code?: string;
+  readonly source: 'structured' | 'fenced' | 'direct' | 'none';
+  readonly errors: readonly EnhancedParserError[];
+}
+
+export type FormedibleStructuredOutput =
+  | ParsedFormConfig
+  | {
+      readonly formedible?: unknown;
+      readonly formConfig?: unknown;
+      readonly formOptions?: unknown;
+      readonly config?: unknown;
+      readonly output?: unknown;
+    };
 
 export type {
   FormedibleFieldConfig as FieldConfig,

@@ -10,6 +10,9 @@ import type {
 import type {
   EnhancedParserError,
   EnhancedParserOptions,
+  FormedibleExtractionResult,
+  FormedibleParseResult,
+  FormedibleStructuredOutput,
   ParserError,
   ParserOptions,
   ParsedFormConfig,
@@ -118,6 +121,45 @@ const supportedFieldTypeSet = new Set<string>(supportedFieldTypes);
 const zodSentinel = '__FORMEDIBLE_ZOD_EXPRESSION__';
 const maxCodeLength = 1000000;
 
+const allowedFieldKeys = new Set([
+  'name',
+  'type',
+  'label',
+  'placeholder',
+  'description',
+  'tab',
+  'section',
+  'className',
+  'inputClassName',
+  'page',
+  'min',
+  'max',
+  'step',
+  'rows',
+  'maxLength',
+  'required',
+  'disabled',
+  'dynamicPlaceholder',
+  'defaultValue',
+  'options',
+  'nestedFields',
+  'objectConfig',
+  'arrayConfig',
+  'dateConfig',
+  'sliderConfig',
+  'ratingConfig',
+  'multiSelectConfig',
+  'comboboxConfig',
+  'multiComboboxConfig',
+  'colorConfig',
+  'phoneConfig',
+  'durationConfig',
+  'locationConfig',
+  'fileConfig',
+]);
+
+const executableSyntaxPattern = /(?:=>|\bfunction\s*\(|\bclass\s+[A-Za-z_$]|\bnew\s+[A-Za-z_$][\w$]*\s*\(|\beval\s*\(|\bFunction\s*\(|\bsetTimeout\s*\(|\bsetInterval\s*\(|\brequire\s*\(|\bimport\s*\(|<\s*[A-Z][A-Za-z0-9]*(?:\s|>|\/))/;
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -128,6 +170,24 @@ function createParserError(message: string, code: string): ParserError {
   Object.defineProperty(error, 'code', { value: code, enumerable: true });
 
   return error;
+}
+
+function parserErrorToEnhanced(error: unknown, code?: string): EnhancedParserError {
+  const message = error instanceof Error ? error.message : String(error);
+  const type: EnhancedParserError['type'] = message.includes('field type') || message.includes('not allowed') ? 'field_type' : message.includes('schema') ? 'schema' : 'validation';
+
+  return {
+    type,
+    message,
+    suggestion: type === 'field_type' ? `Use one of the supported field types: ${supportedFieldTypes.join(', ')}` : 'Return only an AI-safe Formedible config object.',
+    location: code === undefined ? undefined : extractErrorLocation(code, error),
+  };
+}
+
+function assertNoExecutableSyntax(code: string): void {
+  if (executableSyntaxPattern.test(code)) {
+    throw createParserError('Executable callbacks, constructors, imports, and component markup are not supported in AI-generated Formedible configs.', 'EXECUTABLE_INPUT');
+  }
 }
 
 function sanitizeCode(code: string): string {
@@ -257,6 +317,52 @@ function parseObjectLiteral(code: string): Record<string, unknown> {
   }
 }
 
+function cloneJsonValue(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map((entry) => cloneJsonValue(entry));
+  }
+
+  if (isRecord(value)) {
+    return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, cloneJsonValue(entry)]));
+  }
+
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' || value === null) {
+    return value;
+  }
+
+  if (value === undefined) {
+    return undefined;
+  }
+
+  throw createParserError('Structured Formedible output contains non-serializable values.', 'UNSUPPORTED_STRUCTURED_VALUE');
+}
+
+function parseStructuredObject(value: unknown): Record<string, unknown> {
+  const cloned = cloneJsonValue(value);
+
+  if (!isRecord(cloned)) {
+    throw createParserError('Structured Formedible output must be an object.', 'INVALID_STRUCTURED_OUTPUT');
+  }
+
+  return cloned;
+}
+
+function pickStructuredCandidate(value: FormedibleStructuredOutput): unknown {
+  if (!isRecord(value)) {
+    return value;
+  }
+
+  const candidate = value as Readonly<Record<string, unknown>>;
+
+  for (const key of ['formedible', 'formConfig', 'config', 'output', 'formOptions']) {
+    if (candidate[key] !== undefined) {
+      return candidate[key];
+    }
+  }
+
+  return value;
+}
+
 function normalizeOption(option: unknown): FormedibleFieldOption | undefined {
   if (typeof option === 'string') {
     return option;
@@ -310,8 +416,12 @@ function sanitizePlainConfig(value: unknown): Record<string, unknown> | undefine
   const output: Record<string, unknown> = {};
 
   for (const [key, nestedValue] of Object.entries(value)) {
+    if (['component', 'render', 'children', 'onChange', 'onBlur', 'onFocus', 'onSubmit', 'conditional'].includes(key)) {
+      throw createParserError(`Unsupported executable config key '${key}'`, 'UNSUPPORTED_CONFIG_KEY');
+    }
+
     if (typeof nestedValue === 'function' || nestedValue === zodSentinel) {
-      continue;
+      throw createParserError(`Unsupported executable value for key '${key}'`, 'UNSUPPORTED_CONFIG_VALUE');
     }
 
     if (Array.isArray(nestedValue)) {
@@ -370,6 +480,12 @@ function sanitizeField(field: unknown, index: number): FormedibleFieldConfig<For
 
   if (typeof field.name !== 'string' || typeof field.type !== 'string') {
     throw createParserError(`Field at index ${index} must have string name and type properties`, 'MISSING_REQUIRED_FIELD');
+  }
+
+  for (const key of Object.keys(field)) {
+    if (!allowedFieldKeys.has(key)) {
+      throw createParserError(`Field at index ${index} has unsupported key '${key}'`, 'UNSUPPORTED_FIELD_KEY');
+    }
   }
 
   if (!supportedFieldTypeSet.has(field.type)) {
@@ -464,15 +580,30 @@ function sanitizePages(value: unknown): readonly FormediblePageConfig<Formedible
   });
 }
 
-function validateAndSanitize(parsed: Record<string, unknown>, strictValidation: boolean): ParsedFormConfig {
+function validateAndSanitize(parsed: Record<string, unknown>, options?: ParserOptions | EnhancedParserOptions): ParsedFormConfig {
+  const strictValidation = options?.strictValidation ?? true;
+  const configuredTopLevelKeys = options?.allowedKeys === undefined ? undefined : new Set(options.allowedKeys);
+  const configuredFieldTypes = options?.allowedFieldTypes === undefined ? undefined : new Set(options.allowedFieldTypes);
+
   if (!Array.isArray(parsed.fields)) {
     throw createParserError('Fields must be an array', 'INVALID_FIELDS');
   }
 
   const output: Record<string, unknown> = {
-    fields: sanitizeFields(parsed.fields),
+    fields: sanitizeFields(parsed.fields).map((field) => {
+      const fieldType = field.type;
+      if (configuredFieldTypes !== undefined && typeof fieldType === 'string' && !configuredFieldTypes.has(fieldType)) {
+        throw createParserError(`Field type '${field.type}' is not allowed.`, 'DISALLOWED_FIELD_TYPE');
+      }
+
+      return filterFieldByAllowedKeys(field, options?.allowedFieldKeys);
+    }),
     formOptions: isRecord(parsed.formOptions) ? sanitizePlainConfig(parsed.formOptions) : { defaultValues: {} },
   };
+
+  if (isRecord(output.formOptions) && options?.allowedFormOptionsKeys !== undefined) {
+    output.formOptions = filterRecordKeys(output.formOptions, options.allowedFormOptionsKeys);
+  }
 
   if (isRecord(output.formOptions) && !isRecord(output.formOptions.defaultValues)) {
     output.formOptions = { ...output.formOptions, defaultValues: {} };
@@ -481,8 +612,12 @@ function validateAndSanitize(parsed: Record<string, unknown>, strictValidation: 
   for (const [key, value] of Object.entries(parsed)) {
     if (!allowedTopLevelKeys.has(key)) {
       if (strictValidation) {
-        continue;
+        throw createParserError(`Unsupported top-level key '${key}'`, 'UNSUPPORTED_TOP_LEVEL_KEY');
       }
+      continue;
+    }
+
+    if (configuredTopLevelKeys !== undefined && key !== 'fields' && key !== 'formOptions' && !configuredTopLevelKeys.has(key)) {
       continue;
     }
 
@@ -520,8 +655,14 @@ function validateAndSanitize(parsed: Record<string, unknown>, strictValidation: 
     if (key === 'pages') {
       const pages = sanitizePages(value);
       if (pages !== undefined) {
-        output.pages = pages;
+        const allowedPageKeys = options?.allowedPageKeys;
+        output.pages = allowedPageKeys === undefined ? pages : pages.map((page) => filterRecordKeys(page, allowedPageKeys) as FormediblePageConfig<FormedibleFormValues>);
       }
+      continue;
+    }
+
+    if (key === 'progress' && isRecord(value)) {
+      output.progress = options?.allowedProgressKeys === undefined ? sanitizePlainConfig(value) : filterRecordKeys(value, options.allowedProgressKeys);
       continue;
     }
 
@@ -537,6 +678,43 @@ function validateAndSanitize(parsed: Record<string, unknown>, strictValidation: 
   }
 
   return output as ParsedFormConfig;
+}
+
+function filterRecordKeys(value: Readonly<Record<string, unknown>>, allowedKeys: readonly string[]): Record<string, unknown> {
+  const allowedKeySet = new Set(allowedKeys);
+  return Object.fromEntries(Object.entries(value).filter(([key]) => allowedKeySet.has(key)));
+}
+
+function filterFieldByAllowedKeys(field: FormedibleFieldConfig<FormedibleFormValues>, allowedKeys: readonly string[] | undefined): FormedibleFieldConfig<FormedibleFormValues> {
+  if (allowedKeys === undefined) {
+    return field;
+  }
+
+  const fieldKeys = new Set(['name', 'type', ...allowedKeys]);
+  return Object.fromEntries(Object.entries(field).filter(([key]) => fieldKeys.has(key))) as FormedibleFieldConfig<FormedibleFormValues>;
+}
+
+export function extractFormedibleCode(content: string): FormedibleExtractionResult {
+  const formedibleBlock = content.match(/```formedible\s*\n([\s\S]*?)```/);
+
+  if (formedibleBlock?.[1]) {
+    return { code: formedibleBlock[1].trim(), source: 'fenced', errors: [] };
+  }
+
+  if (/```(?:json|ts|tsx|typescript|javascript|js)\b/i.test(content)) {
+    return {
+      source: 'none',
+      errors: [
+        {
+          type: 'validation',
+          message: 'Generated forms must use a lowercase ```formedible fenced block.',
+          suggestion: 'Wrap the Formedible configuration in ```formedible, not json/ts/tsx/javascript fences.',
+        },
+      ],
+    };
+  }
+
+  return { source: 'none', errors: [] };
 }
 
 function inferZodTypeFromField(field: FormedibleFieldConfig<FormedibleFormValues>): string | undefined {
@@ -611,10 +789,51 @@ export class FormedibleParser {
       throw createParserError(`Code length exceeds maximum allowed size of ${maxCodeLength} characters`, 'CODE_TOO_LARGE');
     }
 
+    assertNoExecutableSyntax(code);
     const sanitizedCode = sanitizeCode(code);
     const parsed = parseObjectLiteral(sanitizedCode);
 
-    return validateAndSanitize(parsed, options?.strictValidation ?? true);
+    return validateAndSanitize(parsed, options);
+  }
+
+  static parseStructured(output: FormedibleStructuredOutput, options?: ParserOptions | EnhancedParserOptions): ParsedFormConfig {
+    const candidate = pickStructuredCandidate(output);
+    if (typeof candidate === 'string') {
+      assertNoExecutableSyntax(candidate);
+    }
+
+    const parsed = typeof candidate === 'string' ? parseObjectLiteral(sanitizeCode(candidate)) : parseStructuredObject(candidate);
+
+    return validateAndSanitize(parsed, options);
+  }
+
+  static parseAiOutput(output: string | FormedibleStructuredOutput, options?: ParserOptions | EnhancedParserOptions): FormedibleParseResult {
+    try {
+      if (typeof output !== 'string') {
+        return { success: true, config: this.parseStructured(output, options), source: 'structured', errors: [] };
+      }
+
+      const extraction = extractFormedibleCode(output);
+      if (extraction.code !== undefined) {
+        return { success: true, config: this.parse(extraction.code, options), code: extraction.code, source: 'fenced', errors: extraction.errors };
+      }
+
+      if (extraction.errors.length > 0) {
+        return { success: false, source: 'none', errors: extraction.errors };
+      }
+
+      if (!output.trim().startsWith('{')) {
+        return { success: false, source: 'none', errors: [] };
+      }
+
+      return { success: true, config: this.parse(output, options), code: output, source: 'direct', errors: [] };
+    } catch (error) {
+      return {
+        success: false,
+        source: typeof output === 'string' ? 'direct' : 'structured',
+        errors: [parserErrorToEnhanced(error, typeof output === 'string' ? output : undefined)],
+      };
+    }
   }
 
   static isValidFieldType(type: string): type is SupportedFieldType {
@@ -635,7 +854,7 @@ export class FormedibleParser {
         throw createParserError('Definition must be an object', 'INVALID_DEFINITION');
       }
 
-      validateAndSanitize(config, true);
+      validateAndSanitize(config, { strictValidation: true });
       return { isValid: true, errors: [] };
     } catch (error) {
       return { isValid: false, errors: [error instanceof Error ? error.message : String(error)] };
@@ -726,4 +945,4 @@ export class FormedibleParser {
   }
 }
 
-export type { FormedibleFieldConfig, FormedibleObjectConfig, FormediblePageConfig, ParserError, ParserOptions, UseFormedibleOptions };
+export type { FormedibleExtractionResult, FormedibleFieldConfig, FormedibleObjectConfig, FormediblePageConfig, FormedibleParseResult, FormedibleStructuredOutput, ParserError, ParserOptions, UseFormedibleOptions };

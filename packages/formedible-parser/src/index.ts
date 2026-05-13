@@ -1,5 +1,6 @@
 export {
   FormedibleParser,
+  extractFormedibleCode,
   supportedFieldTypeInfo,
   supportedFieldTypes,
   type SupportedFieldType,
@@ -11,6 +12,9 @@ export type {
   FieldConfig,
   FieldOption,
   FieldOptions,
+  FormedibleExtractionResult,
+  FormedibleParseResult,
+  FormedibleStructuredOutput,
   ObjectConfig,
   PageConfig,
   ParsedFieldConfig,

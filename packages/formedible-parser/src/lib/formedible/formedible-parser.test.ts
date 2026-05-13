@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { defaultParserConfig, FormedibleParser, supportedFieldTypeInfo, supportedFieldTypes } from '@/index';
+import { defaultParserConfig, extractFormedibleCode, FormedibleParser, supportedFieldTypeInfo, supportedFieldTypes } from '@/index';
 
 describe('FormedibleParser', () => {
   it('parses JSON input through the public parser', () => {
@@ -28,11 +28,11 @@ describe('FormedibleParser', () => {
     assert.equal(parsed.fields[0]?.type, 'email');
   });
 
-  it('parses object literals containing Zod expressions without executing them', () => {
+  it('parses object literals containing inert Zod schema expressions without executing them', () => {
     const parsed = FormedibleParser.parse(`{
       fields: [
-        { name: 'email', type: 'email', validation: z.string().email().min(3) },
-        { name: 'count', type: 'number', validation: z.number().min(1).max(5) }
+        { name: 'email', type: 'email' },
+        { name: 'count', type: 'number' }
       ],
       schema: z.object({ email: z.string().email(), count: z.number() })
     }`);
@@ -84,19 +84,63 @@ describe('FormedibleParser', () => {
     });
   });
 
-  it('sanitizes unsafe executable input and unknown keys', () => {
-    const parsed = FormedibleParser.parse(`{
+  it('rejects unsafe executable input', () => {
+    assert.throws(() => FormedibleParser.parse(`{
       fields: [{ name: 'safe', type: 'text', conditional: () => process.exit(1) }],
-      onSubmit: (data) => window.alert(data),
+      onSubmit: (data) => globalThis.dispatchEvent(data),
       dangerous: require('fs')
-    }`);
+    }`), /Executable callbacks|unsupported/i);
+  });
 
-    assert.equal(parsed.fields.length, 1);
-    const firstField = parsed.fields[0];
-    assert.ok(firstField);
-    assert.equal('conditional' in firstField, false);
-    assert.equal('onSubmit' in parsed, false);
-    assert.equal('dangerous' in parsed, false);
+  it('rejects constructor calls instead of sanitizing them to null', () => {
+    assert.throws(() => FormedibleParser.parse(`{
+      fields: [{ name: 'createdAt', type: 'text', defaultValue: new Evil() }]
+    }`), /Executable callbacks|constructors/i);
+
+    const result = FormedibleParser.parseAiOutput('```formedible\n{ fields: [{ name: "createdAt", type: "text", defaultValue: new Evil() }] }\n```');
+
+    assert.equal(result.success, false);
+    assert.match(result.errors[0]?.message ?? '', /Executable callbacks|constructors/i);
+  });
+
+  it('rejects unsupported keys in strict AI-safe configs', () => {
+    assert.throws(() => FormedibleParser.parse(`{
+      fields: [{ name: 'safe', type: 'text', component: 'CustomInput' }],
+      dangerous: 'value'
+    }`), /unsupported/i);
+  });
+
+  it('extracts only lowercase formedible fenced blocks from prose', () => {
+    const extraction = extractFormedibleCode(`Here is a form:\n\n\`\`\`formedible\n{ fields: [{ name: 'email', type: 'email' }] }\n\`\`\``);
+
+    assert.equal(extraction.source, 'fenced');
+    assert.match(extraction.code ?? '', /fields/);
+
+    const wrongFence = extractFormedibleCode('```json\n{ "fields": [] }\n```');
+    assert.equal(wrongFence.source, 'none');
+    assert.equal(wrongFence.errors.length, 1);
+  });
+
+  it('parses structured object output before fenced or direct string parsing', () => {
+    const result = FormedibleParser.parseAiOutput({
+      formedible: {
+        fields: [{ name: 'email', type: 'email', label: 'Email' }],
+        submitLabel: 'Send',
+        formOptions: { defaultValues: { email: '' } },
+      },
+    });
+
+    assert.equal(result.success, true);
+    assert.equal(result.source, 'structured');
+    assert.equal(result.config?.fields[0]?.name, 'email');
+  });
+
+  it('returns detailed parse errors without throwing from AI output parsing', () => {
+    const result = FormedibleParser.parseAiOutput('```formedible\n{ fields: [{ name: 1, type: "wat" }] }\n```');
+
+    assert.equal(result.success, false);
+    assert.equal(result.errors.length, 1);
+    assert.match(result.errors[0]?.message ?? '', /name|type|field/i);
   });
 
   it('infers schema information from field definitions', () => {
