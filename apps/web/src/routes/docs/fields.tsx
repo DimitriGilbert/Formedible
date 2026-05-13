@@ -24,12 +24,14 @@ function FieldsRoute() {
       description="Every manual form, builder form, AI-generated form, and parser result targets the same field configuration model."
       codeExampleIds={['field-registry-extension']}
       aside={(
-        <div className="grid gap-3 rounded-[1.5rem] border border-border/70 bg-background/70 p-4">
-          {fieldTypes.map((group) => (
-            <p key={group} className="rounded-2xl bg-card px-4 py-3 text-sm leading-6 text-muted-foreground">
-              {group}
-            </p>
-          ))}
+        <div className="overflow-hidden rounded-2xl">
+          <div className="grid gap-px bg-border">
+            {fieldTypes.map((group) => (
+              <p key={group} className="bg-muted p-4 text-sm leading-6 text-muted-foreground">
+                {group}
+              </p>
+            ))}
+          </div>
         </div>
       )}
       sections={[

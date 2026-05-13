@@ -76,25 +76,25 @@ function RenderedExampleArticle({ example, index }: { readonly example: Showcase
   const codePanelId = `${example.id}-code-panel`;
 
   return (
-    <article id={example.id} data-code-example-id={example.id} data-code-example-export={String(example.key)} data-rendered-example-status={mapping.status} className="scroll-mt-8 overflow-hidden rounded-[2.25rem] border border-border/70 bg-card shadow-2xl shadow-black/10">
-      <div className="border-b border-border/70 bg-[linear-gradient(135deg,hsl(var(--muted)/0.72),hsl(var(--background))_48%,hsl(var(--primary)/0.08))] p-5 sm:p-7 xl:p-8">
+    <article id={example.id} data-code-example-id={example.id} data-code-example-export={String(example.key)} data-rendered-example-status={mapping.status} className="scroll-mt-8 overflow-hidden rounded-2xl">
+      <div className="border-b border-border bg-muted p-6 md:p-8">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-          <div className="max-w-5xl space-y-4">
+          <div className="max-w-3xl">
             <div className="flex flex-wrap items-center gap-2">
-              <p className="text-xs font-black uppercase tracking-[0.24em] text-primary">{example.category}</p>
-              <span className="rounded-full border border-border/70 bg-background/75 px-3 py-1 text-xs font-bold text-muted-foreground">{mapping.status === 'rendered' ? 'Rendered preview' : 'Code-only reference'}</span>
+              <p className="text-sm font-semibold text-primary">{example.category}</p>
+              <span className="rounded-full border border-border bg-background px-3 py-1 text-xs font-semibold text-muted-foreground">{mapping.status === 'rendered' ? 'Rendered preview' : 'Code-only reference'}</span>
             </div>
-            <h2 className="text-3xl font-black tracking-[-0.06em] text-foreground sm:text-4xl xl:text-5xl">{example.title}</h2>
-            <p className="max-w-4xl text-sm leading-7 text-muted-foreground sm:text-base">{example.description}</p>
+            <h2 className="mt-3 text-sm font-semibold text-foreground">{example.title}</h2>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{example.description}</p>
           </div>
-          <span className="grid size-12 shrink-0 place-items-center rounded-2xl border border-border/70 bg-background/70 text-sm font-black text-primary shadow-lg shadow-black/5">{String(index + 1).padStart(2, '0')}</span>
+          <span className="grid size-12 shrink-0 place-items-center rounded-xl bg-background text-sm font-semibold text-primary">{String(index + 1).padStart(2, '0')}</span>
         </div>
       </div>
 
-      <div className="border-b border-border/70 bg-muted/15 p-3 sm:p-4">
+      <div className="border-b border-border bg-background p-4">
         <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
           <ExampleMetadata example={example} mapping={mapping} />
-          <div className="inline-grid grid-cols-2 rounded-2xl border border-border/70 bg-background p-1" role="tablist" aria-label="Focused example view">
+          <div className="inline-grid grid-cols-2 rounded-xl border border-border bg-muted p-1" role="tablist" aria-label="Focused example view">
             <button
               type="button"
               role="tab"
@@ -102,7 +102,7 @@ function RenderedExampleArticle({ example, index }: { readonly example: Showcase
               aria-selected={activeTab === 'preview'}
               aria-controls={previewPanelId}
               onClick={() => setActiveTab('preview')}
-              className={`rounded-xl px-4 py-2 text-sm font-bold outline-none transition focus-visible:ring-2 focus-visible:ring-ring ${activeTab === 'preview' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`rounded-lg px-4 py-2 text-sm font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-ring ${activeTab === 'preview' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground'}`}
             >
               Preview
             </button>
@@ -113,7 +113,7 @@ function RenderedExampleArticle({ example, index }: { readonly example: Showcase
               aria-selected={activeTab === 'code'}
               aria-controls={codePanelId}
               onClick={() => setActiveTab('code')}
-              className={`rounded-xl px-4 py-2 text-sm font-bold outline-none transition focus-visible:ring-2 focus-visible:ring-ring ${activeTab === 'code' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+              className={`rounded-lg px-4 py-2 text-sm font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-ring ${activeTab === 'code' ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground'}`}
             >
               Source
             </button>
@@ -142,11 +142,11 @@ function ExampleMetadata({ example, mapping }: { readonly example: ShowcaseCodeE
         ))}
       </dl>
       <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center lg:max-w-3xl">
-        <div className="rounded-2xl border border-border/70 bg-background/70 p-4">
-          <p className="text-xs font-black uppercase tracking-[0.2em] text-muted-foreground">Export</p>
+        <div className="bg-muted p-4">
+          <p className="text-sm font-semibold text-muted-foreground">Export</p>
           <code className="mt-2 block break-all text-sm font-semibold text-foreground">{String(example.key)}</code>
         </div>
-        <span className="rounded-full border border-border/70 bg-card px-4 py-2 text-center text-xs font-bold text-muted-foreground">Focused view</span>
+        <span className="rounded-full border border-border bg-muted px-4 py-2 text-center text-xs font-semibold text-muted-foreground">Focused view</span>
       </div>
       {example.caveats.length > 0 ? <DisplayNotes notes={example.caveats} /> : null}
       {mapping.status === 'code-only' ? <CodeOnlyNotice reason={mapping.reason ?? 'This copied source is preserved as a code-only reference.'} /> : null}
@@ -156,21 +156,21 @@ function ExampleMetadata({ example, mapping }: { readonly example: ShowcaseCodeE
 
 function MetricCard({ label, value }: { readonly label: string; readonly value: string }) {
   return (
-    <div className="rounded-2xl border border-border/70 bg-background/70 p-4 text-center shadow-sm shadow-black/5">
-      <dt className="text-2xl font-black tracking-[-0.05em] text-foreground">{value}</dt>
-      <dd className="mt-1 text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">{label}</dd>
+    <div className="bg-muted p-4 text-center">
+      <dt className="text-2xl font-bold tracking-tight text-foreground">{value}</dt>
+      <dd className="mt-1 text-sm text-muted-foreground">{label}</dd>
     </div>
   );
 }
 
 function DisplayNotes({ notes }: { readonly notes: readonly string[] }) {
   return (
-    <div className="rounded-2xl border border-amber-400/40 bg-amber-500/10 p-4 text-sm leading-6 text-amber-950 dark:text-amber-100">
+    <div className="bg-primary/10 p-4 text-sm leading-relaxed text-foreground">
       <p className="font-semibold">Display notes for copied source</p>
       <ul className="mt-2 grid gap-1.5">
         {notes.map((note) => (
           <li key={note} className="flex gap-2">
-            <span aria-hidden="true" className="mt-2 size-1.5 shrink-0 rounded-full bg-amber-500" />
+            <span aria-hidden="true" className="mt-2 size-1.5 shrink-0 rounded-full bg-primary" />
             <span>{note}</span>
           </li>
         ))}
@@ -181,7 +181,7 @@ function DisplayNotes({ notes }: { readonly notes: readonly string[] }) {
 
 function CodeOnlyNotice({ reason }: { readonly reason: string }) {
   return (
-    <div className="rounded-2xl border border-sky-400/40 bg-sky-500/10 p-4 text-sm leading-6 text-sky-950 dark:text-sky-100">
+    <div className="bg-muted p-4 text-sm leading-relaxed text-foreground">
       <p className="font-semibold">Code-only reference</p>
       <p className="mt-1">{reason}</p>
     </div>
@@ -192,24 +192,24 @@ function ExamplePreview({ example, mapping, labelId }: { readonly example: Showc
   const compatibilityExample = mapping.compatibilityId ? compatibilityExamplesById.get(mapping.compatibilityId) : undefined;
 
   return (
-    <section aria-labelledby={labelId} className="grid min-h-0 min-w-0 gap-4 bg-muted/15 p-5 sm:p-6 xl:p-7">
+    <section aria-labelledby={labelId} className="grid min-h-0 min-w-0 gap-4 bg-background p-6">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p id={labelId} className="text-xs font-black uppercase tracking-[0.2em] text-primary">Rendered preview</p>
+          <p id={labelId} className="text-sm font-semibold text-primary">Rendered preview</p>
           <p className="mt-1 text-sm text-muted-foreground">Current docs runtime using app-local Formedible components.</p>
         </div>
-        {compatibilityExample ? <span className="rounded-full border border-border/70 bg-background/70 px-3 py-1 text-xs font-bold text-muted-foreground">{compatibilityExample.id}</span> : null}
+        {compatibilityExample ? <span className="rounded-full border border-border bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">{compatibilityExample.id}</span> : null}
       </div>
-      <div className="rounded-[1.75rem] border border-border/70 bg-background p-4 shadow-inner shadow-black/5 sm:p-5">
+      <div className="overflow-hidden rounded-2xl bg-muted p-4 md:p-5">
         {compatibilityExample ? (
           <div data-rendered-preview-for={example.key} data-compatibility-example-id={compatibilityExample.id} className="max-h-[58rem] overflow-auto pr-1">
             <DocsExampleForm example={compatibilityExample} />
           </div>
         ) : (
-          <div className="grid min-h-72 place-items-center rounded-2xl border border-dashed border-border/80 bg-muted/30 p-6 text-center">
+          <div className="grid min-h-72 place-items-center p-6 text-center">
             <div className="max-w-md space-y-2">
               <p className="text-sm font-semibold text-foreground">No live preview for this copied export</p>
-              <p className="text-sm leading-6 text-muted-foreground">{mapping.reason ?? 'The copied source remains available as a verified code-only reference below.'}</p>
+              <p className="text-sm leading-relaxed text-muted-foreground">{mapping.reason ?? 'The copied source remains available as a verified code-only reference below.'}</p>
             </div>
           </div>
         )}
@@ -222,17 +222,17 @@ function ExampleCode({ example, labelId }: { readonly example: ShowcaseCodeExamp
   const [isExpanded, setIsExpanded] = useState(false);
 
   return (
-    <figure id={`${example.id}-source`} className="min-h-0 min-w-0 bg-zinc-950">
-      <figcaption className="sticky top-0 z-10 flex flex-col gap-3 border-b border-white/10 bg-zinc-950/95 px-5 py-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between xl:px-7">
+    <figure id={`${example.id}-source`} className="min-h-0 min-w-0 bg-muted">
+      <figcaption className="sticky top-0 z-10 flex flex-col gap-3 border-b border-border bg-muted px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <span id={labelId} className="text-xs font-black uppercase tracking-[0.2em] text-zinc-400">Actual copied source code</span>
-          <p className="mt-1 text-xs text-zinc-500">apps/web/src/data/code-examples.ts</p>
+          <span id={labelId} className="text-xs font-semibold text-muted-foreground">Actual copied source code</span>
+          <p className="mt-1 text-xs text-muted-foreground">apps/web/src/data/code-examples.ts</p>
         </div>
-        <button type="button" onClick={() => setIsExpanded((current) => !current)} className="w-fit rounded-full border border-white/15 px-3 py-1.5 text-xs font-bold text-zinc-300 outline-none transition hover:border-white/30 hover:text-white focus-visible:ring-2 focus-visible:ring-white/50" aria-expanded={isExpanded} aria-controls={`${example.id}-code-block`}>
+        <button type="button" onClick={() => setIsExpanded((current) => !current)} className="w-fit rounded-full border border-border bg-background px-3 py-1.5 text-xs font-semibold text-muted-foreground outline-none transition hover:bg-primary/5 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring" aria-expanded={isExpanded} aria-controls={`${example.id}-code-block`}>
           {isExpanded ? 'Limit height' : 'Expand code'}
         </button>
       </figcaption>
-      <pre id={`${example.id}-code-block`} aria-labelledby={labelId} className={`${isExpanded ? 'max-h-none' : 'max-h-[64rem]'} overflow-auto p-5 text-[0.8rem] leading-6 text-zinc-100 [tab-size:2] sm:p-6 xl:p-7`}>
+      <pre id={`${example.id}-code-block`} aria-labelledby={labelId} className={`${isExpanded ? 'max-h-none' : 'max-h-[64rem]'} overflow-auto p-6 text-sm leading-6 text-foreground [tab-size:2]`}>
         <code>{example.code}</code>
       </pre>
     </figure>

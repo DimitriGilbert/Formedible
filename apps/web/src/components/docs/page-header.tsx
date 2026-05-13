@@ -12,16 +12,14 @@ type PageHeaderProps = {
 
 export function PageHeader({ eyebrow, title, description, children, className }: PageHeaderProps) {
   return (
-    <header className={cn('relative isolate overflow-hidden rounded-[2rem] border border-border/70 bg-card/70 p-6 shadow-2xl shadow-black/20 sm:p-8 lg:p-10', className)}>
-      <div className="absolute right-[-8rem] top-[-10rem] size-80 rounded-full bg-primary/20 blur-3xl" aria-hidden="true" />
-      <div className="absolute bottom-[-7rem] left-1/3 size-64 rounded-full bg-amber-500/10 blur-3xl" aria-hidden="true" />
-      <div className="relative grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-end">
-        <div className="max-w-4xl space-y-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.32em] text-primary/90">{eyebrow}</p>
-          <h1 className="max-w-5xl text-balance text-5xl font-black tracking-[-0.07em] text-foreground sm:text-6xl lg:text-7xl">{title}</h1>
-          <p className="max-w-3xl text-pretty text-base leading-8 text-muted-foreground sm:text-lg">{description}</p>
+    <header className={cn('py-20', className)}>
+      <div className="grid gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:gap-16">
+        <div className="flex flex-col justify-center">
+          <p className="text-sm font-semibold text-primary">{eyebrow}</p>
+          <h1 className="mt-4 max-w-xl text-4xl font-bold leading-[1.1] tracking-tight text-foreground md:text-5xl">{title}</h1>
+          <p className="mt-5 max-w-lg text-base leading-relaxed text-muted-foreground">{description}</p>
         </div>
-        {children ? <div className="relative">{children}</div> : null}
+        {children ? <div className="min-w-0">{children}</div> : null}
       </div>
     </header>
   );

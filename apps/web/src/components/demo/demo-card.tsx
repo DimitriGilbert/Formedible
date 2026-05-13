@@ -30,8 +30,8 @@ export function DemoCard({
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-border/60 bg-card shadow-2xl shadow-black/10">
-      <div className="flex border-b border-border/60">
+    <div className="overflow-hidden rounded-2xl bg-muted">
+      <div className="flex border-b border-border">
         <button
           type="button"
           onClick={() => setActiveTab('preview')}
@@ -50,12 +50,12 @@ export function DemoCard({
 
       <div className="p-5">
         <div className="mb-4">
-          <h3 className="text-lg font-semibold text-foreground">{title}</h3>
-          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+          <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{description}</p>
         </div>
 
         {activeTab === 'preview' ? (
-          <div className="rounded-xl border border-border/40 bg-muted/30 p-4">
+          <div className="rounded-xl bg-background p-4">
             {preview}
           </div>
         ) : (
@@ -63,16 +63,16 @@ export function DemoCard({
             <button
               type="button"
               onClick={handleCopy}
-              className="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-md bg-secondary px-2.5 py-1.5 text-xs text-secondary-foreground transition hover:bg-secondary/80"
+              className="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-md bg-background px-2.5 py-1.5 text-xs text-muted-foreground transition hover:text-foreground"
             >
-              {copied ? <Check size={13} /> : <Copy size={13} />}
+              {copied ? <Check size={13} strokeWidth={1.5} /> : <Copy size={13} strokeWidth={1.5} />}
               {copied ? 'Copied' : 'Copy'}
             </button>
             <div className="mb-3">
               <p className="text-sm font-semibold text-foreground">{codeTitle ?? `${title} Code`}</p>
               <p className="text-xs text-muted-foreground">{codeDescription ?? `Implementation for ${title.toLowerCase()}`}</p>
             </div>
-            <div className="max-h-[67vh] overflow-hidden rounded-xl bg-muted">
+            <div className="max-h-[67vh] overflow-hidden rounded-xl bg-background">
               <ScrollArea className="h-[67vh]">
                 <pre className="p-4 text-[0.82rem] leading-6 text-foreground [tab-size:2]">
                   <code>{code}</code>

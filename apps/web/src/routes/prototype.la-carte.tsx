@@ -1,28 +1,13 @@
-import { useState } from 'react';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { ArrowRight, Check, Copy, Terminal } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { ScrollArea } from '@formedible/ui/components/scroll-area';
 import { HeroExamples } from '@/components/demo/hero-examples';
+import { InstallCommand } from '@/components/layout/install-command';
+import { SiteFooter } from '@/components/layout/site-footer';
 
 export const Route = createFileRoute('/prototype/la-carte')({
   component: LaCartePrototype,
 });
-
-type PkgManager = 'pnpm' | 'npm' | 'yarn' | 'bun';
-
-const pkgCommands: Record<PkgManager, string> = {
-  pnpm: 'pnpm dlx shadcn@latest add https://formedible.dev/r/formedible-core.json',
-  npm: 'npx shadcn@latest add https://formedible.dev/r/formedible-core.json',
-  yarn: 'yarn dlx shadcn@latest add https://formedible.dev/r/formedible-core.json',
-  bun: 'bunx --bun shadcn@latest add https://formedible.dev/r/formedible-core.json',
-};
-
-const pkgLabels: Record<PkgManager, string> = {
-  pnpm: 'pnpm',
-  npm: 'npm',
-  yarn: 'yarn',
-  bun: 'bun',
-};
 
 const heroFeatures = [
   'Zod validation',
@@ -32,49 +17,6 @@ const heroFeatures = [
   'Visual builder',
   'AI generation',
 ];
-
-function InstallCommand() {
-  const [activePkg, setActivePkg] = useState<PkgManager>('pnpm');
-  const [copied, setCopied] = useState(false);
-
-  function handleCopy() {
-    navigator.clipboard.writeText(pkgCommands[activePkg]).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  }
-
-  return (
-    <div className="w-full max-w-xl overflow-hidden rounded-xl border border-border/60 bg-muted shadow-2xl shadow-black/20">
-      <div className="flex items-center justify-between border-b border-border/40 px-4 py-2">
-        <div className="flex gap-1">
-          {(Object.keys(pkgLabels) as PkgManager[]).map((pm) => (
-            <button
-              key={pm}
-              type="button"
-              onClick={() => setActivePkg(pm)}
-              className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${activePkg === pm ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground'}`}
-            >
-              {pkgLabels[pm]}
-            </button>
-          ))}
-        </div>
-        <button
-          type="button"
-          onClick={handleCopy}
-          className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-muted-foreground transition hover:text-foreground"
-        >
-          {copied ? <Check size={13} strokeWidth={1.5} /> : <Copy size={13} strokeWidth={1.5} />}
-          {copied ? 'Copied' : 'Copy'}
-        </button>
-      </div>
-      <div className="flex items-center gap-2 px-4 py-3">
-        <Terminal size={14} strokeWidth={1.5} className="shrink-0 text-muted-foreground" />
-        <code className="overflow-x-auto text-sm text-foreground">{pkgCommands[activePkg]}</code>
-      </div>
-    </div>
-  );
-}
 
 function LaCartePrototype() {
   return (
@@ -134,8 +76,8 @@ function HeroSection() {
 function BentoSection() {
   return (
     <section className="border-t border-border px-6 py-20 lg:px-12">
-        <div className="mx-auto w-full max-w-[1400px] overflow-hidden rounded-2xl">
-          <div className="grid gap-px bg-border md:grid-cols-12">
+      <div className="mx-auto w-full max-w-[1400px] overflow-hidden rounded-2xl">
+        <div className="grid gap-px bg-border md:grid-cols-12">
 
           <div className="md:col-span-5 md:row-span-2 rounded-tl-2xl bg-muted p-6 md:p-8 flex flex-col">
             <p className="text-sm font-semibold text-foreground">Usage</p>
@@ -253,20 +195,5 @@ function CtaSection() {
         </div>
       </div>
     </section>
-  );
-}
-
-function SiteFooter() {
-  return (
-    <footer className="border-t border-border px-6 py-12 lg:px-12">
-      <div className="mx-auto flex w-full max-w-[1400px] justify-between">
-        <p className="text-sm font-medium text-muted-foreground">
-          Formedible
-        </p>
-        <p className="text-sm text-muted-foreground">
-          TanStack Form, shadcn/ui, Zod
-        </p>
-      </div>
-    </footer>
   );
 }

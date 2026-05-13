@@ -1,9 +1,11 @@
 import type { ReactNode } from 'react';
 
 import { docsCodeExamples, type DocsCodeExampleId } from '@/features/docs/code-examples';
+import { PageContainer } from '@/components/layout/page-container';
+import { SectionDivider } from '@/components/layout/section-divider';
+import { SiteFooter } from '@/components/layout/site-footer';
 
 import { CodeBlock } from './code-block';
-import { PageHeader } from './page-header';
 
 export type DocsGuideLink = {
   readonly title: string;
@@ -36,44 +38,76 @@ const defaultRelatedLinks = [
 
 export function DocsGuidePage({ eyebrow, title, description, sections, codeExampleIds, related, aside }: DocsGuidePageProps) {
   return (
-    <main className="min-h-0 bg-background text-foreground">
-      <article className="mx-auto grid w-full max-w-7xl gap-10 px-4 py-10 sm:px-6 lg:px-8 lg:py-14">
-        <PageHeader eyebrow={eyebrow} title={title} description={description}>{aside}</PageHeader>
-
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)]">
-          <div className="grid gap-5">
-            {sections.map((section) => (
-              <section key={section.title} className="rounded-[1.75rem] border border-border/70 bg-card/65 p-6 shadow-xl shadow-black/10">
-                <h2 className="text-2xl font-black tracking-[-0.05em]">{section.title}</h2>
-                <p className="mt-3 text-sm leading-7 text-muted-foreground">{section.body}</p>
-                <ul className="mt-5 grid gap-2 text-sm text-foreground/85">
-                  {section.bullets.map((bullet) => (
-                    <li key={bullet} className="flex gap-3">
-                      <span className="mt-2 size-1.5 shrink-0 rounded-full bg-primary" aria-hidden="true" />
-                      <span>{bullet}</span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ))}
+    <div className="overflow-x-hidden">
+      <section className="px-6 py-20 lg:px-12">
+        <PageContainer>
+          <div className="grid gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:gap-16">
+            <div className="flex flex-col justify-center">
+              <p className="text-sm font-semibold text-primary">{eyebrow}</p>
+              <h1 className="mt-4 max-w-xl text-4xl font-bold leading-[1.1] tracking-tight text-foreground md:text-5xl">{title}</h1>
+              <p className="mt-5 max-w-lg text-base leading-relaxed text-muted-foreground">{description}</p>
+            </div>
+            {aside ? <div className="min-w-0">{aside}</div> : null}
           </div>
+        </PageContainer>
+      </section>
 
-          <aside className="grid content-start gap-5" aria-label="Code examples and related routes">
-            {codeExampleIds?.map((exampleId) => <CodeBlock key={exampleId} example={docsCodeExamples[exampleId]} />)}
-            <nav aria-label="Related documentation" className="rounded-[1.75rem] border border-border/70 bg-card/65 p-5 shadow-xl shadow-black/10">
-              <h2 className="text-lg font-bold tracking-[-0.04em]">Related routes</h2>
-              <div className="mt-4 grid gap-3">
-                {(related ?? defaultRelatedLinks).map((link) => (
-                  <a key={link.href} href={link.href} className="rounded-2xl border border-border/70 bg-background/70 p-4 outline-none transition hover:border-primary/45 hover:text-primary focus-visible:ring-2 focus-visible:ring-ring">
-                    <span className="font-semibold">{link.title}</span>
-                    <span className="mt-1 block text-xs leading-5 text-muted-foreground">{link.description}</span>
-                  </a>
+      <SectionDivider />
+
+      <section className="px-6 py-20 lg:px-12">
+        <PageContainer>
+          <div className="overflow-hidden rounded-2xl">
+            <div className="grid gap-px bg-border lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+              <div className="grid content-start">
+                {sections.map((section) => (
+                  <div key={section.title} className="bg-background p-6 md:p-8">
+                    <p className="text-sm font-semibold text-foreground">{section.title}</p>
+                    <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{section.body}</p>
+                    {section.bullets.length > 0 ? (
+                      <ul className="mt-4 grid gap-1.5">
+                        {section.bullets.map((bullet) => (
+                          <li key={bullet} className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <span className="inline-block size-1.5 shrink-0 rounded-full bg-primary" />
+                            {bullet}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+                  </div>
                 ))}
               </div>
-            </nav>
-          </aside>
-        </div>
-      </article>
-    </main>
+
+              <div className="grid content-start">
+                {codeExampleIds?.map((exampleId) => (
+                  <div key={exampleId} className="bg-muted p-6 md:p-8">
+                    <CodeBlock example={docsCodeExamples[exampleId]} />
+                  </div>
+                ))}
+
+                <nav aria-label="Related documentation" className="bg-background p-6 md:p-8">
+                  <p className="text-sm font-semibold text-foreground">Related routes</p>
+                  <div className="mt-4 overflow-hidden rounded-2xl">
+                    <div className="grid gap-px bg-border">
+                      {(related ?? defaultRelatedLinks).map((link) => (
+                        <a
+                          key={link.href}
+                          href={link.href}
+                          className="group bg-muted p-4 outline-none transition hover:bg-primary/5 focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          <p className="text-sm font-semibold text-foreground group-hover:text-primary">{link.title}</p>
+                          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{link.description}</p>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                </nav>
+              </div>
+            </div>
+          </div>
+        </PageContainer>
+      </section>
+
+      <SiteFooter />
+    </div>
   );
 }

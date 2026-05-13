@@ -17,15 +17,15 @@ export default function Header() {
   const currentHref = `${location.pathname}${normalizeHash(location.hash)}`;
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border/70 bg-background/92 shadow-[0_1px_0_rgba(255,255,255,0.03)] backdrop-blur-xl supports-[backdrop-filter]:bg-background/78">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-4 py-3 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-50 border-b border-border bg-background/92 backdrop-blur-xl supports-[backdrop-filter]:bg-background/78">
+      <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-3 px-6 py-3 lg:px-12">
         <div className="flex items-center justify-between gap-5">
           <Link
             to="/"
             className="group flex min-w-0 items-center gap-3 rounded-2xl outline-none transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             aria-label={`${siteMeta.name} home`}
           >
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-border/80 bg-card text-sm font-black tracking-tight text-foreground shadow-sm transition group-hover:border-primary/50 group-hover:text-primary">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-border bg-muted text-sm font-black tracking-tight text-foreground transition group-hover:border-primary/50 group-hover:text-primary">
               F
             </span>
             <span className="flex min-w-0 flex-col leading-none">
@@ -34,7 +34,7 @@ export default function Header() {
             </span>
           </Link>
 
-          <nav aria-label="Primary navigation" className="hidden items-center gap-1 rounded-full border border-border/70 bg-muted/35 p-1 shadow-inner md:flex">
+          <nav aria-label="Primary navigation" className="hidden items-center gap-1 rounded-full border border-border bg-muted p-1 md:flex">
             {siteNavigation.map((item) => {
               const isActive = item.href === currentHref;
 
@@ -44,7 +44,7 @@ export default function Header() {
                   href={item.href}
                   className={cn(
                     'rounded-full px-4 py-2 text-sm font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-                    isActive ? 'bg-background text-foreground shadow-sm ring-1 ring-border/60' : 'text-muted-foreground hover:bg-background/75 hover:text-foreground',
+                    isActive ? 'bg-background text-foreground ring-1 ring-border' : 'text-muted-foreground hover:bg-background/75 hover:text-foreground',
                   )}
                   aria-label={item.description}
                   aria-current={isActive ? 'location' : undefined}
@@ -66,7 +66,7 @@ export default function Header() {
                 href={item.href}
                 className={cn(
                   'shrink-0 rounded-full border px-3.5 py-2 text-sm font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-                  isActive ? 'border-primary/45 bg-primary/10 text-primary shadow-sm' : 'border-border/70 bg-card/75 text-muted-foreground hover:border-primary/40 hover:text-foreground',
+                  isActive ? 'border-primary/45 bg-primary/10 text-primary' : 'border-border bg-muted text-muted-foreground hover:border-primary/40 hover:text-foreground',
                 )}
                 aria-label={item.description}
                 aria-current={isActive ? 'location' : undefined}

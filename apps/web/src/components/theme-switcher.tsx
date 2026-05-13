@@ -48,14 +48,14 @@ export function ThemeSwitcher() {
 
   if (!mounted) {
     return (
-      <div className="fixed right-4 bottom-4 z-50 h-10 w-10 rounded-full border border-border bg-card shadow-lg" />
+      <div className="fixed right-4 bottom-4 z-50 h-10 w-10 rounded-full border border-border bg-muted" />
     );
   }
 
   return (
     <div className="fixed right-4 bottom-4 z-50 flex flex-col items-end gap-2">
       {open && (
-        <div className="flex flex-col gap-1 rounded-lg border border-border bg-card p-2 shadow-xl">
+        <div className="flex flex-col gap-1 rounded-xl border border-border bg-muted p-2">
           {themes.map((t) => {
             const isActive = theme === t.value;
             return (
@@ -89,7 +89,7 @@ export function ThemeSwitcher() {
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex size-10 items-center justify-center rounded-full border border-border bg-card shadow-lg transition-colors hover:bg-muted"
+        className="flex size-10 items-center justify-center rounded-full border border-border bg-muted transition-colors hover:bg-primary/5"
         aria-label="Switch theme"
       >
         <span

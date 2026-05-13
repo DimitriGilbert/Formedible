@@ -1,8 +1,15 @@
 import { useMemo, useState } from 'react';
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
+import { ArrowLeft } from 'lucide-react';
+import { ScrollArea } from '@formedible/ui/components/scroll-area';
 
 import * as copiedCodeExamples from '@/data/code-examples';
-import { RenderedExampleShowcase, type ShowcaseCodeExample } from '@/components/docs/rendered-example-showcase';
+import { DemoCard } from '@/components/demo/demo-card';
+import { PageContainer } from '@/components/layout/page-container';
+import { SectionDivider } from '@/components/layout/section-divider';
+import { SiteFooter } from '@/components/layout/site-footer';
+import { DocsExampleForm, docsCompatibilityExamples } from '@/features/docs/compatibility-examples';
+import { getRenderedExampleMapping, type ShowcaseCodeExample } from '@/components/docs/rendered-example-showcase';
 import { createRouteSeoHead } from '@/features/docs/seo';
 
 const routeHead = createRouteSeoHead('/docs/examples');
@@ -11,6 +18,10 @@ type ExampleMetric = {
   readonly label: string;
   readonly value: string;
 };
+
+const compatibilityExamplesById = new Map(
+  docsCompatibilityExamples.map((example) => [example.id, example] as const),
+);
 
 const copiedCodeExampleSources = Object.entries(copiedCodeExamples)
   .map(([key, code]) => ({ key, code }))
@@ -31,13 +42,9 @@ export const copiedCodeExampleEntries: readonly ShowcaseCodeExample[] = copiedCo
   };
 });
 
-const allCategory = 'All examples';
+const allCategory = 'All';
 const categories = [allCategory, ...Array.from(new Set(copiedCodeExampleEntries.map((example) => example.category)))];
 const totalLineCount = copiedCodeExampleEntries.reduce((total, example) => total + countLines(example.code), 0);
-const categorySummaries = categories.map((category) => ({
-  category,
-  count: category === allCategory ? copiedCodeExampleEntries.length : copiedCodeExampleEntries.filter((example) => example.category === category).length,
-}));
 
 export const Route = createFileRoute('/docs/examples')({
   head: () => routeHead,
@@ -47,17 +54,17 @@ export const Route = createFileRoute('/docs/examples')({
 function ExamplesRoute() {
   const [activeCategory, setActiveCategory] = useState<string>(allCategory);
   const [activeExampleId, setActiveExampleId] = useState<string>(copiedCodeExampleEntries[0]?.id ?? '');
+
   const visibleExamples = useMemo(
     () => copiedCodeExampleEntries.filter((example) => activeCategory === allCategory || example.category === activeCategory),
     [activeCategory],
   );
+
   const activeExample = visibleExamples.find((example) => example.id === activeExampleId) ?? visibleExamples[0] ?? copiedCodeExampleEntries[0];
 
   if (!activeExample) {
     return null;
   }
-
-  const activeExampleIndex = copiedCodeExampleEntries.findIndex((example) => example.id === activeExample.id);
 
   function selectCategory(category: string) {
     setActiveCategory(category);
@@ -69,110 +76,191 @@ function ExamplesRoute() {
   }
 
   return (
-    <main className="min-h-0 overflow-hidden bg-[radial-gradient(circle_at_top_left,hsl(var(--primary)/0.14),transparent_31rem),linear-gradient(180deg,hsl(var(--muted)/0.45),hsl(var(--background))_32rem)] text-foreground" data-examples-browser="focused">
-      <section className="mx-auto grid w-full max-w-7xl gap-8 px-4 py-8 sm:px-6 lg:px-8">
-        <header className="grid gap-6 border-b border-border/70 pb-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-end">
-          <div className="max-w-4xl space-y-4">
-            <a href="/docs" className="inline-flex rounded-full border border-border/70 bg-card px-4 py-2 text-sm font-semibold text-muted-foreground outline-none transition hover:border-primary/45 hover:text-primary focus-visible:ring-2 focus-visible:ring-ring">Back to docs</a>
-            <div className="space-y-3">
-              <p className="text-xs font-black uppercase tracking-[0.28em] text-primary">Interactive examples</p>
-              <h1 className="text-balance text-4xl font-black tracking-[-0.06em] text-foreground sm:text-5xl lg:text-6xl">Browse one working example at a time.</h1>
-              <p className="max-w-3xl text-pretty text-base leading-8 text-muted-foreground sm:text-lg">
-                Adapted from the previous tabbed examples page: choose from a compact index, then inspect a focused live preview or the copied source from <code className="rounded bg-muted px-1.5 py-0.5 text-sm font-semibold text-foreground">apps/web/src/data/code-examples.ts</code>.
+    <div className="overflow-x-hidden">
+      <section className="px-6 py-20 lg:px-12">
+        <PageContainer>
+          <div className="grid gap-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:gap-16">
+            <div className="flex flex-col justify-center">
+              <div className="flex items-center gap-3">
+                <Link
+                  to="/docs"
+                  className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition hover:text-primary"
+                >
+                  <ArrowLeft size={14} strokeWidth={1.5} />
+                  Docs
+                </Link>
+              </div>
+
+              <h1 className="mt-6 max-w-xl text-4xl font-bold leading-[1.1] tracking-tight text-foreground md:text-5xl">
+                Examples
+              </h1>
+              <p className="mt-5 max-w-lg text-base leading-relaxed text-muted-foreground">
+                Browse working code and live previews for every form pattern. Each example includes a rendered
+                preview using app-local Formedible components and the original source from{' '}
+                <code className="rounded bg-muted px-1.5 py-0.5 text-sm font-semibold text-foreground">
+                  code-examples.ts
+                </code>
+                .
               </p>
             </div>
-          </div>
-          <dl className="grid grid-cols-3 gap-3 text-center">
-            <MetricCard label="exports" value={String(copiedCodeExampleEntries.length)} />
-            <MetricCard label="groups" value={String(categories.length - 1)} />
-            <MetricCard label="lines" value={String(totalLineCount)} />
-          </dl>
-        </header>
 
-        <section className="grid gap-6 lg:grid-cols-[20rem_minmax(0,1fr)]" aria-label="Examples browser workspace">
-          <aside className="lg:sticky lg:top-6 lg:self-start" aria-labelledby="examples-filter-heading">
-            <div className="overflow-hidden rounded-3xl border border-border/70 bg-card/90 shadow-xl shadow-black/5 backdrop-blur">
-              <div className="border-b border-border/70 p-5">
-                <p className="text-xs font-black uppercase tracking-[0.24em] text-primary">Index</p>
-                <h2 id="examples-filter-heading" className="mt-2 text-2xl font-black tracking-[-0.05em] text-foreground">Examples</h2>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">Filter by category, then open one example in the focused viewer.</p>
-              </div>
-
-              <div className="grid gap-3 border-b border-border/70 p-3">
-                <label className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground" htmlFor="example-category-select">Category</label>
-                <select
-                  id="example-category-select"
-                  value={activeCategory}
-                  onChange={(event) => selectCategory(event.currentTarget.value)}
-                  className="rounded-2xl border border-border/70 bg-background px-4 py-3 text-sm font-semibold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  {categorySummaries.map(({ category, count }) => (
-                    <option key={category} value={category}>{category} ({count})</option>
-                  ))}
-                </select>
-                <div className="flex gap-2 overflow-x-auto pb-1 lg:grid lg:overflow-visible lg:pb-0" role="list" aria-label="Example category filters">
-                  {categorySummaries.map(({ category, count }) => (
-                    <button
-                      key={category}
-                      type="button"
-                      onClick={() => selectCategory(category)}
-                      className={`flex shrink-0 items-center justify-between gap-4 rounded-2xl border px-4 py-3 text-left text-sm font-bold outline-none transition focus-visible:ring-2 focus-visible:ring-ring ${
-                        activeCategory === category ? 'border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'border-transparent bg-transparent text-muted-foreground hover:border-border/80 hover:bg-muted/60 hover:text-foreground'
-                      }`}
-                      aria-pressed={activeCategory === category}
-                    >
-                      <span>{category}</span>
-                      <span className="rounded-full bg-background/70 px-2 py-0.5 text-xs text-foreground">{count}</span>
-                    </button>
-                  ))}
+            <div className="min-w-0 overflow-hidden rounded-2xl">
+              <div className="grid grid-cols-3 gap-px bg-border">
+                <div className="bg-muted p-4 text-center">
+                  <p className="text-2xl font-bold tracking-tight text-foreground">{copiedCodeExampleEntries.length}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Examples</p>
+                </div>
+                <div className="bg-muted p-4 text-center">
+                  <p className="text-2xl font-bold tracking-tight text-foreground">{categories.length - 1}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Categories</p>
+                </div>
+                <div className="bg-muted p-4 text-center">
+                  <p className="text-2xl font-bold tracking-tight text-foreground">{totalLineCount}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Lines</p>
                 </div>
               </div>
-
-              <nav aria-label="Example index" className="max-h-[32rem] overflow-auto p-3">
-                <div className="grid gap-2" data-examples-grid="true">
-                  {visibleExamples.map((example) => {
-                    const absoluteIndex = copiedCodeExampleEntries.findIndex((candidate) => candidate.id === example.id);
-                    const isSelected = example.id === activeExample.id;
-
-                    return (
-                      <button
-                        key={example.id}
-                        type="button"
-                        onClick={() => setActiveExampleId(example.id)}
-                        className={`group flex items-center gap-3 rounded-2xl border px-3 py-2.5 text-left text-sm font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-ring ${
-                          isSelected ? 'border-primary/50 bg-primary/10 text-foreground' : 'border-transparent text-muted-foreground hover:border-border/80 hover:bg-muted/60 hover:text-foreground'
-                        }`}
-                        aria-current={isSelected ? 'true' : undefined}
-                        data-example-index-item={example.key}
-                      >
-                        <span className="grid size-7 shrink-0 place-items-center rounded-full border border-border/70 bg-background text-[0.68rem] font-black text-primary">{String(absoluteIndex + 1).padStart(2, '0')}</span>
-                        <span className="min-w-0">
-                          <span className="block truncate">{example.title}</span>
-                          <span className="block truncate text-xs font-medium text-muted-foreground">{example.category}</span>
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </nav>
             </div>
-          </aside>
-
-          <section className="min-w-0" aria-label="Focused rendered preview and source code" data-active-example-area="true">
-            <RenderedExampleShowcase example={activeExample} index={activeExampleIndex} />
-          </section>
-        </section>
+          </div>
+        </PageContainer>
       </section>
-    </main>
+
+      <SectionDivider />
+
+      <section className="px-6 py-20 lg:px-12">
+        <PageContainer>
+          <div className="mb-8 flex flex-wrap gap-1.5">
+            {categories.map((category) => {
+              const count = copiedCodeExampleEntries.filter(
+                (example) => category === allCategory || example.category === category,
+              ).length;
+
+              return (
+                <button
+                  key={category}
+                  type="button"
+                  onClick={() => selectCategory(category)}
+                  className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
+                    activeCategory === category
+                      ? 'bg-foreground text-background'
+                      : 'bg-muted text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {category === allCategory ? `All (${count})` : `${category} (${count})`}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="grid gap-10 lg:grid-cols-[16rem_minmax(0,1fr)]">
+            <aside className="lg:sticky lg:top-6 lg:self-start">
+              <div className="overflow-hidden rounded-2xl">
+                <div className="bg-muted">
+                  <ScrollArea className="max-h-[72vh]">
+                    <div className="p-2">
+                      <div className="grid gap-0.5">
+                        {visibleExamples.map((example) => {
+                          const absoluteIndex = copiedCodeExampleEntries.findIndex((candidate) => candidate.id === example.id);
+                          const isSelected = example.id === activeExample.id;
+
+                          return (
+                            <button
+                              key={example.id}
+                              type="button"
+                              onClick={() => setActiveExampleId(example.id)}
+                              className={`group flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-ring ${
+                                isSelected
+                                  ? 'bg-foreground text-background'
+                                  : 'text-muted-foreground hover:bg-background hover:text-foreground'
+                              }`}
+                            >
+                              <span
+                                className={`grid size-6 shrink-0 place-items-center rounded-full text-xs font-semibold ${
+                                  isSelected
+                                    ? 'bg-background/20 text-background'
+                                    : 'bg-background text-primary'
+                                }`}
+                              >
+                                {String(absoluteIndex + 1).padStart(2, '0')}
+                              </span>
+                              <span className="min-w-0 truncate">{example.title}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </ScrollArea>
+                </div>
+              </div>
+            </aside>
+
+            <div className="min-w-0 space-y-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full border border-border bg-muted px-3 py-1 text-xs font-semibold text-primary">
+                  {activeExample.category}
+                </span>
+                {activeExample.metrics.map((metric) => (
+                  <span key={metric.label} className="text-xs text-muted-foreground">
+                    {metric.value} {metric.label}
+                  </span>
+                ))}
+              </div>
+
+              <ExampleDemoCard example={activeExample} />
+
+              {activeExample.caveats.length > 0 && (
+                <div className="bg-primary/10 p-5 text-sm leading-relaxed text-foreground">
+                  <p className="font-semibold">Display notes</p>
+                  <ul className="mt-2 grid gap-1.5">
+                    {activeExample.caveats.map((note) => (
+                      <li key={note} className="flex gap-2 text-sm leading-relaxed text-muted-foreground">
+                        <span aria-hidden="true" className="mt-2 size-1.5 shrink-0 rounded-full bg-primary" />
+                        <span>{note}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        </PageContainer>
+      </section>
+
+      <SectionDivider />
+      <SiteFooter />
+    </div>
   );
 }
 
-function MetricCard({ label, value }: ExampleMetric) {
-  return (
-    <div className="rounded-2xl border border-border/70 bg-background/70 p-4">
-      <dt className="text-2xl font-black tracking-[-0.05em] text-foreground">{value}</dt>
-      <dd className="mt-1 text-xs font-bold uppercase tracking-[0.16em] text-muted-foreground">{label}</dd>
+function ExampleDemoCard({ example }: { readonly example: ShowcaseCodeExample }) {
+  const mapping = useMemo(() => getRenderedExampleMapping(example), [example]);
+  const compatibilityExample = mapping.compatibilityId
+    ? compatibilityExamplesById.get(mapping.compatibilityId)
+    : undefined;
+
+  const preview = compatibilityExample ? (
+    <div className="max-h-[58rem] overflow-auto pr-1">
+      <DocsExampleForm example={compatibilityExample} />
     </div>
+  ) : (
+    <div className="grid min-h-48 place-items-center rounded-xl bg-muted p-8 text-center">
+      <div className="space-y-2">
+        <p className="text-sm font-semibold text-foreground">Code-only reference</p>
+        <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
+          {mapping.reason ?? 'No live preview available for this example.'}
+        </p>
+      </div>
+    </div>
+  );
+
+  return (
+    <DemoCard
+      title={example.title}
+      description={example.description}
+      preview={preview}
+      code={example.code}
+      codeTitle={String(example.key)}
+      codeDescription={`${example.metrics[0]?.value ?? '—'} lines · ${example.metrics[1]?.value ?? '—'} fields`}
+    />
   );
 }
 
