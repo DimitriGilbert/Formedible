@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 
+import { AutocompleteField } from '@/components/formedible/fields/autocomplete-field';
 import { CheckboxField } from '@/components/formedible/fields/checkbox-field';
 import { ArrayField } from '@/components/formedible/fields/array-field';
 import { ColorPickerField } from '@/components/formedible/fields/color-picker-field';
@@ -8,6 +9,7 @@ import { DateField } from '@/components/formedible/fields/date-field';
 import { DurationPickerField } from '@/components/formedible/fields/duration-picker-field';
 import { FileUploadField } from '@/components/formedible/fields/file-upload-field';
 import { LocationPickerField } from '@/components/formedible/fields/location-picker-field';
+import { MaskedField } from '@/components/formedible/fields/masked-field';
 import { MultiComboboxField } from '@/components/formedible/fields/multi-combobox-field';
 import { MultiSelectField } from '@/components/formedible/fields/multi-select-field';
 import { NumberField } from '@/components/formedible/fields/number-field';
@@ -27,6 +29,7 @@ type FieldComponent = <TFormValues extends FormedibleFormValues>(props: Formedib
 
 const fieldRegistry: Partial<Record<NormalizedFieldType, FieldComponent>> = {
   array: ArrayField,
+  autocomplete: AutocompleteField,
   checkbox: CheckboxField,
   color: ColorPickerField,
   combobox: ComboboxField,
@@ -35,7 +38,7 @@ const fieldRegistry: Partial<Record<NormalizedFieldType, FieldComponent>> = {
   email: TextField,
   file: FileUploadField,
   location: LocationPickerField,
-  masked: TextField,
+  masked: MaskedField,
   multiCombobox: MultiComboboxField,
   multiSelect: MultiSelectField,
   number: NumberField,

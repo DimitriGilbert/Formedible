@@ -126,6 +126,50 @@ export interface FormedibleNumberConfig {
   readonly step?: number;
 }
 
+export interface FormedibleAutocompleteConfig {
+  /**
+   * Legacy autocomplete compatibility configuration.
+   *
+   * Supported legacy keys are `options`, `asyncOptions`, `debounceMs`,
+   * `minChars`, `maxResults`, `allowCustom`, `placeholder`, `noOptionsText`,
+   * and `loadingText`. Static `options` declared here take precedence over the
+   * field's top-level `options`; when omitted, autocomplete falls back to the
+   * top-level options. `asyncOptions` results are debounced and stale requests
+   * are ignored so older responses cannot overwrite the latest query.
+   */
+  readonly options?: readonly FormedibleFieldOption[];
+  readonly asyncOptions?: (query: string) => Promise<readonly FormedibleFieldOption[]>;
+  readonly debounceMs?: number;
+  readonly minChars?: number;
+  readonly maxResults?: number;
+  readonly allowCustom?: boolean;
+  readonly placeholder?: string;
+  readonly noOptionsText?: string;
+  readonly loadingText?: string;
+}
+
+export interface FormedibleMaskedInputPipeResult {
+  readonly value: string;
+  readonly indexesOfPipedChars: readonly number[];
+}
+
+export type FormedibleMaskedInputMask = string | ((value: string) => string);
+
+export interface FormedibleMaskedInputConfig {
+  /** Legacy input mask pattern or formatter. `0`/`9` accept digits and `A`/`a` accept letters. */
+  readonly mask: FormedibleMaskedInputMask;
+  /** Placeholder used by legacy masked input configs. Field-level `placeholder` takes precedence. */
+  readonly placeholder?: string;
+  /** Show guide placeholder characters for missing mask positions. */
+  readonly showMask?: boolean;
+  /** Allow guide placeholder characters when `showMask` is enabled. */
+  readonly guide?: boolean;
+  /** Legacy cursor-position hint retained for config compatibility. */
+  readonly keepCharPositions?: boolean;
+  /** Optional post-processing hook for conformed masked values. */
+  readonly pipe?: (conformedValue: string, config: FormedibleMaskedInputConfig) => false | string | FormedibleMaskedInputPipeResult;
+}
+
 export type FormedibleValidationResult = string | null | undefined | false;
 
 export interface FormedibleStandardFieldSchema {
@@ -192,6 +236,8 @@ export interface FormedibleFieldConfig<TFormValues extends FormedibleFormValues 
   readonly step?: number;
   readonly rows?: number;
   readonly maxLength?: number;
+  /** Legacy input mask pattern. `9` accepts digits, `a` accepts letters, and `*` accepts alphanumeric characters. */
+  readonly mask?: FormedibleMaskedInputMask;
   readonly textareaConfig?: FormedibleTextareaConfig;
   readonly passwordConfig?: FormediblePasswordConfig;
   readonly numberConfig?: FormedibleNumberConfig;
@@ -205,6 +251,8 @@ export interface FormedibleFieldConfig<TFormValues extends FormedibleFormValues 
   readonly ratingConfig?: FormedibleRatingConfig;
   readonly multiSelectConfig?: FormedibleMultiSelectConfig;
   readonly comboboxConfig?: FormedibleComboboxConfig;
+  readonly autocompleteConfig?: FormedibleAutocompleteConfig;
+  readonly maskedInputConfig?: FormedibleMaskedInputConfig;
   readonly multiComboboxConfig?: FormedibleMultiSelectConfig & FormedibleComboboxConfig;
   readonly colorConfig?: FormedibleColorConfig;
   readonly phoneConfig?: FormediblePhoneConfig;
@@ -248,6 +296,8 @@ export interface NormalizedFieldConfig<TFormValues extends FormedibleFormValues 
   readonly step?: number;
   readonly rows?: number;
   readonly maxLength?: number;
+  /** Legacy input mask pattern. `9` accepts digits, `a` accepts letters, and `*` accepts alphanumeric characters. */
+  readonly mask?: FormedibleMaskedInputMask;
   readonly textareaConfig?: FormedibleTextareaConfig;
   readonly passwordConfig?: FormediblePasswordConfig;
   readonly numberConfig?: FormedibleNumberConfig;
@@ -261,6 +311,8 @@ export interface NormalizedFieldConfig<TFormValues extends FormedibleFormValues 
   readonly ratingConfig?: FormedibleRatingConfig;
   readonly multiSelectConfig?: FormedibleMultiSelectConfig;
   readonly comboboxConfig?: FormedibleComboboxConfig;
+  readonly autocompleteConfig?: FormedibleAutocompleteConfig;
+  readonly maskedInputConfig?: FormedibleMaskedInputConfig;
   readonly multiComboboxConfig?: FormedibleMultiSelectConfig & FormedibleComboboxConfig;
   readonly colorConfig?: FormedibleColorConfig;
   readonly phoneConfig?: FormediblePhoneConfig;

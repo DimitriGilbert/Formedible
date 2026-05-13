@@ -14,6 +14,7 @@ export function ColorPickerField<TFormValues extends FormedibleFormValues>({ fie
   const hexValue = normalizeHex(value);
   const displayValue = formatColor(hexValue, config?.format ?? 'hex');
   const presets = config?.presetColors ?? defaultPresets;
+  const allowCustom = config?.allowCustom ?? true;
 
   function updateColor(color: string) {
     field.onChange(formatColor(normalizeHex(color), config?.format ?? 'hex'));
@@ -37,15 +38,17 @@ export function ColorPickerField<TFormValues extends FormedibleFormValues>({ fie
               onChange={(event) => updateColor(event.target.value)}
             />
           </div>
-          <Input
-            value={displayValue}
-            placeholder="#000000"
-            disabled={fieldConfig.disabled}
-            aria-invalid={field.error ? true : undefined}
-            className={fieldConfig.inputClassName}
-            onBlur={field.onBlur}
-            onChange={(event) => field.onChange(event.target.value)}
-          />
+          {allowCustom && (
+            <Input
+              value={displayValue}
+              placeholder="#000000"
+              disabled={fieldConfig.disabled}
+              aria-invalid={field.error ? true : undefined}
+              className={fieldConfig.inputClassName}
+              onBlur={field.onBlur}
+              onChange={(event) => field.onChange(event.target.value)}
+            />
+          )}
         </div>
         <div className="grid grid-cols-8 gap-2">
           {presets.map((color) => {
@@ -81,7 +84,78 @@ function normalizeHex(value: string): string {
     return `#${trimmed}`;
   }
 
+  const rgb = parseRgbColor(trimmed);
+  if (rgb) {
+    return rgbToHex(rgb.r, rgb.g, rgb.b);
+  }
+
+  const hsl = parseHslColor(trimmed);
+  if (hsl) {
+    const hslRgb = hslToRgb(hsl.h, hsl.s, hsl.l);
+    return rgbToHex(hslRgb.r, hslRgb.g, hslRgb.b);
+  }
+
   return '#000000';
+}
+
+function parseRgbColor(value: string): { readonly r: number; readonly g: number; readonly b: number } | undefined {
+  const match = /^rgb\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)$/i.exec(value);
+  if (!match) {
+    return undefined;
+  }
+
+  const [, rText, gText, bText] = match;
+  if (rText === undefined || gText === undefined || bText === undefined) {
+    return undefined;
+  }
+
+  const r = Number.parseInt(rText, 10);
+  const g = Number.parseInt(gText, 10);
+  const b = Number.parseInt(bText, 10);
+
+  if (!isValidRgbChannel(r) || !isValidRgbChannel(g) || !isValidRgbChannel(b)) {
+    return undefined;
+  }
+
+  return { r, g, b };
+}
+
+function parseHslColor(value: string): { readonly h: number; readonly s: number; readonly l: number } | undefined {
+  const match = /^hsl\(\s*(-?\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)%\s*,\s*(\d+(?:\.\d+)?)%\s*\)$/i.exec(value);
+  if (!match) {
+    return undefined;
+  }
+
+  const [, hText, sText, lText] = match;
+  if (hText === undefined || sText === undefined || lText === undefined) {
+    return undefined;
+  }
+
+  const h = Number.parseFloat(hText);
+  const s = Number.parseFloat(sText);
+  const l = Number.parseFloat(lText);
+
+  if (!Number.isFinite(h) || !isValidPercentage(s) || !isValidPercentage(l)) {
+    return undefined;
+  }
+
+  return { h, s, l };
+}
+
+function isValidRgbChannel(value: number): boolean {
+  return Number.isInteger(value) && value >= 0 && value <= 255;
+}
+
+function isValidPercentage(value: number): boolean {
+  return Number.isFinite(value) && value >= 0 && value <= 100;
+}
+
+function rgbToHex(r: number, g: number, b: number): string {
+  return `#${toHexChannel(r)}${toHexChannel(g)}${toHexChannel(b)}`;
+}
+
+function toHexChannel(value: number): string {
+  return Math.round(value).toString(16).padStart(2, '0');
 }
 
 function formatColor(hex: string, format: 'hex' | 'rgb' | 'hsl'): string {
@@ -100,6 +174,47 @@ function formatColor(hex: string, format: 'hex' | 'rgb' | 'hsl'): string {
 
 function hexToRgb(hex: string): { readonly r: number; readonly g: number; readonly b: number } {
   return { r: Number.parseInt(hex.slice(1, 3), 16), g: Number.parseInt(hex.slice(3, 5), 16), b: Number.parseInt(hex.slice(5, 7), 16) };
+}
+
+function hslToRgb(h: number, s: number, l: number): { readonly r: number; readonly g: number; readonly b: number } {
+  const normalizedHue = (((h % 360) + 360) % 360) / 360;
+  const saturation = s / 100;
+  const lightness = l / 100;
+
+  if (saturation === 0) {
+    const gray = lightness * 255;
+    return { r: gray, g: gray, b: gray };
+  }
+
+  const q = lightness < 0.5 ? lightness * (1 + saturation) : lightness + saturation - lightness * saturation;
+  const p = 2 * lightness - q;
+
+  return {
+    r: hueToRgbChannel(p, q, normalizedHue + 1 / 3) * 255,
+    g: hueToRgbChannel(p, q, normalizedHue) * 255,
+    b: hueToRgbChannel(p, q, normalizedHue - 1 / 3) * 255,
+  };
+}
+
+function hueToRgbChannel(p: number, q: number, t: number): number {
+  let ratio = t;
+  if (ratio < 0) {
+    ratio += 1;
+  }
+  if (ratio > 1) {
+    ratio -= 1;
+  }
+  if (ratio < 1 / 6) {
+    return p + (q - p) * 6 * ratio;
+  }
+  if (ratio < 1 / 2) {
+    return q;
+  }
+  if (ratio < 2 / 3) {
+    return p + (q - p) * (2 / 3 - ratio) * 6;
+  }
+
+  return p;
 }
 
 function rgbToHsl(r: number, g: number, b: number): { readonly h: number; readonly s: number; readonly l: number } {

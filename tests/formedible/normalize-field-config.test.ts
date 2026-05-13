@@ -18,6 +18,7 @@ describe('compatibility examples field normalization', () => {
     assert.equal(normalizeFieldType('multicombobox'), 'multiCombobox');
     assert.equal(normalizeFieldType('colorPicker'), 'color');
     assert.equal(normalizeFieldType('maskedInput'), 'masked');
+    assert.equal(normalizeFieldType('autocomplete'), 'autocomplete');
     assert.equal(normalizeFieldType(undefined), 'text');
   });
 
@@ -56,10 +57,27 @@ describe('compatibility examples field normalization', () => {
     assert.equal(normalized.noOptionsText, 'No subjects found');
   });
 
+  it('preserves string and object section metadata through normalization', () => {
+    const stringSection = normalizeFieldConfig({
+      name: 'subject',
+      section: 'Contact Information',
+    } satisfies FormedibleFieldConfig<TestValues>);
+    const objectSection = normalizeFieldConfig({
+      name: 'subject',
+      section: { title: 'Project Details', description: 'Tell us more about your project' },
+    } satisfies FormedibleFieldConfig<TestValues>);
+
+    assert.equal(stringSection.section, 'Contact Information');
+    assert.deepEqual(objectSection.section, {
+      title: 'Project Details',
+      description: 'Tell us more about your project',
+    });
+  });
+
   it('normalizes fields when normalizing options without mutating raw options', () => {
     const options = {
       fields: [
-        { name: 'favoriteColor', type: 'colorPicker', allowCustom: true },
+        { name: 'favoriteColor', type: 'colorPicker', colorConfig: { allowCustom: false, format: 'rgb', presetColors: ['#123456'] } },
         { name: 'ssn', type: 'maskedInput', mask: '999-99-9999' },
       ],
       formOptions: {
@@ -80,6 +98,7 @@ describe('compatibility examples field normalization', () => {
     assert.equal(options.fields[0]?.type, 'colorPicker');
     assert.equal(options.fields[1]?.type, 'maskedInput');
     assert.equal(normalized.fields[0]?.type, 'color');
+    assert.deepEqual(normalized.fields[0]?.colorConfig, { allowCustom: false, format: 'rgb', presetColors: ['#123456'] });
     assert.equal(normalized.fields[1]?.type, 'masked');
     assert.equal(normalized.submitLabel, options.submitLabel);
   });
