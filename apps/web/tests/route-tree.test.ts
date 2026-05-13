@@ -8,6 +8,7 @@ const expectedRoutes = [
   { fullPath: '/ai-builder', variableName: 'AiBuilderRoute', importAlias: 'AiBuilderRouteImport', source: './routes/ai-builder' },
   { fullPath: '/builder', variableName: 'BuilderRoute', importAlias: 'BuilderRouteImport', source: './routes/builder' },
   { fullPath: '/docs', variableName: 'DocsRouteWithChildren', importAlias: 'DocsRouteImport', source: './routes/docs' },
+  { fullPath: '/docs/', variableName: 'DocsIndexRoute', importAlias: 'DocsIndexRouteImport', source: './routes/docs.index' },
   {
     fullPath: '/docs/advanced-features',
     variableName: 'DocsAdvancedFeaturesRoute',
@@ -72,5 +73,18 @@ describe('docs route tree', () => {
     assert.match(routeTree, /BuilderRoute: BuilderRoute/);
     assert.match(routeTree, /AiBuilderRoute: AiBuilderRoute/);
     assert.match(routeTree, /DocsRoute: DocsRouteWithChildren/);
+  });
+
+  it('keeps docs hub and docs examples on distinct route files', async () => {
+    const routeTree = await readFile(join(process.cwd(), 'src/routeTree.gen.ts'), 'utf8');
+
+    assert.match(routeTree, /import \{ Route as DocsRouteImport \} from '\.\/routes\/docs'/);
+    assert.match(routeTree, /import \{ Route as DocsIndexRouteImport \} from '\.\/routes\/docs\.index'/);
+    assert.match(routeTree, /import \{ Route as DocsExamplesRouteImport \} from '\.\/routes\/docs\.examples'/);
+    assert.match(routeTree, /const DocsRoute = DocsRouteImport\.update\(\{\s*id: '\/docs',[\s\S]*path: '\/docs',[\s\S]*getParentRoute: \(\) => rootRouteImport/);
+    assert.match(routeTree, /const DocsIndexRoute = DocsIndexRouteImport\.update\(\{\s*id: '\/',[\s\S]*path: '\/',[\s\S]*getParentRoute: \(\) => DocsRoute/);
+    assert.match(routeTree, /const DocsExamplesRoute = DocsExamplesRouteImport\.update\(\{\s*id: '\/examples',[\s\S]*path: '\/examples',[\s\S]*getParentRoute: \(\) => DocsRoute/);
+    assert.match(routeTree, /'\/docs\/': typeof DocsIndexRoute/);
+    assert.match(routeTree, /'\/docs\/examples': typeof DocsExamplesRoute/);
   });
 });

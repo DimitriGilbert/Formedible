@@ -5,8 +5,11 @@ import assert from 'node:assert/strict';
 
 import { docsCompatibilityExamples } from '../src/docs/compatibility-examples';
 import { docsCodeExamples } from '../src/docs/code-examples';
+import { getRenderedExampleMapping, renderedExampleMappings } from '../src/docs/rendered-example-showcase';
 import { createRouteSeoHead } from '../src/docs/seo';
 import { publicRouteMeta, siteMeta } from '../src/docs/site-meta';
+import * as copiedCodeExamples from '../src/data/code-examples';
+import { copiedCodeExampleEntries } from '../src/routes/docs.examples';
 
 const appRoot = process.cwd();
 const docsSourceRoot = join(appRoot, 'src');
@@ -168,14 +171,92 @@ describe('docs compatibility examples', () => {
     }
   });
 
-  it('keeps the examples route as a full rendered examples page', async () => {
-    const routeSource = await readFile(join(appRoot, 'src/routes/docs.examples.tsx'), 'utf8');
+  it('keeps the examples route as a focused examples browser', async () => {
+    const [routeSource, showcaseSource] = await Promise.all([
+      readFile(join(appRoot, 'src/routes/docs.examples.tsx'), 'utf8'),
+      readFile(join(appRoot, 'src/docs/rendered-example-showcase.tsx'), 'utf8'),
+    ]);
 
-    assert.match(routeSource, /<DocsExampleForm example=\{example\}/);
-    assert.match(routeSource, /Current consumer snippet/);
-    assert.match(routeSource, /data-example-id=\{example\.id\}/);
-    assert.match(routeSource, /createExampleSnippet\(example\)/);
-    assert.doesNotMatch(routeSource, /old_version_for_knowledge_purpose|tests\/compatibility-examples|generated\/formedible|@formedible\/formedible|packages\/formedible/);
+    assert.match(routeSource, /createFileRoute\('\/docs\/examples'\)/);
+    assert.match(routeSource, /from ['"]@\/data\/code-examples['"]/);
+    assert.match(routeSource, /data-examples-browser="focused"/);
+    assert.match(routeSource, /data-examples-grid="true"/);
+    assert.match(routeSource, /data-active-example-area="true"/);
+    assert.match(routeSource, /data-example-index-item=\{example\.key\}/);
+    assert.match(routeSource, /<RenderedExampleShowcase example=\{activeExample\} index=\{activeExampleIndex\} \/>/);
+    assert.match(showcaseSource, /data-code-example-id=\{example\.id\}/);
+    assert.match(showcaseSource, /data-code-example-export=\{String\(example\.key\)\}/);
+    assert.match(showcaseSource, /data-focused-preview-area="true"/);
+    assert.match(showcaseSource, /data-focused-code-area="true"/);
+    assert.match(showcaseSource, /data-rendered-preview-for=\{example\.key\}/);
+    assert.match(showcaseSource, /<DocsExampleForm example=\{compatibilityExample\} \/>/);
+    assert.match(showcaseSource, /<code>\{example\.code\}<\/code>/);
+    assert.doesNotMatch(showcaseSource, /examples\.map\(\(example/);
+    assert.doesNotMatch(routeSource, /DocsHub|@\/docs\/core-pages/);
+    assert.doesNotMatch(`${routeSource}\n${showcaseSource}`, /old_version_for_knowledge_purpose|tests\/compatibility-examples|generated\/formedible|@formedible\/formedible|packages\/formedible/);
+  });
+
+  it('keeps docs hub routing separate from docs examples routing', async () => {
+    const [docsLayoutSource, docsIndexSource, examplesSource] = await Promise.all([
+      readFile(join(appRoot, 'src/routes/docs.tsx'), 'utf8'),
+      readFile(join(appRoot, 'src/routes/docs.index.tsx'), 'utf8'),
+      readFile(join(appRoot, 'src/routes/docs.examples.tsx'), 'utf8'),
+    ]);
+
+    assert.match(docsLayoutSource, /createFileRoute\('\/docs'\)/);
+    assert.match(docsLayoutSource, /<Outlet \/>/);
+    assert.doesNotMatch(docsLayoutSource, /DocsHub/);
+    assert.match(docsIndexSource, /createFileRoute\('\/docs\/'\)/);
+    assert.match(docsIndexSource, /DocsHub/);
+    assert.match(examplesSource, /createFileRoute\('\/docs\/examples'\)/);
+    assert.match(examplesSource, /copiedCodeExampleEntries/);
+    assert.doesNotMatch(examplesSource, /DocsHub/);
+  });
+
+  it('renders every copied code example export on the examples route', () => {
+    const exportedExamples = Object.keys(copiedCodeExamples).map((exportName) => [exportName, copiedCodeExamples[exportName as keyof typeof copiedCodeExamples]] as const);
+    const renderedByExport = new Map(copiedCodeExampleEntries.map((example) => [String(example.key), example]));
+
+    assert.equal(copiedCodeExampleEntries.length, exportedExamples.length);
+
+    for (const [exportName, code] of exportedExamples) {
+      const routeExample = renderedByExport.get(exportName);
+
+      assert.ok(routeExample, `${exportName} must be present on the examples route`);
+      assert.equal(routeExample.code, code, `${exportName} must render the copied source string`);
+      assert.ok(routeExample.title.length > 0, `${exportName} must have a readable title`);
+      assert.ok(routeExample.description.length > 0, `${exportName} must have example copy`);
+      assert.ok(routeExample.category.length > 0, `${exportName} must have navigation metadata`);
+    }
+  });
+
+  it('maps copied code examples to rendered previews when feasible', () => {
+    const compatibilityIds = new Set(docsCompatibilityExamples.map((example) => example.id));
+    const renderedMappings = Object.entries(renderedExampleMappings).filter(([, mapping]) => mapping.status === 'rendered');
+
+    assert.ok(renderedMappings.length >= 10, 'most copied examples should have live rendered previews');
+
+    for (const [exportName, mapping] of Object.entries(renderedExampleMappings)) {
+      assert.ok(exportName in copiedCodeExamples, `${exportName} must be backed by the copied code source of truth`);
+
+      if (mapping.status === 'rendered') {
+        assert.ok(mapping.compatibilityId, `${exportName} must name the current rendered docs example`);
+        assert.ok(compatibilityIds.has(mapping.compatibilityId), `${exportName} must map to an existing docs runtime example`);
+      } else {
+        assert.ok(mapping.reason && mapping.reason.length > 40, `${exportName} code-only mapping must explain why`);
+      }
+    }
+
+    for (const entry of copiedCodeExampleEntries) {
+      const mapping = getRenderedExampleMapping(entry);
+
+      assert.match(mapping.status, /rendered|code-only/);
+      if (mapping.status === 'rendered') {
+        assert.ok(mapping.compatibilityId && compatibilityIds.has(mapping.compatibilityId), `${entry.key} rendered preview must resolve`);
+      } else {
+        assert.ok(mapping.reason && mapping.reason.length > 40, `${entry.key} code-only entry must explain why`);
+      }
+    }
   });
 
   it('keeps all required example definitions substantial and consumer-safe', () => {
