@@ -3,11 +3,13 @@
 import { RawOutputPanel } from '@/components/formedible/ai/raw-output-panel';
 import { AgentSettings } from '@/components/formedible/ai/agent-settings';
 import { ConversationHistory } from '@/components/formedible/ai/conversation-history';
+import { ParserSettings } from '@/components/formedible/ai/parser-settings';
 import type { SidebarView } from '@/components/formedible/ai/sidebar-icons';
 import { ProviderSelection } from '@/components/formedible/ai/provider-selection';
 import type { AIBuilderProviderAccess } from '@/components/formedible/ai/ai-builder';
 import type { ProviderSecretPersistencePreference } from '@/lib/formedible/ai-storage';
 import type { AiConversation, ProviderSecrets, ProviderSettings } from '@/lib/formedible/ai-types';
+import type { ParserConfig } from '@/lib/formedible/parser-config-schema';
 import { cn } from '@/lib/utils';
 
 export interface SidebarContentProps {
@@ -19,23 +21,16 @@ export interface SidebarContentProps {
   readonly providerSettings: ProviderSettings;
   readonly providerSecrets: ProviderSecrets;
   readonly providerSecretPersistence: ProviderSecretPersistencePreference;
+  readonly parserConfig: ParserConfig;
   readonly onProviderAccessChange: (settings: ProviderSettings, secrets: ProviderSecrets) => void;
   readonly onProviderSecretPersistenceChange: (preference: ProviderSecretPersistencePreference) => void;
   readonly onClearProviderSecrets: () => void;
+  readonly onParserConfigChange: (config: ParserConfig) => void;
   readonly onSelectConversation: (conversationId: string) => void;
   readonly onDeleteConversation: (conversationId: string) => void;
   readonly onNewConversation: () => void;
   readonly onExportConversation: (conversation: AiConversation) => void;
   readonly className?: string;
-}
-
-function EmptySettingsPanel({ title, description }: { readonly title: string; readonly description: string }) {
-  return (
-    <section className="rounded-lg border bg-background p-4" aria-labelledby={`${title.toLowerCase().replaceAll(' ', '-')}-title`}>
-      <h2 id={`${title.toLowerCase().replaceAll(' ', '-')}-title`} className="text-sm font-semibold">{title}</h2>
-      <p className="mt-2 text-sm text-muted-foreground">{description}</p>
-    </section>
-  );
 }
 
 function DebugPanel({ conversation }: { readonly conversation?: AiConversation }) {
@@ -64,7 +59,7 @@ function ModelPanel({ providerSettings, providerSecrets, onProviderAccessChange 
   return <AgentSettings settings={providerSettings} secrets={providerSecrets} onChange={onProviderAccessChange} />;
 }
 
-export function SidebarContent({ activeView, isCollapsed, conversations, currentConversation, currentConversationId, providerSettings, providerSecrets, providerSecretPersistence, onProviderAccessChange, onProviderSecretPersistenceChange, onClearProviderSecrets, onSelectConversation, onDeleteConversation, onNewConversation, onExportConversation, className }: SidebarContentProps) {
+export function SidebarContent({ activeView, isCollapsed, conversations, currentConversation, currentConversationId, providerSettings, providerSecrets, providerSecretPersistence, parserConfig, onProviderAccessChange, onProviderSecretPersistenceChange, onClearProviderSecrets, onParserConfigChange, onSelectConversation, onDeleteConversation, onNewConversation, onExportConversation, className }: SidebarContentProps) {
   if (isCollapsed || !activeView) {
     return null;
   }
@@ -85,7 +80,7 @@ export function SidebarContent({ activeView, isCollapsed, conversations, current
         ) : null}
         {activeView === 'provider' ? <ProviderPanel providerSettings={providerSettings} providerSecrets={providerSecrets} providerSecretPersistence={providerSecretPersistence} onProviderAccessChange={onProviderAccessChange} onProviderSecretPersistenceChange={onProviderSecretPersistenceChange} onClearProviderSecrets={onClearProviderSecrets} /> : null}
         {activeView === 'model' ? <ModelPanel providerSettings={providerSettings} providerSecrets={providerSecrets} onProviderAccessChange={onProviderAccessChange} /> : null}
-        {activeView === 'parser' ? <EmptySettingsPanel title="Parser settings" description="Parser configuration controls will be available in the parser settings phase. Current parsing uses the synced Formedible parser contract and lowercase formedible fenced blocks." /> : null}
+        {activeView === 'parser' ? <ParserSettings config={parserConfig} onChange={onParserConfigChange} /> : null}
         {activeView === 'debug' ? <DebugPanel conversation={currentConversation} /> : null}
       </div>
     </aside>

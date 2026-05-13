@@ -3,6 +3,7 @@ export { AgentSettings } from '@/components/formedible/ai/agent-settings';
 export { AiFormRenderer, parseAiToFormedible } from '@/components/formedible/ai/ai-form-renderer';
 export { ChatInterface, generateAiFormCode } from '@/components/formedible/ai/chat-interface';
 export { ConversationHistory } from '@/components/formedible/ai/conversation-history';
+export { ParserSettings } from '@/components/formedible/ai/parser-settings';
 export { createDefaultProviderSecrets, createDefaultProviderSettings, providerOptions, ProviderSelection, validateProviderAccess } from '@/components/formedible/ai/provider-selection';
 export { SidebarContent } from '@/components/formedible/ai/sidebar-content';
 export { SidebarIcons } from '@/components/formedible/ai/sidebar-icons';

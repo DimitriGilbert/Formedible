@@ -70,6 +70,11 @@
           "target": "components/formedible/ai/markdown-message.tsx"
         },
         {
+          "path": "src/components/formedible/ai/parser-settings.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/ai/parser-settings.tsx"
+        },
+        {
           "path": "src/components/formedible/ai/raw-output-panel.tsx",
           "type": "registry:component",
           "target": "components/formedible/ai/raw-output-panel.tsx"

@@ -11,6 +11,7 @@ import { AiFormRenderer, parseAiToFormedible } from '@/components/formedible/ai/
 import { generateAiFormCode, resolveMessageStatus } from '@/components/formedible/ai/chat-interface';
 import { ConversationHistory } from '@/components/formedible/ai/conversation-history';
 import { MarkdownMessage } from '@/components/formedible/ai/markdown-message';
+import { ParserSettings } from '@/components/formedible/ai/parser-settings';
 import { createDefaultProviderSecrets, createDefaultProviderSettings, providerOptions, ProviderSelection, validateProviderAccess } from '@/components/formedible/ai/provider-selection';
 import { RawOutputPanel } from '@/components/formedible/ai/raw-output-panel';
 import { SidebarContent } from '@/components/formedible/ai/sidebar-content';
@@ -21,6 +22,7 @@ import { extractFormCode, parseAiToFormedible as parseAiCode } from '@/lib/forme
 import { createAiStreamScheduler } from '@/lib/formedible/ai-stream-scheduler';
 import { canUseStorage, clearConversations, clearStoredProviderSecrets, exportConversation, persistConversations, persistProviderSecrets, persistProviderSettings, persistUiState, readPersistedAIBuilderState, readStoredProviderSecrets, STORAGE_KEYS, upsertConversation, writeJson } from '@/lib/formedible/ai-storage';
 import type { AiConversation, AiMessage, AiStreamEvent, ProviderSecrets, ProviderSettings } from '@/lib/formedible/ai-types';
+import { defaultParserConfig, generateSystemPrompt } from '@/lib/formedible/parser-config-schema';
 
 const sampleFormCode = `{
   fields: [
@@ -123,6 +125,7 @@ test('public AI builder exports are real components and functions', () => {
   assert.equal(typeof AiFormRenderer, 'function');
   assert.equal(typeof ConversationHistory, 'function');
   assert.equal(typeof MarkdownMessage, 'function');
+  assert.equal(typeof ParserSettings, 'function');
   assert.equal(typeof SidebarContent, 'function');
   assert.equal(typeof SidebarIcons, 'function');
   assert.equal(typeof parseAiToFormedible, 'function');
@@ -850,9 +853,11 @@ test('sidebar history and settings render without backend or settings UI bypasse
     providerSettings,
     providerSecrets,
     providerSecretPersistence: { mode: 'local', rememberKey: true },
+    parserConfig: defaultParserConfig,
     onProviderAccessChange: () => undefined,
     onProviderSecretPersistenceChange: () => undefined,
     onClearProviderSecrets: () => undefined,
+    onParserConfigChange: () => undefined,
     onSelectConversation: () => undefined,
     onDeleteConversation: () => undefined,
     onNewConversation: () => undefined,
@@ -900,6 +905,22 @@ test('provider settings explain BYOK persistence and model settings keep Anthrop
   assert.match(openAiModelMarkup, /Thinking budget controls are only available for Anthropic/);
 });
 
+test('parser settings render synced parser config and system prompt preview', () => {
+  const config = { ...defaultParserConfig, customInstructions: 'Use concise labels.' };
+  const parserMarkup = renderToStaticMarkup(createElement(ParserSettings, {
+    config,
+    onChange: () => undefined,
+  }));
+  const prompt = generateSystemPrompt(config);
+
+  assert.match(parserMarkup, /Parser settings/);
+  assert.match(parserMarkup, /System prompt preview/);
+  assert.match(parserMarkup, /Copy prompt/);
+  assert.match(parserMarkup, /Strict Validation/);
+  assert.match(prompt, /lowercase ```formedible fenced block/);
+  assert.match(prompt, /Use concise labels/);
+});
+
 test('conversation history selection updates existing conversation and new conversation starts separately', () => {
   const firstUserMessage: AiMessage = { id: 'user-1', role: 'user', content: 'Create a signup form' };
   const secondUserMessage: AiMessage = { id: 'user-2', role: 'user', content: 'Create a survey form' };
@@ -931,6 +952,7 @@ test('AI builder install source uses lower-level installed aliases', () => {
     'src/components/formedible/ai/chat-messages.tsx',
     'src/components/formedible/ai/conversation-history.tsx',
     'src/components/formedible/ai/markdown-message.tsx',
+    'src/components/formedible/ai/parser-settings.tsx',
     'src/components/formedible/ai/provider-selection.tsx',
     'src/components/formedible/ai/raw-output-panel.tsx',
     'src/components/formedible/ai/sidebar-content.tsx',

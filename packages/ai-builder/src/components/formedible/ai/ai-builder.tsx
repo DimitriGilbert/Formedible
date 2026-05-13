@@ -11,7 +11,9 @@ import { SidebarIcons, type SidebarView } from '@/components/formedible/ai/sideb
 import { Button } from '@/components/ui/button';
 import { clearStoredProviderSecrets, exportConversation, getLastFormCode, persistConversations, persistProviderSecrets, persistProviderSettings, persistUiState, readPersistedAIBuilderState, readStoredProviderSecrets, upsertConversation } from '@/lib/formedible/ai-storage';
 import type { ProviderSecretPersistencePreference } from '@/lib/formedible/ai-storage';
-import type { AiConversation, AiMessage, AIBuilderMode, ProviderSecrets, ProviderSettings } from '@/lib/formedible/ai-types';
+import type { AiConversation, AiMessage, AiParserConfig, AIBuilderMode, ProviderSecrets, ProviderSettings } from '@/lib/formedible/ai-types';
+import { defaultParserConfig, generateSystemPrompt, mergeParserConfig } from '@/lib/formedible/parser-config-schema';
+import type { ParserConfig } from '@/lib/formedible/parser-config-schema';
 import type { FormedibleFormValues } from '@/lib/formedible/types';
 import { cn } from '@/lib/utils';
 
@@ -35,6 +37,14 @@ export interface AIBuilderProviderAccess {
 
 function readProviderSecretPersistencePreference(): ProviderSecretPersistencePreference {
   return readStoredProviderSecrets('session')?.preference ?? readStoredProviderSecrets('local')?.preference ?? { mode: 'memory', rememberKey: false };
+}
+
+function toAiParserConfig(config: ParserConfig): AiParserConfig {
+  return {
+    strictValidation: config.strictValidation,
+    inferDefaultValues: config.enableSchemaInference,
+    ...(config.selectFields ? { allowedFieldTypes: config.systemPromptFields } : {}),
+  };
 }
 
 export function resolveInitialProviderAccess(
@@ -65,6 +75,7 @@ export function AIBuilder({
 }: AIBuilderProps) {
   const [internalProviderAccess, setInternalProviderAccess] = useState<AIBuilderProviderAccess>(() => resolveInitialProviderAccess(controlledProviderSettings, controlledProviderSecrets));
   const [providerSecretPersistence, setProviderSecretPersistence] = useState<ProviderSecretPersistencePreference>(() => readProviderSecretPersistencePreference());
+  const [parserConfig, setParserConfig] = useState<ParserConfig>(() => mergeParserConfig(defaultParserConfig));
   const [conversations, setConversations] = useState<readonly AiConversation[]>(() => readPersistedAIBuilderState(createDefaultProviderSettings()).conversations);
   const [currentConversationId, setCurrentConversationId] = useState<string | undefined>(() => readPersistedAIBuilderState(createDefaultProviderSettings()).currentConversationId);
   const [activeSidebarView, setActiveSidebarView] = useState<SidebarView | null>('history');
@@ -76,6 +87,8 @@ export function AIBuilder({
   const messages = currentConversation?.messages ?? [];
   const formCode = currentConversation?.formCode ?? getLastFormCode(messages);
   const providerValidationError = mode === 'client' ? validateProviderAccess(providerSettings, providerSecrets) : undefined;
+  const systemPrompt = generateSystemPrompt(parserConfig);
+  const aiParserConfig = toAiParserConfig(parserConfig);
 
   useEffect(() => {
     if (!controlledProviderSettings) {
@@ -200,9 +213,11 @@ export function AIBuilder({
           providerSettings={providerSettings}
           providerSecrets={providerSecrets}
           providerSecretPersistence={providerSecretPersistence}
+          parserConfig={parserConfig}
           onProviderAccessChange={updateProviderAccess}
           onProviderSecretPersistenceChange={updateProviderSecretPersistence}
           onClearProviderSecrets={clearProviderSecrets}
+          onParserConfigChange={setParserConfig}
         onSelectConversation={selectConversation}
         onDeleteConversation={deleteConversation}
         onNewConversation={startNewConversation}
@@ -224,12 +239,14 @@ export function AIBuilder({
             onMessagesChange={updateMessages}
             onFormGenerated={updateFormCode}
             conversationId={currentConversationId}
+            systemPrompt={systemPrompt}
+            parserConfig={aiParserConfig}
             className="min-h-[420px]"
           />
         </div>
         <div className="min-h-0 rounded-lg border p-4">
           {formCode ? (
-            <AiFormRenderer code={formCode} onSubmit={onFormSubmit} className="space-y-4" />
+            <AiFormRenderer code={formCode} parserConfig={aiParserConfig} onSubmit={onFormSubmit} className="space-y-4" />
           ) : (
             <div className="flex h-full min-h-[320px] items-center justify-center text-sm text-muted-foreground">Generated forms appear here.</div>
           )}

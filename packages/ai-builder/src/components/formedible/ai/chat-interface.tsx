@@ -13,6 +13,7 @@ import type {
   AiGenerationResult,
   AiFinishReason,
   AiMessage,
+  AiParserConfig,
   AIBuilderMode,
   AiStreamEvent,
   ProviderSecrets,
@@ -29,6 +30,7 @@ export interface ChatInterfaceProps {
   readonly onFormGenerated?: (formCode: string) => void;
   readonly conversationId?: string;
   readonly systemPrompt?: string;
+  readonly parserConfig?: AiParserConfig;
   readonly className?: string;
 }
 
@@ -85,6 +87,7 @@ export function ChatInterface({
   onFormGenerated,
   conversationId,
   systemPrompt = DEFAULT_AI_SYSTEM_PROMPT,
+  parserConfig,
   className,
 }: ChatInterfaceProps) {
   const [prompt, setPrompt] = useState('');
@@ -162,7 +165,7 @@ export function ChatInterface({
       streamScheduler.flushNow();
       const finalStatus = resolveMessageStatus(finishReason, streamedEvents);
       const formCode = finalStatus === 'completed' ? extractFormCode(streamedContent) : undefined;
-      const parseResult = formCode ? parseAiToFormedible(formCode) : undefined;
+      const parseResult = formCode ? parseAiToFormedible(formCode, parserConfig) : undefined;
       const finishedAt = Date.now();
       const finalAssistantMessage: AiMessage = {
         ...assistantMessage,
