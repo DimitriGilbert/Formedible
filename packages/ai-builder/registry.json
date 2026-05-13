@@ -35,6 +35,11 @@
           "target": "components/formedible/ai/ai-builder.tsx"
         },
         {
+          "path": "src/components/formedible/ai/agent-settings.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/ai/agent-settings.tsx"
+        },
+        {
           "path": "src/components/formedible/ai/ai-form-renderer.tsx",
           "type": "registry:component",
           "target": "components/formedible/ai/ai-form-renderer.tsx"

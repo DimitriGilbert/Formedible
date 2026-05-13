@@ -3,12 +3,14 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { AiFormRenderer } from '@/components/formedible/ai/ai-form-renderer';
+import { AgentSettings } from '@/components/formedible/ai/agent-settings';
 import { ChatInterface } from '@/components/formedible/ai/chat-interface';
 import { createDefaultProviderSecrets, createDefaultProviderSettings, ProviderSelection, validateProviderAccess } from '@/components/formedible/ai/provider-selection';
 import { SidebarContent } from '@/components/formedible/ai/sidebar-content';
 import { SidebarIcons, type SidebarView } from '@/components/formedible/ai/sidebar-icons';
 import { Button } from '@/components/ui/button';
-import { exportConversation, getLastFormCode, persistConversations, persistProviderSettings, persistUiState, readPersistedAIBuilderState, upsertConversation } from '@/lib/formedible/ai-storage';
+import { clearStoredProviderSecrets, exportConversation, getLastFormCode, persistConversations, persistProviderSecrets, persistProviderSettings, persistUiState, readPersistedAIBuilderState, readStoredProviderSecrets, upsertConversation } from '@/lib/formedible/ai-storage';
+import type { ProviderSecretPersistencePreference } from '@/lib/formedible/ai-storage';
 import type { AiConversation, AiMessage, AIBuilderMode, ProviderSecrets, ProviderSettings } from '@/lib/formedible/ai-types';
 import type { FormedibleFormValues } from '@/lib/formedible/types';
 import { cn } from '@/lib/utils';
@@ -31,14 +33,21 @@ export interface AIBuilderProviderAccess {
   readonly secrets: ProviderSecrets;
 }
 
+function readProviderSecretPersistencePreference(): ProviderSecretPersistencePreference {
+  return readStoredProviderSecrets('session')?.preference ?? readStoredProviderSecrets('local')?.preference ?? { mode: 'memory', rememberKey: false };
+}
+
 export function resolveInitialProviderAccess(
   controlledProviderSettings?: ProviderSettings,
   controlledProviderSecrets?: ProviderSecrets,
 ): AIBuilderProviderAccess {
   const persistedState = readPersistedAIBuilderState(createDefaultProviderSettings(), controlledProviderSettings);
   const settings = persistedState.providerSettings;
+  const storedSecrets = readStoredProviderSecrets('session')?.secrets ?? readStoredProviderSecrets('local')?.secrets;
   const secrets = controlledProviderSecrets && controlledProviderSecrets.provider === settings.provider
     ? controlledProviderSecrets
+    : storedSecrets && storedSecrets.provider === settings.provider
+      ? storedSecrets
     : createDefaultProviderSecrets(settings.provider);
 
   return { settings, secrets };
@@ -55,6 +64,7 @@ export function AIBuilder({
   onFormSubmit,
 }: AIBuilderProps) {
   const [internalProviderAccess, setInternalProviderAccess] = useState<AIBuilderProviderAccess>(() => resolveInitialProviderAccess(controlledProviderSettings, controlledProviderSecrets));
+  const [providerSecretPersistence, setProviderSecretPersistence] = useState<ProviderSecretPersistencePreference>(() => readProviderSecretPersistencePreference());
   const [conversations, setConversations] = useState<readonly AiConversation[]>(() => readPersistedAIBuilderState(createDefaultProviderSettings()).conversations);
   const [currentConversationId, setCurrentConversationId] = useState<string | undefined>(() => readPersistedAIBuilderState(createDefaultProviderSettings()).currentConversationId);
   const [activeSidebarView, setActiveSidebarView] = useState<SidebarView | null>('history');
@@ -72,6 +82,12 @@ export function AIBuilder({
       persistProviderSettings(internalProviderAccess.settings);
     }
   }, [controlledProviderSettings, internalProviderAccess.settings]);
+
+  useEffect(() => {
+    if (!controlledProviderSecrets) {
+      persistProviderSecrets(internalProviderAccess.secrets, providerSecretPersistence);
+    }
+  }, [controlledProviderSecrets, internalProviderAccess.secrets, providerSecretPersistence]);
 
   useEffect(() => {
     if (controlledProviderSecrets || internalProviderAccess.secrets.provider === providerSettings.provider) {
@@ -97,6 +113,15 @@ export function AIBuilder({
     setInternalProviderAccess({ settings: nextSettings, secrets: nextSecrets });
     onProviderSettingsChange?.(nextSettings);
     onProviderSecretsChange?.(nextSecrets);
+  }
+
+  function updateProviderSecretPersistence(nextPreference: ProviderSecretPersistencePreference) {
+    setProviderSecretPersistence(nextPreference);
+  }
+
+  function clearProviderSecrets() {
+    clearStoredProviderSecrets();
+    updateProviderAccess(providerSettings, createDefaultProviderSecrets(providerSettings.provider));
   }
 
   function updateMessages(nextMessages: readonly AiMessage[]) {
@@ -172,9 +197,12 @@ export function AIBuilder({
         conversations={conversations}
         currentConversation={currentConversation}
         currentConversationId={currentConversationId}
-        providerSettings={providerSettings}
-        providerSecrets={providerSecrets}
-        onProviderAccessChange={updateProviderAccess}
+          providerSettings={providerSettings}
+          providerSecrets={providerSecrets}
+          providerSecretPersistence={providerSecretPersistence}
+          onProviderAccessChange={updateProviderAccess}
+          onProviderSecretPersistenceChange={updateProviderSecretPersistence}
+          onClearProviderSecrets={clearProviderSecrets}
         onSelectConversation={selectConversation}
         onDeleteConversation={deleteConversation}
         onNewConversation={startNewConversation}
@@ -182,7 +210,7 @@ export function AIBuilder({
       />
       <div className="grid min-w-0 flex-1 gap-4 p-4 lg:grid-cols-[minmax(0,0.95fr)_minmax(360px,1.05fr)]">
         <div className="flex min-h-0 flex-col gap-4">
-          {isSidebarCollapsed ? <ProviderSelection settings={providerSettings} secrets={providerSecrets} onChange={updateProviderAccess} /> : null}
+          {isSidebarCollapsed ? <div className="grid gap-3"><ProviderSelection settings={providerSettings} secrets={providerSecrets} persistencePreference={providerSecretPersistence} onChange={updateProviderAccess} onPersistencePreferenceChange={updateProviderSecretPersistence} onClearStoredSecrets={clearProviderSecrets} /><AgentSettings settings={providerSettings} secrets={providerSecrets} onChange={updateProviderAccess} /></div> : null}
           {providerValidationError ? <p className="rounded-md border border-destructive/40 p-2 text-sm text-destructive">{providerValidationError}</p> : null}
           <div className="flex items-center justify-between gap-2 rounded-lg border p-2">
             <p className="truncate text-sm text-muted-foreground">{currentConversation ? currentConversation.title : 'New conversation'}</p>

@@ -1,8 +1,10 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { AIProvider, ProviderSecrets, ProviderSettings } from '@/lib/formedible/ai-types';
+import type { ProviderSecretPersistencePreference, ProviderSecretStorageMode } from '@/lib/formedible/ai-storage';
 import { cn } from '@/lib/utils';
 
 export const providerOptions = [
@@ -15,8 +17,16 @@ export interface ProviderSelectionProps {
   readonly settings: ProviderSettings;
   readonly secrets: ProviderSecrets;
   readonly onChange: (settings: ProviderSettings, secrets: ProviderSecrets) => void;
+  readonly persistencePreference?: ProviderSecretPersistencePreference;
+  readonly onPersistencePreferenceChange?: (preference: ProviderSecretPersistencePreference) => void;
+  readonly onClearStoredSecrets?: () => void;
   readonly className?: string;
 }
+
+const defaultPersistencePreference: ProviderSecretPersistencePreference = {
+  mode: 'memory',
+  rememberKey: false,
+};
 
 export function createDefaultProviderSettings(provider: AIProvider = 'openai'): ProviderSettings {
   const option = providerOptions.find((entry) => entry.value === provider) ?? providerOptions[0];
@@ -78,9 +88,17 @@ function isAIProvider(value: string | null): value is AIProvider {
   return providerOptions.some((provider) => provider.value === value);
 }
 
-export function ProviderSelection({ settings, secrets, onChange, className }: ProviderSelectionProps) {
+function isProviderSecretStorageMode(value: string | null): value is ProviderSecretStorageMode {
+  return value === 'memory' || value === 'session' || value === 'local';
+}
+
+export function ProviderSelection({ settings, secrets, onChange, persistencePreference = defaultPersistencePreference, onPersistencePreferenceChange, onClearStoredSecrets, className }: ProviderSelectionProps) {
   return (
-    <div className={cn('grid gap-3 rounded-lg border p-3', className)}>
+    <section className={cn('grid gap-3 rounded-lg border bg-background p-3', className)} aria-labelledby="ai-builder-provider-settings-title">
+      <div>
+        <h2 id="ai-builder-provider-settings-title" className="text-sm font-semibold">Provider credentials</h2>
+        <p className="mt-1 text-xs text-muted-foreground">Bring your own key. Keys stay in this browser, are never exported with conversations, and local storage requires an explicit opt-in.</p>
+      </div>
       <label className="grid gap-1 text-sm font-medium">
         Provider
         <Select
@@ -88,7 +106,7 @@ export function ProviderSelection({ settings, secrets, onChange, className }: Pr
           onValueChange={(providerValue) => {
             const provider = isAIProvider(providerValue) ? providerValue : providerOptions[0].value;
             const nextProvider = providerOptions.find((entry) => entry.value === provider) ?? providerOptions[0];
-            onChange(createDefaultProviderSettings(nextProvider.value), { ...secrets, provider: nextProvider.value });
+            onChange(createDefaultProviderSettings(nextProvider.value), { provider: nextProvider.value, apiKey: '' });
           }}
         >
           <SelectTrigger>
@@ -104,23 +122,50 @@ export function ProviderSelection({ settings, secrets, onChange, className }: Pr
         </Select>
       </label>
       <label className="grid gap-1 text-sm font-medium">
-        Model
-        <Input value={settings.model} onChange={(event) => onChange({ ...settings, model: event.target.value }, secrets)} />
-      </label>
-      <label className="grid gap-1 text-sm font-medium">
         API key
-        <Input value={secrets.apiKey} type="password" onChange={(event) => onChange(settings, { ...secrets, apiKey: event.target.value })} />
+        <Input value={secrets.apiKey} type="password" autoComplete="off" placeholder={`${providerOptions.find((provider) => provider.value === settings.provider)?.label ?? 'Provider'} API key`} onChange={(event) => onChange(settings, { ...secrets, apiKey: event.target.value })} />
       </label>
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3">
         <label className="grid gap-1 text-sm font-medium">
-          Temperature
-          <Input value={settings.temperature ?? ''} type="number" step="0.1" onChange={(event) => onChange({ ...settings, temperature: Number(event.target.value) }, secrets)} />
+          Key storage
+          <Select
+            value={persistencePreference.mode}
+            onValueChange={(modeValue) => {
+              const mode = isProviderSecretStorageMode(modeValue) ? modeValue : 'memory';
+              onPersistencePreferenceChange?.({
+                mode,
+                rememberKey: mode === 'memory' ? false : persistencePreference.rememberKey,
+              });
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select storage mode" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="memory">Memory only</SelectItem>
+              <SelectItem value="session">Session storage</SelectItem>
+              <SelectItem value="local">Local storage</SelectItem>
+            </SelectContent>
+          </Select>
         </label>
-        <label className="grid gap-1 text-sm font-medium">
-          Max tokens
-          <Input value={settings.maxTokens ?? ''} type="number" step="1" onChange={(event) => onChange({ ...settings, maxTokens: Number(event.target.value) }, secrets)} />
+        {persistencePreference.mode === 'local' ? (
+          <p className="rounded-md border border-amber-500/40 bg-amber-500/10 p-2 text-xs text-amber-700 dark:text-amber-300">Local storage keeps the key on this device after the tab closes. Only use it on a trusted machine.</p>
+        ) : null}
+        <label className="flex items-start gap-2 rounded-md border p-2 text-sm font-medium">
+          <input
+            className="mt-1"
+            type="checkbox"
+            checked={persistencePreference.rememberKey}
+            disabled={persistencePreference.mode === 'memory'}
+            onChange={(event) => onPersistencePreferenceChange?.({ ...persistencePreference, rememberKey: event.target.checked })}
+          />
+          <span>
+            Remember API key
+            <span className="block text-xs font-normal text-muted-foreground">Disabled for memory-only mode. Session storage forgets the key when the browser session ends.</span>
+          </span>
         </label>
       </div>
-    </div>
+      <Button type="button" variant="outline" size="sm" onClick={onClearStoredSecrets}>Wipe stored key</Button>
+    </section>
   );
 }

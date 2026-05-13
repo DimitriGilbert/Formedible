@@ -6,11 +6,12 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import { AI_BUILDER_DEFAULT_MODE, AIBuilder, resolveInitialProviderAccess } from '@/components/formedible/ai/ai-builder';
+import { AgentSettings } from '@/components/formedible/ai/agent-settings';
 import { AiFormRenderer, parseAiToFormedible } from '@/components/formedible/ai/ai-form-renderer';
 import { generateAiFormCode, resolveMessageStatus } from '@/components/formedible/ai/chat-interface';
 import { ConversationHistory } from '@/components/formedible/ai/conversation-history';
 import { MarkdownMessage } from '@/components/formedible/ai/markdown-message';
-import { createDefaultProviderSecrets, createDefaultProviderSettings, providerOptions, validateProviderAccess } from '@/components/formedible/ai/provider-selection';
+import { createDefaultProviderSecrets, createDefaultProviderSettings, providerOptions, ProviderSelection, validateProviderAccess } from '@/components/formedible/ai/provider-selection';
 import { RawOutputPanel } from '@/components/formedible/ai/raw-output-panel';
 import { SidebarContent } from '@/components/formedible/ai/sidebar-content';
 import { SidebarIcons } from '@/components/formedible/ai/sidebar-icons';
@@ -118,6 +119,7 @@ function installWindowStorage(storage: Storage): () => void {
 
 test('public AI builder exports are real components and functions', () => {
   assert.equal(typeof AIBuilder, 'function');
+  assert.equal(typeof AgentSettings, 'function');
   assert.equal(typeof AiFormRenderer, 'function');
   assert.equal(typeof ConversationHistory, 'function');
   assert.equal(typeof MarkdownMessage, 'function');
@@ -847,7 +849,10 @@ test('sidebar history and settings render without backend or settings UI bypasse
     currentConversationId: conversation.id,
     providerSettings,
     providerSecrets,
+    providerSecretPersistence: { mode: 'local', rememberKey: true },
     onProviderAccessChange: () => undefined,
+    onProviderSecretPersistenceChange: () => undefined,
+    onClearProviderSecrets: () => undefined,
     onSelectConversation: () => undefined,
     onDeleteConversation: () => undefined,
     onNewConversation: () => undefined,
@@ -862,8 +867,37 @@ test('sidebar history and settings render without backend or settings UI bypasse
 
   assert.match(historyMarkup, /Sidebar conversation/);
   assert.match(modelMarkup, /Model settings/);
-  assert.match(modelMarkup, /Current generation continues/);
+  assert.match(modelMarkup, /openai\/gpt-4o-mini/);
   assert.match(iconsMarkup, /AI builder sidebar/);
+});
+
+test('provider settings explain BYOK persistence and model settings keep Anthropic thinking scoped', () => {
+  const anthropicSettings = { provider: 'anthropic', model: DEFAULT_TANSTACK_AI_MODELS.anthropic, temperature: 0.5, maxTokens: 2000, thinkingBudgetTokens: 512 } satisfies ProviderSettings;
+  const providerSecrets: ProviderSecrets = { provider: 'anthropic', apiKey: '' };
+  const providerMarkup = renderToStaticMarkup(createElement(ProviderSelection, {
+    settings: anthropicSettings,
+    secrets: providerSecrets,
+    persistencePreference: { mode: 'local', rememberKey: true },
+    onChange: () => undefined,
+    onPersistencePreferenceChange: () => undefined,
+    onClearStoredSecrets: () => undefined,
+  }));
+  const modelMarkup = renderToStaticMarkup(createElement(AgentSettings, {
+    settings: anthropicSettings,
+    secrets: providerSecrets,
+    onChange: () => undefined,
+  }));
+  const openAiModelMarkup = renderToStaticMarkup(createElement(AgentSettings, {
+    settings: createDefaultProviderSettings('openai'),
+    secrets: { provider: 'openai', apiKey: '' },
+    onChange: () => undefined,
+  }));
+
+  assert.match(providerMarkup, /Bring your own key/);
+  assert.match(providerMarkup, /Local storage keeps the key/);
+  assert.match(providerMarkup, /Wipe stored key/);
+  assert.match(modelMarkup, /Thinking budget tokens/);
+  assert.match(openAiModelMarkup, /Thinking budget controls are only available for Anthropic/);
 });
 
 test('conversation history selection updates existing conversation and new conversation starts separately', () => {
@@ -891,6 +925,7 @@ test('AI builder install source uses lower-level installed aliases', () => {
   const sourceFiles = [
     'src/index.ts',
     'src/components/formedible/ai/ai-builder.tsx',
+    'src/components/formedible/ai/agent-settings.tsx',
     'src/components/formedible/ai/ai-form-renderer.tsx',
     'src/components/formedible/ai/chat-interface.tsx',
     'src/components/formedible/ai/chat-messages.tsx',

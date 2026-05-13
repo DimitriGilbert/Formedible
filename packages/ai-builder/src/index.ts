@@ -1,4 +1,5 @@
 export { AIBuilder } from '@/components/formedible/ai/ai-builder';
+export { AgentSettings } from '@/components/formedible/ai/agent-settings';
 export { AiFormRenderer, parseAiToFormedible } from '@/components/formedible/ai/ai-form-renderer';
 export { ChatInterface, generateAiFormCode } from '@/components/formedible/ai/chat-interface';
 export { ConversationHistory } from '@/components/formedible/ai/conversation-history';

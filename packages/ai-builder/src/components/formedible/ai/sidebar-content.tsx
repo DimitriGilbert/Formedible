@@ -1,10 +1,12 @@
 'use client';
 
 import { RawOutputPanel } from '@/components/formedible/ai/raw-output-panel';
+import { AgentSettings } from '@/components/formedible/ai/agent-settings';
 import { ConversationHistory } from '@/components/formedible/ai/conversation-history';
 import type { SidebarView } from '@/components/formedible/ai/sidebar-icons';
 import { ProviderSelection } from '@/components/formedible/ai/provider-selection';
 import type { AIBuilderProviderAccess } from '@/components/formedible/ai/ai-builder';
+import type { ProviderSecretPersistencePreference } from '@/lib/formedible/ai-storage';
 import type { AiConversation, ProviderSecrets, ProviderSettings } from '@/lib/formedible/ai-types';
 import { cn } from '@/lib/utils';
 
@@ -16,7 +18,10 @@ export interface SidebarContentProps {
   readonly currentConversationId?: string;
   readonly providerSettings: ProviderSettings;
   readonly providerSecrets: ProviderSecrets;
+  readonly providerSecretPersistence: ProviderSecretPersistencePreference;
   readonly onProviderAccessChange: (settings: ProviderSettings, secrets: ProviderSecrets) => void;
+  readonly onProviderSecretPersistenceChange: (preference: ProviderSecretPersistencePreference) => void;
+  readonly onClearProviderSecrets: () => void;
   readonly onSelectConversation: (conversationId: string) => void;
   readonly onDeleteConversation: (conversationId: string) => void;
   readonly onNewConversation: () => void;
@@ -49,13 +54,17 @@ function DebugPanel({ conversation }: { readonly conversation?: AiConversation }
   );
 }
 
-function ProviderPanel({ providerSettings, providerSecrets, onProviderAccessChange }: Pick<SidebarContentProps, 'providerSettings' | 'providerSecrets' | 'onProviderAccessChange'>) {
+function ProviderPanel({ providerSettings, providerSecrets, providerSecretPersistence, onProviderAccessChange, onProviderSecretPersistenceChange, onClearProviderSecrets }: Pick<SidebarContentProps, 'providerSettings' | 'providerSecrets' | 'providerSecretPersistence' | 'onProviderAccessChange' | 'onProviderSecretPersistenceChange' | 'onClearProviderSecrets'>) {
   const access: AIBuilderProviderAccess = { settings: providerSettings, secrets: providerSecrets };
 
-  return <ProviderSelection settings={access.settings} secrets={access.secrets} onChange={onProviderAccessChange} />;
+  return <ProviderSelection settings={access.settings} secrets={access.secrets} persistencePreference={providerSecretPersistence} onChange={onProviderAccessChange} onPersistencePreferenceChange={onProviderSecretPersistenceChange} onClearStoredSecrets={onClearProviderSecrets} />;
 }
 
-export function SidebarContent({ activeView, isCollapsed, conversations, currentConversation, currentConversationId, providerSettings, providerSecrets, onProviderAccessChange, onSelectConversation, onDeleteConversation, onNewConversation, onExportConversation, className }: SidebarContentProps) {
+function ModelPanel({ providerSettings, providerSecrets, onProviderAccessChange }: Pick<SidebarContentProps, 'providerSettings' | 'providerSecrets' | 'onProviderAccessChange'>) {
+  return <AgentSettings settings={providerSettings} secrets={providerSecrets} onChange={onProviderAccessChange} />;
+}
+
+export function SidebarContent({ activeView, isCollapsed, conversations, currentConversation, currentConversationId, providerSettings, providerSecrets, providerSecretPersistence, onProviderAccessChange, onProviderSecretPersistenceChange, onClearProviderSecrets, onSelectConversation, onDeleteConversation, onNewConversation, onExportConversation, className }: SidebarContentProps) {
   if (isCollapsed || !activeView) {
     return null;
   }
@@ -74,8 +83,8 @@ export function SidebarContent({ activeView, isCollapsed, conversations, current
             className="h-full"
           />
         ) : null}
-        {activeView === 'provider' ? <ProviderPanel providerSettings={providerSettings} providerSecrets={providerSecrets} onProviderAccessChange={onProviderAccessChange} /> : null}
-        {activeView === 'model' ? <EmptySettingsPanel title="Model settings" description="Model controls will be available in the model settings phase. Current generation continues to use the selected provider model, temperature, max token, and thinking values." /> : null}
+        {activeView === 'provider' ? <ProviderPanel providerSettings={providerSettings} providerSecrets={providerSecrets} providerSecretPersistence={providerSecretPersistence} onProviderAccessChange={onProviderAccessChange} onProviderSecretPersistenceChange={onProviderSecretPersistenceChange} onClearProviderSecrets={onClearProviderSecrets} /> : null}
+        {activeView === 'model' ? <ModelPanel providerSettings={providerSettings} providerSecrets={providerSecrets} onProviderAccessChange={onProviderAccessChange} /> : null}
         {activeView === 'parser' ? <EmptySettingsPanel title="Parser settings" description="Parser configuration controls will be available in the parser settings phase. Current parsing uses the synced Formedible parser contract and lowercase formedible fenced blocks." /> : null}
         {activeView === 'debug' ? <DebugPanel conversation={currentConversation} /> : null}
       </div>
