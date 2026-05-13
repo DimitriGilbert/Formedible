@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 
 import { FormBuilder } from '@/components/formedible/builder/form-builder';
-import { createRouteSeoHead } from '@/docs/seo';
+import { createRouteSeoHead } from '@/features/docs/seo';
 
 const routeHead = createRouteSeoHead('/builder');
 

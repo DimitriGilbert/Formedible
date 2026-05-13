@@ -2,8 +2,8 @@ import { useMemo, useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 
 import * as copiedCodeExamples from '@/data/code-examples';
-import { RenderedExampleShowcase, type ShowcaseCodeExample } from '@/docs/rendered-example-showcase';
-import { createRouteSeoHead } from '@/docs/seo';
+import { RenderedExampleShowcase, type ShowcaseCodeExample } from '@/components/docs/rendered-example-showcase';
+import { createRouteSeoHead } from '@/features/docs/seo';
 
 const routeHead = createRouteSeoHead('/docs/examples');
 

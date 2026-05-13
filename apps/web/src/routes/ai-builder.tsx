@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 
 import { AIBuilder } from '@/components/formedible/ai/ai-builder';
-import { createRouteSeoHead } from '@/docs/seo';
+import { createRouteSeoHead } from '@/features/docs/seo';
 
 const routeHead = createRouteSeoHead('/ai-builder');
 

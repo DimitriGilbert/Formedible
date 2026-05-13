@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 
-import { DocsExampleForm, docsCompatibilityExamples } from '@/docs/compatibility-examples';
+import { DocsExampleForm, docsCompatibilityExamples } from '@/features/docs/compatibility-examples';
 
 export type RenderedExampleStatus = 'rendered' | 'code-only';
 

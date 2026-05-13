@@ -39,10 +39,12 @@
   --sidebar-accent-foreground: oklch(0.93 0.005 75);
   --sidebar-border: oklch(0.30 0.012 60);
   --sidebar-ring: oklch(0.75 0.12 80);
-  --glow: oklch(0.75 0.12 80 / 0.08);
-  --glow-strong: oklch(0.75 0.12 80 / 0.18);
-  --surface-warmth: oklch(0.75 0.12 80 / 0.04);
-  --bg-treatment: linear-gradient(180deg, oklch(0.22 0.02 75 / 0.3) 0%, transparent 40%);
+  --glow: transparent;
+  --glow-strong: transparent;
+  --surface-warmth: transparent;
+  --bg-treatment: linear-gradient(175deg, oklch(0.22 0.045 78) 0%, oklch(0.14 0.012 55) 100%);
+  --bg-size: 200% 200%;
+  --bg-animation: bg-drift-down 18s ease-in-out infinite alternate;
 }
 
 [data-theme="light-saffron"] {
@@ -78,10 +80,12 @@
   --sidebar-accent-foreground: oklch(0.20 0.015 60);
   --sidebar-border: oklch(0.90 0.006 75);
   --sidebar-ring: oklch(0.72 0.10 80);
-  --glow: oklch(0.72 0.10 80 / 0.06);
-  --glow-strong: oklch(0.72 0.10 80 / 0.12);
-  --surface-warmth: oklch(0.72 0.10 80 / 0.03);
-  --bg-treatment: radial-gradient(ellipse at 50% 50%, transparent 40%, oklch(0.90 0.008 75 / 0.4) 100%);
+  --glow: transparent;
+  --glow-strong: transparent;
+  --surface-warmth: transparent;
+  --bg-treatment: radial-gradient(ellipse at 75% 8%, oklch(0.92 0.05 82) 0%, oklch(0.96 0.005 75) 60%);
+  --bg-size: 200% 200%;
+  --bg-animation: bg-breathe 16s ease-in-out infinite alternate;
 }
 
 [data-theme="light-sage"] {
@@ -117,10 +121,12 @@
   --sidebar-accent-foreground: oklch(0.20 0.015 60);
   --sidebar-border: oklch(0.90 0.006 75);
   --sidebar-ring: oklch(0.62 0.06 155);
-  --glow: oklch(0.62 0.06 155 / 0.06);
-  --glow-strong: oklch(0.62 0.06 155 / 0.12);
-  --surface-warmth: oklch(0.62 0.06 155 / 0.03);
-  --bg-treatment: linear-gradient(135deg, oklch(0.94 0.01 155 / 0.15) 0%, transparent 50%);
+  --glow: transparent;
+  --glow-strong: transparent;
+  --surface-warmth: transparent;
+  --bg-treatment: linear-gradient(340deg, oklch(0.90 0.045 152) 0%, oklch(0.96 0.005 75) 55%, oklch(0.93 0.025 120) 100%);
+  --bg-size: 200% 200%;
+  --bg-animation: bg-drift-diag 17s ease-in-out infinite alternate;
 }
 
 [data-theme="dark-saffron"] {
@@ -156,10 +162,12 @@
   --sidebar-accent-foreground: oklch(0.93 0.005 75);
   --sidebar-border: oklch(0.30 0.012 60);
   --sidebar-ring: oklch(0.75 0.12 80);
-  --glow: oklch(0.75 0.12 80 / 0.08);
-  --glow-strong: oklch(0.75 0.12 80 / 0.18);
-  --surface-warmth: oklch(0.75 0.12 80 / 0.04);
-  --bg-treatment: linear-gradient(180deg, oklch(0.22 0.02 75 / 0.3) 0%, transparent 40%);
+  --glow: transparent;
+  --glow-strong: transparent;
+  --surface-warmth: transparent;
+  --bg-treatment: linear-gradient(180deg, oklch(0.24 0.055 78) 0%, oklch(0.14 0.012 60) 42%, oklch(0.14 0.012 60) 58%, oklch(0.21 0.05 50) 100%);
+  --bg-size: 200% 200%;
+  --bg-animation: bg-shift-up 20s ease-in-out infinite alternate;
 }
 
 [data-theme="dark-sage"] {
@@ -195,10 +203,12 @@
   --sidebar-accent-foreground: oklch(0.93 0.005 75);
   --sidebar-border: oklch(0.30 0.012 60);
   --sidebar-ring: oklch(0.65 0.07 155);
-  --glow: oklch(0.65 0.07 155 / 0.08);
-  --glow-strong: oklch(0.65 0.07 155 / 0.18);
-  --surface-warmth: oklch(0.65 0.07 155 / 0.04);
-  --bg-treatment: radial-gradient(ellipse at 50% 50%, transparent 50%, oklch(0.10 0.015 155 / 0.2) 100%);
+  --glow: transparent;
+  --glow-strong: transparent;
+  --surface-warmth: transparent;
+  --bg-treatment: radial-gradient(ellipse at 30% 65%, oklch(0.20 0.045 155) 0%, oklch(0.13 0.012 60) 65%);
+  --bg-size: 200% 200%;
+  --bg-animation: bg-rotate-slow 22s linear infinite;
 }
 
 [data-theme="penumbra-saffron"] {
@@ -234,16 +244,103 @@
   --sidebar-accent-foreground: oklch(0.93 0.005 75);
   --sidebar-border: oklch(0.42 0.012 65);
   --sidebar-ring: oklch(0.78 0.12 80);
-  --glow: oklch(0.78 0.12 80 / 0.10);
-  --glow-strong: oklch(0.78 0.12 80 / 0.22);
-  --surface-warmth: oklch(0.78 0.12 80 / 0.06);
-  --bg-treatment: linear-gradient(90deg, oklch(0.30 0.02 75 / 0.15) 0%, transparent 40%, oklch(0.25 0.015 250 / 0.1) 100%);
+  --glow: transparent;
+  --glow-strong: transparent;
+  --surface-warmth: transparent;
+  --bg-treatment: linear-gradient(85deg, oklch(0.40 0.05 78) 0%, oklch(0.35 0.035 65) 45%, oklch(0.28 0.035 250) 100%);
+  --bg-size: 200% 200%;
+  --bg-animation: bg-drift-h 16s ease-in-out infinite alternate;
+}
+
+@keyframes bg-drift-down {
+  from { background-position: 5% 0%; }
+  to { background-position: 8% 12%; }
+}
+
+@keyframes bg-breathe {
+  from { background-position: 48% 45%; }
+  to { background-position: 52% 50%; }
+}
+
+@keyframes bg-drift-diag {
+  from { background-position: 0% 0%; }
+  to { background-position: 8% 10%; }
+}
+
+@keyframes bg-shift-up {
+  from { background-position: 50% 8%; }
+  to { background-position: 50% 0%; }
+}
+
+@keyframes bg-rotate-slow {
+  from { background-position: 5% 5%; }
+  to { background-position: 12% 8%; }
+}
+
+@keyframes bg-drift-h {
+  from { background-position: 0% 50%; }
+  to { background-position: 10% 48%; }
 }
 
 @keyframes fade-in-up {
   from {
     opacity: 0;
     transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-from-left {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scale-in-soft {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes sharpen-in {
+  from {
+    opacity: 0;
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+@keyframes slide-from-right {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fade-in-down {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
   }
   to {
     opacity: 1;
@@ -292,6 +389,11 @@
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
   --animate-fade-in-up: fade-in-up 0.5s ease-out both;
+  --animate-slide-from-left: slide-from-left 0.5s ease-out both;
+  --animate-scale-in-soft: scale-in-soft 0.5s ease-out both;
+  --animate-sharpen-in: sharpen-in 0.5s ease-out both;
+  --animate-slide-from-right: slide-from-right 0.5s ease-out both;
+  --animate-fade-in-down: fade-in-down 0.5s ease-out both;
 }
 
 @layer base {
@@ -301,6 +403,8 @@
   body {
     @apply font-sans bg-background text-foreground;
     background-image: var(--bg-treatment);
+    background-size: var(--bg-size);
+    animation: var(--bg-animation);
   }
   html {
     @apply font-sans;

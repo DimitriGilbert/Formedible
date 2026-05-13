@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import type { DocsCodeExample } from './code-examples';
+import type { DocsCodeExample } from '@/features/docs/code-examples';
 
 type CopyState = 'idle' | 'copied' | 'failed';
 

@@ -1,7 +1,7 @@
 import { CodeBlock } from './code-block';
-import { docsCodeExamples } from './code-examples';
-import { docsCards, docsHeroMetrics, docsSections } from './content';
-import { DocsExampleForm, docsCompatibilityExamples } from './compatibility-examples';
+import { DocsExampleForm, docsCompatibilityExamples } from '@/features/docs/compatibility-examples';
+import { docsCodeExamples } from '@/features/docs/code-examples';
+import { docsCards, docsHeroMetrics, docsSections } from '@/features/docs/content';
 import { DocsCard } from './docs-card';
 import { PageHeader } from './page-header';
 

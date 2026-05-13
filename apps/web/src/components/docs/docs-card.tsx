@@ -1,4 +1,4 @@
-import type { DocsCardContent } from './content';
+import type { DocsCardContent } from '@/features/docs/content';
 
 import { cn } from '@/lib/utils';
 

@@ -10,37 +10,33 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PrototypeRouteImport } from './routes/prototype'
-import { Route as DocsRouteImport } from './routes/docs'
 import { Route as BuilderRouteImport } from './routes/builder'
 import { Route as AiBuilderRouteImport } from './routes/ai-builder'
+import { Route as DocsRouteRouteImport } from './routes/docs/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PrototypeIndexRouteImport } from './routes/prototype.index'
-import { Route as DocsIndexRouteImport } from './routes/docs.index'
+import { Route as DocsIndexRouteImport } from './routes/docs/index'
 import { Route as PrototypeMiseEnPlaceRouteImport } from './routes/prototype.mise-en-place'
 import { Route as PrototypeLeCellierRouteImport } from './routes/prototype.le-cellier'
 import { Route as PrototypeLaTableRouteImport } from './routes/prototype.la-table'
+import { Route as PrototypeLaCartecopyRouteImport } from './routes/prototype.la-carte copy'
 import { Route as PrototypeLaCarteRouteImport } from './routes/prototype.la-carte'
-import { Route as DocsValidationRouteImport } from './routes/docs.validation'
-import { Route as DocsPersistenceRouteImport } from './routes/docs.persistence'
-import { Route as DocsParserRouteImport } from './routes/docs.parser'
-import { Route as DocsGettingStartedRouteImport } from './routes/docs.getting-started'
-import { Route as DocsFieldsRouteImport } from './routes/docs.fields'
-import { Route as DocsExamplesRouteImport } from './routes/docs.examples'
-import { Route as DocsDynamicTextRouteImport } from './routes/docs.dynamic-text'
-import { Route as DocsBuilderRouteImport } from './routes/docs.builder'
-import { Route as DocsApiRouteImport } from './routes/docs.api'
-import { Route as DocsAnalyticsRouteImport } from './routes/docs.analytics'
-import { Route as DocsAiBuilderRouteImport } from './routes/docs.ai-builder'
-import { Route as DocsAdvancedFeaturesRouteImport } from './routes/docs.advanced-features'
+import { Route as DocsValidationRouteImport } from './routes/docs/validation'
+import { Route as DocsPersistenceRouteImport } from './routes/docs/persistence'
+import { Route as DocsParserRouteImport } from './routes/docs/parser'
+import { Route as DocsGettingStartedRouteImport } from './routes/docs/getting-started'
+import { Route as DocsFieldsRouteImport } from './routes/docs/fields'
+import { Route as DocsExamplesRouteImport } from './routes/docs/examples'
+import { Route as DocsDynamicTextRouteImport } from './routes/docs/dynamic-text'
+import { Route as DocsBuilderRouteImport } from './routes/docs/builder'
+import { Route as DocsApiRouteImport } from './routes/docs/api'
+import { Route as DocsAnalyticsRouteImport } from './routes/docs/analytics'
+import { Route as DocsAiBuilderRouteImport } from './routes/docs/ai-builder'
+import { Route as DocsAdvancedFeaturesRouteImport } from './routes/docs/advanced-features'
 
 const PrototypeRoute = PrototypeRouteImport.update({
   id: '/prototype',
   path: '/prototype',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DocsRoute = DocsRouteImport.update({
-  id: '/docs',
-  path: '/docs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BuilderRoute = BuilderRouteImport.update({
@@ -51,6 +47,11 @@ const BuilderRoute = BuilderRouteImport.update({
 const AiBuilderRoute = AiBuilderRouteImport.update({
   id: '/ai-builder',
   path: '/ai-builder',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsRouteRoute = DocsRouteRouteImport.update({
+  id: '/docs',
+  path: '/docs',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -66,7 +67,7 @@ const PrototypeIndexRoute = PrototypeIndexRouteImport.update({
 const DocsIndexRoute = DocsIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => DocsRoute,
+  getParentRoute: () => DocsRouteRoute,
 } as any)
 const PrototypeMiseEnPlaceRoute = PrototypeMiseEnPlaceRouteImport.update({
   id: '/mise-en-place',
@@ -83,6 +84,11 @@ const PrototypeLaTableRoute = PrototypeLaTableRouteImport.update({
   path: '/la-table',
   getParentRoute: () => PrototypeRoute,
 } as any)
+const PrototypeLaCartecopyRoute = PrototypeLaCartecopyRouteImport.update({
+  id: '/la-carte copy',
+  path: '/la-carte copy',
+  getParentRoute: () => PrototypeRoute,
+} as any)
 const PrototypeLaCarteRoute = PrototypeLaCarteRouteImport.update({
   id: '/la-carte',
   path: '/la-carte',
@@ -91,69 +97,69 @@ const PrototypeLaCarteRoute = PrototypeLaCarteRouteImport.update({
 const DocsValidationRoute = DocsValidationRouteImport.update({
   id: '/validation',
   path: '/validation',
-  getParentRoute: () => DocsRoute,
+  getParentRoute: () => DocsRouteRoute,
 } as any)
 const DocsPersistenceRoute = DocsPersistenceRouteImport.update({
   id: '/persistence',
   path: '/persistence',
-  getParentRoute: () => DocsRoute,
+  getParentRoute: () => DocsRouteRoute,
 } as any)
 const DocsParserRoute = DocsParserRouteImport.update({
   id: '/parser',
   path: '/parser',
-  getParentRoute: () => DocsRoute,
+  getParentRoute: () => DocsRouteRoute,
 } as any)
 const DocsGettingStartedRoute = DocsGettingStartedRouteImport.update({
   id: '/getting-started',
   path: '/getting-started',
-  getParentRoute: () => DocsRoute,
+  getParentRoute: () => DocsRouteRoute,
 } as any)
 const DocsFieldsRoute = DocsFieldsRouteImport.update({
   id: '/fields',
   path: '/fields',
-  getParentRoute: () => DocsRoute,
+  getParentRoute: () => DocsRouteRoute,
 } as any)
 const DocsExamplesRoute = DocsExamplesRouteImport.update({
   id: '/examples',
   path: '/examples',
-  getParentRoute: () => DocsRoute,
+  getParentRoute: () => DocsRouteRoute,
 } as any)
 const DocsDynamicTextRoute = DocsDynamicTextRouteImport.update({
   id: '/dynamic-text',
   path: '/dynamic-text',
-  getParentRoute: () => DocsRoute,
+  getParentRoute: () => DocsRouteRoute,
 } as any)
 const DocsBuilderRoute = DocsBuilderRouteImport.update({
   id: '/builder',
   path: '/builder',
-  getParentRoute: () => DocsRoute,
+  getParentRoute: () => DocsRouteRoute,
 } as any)
 const DocsApiRoute = DocsApiRouteImport.update({
   id: '/api',
   path: '/api',
-  getParentRoute: () => DocsRoute,
+  getParentRoute: () => DocsRouteRoute,
 } as any)
 const DocsAnalyticsRoute = DocsAnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
-  getParentRoute: () => DocsRoute,
+  getParentRoute: () => DocsRouteRoute,
 } as any)
 const DocsAiBuilderRoute = DocsAiBuilderRouteImport.update({
   id: '/ai-builder',
   path: '/ai-builder',
-  getParentRoute: () => DocsRoute,
+  getParentRoute: () => DocsRouteRoute,
 } as any)
 const DocsAdvancedFeaturesRoute = DocsAdvancedFeaturesRouteImport.update({
   id: '/advanced-features',
   path: '/advanced-features',
-  getParentRoute: () => DocsRoute,
+  getParentRoute: () => DocsRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/docs': typeof DocsRouteRouteWithChildren
   '/ai-builder': typeof AiBuilderRoute
   '/builder': typeof BuilderRoute
-  '/docs': typeof DocsRouteWithChildren
   '/prototype': typeof PrototypeRouteWithChildren
   '/docs/advanced-features': typeof DocsAdvancedFeaturesRoute
   '/docs/ai-builder': typeof DocsAiBuilderRoute
@@ -168,6 +174,7 @@ export interface FileRoutesByFullPath {
   '/docs/persistence': typeof DocsPersistenceRoute
   '/docs/validation': typeof DocsValidationRoute
   '/prototype/la-carte': typeof PrototypeLaCarteRoute
+  '/prototype/la-carte copy': typeof PrototypeLaCartecopyRoute
   '/prototype/la-table': typeof PrototypeLaTableRoute
   '/prototype/le-cellier': typeof PrototypeLeCellierRoute
   '/prototype/mise-en-place': typeof PrototypeMiseEnPlaceRoute
@@ -191,6 +198,7 @@ export interface FileRoutesByTo {
   '/docs/persistence': typeof DocsPersistenceRoute
   '/docs/validation': typeof DocsValidationRoute
   '/prototype/la-carte': typeof PrototypeLaCarteRoute
+  '/prototype/la-carte copy': typeof PrototypeLaCartecopyRoute
   '/prototype/la-table': typeof PrototypeLaTableRoute
   '/prototype/le-cellier': typeof PrototypeLeCellierRoute
   '/prototype/mise-en-place': typeof PrototypeMiseEnPlaceRoute
@@ -200,9 +208,9 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/docs': typeof DocsRouteRouteWithChildren
   '/ai-builder': typeof AiBuilderRoute
   '/builder': typeof BuilderRoute
-  '/docs': typeof DocsRouteWithChildren
   '/prototype': typeof PrototypeRouteWithChildren
   '/docs/advanced-features': typeof DocsAdvancedFeaturesRoute
   '/docs/ai-builder': typeof DocsAiBuilderRoute
@@ -217,6 +225,7 @@ export interface FileRoutesById {
   '/docs/persistence': typeof DocsPersistenceRoute
   '/docs/validation': typeof DocsValidationRoute
   '/prototype/la-carte': typeof PrototypeLaCarteRoute
+  '/prototype/la-carte copy': typeof PrototypeLaCartecopyRoute
   '/prototype/la-table': typeof PrototypeLaTableRoute
   '/prototype/le-cellier': typeof PrototypeLeCellierRoute
   '/prototype/mise-en-place': typeof PrototypeMiseEnPlaceRoute
@@ -227,9 +236,9 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/docs'
     | '/ai-builder'
     | '/builder'
-    | '/docs'
     | '/prototype'
     | '/docs/advanced-features'
     | '/docs/ai-builder'
@@ -244,6 +253,7 @@ export interface FileRouteTypes {
     | '/docs/persistence'
     | '/docs/validation'
     | '/prototype/la-carte'
+    | '/prototype/la-carte copy'
     | '/prototype/la-table'
     | '/prototype/le-cellier'
     | '/prototype/mise-en-place'
@@ -267,6 +277,7 @@ export interface FileRouteTypes {
     | '/docs/persistence'
     | '/docs/validation'
     | '/prototype/la-carte'
+    | '/prototype/la-carte copy'
     | '/prototype/la-table'
     | '/prototype/le-cellier'
     | '/prototype/mise-en-place'
@@ -275,9 +286,9 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/docs'
     | '/ai-builder'
     | '/builder'
-    | '/docs'
     | '/prototype'
     | '/docs/advanced-features'
     | '/docs/ai-builder'
@@ -292,6 +303,7 @@ export interface FileRouteTypes {
     | '/docs/persistence'
     | '/docs/validation'
     | '/prototype/la-carte'
+    | '/prototype/la-carte copy'
     | '/prototype/la-table'
     | '/prototype/le-cellier'
     | '/prototype/mise-en-place'
@@ -301,9 +313,9 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DocsRouteRoute: typeof DocsRouteRouteWithChildren
   AiBuilderRoute: typeof AiBuilderRoute
   BuilderRoute: typeof BuilderRoute
-  DocsRoute: typeof DocsRouteWithChildren
   PrototypeRoute: typeof PrototypeRouteWithChildren
 }
 
@@ -314,13 +326,6 @@ declare module '@tanstack/react-router' {
       path: '/prototype'
       fullPath: '/prototype'
       preLoaderRoute: typeof PrototypeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/docs': {
-      id: '/docs'
-      path: '/docs'
-      fullPath: '/docs'
-      preLoaderRoute: typeof DocsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/builder': {
@@ -335,6 +340,13 @@ declare module '@tanstack/react-router' {
       path: '/ai-builder'
       fullPath: '/ai-builder'
       preLoaderRoute: typeof AiBuilderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs': {
+      id: '/docs'
+      path: '/docs'
+      fullPath: '/docs'
+      preLoaderRoute: typeof DocsRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -356,7 +368,7 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/docs/'
       preLoaderRoute: typeof DocsIndexRouteImport
-      parentRoute: typeof DocsRoute
+      parentRoute: typeof DocsRouteRoute
     }
     '/prototype/mise-en-place': {
       id: '/prototype/mise-en-place'
@@ -379,6 +391,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrototypeLaTableRouteImport
       parentRoute: typeof PrototypeRoute
     }
+    '/prototype/la-carte copy': {
+      id: '/prototype/la-carte copy'
+      path: '/la-carte copy'
+      fullPath: '/prototype/la-carte copy'
+      preLoaderRoute: typeof PrototypeLaCartecopyRouteImport
+      parentRoute: typeof PrototypeRoute
+    }
     '/prototype/la-carte': {
       id: '/prototype/la-carte'
       path: '/la-carte'
@@ -391,89 +410,89 @@ declare module '@tanstack/react-router' {
       path: '/validation'
       fullPath: '/docs/validation'
       preLoaderRoute: typeof DocsValidationRouteImport
-      parentRoute: typeof DocsRoute
+      parentRoute: typeof DocsRouteRoute
     }
     '/docs/persistence': {
       id: '/docs/persistence'
       path: '/persistence'
       fullPath: '/docs/persistence'
       preLoaderRoute: typeof DocsPersistenceRouteImport
-      parentRoute: typeof DocsRoute
+      parentRoute: typeof DocsRouteRoute
     }
     '/docs/parser': {
       id: '/docs/parser'
       path: '/parser'
       fullPath: '/docs/parser'
       preLoaderRoute: typeof DocsParserRouteImport
-      parentRoute: typeof DocsRoute
+      parentRoute: typeof DocsRouteRoute
     }
     '/docs/getting-started': {
       id: '/docs/getting-started'
       path: '/getting-started'
       fullPath: '/docs/getting-started'
       preLoaderRoute: typeof DocsGettingStartedRouteImport
-      parentRoute: typeof DocsRoute
+      parentRoute: typeof DocsRouteRoute
     }
     '/docs/fields': {
       id: '/docs/fields'
       path: '/fields'
       fullPath: '/docs/fields'
       preLoaderRoute: typeof DocsFieldsRouteImport
-      parentRoute: typeof DocsRoute
+      parentRoute: typeof DocsRouteRoute
     }
     '/docs/examples': {
       id: '/docs/examples'
       path: '/examples'
       fullPath: '/docs/examples'
       preLoaderRoute: typeof DocsExamplesRouteImport
-      parentRoute: typeof DocsRoute
+      parentRoute: typeof DocsRouteRoute
     }
     '/docs/dynamic-text': {
       id: '/docs/dynamic-text'
       path: '/dynamic-text'
       fullPath: '/docs/dynamic-text'
       preLoaderRoute: typeof DocsDynamicTextRouteImport
-      parentRoute: typeof DocsRoute
+      parentRoute: typeof DocsRouteRoute
     }
     '/docs/builder': {
       id: '/docs/builder'
       path: '/builder'
       fullPath: '/docs/builder'
       preLoaderRoute: typeof DocsBuilderRouteImport
-      parentRoute: typeof DocsRoute
+      parentRoute: typeof DocsRouteRoute
     }
     '/docs/api': {
       id: '/docs/api'
       path: '/api'
       fullPath: '/docs/api'
       preLoaderRoute: typeof DocsApiRouteImport
-      parentRoute: typeof DocsRoute
+      parentRoute: typeof DocsRouteRoute
     }
     '/docs/analytics': {
       id: '/docs/analytics'
       path: '/analytics'
       fullPath: '/docs/analytics'
       preLoaderRoute: typeof DocsAnalyticsRouteImport
-      parentRoute: typeof DocsRoute
+      parentRoute: typeof DocsRouteRoute
     }
     '/docs/ai-builder': {
       id: '/docs/ai-builder'
       path: '/ai-builder'
       fullPath: '/docs/ai-builder'
       preLoaderRoute: typeof DocsAiBuilderRouteImport
-      parentRoute: typeof DocsRoute
+      parentRoute: typeof DocsRouteRoute
     }
     '/docs/advanced-features': {
       id: '/docs/advanced-features'
       path: '/advanced-features'
       fullPath: '/docs/advanced-features'
       preLoaderRoute: typeof DocsAdvancedFeaturesRouteImport
-      parentRoute: typeof DocsRoute
+      parentRoute: typeof DocsRouteRoute
     }
   }
 }
 
-interface DocsRouteChildren {
+interface DocsRouteRouteChildren {
   DocsAdvancedFeaturesRoute: typeof DocsAdvancedFeaturesRoute
   DocsAiBuilderRoute: typeof DocsAiBuilderRoute
   DocsAnalyticsRoute: typeof DocsAnalyticsRoute
@@ -489,7 +508,7 @@ interface DocsRouteChildren {
   DocsIndexRoute: typeof DocsIndexRoute
 }
 
-const DocsRouteChildren: DocsRouteChildren = {
+const DocsRouteRouteChildren: DocsRouteRouteChildren = {
   DocsAdvancedFeaturesRoute: DocsAdvancedFeaturesRoute,
   DocsAiBuilderRoute: DocsAiBuilderRoute,
   DocsAnalyticsRoute: DocsAnalyticsRoute,
@@ -505,10 +524,13 @@ const DocsRouteChildren: DocsRouteChildren = {
   DocsIndexRoute: DocsIndexRoute,
 }
 
-const DocsRouteWithChildren = DocsRoute._addFileChildren(DocsRouteChildren)
+const DocsRouteRouteWithChildren = DocsRouteRoute._addFileChildren(
+  DocsRouteRouteChildren,
+)
 
 interface PrototypeRouteChildren {
   PrototypeLaCarteRoute: typeof PrototypeLaCarteRoute
+  PrototypeLaCartecopyRoute: typeof PrototypeLaCartecopyRoute
   PrototypeLaTableRoute: typeof PrototypeLaTableRoute
   PrototypeLeCellierRoute: typeof PrototypeLeCellierRoute
   PrototypeMiseEnPlaceRoute: typeof PrototypeMiseEnPlaceRoute
@@ -517,6 +539,7 @@ interface PrototypeRouteChildren {
 
 const PrototypeRouteChildren: PrototypeRouteChildren = {
   PrototypeLaCarteRoute: PrototypeLaCarteRoute,
+  PrototypeLaCartecopyRoute: PrototypeLaCartecopyRoute,
   PrototypeLaTableRoute: PrototypeLaTableRoute,
   PrototypeLeCellierRoute: PrototypeLeCellierRoute,
   PrototypeMiseEnPlaceRoute: PrototypeMiseEnPlaceRoute,
@@ -529,9 +552,9 @@ const PrototypeRouteWithChildren = PrototypeRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DocsRouteRoute: DocsRouteRouteWithChildren,
   AiBuilderRoute: AiBuilderRoute,
   BuilderRoute: BuilderRoute,
-  DocsRoute: DocsRouteWithChildren,
   PrototypeRoute: PrototypeRouteWithChildren,
 }
 export const routeTree = rootRouteImport

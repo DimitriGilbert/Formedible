@@ -1,7 +1,7 @@
 import { useFormedible } from '@/hooks/use-formedible';
 
 import { CodeBlock } from './code-block';
-import { docsCodeExamples } from './code-examples';
+import { docsCodeExamples } from '@/features/docs/code-examples';
 
 type MiniLeadValues = {
   readonly email: string;

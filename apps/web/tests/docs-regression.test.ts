@@ -3,19 +3,19 @@ import { join, relative } from 'node:path';
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { docsCompatibilityExamples } from '../src/docs/compatibility-examples';
-import { docsCodeExamples } from '../src/docs/code-examples';
-import { getRenderedExampleMapping, renderedExampleMappings } from '../src/docs/rendered-example-showcase';
-import { createRouteSeoHead } from '../src/docs/seo';
-import { publicRouteMeta, siteMeta } from '../src/docs/site-meta';
+import { docsCompatibilityExamples } from '../src/features/docs/compatibility-examples';
+import { docsCodeExamples } from '../src/features/docs/code-examples';
+import { getRenderedExampleMapping, renderedExampleMappings } from '../src/components/docs/rendered-example-showcase';
+import { createRouteSeoHead } from '../src/features/docs/seo';
+import { publicRouteMeta, siteMeta } from '../src/features/docs/site-meta';
 import * as copiedCodeExamples from '../src/data/code-examples';
-import { copiedCodeExampleEntries } from '../src/routes/docs.examples';
+import { copiedCodeExampleEntries } from '../src/routes/docs/examples';
 
 const appRoot = process.cwd();
 const docsSourceRoot = join(appRoot, 'src');
 const authoredRuntimeRoots = [
   join(appRoot, 'src/components'),
-  join(appRoot, 'src/docs'),
+  join(appRoot, 'src/features/docs'),
   join(appRoot, 'src/hooks'),
   join(appRoot, 'src/lib'),
   join(appRoot, 'src/routes'),
@@ -173,8 +173,8 @@ describe('docs compatibility examples', () => {
 
   it('keeps the examples route as a focused examples browser', async () => {
     const [routeSource, showcaseSource] = await Promise.all([
-      readFile(join(appRoot, 'src/routes/docs.examples.tsx'), 'utf8'),
-      readFile(join(appRoot, 'src/docs/rendered-example-showcase.tsx'), 'utf8'),
+      readFile(join(appRoot, 'src/routes/docs/examples.tsx'), 'utf8'),
+      readFile(join(appRoot, 'src/components/docs/rendered-example-showcase.tsx'), 'utf8'),
     ]);
 
     assert.match(routeSource, /createFileRoute\('\/docs\/examples'\)/);
@@ -198,16 +198,16 @@ describe('docs compatibility examples', () => {
 
   it('keeps docs hub routing separate from docs examples routing', async () => {
     const [docsLayoutSource, docsIndexSource, examplesSource] = await Promise.all([
-      readFile(join(appRoot, 'src/routes/docs.tsx'), 'utf8'),
-      readFile(join(appRoot, 'src/routes/docs.index.tsx'), 'utf8'),
-      readFile(join(appRoot, 'src/routes/docs.examples.tsx'), 'utf8'),
+      readFile(join(appRoot, 'src/routes/docs/route.tsx'), 'utf8'),
+      readFile(join(appRoot, 'src/routes/docs/index.tsx'), 'utf8'),
+      readFile(join(appRoot, 'src/routes/docs/examples.tsx'), 'utf8'),
     ]);
 
     assert.match(docsLayoutSource, /createFileRoute\('\/docs'\)/);
     assert.match(docsLayoutSource, /<Outlet \/>/);
     assert.doesNotMatch(docsLayoutSource, /DocsHub/);
     assert.match(docsIndexSource, /createFileRoute\('\/docs\/'\)/);
-    assert.match(docsIndexSource, /DocsHub/);
+    assert.match(docsIndexSource, /function DocsIndexRoute/);
     assert.match(examplesSource, /createFileRoute\('\/docs\/examples'\)/);
     assert.match(examplesSource, /copiedCodeExampleEntries/);
     assert.doesNotMatch(examplesSource, /DocsHub/);
@@ -270,7 +270,7 @@ describe('docs compatibility examples', () => {
   });
 
   it('keeps runtime docs imports on consumer-safe paths', async () => {
-    const docsFile = await readFile(join(appRoot, 'src/docs/compatibility-examples.tsx'), 'utf8');
+    const docsFile = await readFile(join(appRoot, 'src/features/docs/compatibility-examples.tsx'), 'utf8');
 
     assert.match(docsFile, /from ['"]@\/hooks\/use-formedible['"]/);
     assert.doesNotMatch(docsFile, /@formedible\/formedible|packages\/formedible|old_version_for_knowledge_purpose|tests\/compatibility-examples/);
@@ -294,7 +294,7 @@ describe('docs compatibility examples', () => {
   });
 
   it('keeps docs examples on the app-local useFormedible hook', async () => {
-    const compatibilitySource = await readFile(join(appRoot, 'src/docs/compatibility-examples.tsx'), 'utf8');
+    const compatibilitySource = await readFile(join(appRoot, 'src/features/docs/compatibility-examples.tsx'), 'utf8');
     const hookImportPattern = /import \{ useFormedible \} from ['"]@\/hooks\/use-formedible['"]/;
 
     assert.match(compatibilitySource, hookImportPattern);
@@ -342,7 +342,7 @@ describe('docs compatibility examples', () => {
   });
 
   it('does not document removed validation or debug return helpers', async () => {
-    const docsFile = await readFile(join(appRoot, 'src/docs/compatibility-examples.tsx'), 'utf8');
+    const docsFile = await readFile(join(appRoot, 'src/features/docs/compatibility-examples.tsx'), 'utf8');
 
     assert.doesNotMatch(docsFile, /validateField|validateForm|debug|Debug/);
   });

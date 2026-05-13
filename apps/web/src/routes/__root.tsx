@@ -6,7 +6,7 @@ import { ThemeProvider } from '../components/theme-provider';
 import { ThemeSwitcher } from '../components/theme-switcher';
 import Header from '../components/header';
 
-import { createRouteSeoHead } from '../docs/seo';
+import { createRouteSeoHead } from '../features/docs/seo';
 
 import appCss from '../index.css?url';
 
@@ -43,7 +43,7 @@ function RootDocument() {
           >
             Skip to content
           </a>
-          <div className="grid min-h-svh grid-rows-[auto_1fr] bg-background">
+          <div className="grid min-h-svh grid-rows-[auto_1fr]">
             <Header />
             <div id="main-content" className="min-h-0" tabIndex={-1}>
               <Outlet />

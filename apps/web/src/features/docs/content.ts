@@ -1,4 +1,4 @@
-import type { DocsCodeExampleId } from './code-examples';
+import type { DocsCodeExampleId } from '@/features/docs/code-examples';
 
 export type DocsCardTone = 'amber' | 'blue' | 'green' | 'rose' | 'violet';
 

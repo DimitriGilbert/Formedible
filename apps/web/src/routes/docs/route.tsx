@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet } from '@tanstack/react-router';
 
-import { createRouteSeoHead } from '@/docs/seo';
+import { createRouteSeoHead } from '@/features/docs/seo';
 
 const routeHead = createRouteSeoHead('/docs');
 
