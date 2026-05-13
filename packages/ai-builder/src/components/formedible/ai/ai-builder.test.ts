@@ -3,12 +3,13 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import test from 'node:test';
 
-import { AI_BUILDER_DEFAULT_MODE, AIBuilder, canUseStorage, readJson, readPersistedAIBuilderState, STORAGE_KEYS, upsertConversation, writeJson } from '@/components/formedible/ai/ai-builder';
+import { AI_BUILDER_DEFAULT_MODE, AIBuilder, resolveInitialProviderAccess } from '@/components/formedible/ai/ai-builder';
 import { AiFormRenderer, parseAiToFormedible } from '@/components/formedible/ai/ai-form-renderer';
 import { generateAiFormCode } from '@/components/formedible/ai/chat-interface';
 import { createDefaultProviderSecrets, createDefaultProviderSettings, providerOptions, validateProviderAccess } from '@/components/formedible/ai/provider-selection';
 import { createTanStackTextAdapter, DEFAULT_TANSTACK_AI_MODELS, SUPPORTED_TANSTACK_AI_PROVIDERS } from '@/lib/formedible/ai-adapters';
 import { parseAiToFormedible as parseAiCode } from '@/lib/formedible/ai-parser';
+import { canUseStorage, clearConversations, clearStoredProviderSecrets, exportConversation, persistConversations, persistProviderSecrets, persistProviderSettings, persistUiState, readPersistedAIBuilderState, readStoredProviderSecrets, STORAGE_KEYS, upsertConversation, writeJson } from '@/lib/formedible/ai-storage';
 import type { AiConversation, AiMessage, ProviderSecrets, ProviderSettings } from '@/lib/formedible/ai-types';
 
 const sampleFormCode = `{
@@ -183,11 +184,11 @@ test('AI builder persists provider settings without API keys, plus UI state and 
   ];
 
   try {
-    window.localStorage.setItem(STORAGE_KEYS.providerSettings, JSON.stringify(providerSettings));
-    window.localStorage.setItem(STORAGE_KEYS.conversations, JSON.stringify(conversations));
-    window.localStorage.setItem(STORAGE_KEYS.uiState, JSON.stringify({ currentConversationId: 'conversation-2' }));
+    persistProviderSettings(providerSettings);
+    persistConversations(conversations);
+    persistUiState({ currentConversationId: 'conversation-2' });
 
-    const persistedState = readPersistedAIBuilderState();
+    const persistedState = readPersistedAIBuilderState(createDefaultProviderSettings());
 
     assert.equal(canUseStorage(), true);
     assert.deepEqual(persistedState.providerSettings, providerSettings);
@@ -195,11 +196,30 @@ test('AI builder persists provider settings without API keys, plus UI state and 
     assert.equal(persistedState.currentConversationId, 'conversation-2');
 
     const nextProviderSettings: ProviderSettings = createDefaultProviderSettings('openai');
-    writeJson(STORAGE_KEYS.providerSettings, nextProviderSettings);
-    writeJson(STORAGE_KEYS.uiState, { currentConversationId: 'conversation-1' });
+    persistProviderSettings(nextProviderSettings);
+    persistUiState({ currentConversationId: 'conversation-1' });
 
-    assert.deepEqual(JSON.parse(window.localStorage.getItem(STORAGE_KEYS.providerSettings) ?? '{}'), nextProviderSettings);
-    assert.deepEqual(readJson(STORAGE_KEYS.uiState, {}), { currentConversationId: 'conversation-1' });
+    assert.deepEqual(readPersistedAIBuilderState(createDefaultProviderSettings()).providerSettings, nextProviderSettings);
+    assert.equal(readPersistedAIBuilderState(createDefaultProviderSettings()).currentConversationId, 'conversation-1');
+  } finally {
+    restoreWindow();
+  }
+});
+
+test('AI builder initializes uncontrolled secrets from persisted provider settings without persisting keys', () => {
+  const storage = new MemoryStorage();
+  const restoreWindow = installWindowStorage(storage);
+  const providerSettings: ProviderSettings = { ...createDefaultProviderSettings('anthropic'), model: 'claude-sonnet-4-5', temperature: 0.2 };
+
+  try {
+    persistProviderSettings(providerSettings);
+
+    const initialAccess = resolveInitialProviderAccess();
+    const storedProviderSettings = storage.getItem(STORAGE_KEYS.providerSettings) ?? '';
+
+    assert.deepEqual(initialAccess.settings, providerSettings);
+    assert.deepEqual(initialAccess.secrets, { provider: 'anthropic', apiKey: '' });
+    assert.doesNotMatch(storedProviderSettings, /apiKey|claude-api-key|sk-/i);
   } finally {
     restoreWindow();
   }
@@ -214,7 +234,7 @@ test('AI builder storage helpers fall back safely when storage is unavailable fo
     const persistedState = readPersistedAIBuilderState(fallbackProviderSettings);
 
     assert.equal(canUseStorage(), false);
-    assert.deepEqual(readJson(STORAGE_KEYS.conversations, [] as readonly AiConversation[]), []);
+    assert.deepEqual(readPersistedAIBuilderState(fallbackProviderSettings).conversations, []);
     assert.doesNotThrow(() => writeJson(STORAGE_KEYS.uiState, { currentConversationId: 'conversation-1' }));
     assert.deepEqual(persistedState.providerSettings, fallbackProviderSettings);
     assert.deepEqual(persistedState.conversations, []);
@@ -232,8 +252,110 @@ test('AI builder storage helpers fall back safely when storage is unavailable fo
     });
 
     assert.equal(canUseStorage(), false);
-    assert.deepEqual(readPersistedAIBuilderState().providerSettings, createDefaultProviderSettings());
+    assert.deepEqual(readPersistedAIBuilderState(createDefaultProviderSettings()).providerSettings, createDefaultProviderSettings());
     assert.doesNotThrow(() => writeJson(STORAGE_KEYS.providerSettings, fallbackProviderSettings));
+  } finally {
+    if (previousWindow) {
+      Object.defineProperty(globalThis, 'window', previousWindow);
+      return;
+    }
+
+    Reflect.deleteProperty(globalThis, 'window');
+  }
+});
+
+test('AI builder storage validates unknown JSON and redacts secrets from exports', () => {
+  const storage = new MemoryStorage();
+  const restoreWindow = installWindowStorage(storage);
+  const conversation: AiConversation = {
+    id: 'conversation-raw',
+    title: 'Raw output',
+    messages: [
+      {
+        id: 'assistant-raw',
+        role: 'assistant',
+        content: 'Here is the form',
+        rawContent: 'raw text',
+        thinking: 'reasoning text',
+        events: [
+          { type: 'text-delta', delta: 'raw text', raw: { apiKey: 'secret-key', safe: 'value' }, receivedAt: 10 },
+          { type: 'finish', finishReason: 'stop', usage: { outputTokens: 12 }, receivedAt: 11 },
+        ],
+        formCode: sampleFormCode,
+        parseErrors: [{ message: 'Parse warning', details: { token: 'secret-token', line: 1 } }],
+        provider: 'openrouter',
+        model: 'openai/gpt-4o-mini',
+        timestamp: 12,
+        status: 'completed',
+      },
+    ],
+    generatedForms: [
+      {
+        id: 'form-1',
+        conversationId: 'conversation-raw',
+        messageId: 'assistant-raw',
+        formCode: sampleFormCode,
+        status: 'extracted',
+        createdAt: 12,
+        provider: 'openrouter',
+        model: 'openai/gpt-4o-mini',
+      },
+    ],
+    createdAt: 1,
+    updatedAt: 12,
+  };
+
+  try {
+    storage.setItem(STORAGE_KEYS.conversations, JSON.stringify({ version: 1, data: [{ id: 1, messages: 'bad' }, conversation] }));
+
+    const persistedState = readPersistedAIBuilderState(createDefaultProviderSettings());
+    assert.equal(persistedState.conversations.length, 1);
+    assert.equal(persistedState.conversations[0]?.messages[0]?.rawContent, 'raw text');
+    assert.equal(persistedState.conversations[0]?.messages[0]?.thinking, 'reasoning text');
+    assert.equal(persistedState.conversations[0]?.messages[0]?.status, 'completed');
+
+    const exportedConversation = exportConversation(conversation);
+    const exportedJson = JSON.stringify(exportedConversation);
+
+    assert.match(exportedJson, /\[REDACTED\]/);
+    assert.doesNotMatch(exportedJson, /secret-key|secret-token/);
+  } finally {
+    restoreWindow();
+  }
+});
+
+test('AI builder secret storage keeps keys session-only unless local remember is explicit', () => {
+  const localStorage = new MemoryStorage();
+  const sessionStorage = new MemoryStorage();
+  const previousWindow = Object.getOwnPropertyDescriptor(globalThis, 'window');
+
+  Object.defineProperty(globalThis, 'window', {
+    configurable: true,
+    value: { localStorage, sessionStorage },
+  });
+
+  try {
+    const secrets: ProviderSecrets = { provider: 'openai', apiKey: 'session-key' };
+
+    persistProviderSecrets(secrets, { mode: 'session', rememberKey: true });
+    assert.equal(readStoredProviderSecrets('session')?.secrets?.apiKey, 'session-key');
+    assert.equal(readStoredProviderSecrets('local'), undefined);
+
+    persistProviderSecrets({ provider: 'openai', apiKey: 'local-key' }, { mode: 'local', rememberKey: false });
+    assert.equal(readStoredProviderSecrets('local')?.secrets, undefined);
+
+    persistProviderSecrets({ provider: 'openai', apiKey: 'local-key' }, { mode: 'local', rememberKey: true });
+    assert.equal(readStoredProviderSecrets('local')?.secrets?.apiKey, 'local-key');
+
+    clearStoredProviderSecrets();
+    assert.equal(readStoredProviderSecrets('session'), undefined);
+    assert.equal(readStoredProviderSecrets('local'), undefined);
+
+    persistConversations([{ id: 'c1', title: 'Stored', messages: [], createdAt: 1, updatedAt: 1 }]);
+    persistUiState({ currentConversationId: 'c1' });
+    clearConversations();
+    assert.deepEqual(readPersistedAIBuilderState(createDefaultProviderSettings()).conversations, []);
+    assert.equal(readPersistedAIBuilderState(createDefaultProviderSettings()).currentConversationId, undefined);
   } finally {
     if (previousWindow) {
       Object.defineProperty(globalThis, 'window', previousWindow);
@@ -309,7 +431,10 @@ test('AI builder install source uses lower-level installed aliases', () => {
     'src/components/formedible/ai/chat-interface.tsx',
     'src/components/formedible/ai/provider-selection.tsx',
     'src/lib/formedible/ai-adapters.ts',
+    'src/lib/formedible/ai-messages.ts',
     'src/lib/formedible/ai-parser.ts',
+    'src/lib/formedible/ai-safe-persistence.ts',
+    'src/lib/formedible/ai-storage.ts',
     'src/lib/formedible/ai-types.ts',
   ];
 

@@ -62,6 +62,16 @@
           "target": "lib/formedible/ai-messages.ts"
         },
         {
+          "path": "src/lib/formedible/ai-storage.ts",
+          "type": "registry:lib",
+          "target": "lib/formedible/ai-storage.ts"
+        },
+        {
+          "path": "src/lib/formedible/ai-safe-persistence.ts",
+          "type": "registry:lib",
+          "target": "lib/formedible/ai-safe-persistence.ts"
+        },
+        {
           "path": "src/lib/formedible/ai-types.ts",
           "type": "registry:lib",
           "target": "lib/formedible/ai-types.ts"

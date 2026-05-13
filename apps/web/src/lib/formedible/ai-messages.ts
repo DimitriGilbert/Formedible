@@ -1,6 +1,7 @@
 import type { ModelMessage } from '@tanstack/ai';
 
-import type { AiMessage, AiMessageRole, AiMessageStatus, AiStreamEvent } from '@/lib/formedible/ai-types';
+import type { AiGenerationMetadata, AiMessage, AiMessagePart, AiMessageRole, AiMessageStatus, AiStreamEvent } from '@/lib/formedible/ai-types';
+import { parseSafeGenerationMetadata, parseSafeMessageParts, parseSafeStreamEvents } from '@/lib/formedible/ai-safe-persistence';
 
 export type TanStackAiMessageInput = ModelMessage<string>;
 
@@ -10,12 +11,14 @@ export interface PersistedAiMessage {
   readonly content: string;
   readonly rawContent?: string;
   readonly thinking?: string;
+  readonly parts?: readonly AiMessagePart[];
   readonly formCode?: string;
   readonly timestamp?: number;
   readonly createdAt?: number;
   readonly updatedAt?: number;
   readonly provider?: AiMessage['provider'];
   readonly model?: string;
+  readonly generation?: AiGenerationMetadata;
   readonly status?: AiMessageStatus;
   readonly events?: readonly AiStreamEvent[];
 }
@@ -94,20 +97,26 @@ export function toTanStackSystemPrompts(messages: readonly Pick<AiMessage, 'role
 }
 
 export function toPersistedAiMessage(message: AiMessage): PersistedAiMessage {
+  const parts = parseSafeMessageParts(message.parts);
+  const events = parseSafeStreamEvents(message.events);
+  const generation = parseSafeGenerationMetadata(message.generation);
+
   return {
     id: message.id,
     role: message.role,
     content: message.content,
     rawContent: message.rawContent,
     thinking: message.thinking,
+    ...(parts.length === 0 ? {} : { parts }),
     formCode: message.formCode,
     timestamp: message.timestamp,
     createdAt: message.createdAt,
     updatedAt: message.updatedAt,
     provider: message.provider,
     model: message.model,
+    ...(generation ? { generation } : {}),
     status: message.status,
-    events: message.events,
+    ...(events.length === 0 ? {} : { events }),
   };
 }
 
@@ -116,19 +125,26 @@ export function normalizePersistedAiMessage(value: unknown): AiMessage | undefin
     return undefined;
   }
 
+  const parts = parseSafeMessageParts(value.parts);
+  const events = parseSafeStreamEvents(value.events);
+  const generation = parseSafeGenerationMetadata(value.generation);
+
   return {
     id: value.id,
     role: value.role,
     content: value.content,
     rawContent: optionalString(value.rawContent),
     thinking: optionalString(value.thinking),
+    ...(parts.length === 0 ? {} : { parts }),
     formCode: optionalString(value.formCode),
     timestamp: optionalNumber(value.timestamp),
     createdAt: optionalNumber(value.createdAt),
     updatedAt: optionalNumber(value.updatedAt),
     provider: value.provider === 'openai' || value.provider === 'anthropic' || value.provider === 'openrouter' ? value.provider : undefined,
     model: optionalString(value.model),
+    ...(generation ? { generation } : {}),
     status: optionalStatus(value.status),
+    ...(events.length === 0 ? {} : { events }),
   };
 }
 
