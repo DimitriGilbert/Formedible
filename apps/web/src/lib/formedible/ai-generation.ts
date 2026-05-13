@@ -314,6 +314,17 @@ export async function* streamAiResponse(request: AiGenerationRequest, options: A
       };
     }
   } catch (error) {
+    if (abortController.signal.aborted) {
+      yield {
+        type: 'finish',
+        finishReason: 'abort',
+        raw: abortController.signal.reason ?? error,
+        receivedAt: Date.now(),
+      };
+
+      return;
+    }
+
     const normalizedError = normalizeAiError(abortController.signal.aborted ? abortController.signal.reason : error);
 
     yield {

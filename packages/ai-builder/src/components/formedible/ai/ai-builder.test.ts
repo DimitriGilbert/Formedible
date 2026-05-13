@@ -2,16 +2,21 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import test from 'node:test';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 
 import { AI_BUILDER_DEFAULT_MODE, AIBuilder, resolveInitialProviderAccess } from '@/components/formedible/ai/ai-builder';
 import { AiFormRenderer, parseAiToFormedible } from '@/components/formedible/ai/ai-form-renderer';
-import { generateAiFormCode } from '@/components/formedible/ai/chat-interface';
+import { generateAiFormCode, resolveMessageStatus } from '@/components/formedible/ai/chat-interface';
+import { MarkdownMessage } from '@/components/formedible/ai/markdown-message';
 import { createDefaultProviderSecrets, createDefaultProviderSettings, providerOptions, validateProviderAccess } from '@/components/formedible/ai/provider-selection';
+import { RawOutputPanel } from '@/components/formedible/ai/raw-output-panel';
 import { createTanStackModelOptions, createTanStackTextAdapter, DEFAULT_TANSTACK_AI_MODELS, SUPPORTED_TANSTACK_AI_PROVIDERS } from '@/lib/formedible/ai-adapters';
 import { collectAiGenerationResult, streamAiResponse } from '@/lib/formedible/ai-generation';
 import { extractFormCode, parseAiToFormedible as parseAiCode } from '@/lib/formedible/ai-parser';
+import { createAiStreamScheduler } from '@/lib/formedible/ai-stream-scheduler';
 import { canUseStorage, clearConversations, clearStoredProviderSecrets, exportConversation, persistConversations, persistProviderSecrets, persistProviderSettings, persistUiState, readPersistedAIBuilderState, readStoredProviderSecrets, STORAGE_KEYS, upsertConversation, writeJson } from '@/lib/formedible/ai-storage';
-import type { AiConversation, AiMessage, ProviderSecrets, ProviderSettings } from '@/lib/formedible/ai-types';
+import type { AiConversation, AiMessage, AiStreamEvent, ProviderSecrets, ProviderSettings } from '@/lib/formedible/ai-types';
 
 const sampleFormCode = `{
   fields: [
@@ -111,6 +116,7 @@ function installWindowStorage(storage: Storage): () => void {
 test('public AI builder exports are real components and functions', () => {
   assert.equal(typeof AIBuilder, 'function');
   assert.equal(typeof AiFormRenderer, 'function');
+  assert.equal(typeof MarkdownMessage, 'function');
   assert.equal(typeof parseAiToFormedible, 'function');
   assert.equal(AI_BUILDER_DEFAULT_MODE, 'client');
 });
@@ -583,6 +589,195 @@ test('generation layer supports abort through AbortController', async () => {
   assert.equal(abortController.signal.aborted, true);
 });
 
+test('generation layer treats provider throws after abort as abort finish events', async () => {
+  const abortController = new AbortController();
+
+  async function* mockStream(_request: unknown, controller: AbortController) {
+    yield { type: 'TEXT_MESSAGE_CONTENT', delta: 'Partial' };
+    controller.abort('User stopped generation');
+    throw new Error('Provider stream closed after abort');
+  }
+
+  const result = await collectAiGenerationResult(createGenerationRequest(), {
+    abortController,
+    streamFactory: mockStream,
+  });
+
+  assert.equal(result.content, 'Partial');
+  assert.equal(result.finishReason, 'abort');
+  assert.equal(result.errors?.length, 0);
+  const finalEvent = result.events?.at(-1);
+
+  assert.equal(finalEvent?.type, 'finish');
+  assert.equal(finalEvent?.type === 'finish' ? finalEvent.finishReason : undefined, 'abort');
+  assert.equal(resolveMessageStatus(result.finishReason, result.events ?? []), 'aborted');
+});
+
+test('stream scheduler coalesces multiple stream chunks into one frame update', () => {
+  const frameCallbacks: Array<() => void> = [];
+  const flushes: Array<{ readonly textDelta: string; readonly thinkingDelta: string; readonly events: readonly AiStreamEvent[] }> = [];
+  const scheduler = createAiStreamScheduler((flush) => flushes.push(flush), {
+    scheduleFrame: (callback) => {
+      frameCallbacks.push(callback);
+      return frameCallbacks.length;
+    },
+    cancelFrame: () => undefined,
+  });
+
+  scheduler.enqueue({ type: 'text-delta', delta: 'Hel', receivedAt: 1 });
+  scheduler.enqueue({ type: 'text-delta', delta: 'lo', receivedAt: 2 });
+  scheduler.enqueue({ type: 'thinking-delta', delta: 'Plan', receivedAt: 3 });
+
+  assert.equal(flushes.length, 0);
+  assert.equal(frameCallbacks.length, 1);
+  frameCallbacks[0]?.();
+  assert.equal(flushes.length, 1);
+  assert.equal(flushes[0]?.textDelta, 'Hello');
+  assert.equal(flushes[0]?.thinkingDelta, 'Plan');
+  assert.equal(flushes[0]?.events.length, 3);
+});
+
+test('stream scheduler flushes pending chunks immediately on completion and abort', () => {
+  const frameCallbacks: Array<() => void> = [];
+  const flushes: Array<{ readonly textDelta: string; readonly thinkingDelta: string; readonly events: readonly AiStreamEvent[] }> = [];
+  const scheduler = createAiStreamScheduler((flush) => flushes.push(flush), {
+    scheduleFrame: (callback) => {
+      frameCallbacks.push(callback);
+      return frameCallbacks.length;
+    },
+    cancelFrame: () => undefined,
+  });
+
+  scheduler.enqueue({ type: 'text-delta', delta: 'Complete', receivedAt: 1 });
+  scheduler.flushNow();
+  scheduler.enqueue({ type: 'text-delta', delta: 'Abort', receivedAt: 2 });
+  scheduler.enqueue({ type: 'finish', finishReason: 'abort', receivedAt: 3 });
+  scheduler.flushNow();
+
+  assert.deepEqual(flushes.map((flush) => flush.textDelta), ['Complete', 'Abort']);
+  assert.equal(flushes[1]?.events.at(-1)?.type, 'finish');
+});
+
+test('streaming state transitions preserve placeholder, chunks, thinking, and completion', async () => {
+  async function* mockStream() {
+    yield { type: 'TEXT_MESSAGE_CONTENT', delta: 'First ' };
+    yield { type: 'TEXT_MESSAGE_CONTENT', delta: 'second' };
+    yield { type: 'REASONING_MESSAGE_CONTENT', delta: 'Thinking' };
+    yield { type: 'RUN_FINISHED', finishReason: 'stop' };
+  }
+
+  const userMessage: AiMessage = { id: 'user-stream', role: 'user', content: 'Create a form', status: 'submitted' };
+  let assistantMessage: AiMessage = { id: 'assistant-stream', role: 'assistant', content: '', status: 'streaming' };
+  const updates: AiMessage[] = [assistantMessage];
+  const frameCallbacks: Array<() => void> = [];
+  const scheduler = createAiStreamScheduler((flush) => {
+    assistantMessage = {
+      ...assistantMessage,
+      content: `${assistantMessage.content}${flush.textDelta}`,
+      thinking: `${assistantMessage.thinking ?? ''}${flush.thinkingDelta}`,
+      events: [...(assistantMessage.events ?? []), ...flush.events],
+      status: 'streaming',
+    };
+    updates.push(assistantMessage);
+  }, {
+    scheduleFrame: (callback) => {
+      frameCallbacks.push(callback);
+      return frameCallbacks.length;
+    },
+    cancelFrame: () => undefined,
+  });
+
+  for await (const event of streamAiResponse({ ...createGenerationRequest(), messages: [userMessage], userMessage }, { streamFactory: () => mockStream() })) {
+    scheduler.enqueue(event);
+    frameCallbacks.shift()?.();
+  }
+
+  scheduler.flushNow();
+  assistantMessage = { ...assistantMessage, status: 'completed' };
+  updates.push(assistantMessage);
+
+  assert.equal(updates[0]?.status, 'streaming');
+  assert.equal(updates.at(-1)?.status, 'completed');
+  assert.equal(updates.at(-1)?.content, 'First second');
+  assert.equal(updates.at(-1)?.thinking, 'Thinking');
+});
+
+test('Markdown renderer wires safe Markdown, code highlighting, and copy controls without raw HTML', () => {
+  const markdownSource = readFileSync(resolve(process.cwd(), 'src/components/formedible/ai/markdown-message.tsx'), 'utf8');
+
+  assert.match(markdownSource, /ReactMarkdown/);
+  assert.match(markdownSource, /rehypeHighlight/);
+  assert.match(markdownSource, /Copy code block/);
+  assert.match(markdownSource, /skipHtml/);
+  assert.doesNotMatch(markdownSource, /rehypeRaw|dangerouslySetInnerHTML/);
+});
+
+test('Markdown renderer preserves highlighted fenced code markup while copying raw text', () => {
+  const html = renderToStaticMarkup(
+    createElement(MarkdownMessage, { content: '```ts\nconst answer = 42;\n```' }),
+  );
+
+  assert.match(html, /Copy code block/);
+  assert.match(html, /class="[^"]*language-ts[^"]*"/);
+  assert.match(html, /class="[^"]*hljs-keyword[^"]*"/);
+  assert.match(html, /const/);
+  assert.doesNotMatch(html, /dangerouslySetInnerHTML|<script/i);
+});
+
+test('raw output panel shows raw text, thinking, parsed forms, events, metadata, and copy controls', () => {
+  const message: AiMessage = {
+    id: 'assistant-debug',
+    role: 'assistant',
+    content: `Here is the form.\n\n\`\`\`formedible\n${sampleFormCode}\n\`\`\``,
+    rawContent: `raw provider text\n\`\`\`formedible\n${sampleFormCode}\n\`\`\``,
+    thinking: 'I should create an email signup form.',
+    events: [
+      { type: 'text-delta', delta: 'raw provider text', raw: { apiKey: 'secret-key', traceId: 'trace-1' }, receivedAt: 1 },
+      { type: 'finish', finishReason: 'stop', usage: { outputTokens: 12 }, receivedAt: 2 },
+    ],
+    formCode: sampleFormCode,
+    provider: 'openrouter',
+    model: 'openai/gpt-4o-mini',
+    status: 'completed',
+  };
+  const html = renderToStaticMarkup(createElement(RawOutputPanel, { message }));
+
+  assert.match(html, /Raw output and debug/);
+  assert.match(html, /Raw text output/);
+  assert.match(html, /Thinking output/);
+  assert.match(html, /Extracted formedible code/);
+  assert.match(html, /Parsed form result/);
+  assert.match(html, /Stream events/);
+  assert.match(html, /Metadata/);
+  assert.match(html, /Parsed/);
+  assert.match(html, /Copy raw text output/);
+  assert.match(html, /\[REDACTED\]/);
+  assert.doesNotMatch(html, /secret-key|dangerouslySetInnerHTML/i);
+});
+
+test('raw output panel communicates pending, failed, and no-thinking states', () => {
+  const pendingHtml = renderToStaticMarkup(createElement(RawOutputPanel, {
+    message: { id: 'assistant-pending', role: 'assistant', content: 'partial', rawContent: 'partial', status: 'streaming' },
+  }));
+  const failedHtml = renderToStaticMarkup(createElement(RawOutputPanel, {
+    message: { id: 'assistant-failed', role: 'assistant', content: 'bad form', formCode: '{ fields: [{ name: 1, type: "unknown" }] }', status: 'completed' },
+  }));
+
+  assert.match(pendingHtml, /Pending/);
+  assert.match(pendingHtml, /This provider did not emit thinking or reasoning chunks/);
+  assert.match(failedHtml, /Failed/);
+  assert.match(failedHtml, /Parse errors/);
+});
+
+test('chat streaming loop is scheduler-buffered instead of using per-chunk state setters', () => {
+  const chatSource = readFileSync(resolve(process.cwd(), 'src/components/formedible/ai/chat-interface.tsx'), 'utf8');
+  const streamLoopMatch = /for await \(const event of streamAiResponse[\s\S]*?\n      }/.exec(chatSource);
+
+  assert.ok(streamLoopMatch);
+  assert.match(streamLoopMatch[0], /streamScheduler\.enqueue\(event\)/);
+  assert.doesNotMatch(streamLoopMatch[0], /setIsGenerating|setAbortController|onMessagesChange|updateAssistantMessage/);
+});
+
 test('generation layer normalizes errors while retaining raw debug metadata', async () => {
   async function* mockStream() {
     throw new Error('401 invalid API key sk-secret');
@@ -639,7 +834,10 @@ test('AI builder install source uses lower-level installed aliases', () => {
     'src/components/formedible/ai/ai-builder.tsx',
     'src/components/formedible/ai/ai-form-renderer.tsx',
     'src/components/formedible/ai/chat-interface.tsx',
+    'src/components/formedible/ai/chat-messages.tsx',
+    'src/components/formedible/ai/markdown-message.tsx',
     'src/components/formedible/ai/provider-selection.tsx',
+    'src/components/formedible/ai/raw-output-panel.tsx',
     'src/lib/formedible/ai-adapters.ts',
     'src/lib/formedible/ai-errors.ts',
     'src/lib/formedible/ai-generation.ts',

@@ -2,14 +2,19 @@
 
 import { useState } from 'react';
 
+import { ChatMessages } from '@/components/formedible/ai/chat-messages';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { collectAiGenerationResult } from '@/lib/formedible/ai-generation';
+import { collectAiGenerationResult, streamAiResponse } from '@/lib/formedible/ai-generation';
+import { extractFormCode, parseAiToFormedible } from '@/lib/formedible/ai-parser';
+import { createAiStreamScheduler } from '@/lib/formedible/ai-stream-scheduler';
 import type {
   AiGenerationRequest,
   AiGenerationResult,
+  AiFinishReason,
   AiMessage,
   AIBuilderMode,
+  AiStreamEvent,
   ProviderSecrets,
   ProviderSettings,
 } from '@/lib/formedible/ai-types';
@@ -59,6 +64,18 @@ export async function generateAiFormCode(
   throw new Error('AI Builder requires client mode to generate a form.');
 }
 
+export function resolveMessageStatus(finishReason: AiFinishReason | undefined, errors: readonly AiStreamEvent[]): AiMessage['status'] {
+  if (finishReason === 'abort') {
+    return 'aborted';
+  }
+
+  if (finishReason === 'error' || errors.some((event) => event.type === 'error')) {
+    return 'error';
+  }
+
+  return 'completed';
+}
+
 export function ChatInterface({
   providerSettings,
   providerSecrets,
@@ -84,38 +101,125 @@ export function ChatInterface({
 
     const userMessage = createMessage('user', trimmedPrompt);
     const nextMessages = [...messages, userMessage];
-    onMessagesChange(nextMessages);
+    const assistantMessage: AiMessage = {
+      ...createMessage('assistant', ''),
+      status: 'streaming',
+      provider: providerSettings?.provider,
+      model: providerSettings?.model,
+    };
+    let displayedMessages: readonly AiMessage[] = [...nextMessages, assistantMessage];
+    let streamedContent = '';
+    let streamedThinking = '';
+    let streamedEvents: AiStreamEvent[] = [];
+    let finishReason: AiFinishReason | undefined;
+
+    function updateAssistantMessage(message: AiMessage): void {
+      displayedMessages = displayedMessages.map((existingMessage) => (existingMessage.id === assistantMessage.id ? message : existingMessage));
+      onMessagesChange(displayedMessages);
+    }
+
+    onMessagesChange(displayedMessages);
     setPrompt('');
     setError(undefined);
     setIsGenerating(true);
     const nextAbortController = new AbortController();
     setAbortController(nextAbortController);
+    const streamScheduler = createAiStreamScheduler((flush) => {
+      streamedContent += flush.textDelta;
+      streamedThinking += flush.thinkingDelta;
+      streamedEvents = [...streamedEvents, ...flush.events];
+      updateAssistantMessage({
+        ...assistantMessage,
+        content: streamedContent,
+        rawContent: streamedContent,
+        thinking: streamedThinking.length > 0 ? streamedThinking : undefined,
+        events: streamedEvents,
+        status: 'streaming',
+      });
+    });
 
     try {
-      const result = await generateAiFormCode(
-        { prompt: trimmedPrompt, providerSettings, providerSecrets, messages: nextMessages, systemPrompt, userMessage, conversationId },
-        mode,
-        nextAbortController,
-      );
-      const assistantMessage: AiMessage = {
-        ...createMessage('assistant', result.content, result.formCode),
-        rawContent: result.rawOutput?.text,
-        thinking: result.thinkingOutput?.text,
-        events: result.events,
-        provider: result.provider,
-        model: result.model,
-        generation: result.metadata,
-        status: result.finishReason === 'abort' ? 'aborted' : result.errors && result.errors.length > 0 ? 'error' : 'completed',
-      };
-      onMessagesChange([...nextMessages, assistantMessage]);
+      if (mode !== 'client') {
+        throw new Error('AI Builder requires client mode to generate a form.');
+      }
 
-      if (result.formCode) {
-        onFormGenerated?.(result.formCode);
+      const startedAt = Date.now();
+      const request: AiGenerationRequest = { prompt: trimmedPrompt, providerSettings, providerSecrets, messages: nextMessages, systemPrompt, userMessage, conversationId };
+
+      for await (const event of streamAiResponse(request, { abortController: nextAbortController })) {
+        if (event.type === 'finish') {
+          finishReason = event.finishReason;
+        }
+
+        if (event.type === 'error') {
+          finishReason = 'error';
+          setError(event.error.message);
+        }
+
+        streamScheduler.enqueue(event);
+      }
+
+      streamScheduler.flushNow();
+      const finalStatus = resolveMessageStatus(finishReason, streamedEvents);
+      const formCode = finalStatus === 'completed' ? extractFormCode(streamedContent) : undefined;
+      const parseResult = formCode ? parseAiToFormedible(formCode) : undefined;
+      const finishedAt = Date.now();
+      const finalAssistantMessage: AiMessage = {
+        ...assistantMessage,
+        content: streamedContent,
+        rawContent: streamedContent,
+        thinking: streamedThinking.length > 0 ? streamedThinking : undefined,
+        events: streamedEvents,
+        formCode,
+        formConfig: parseResult?.success ? parseResult.formOptions : undefined,
+        parseErrors: parseResult?.success === false ? parseResult.errors : undefined,
+        provider: providerSettings?.provider,
+        model: providerSettings?.model,
+        generation: providerSettings
+          ? {
+              provider: providerSettings.provider,
+              model: providerSettings.model,
+              finishReason,
+              startedAt,
+              finishedAt,
+            }
+          : undefined,
+        status: finalStatus,
+      };
+
+      updateAssistantMessage(finalAssistantMessage);
+
+      if (formCode) {
+        onFormGenerated?.(formCode);
       }
     } catch (generationError) {
-      setError(generationError instanceof Error ? generationError.message : String(generationError));
-      onMessagesChange(nextMessages);
+      streamScheduler.flushNow();
+      const wasAborted = nextAbortController.signal.aborted;
+
+      if (!wasAborted) {
+        setError(generationError instanceof Error ? generationError.message : String(generationError));
+      }
+
+      updateAssistantMessage({
+        ...assistantMessage,
+        content: streamedContent,
+        rawContent: streamedContent,
+        thinking: streamedThinking.length > 0 ? streamedThinking : undefined,
+        events: streamedEvents,
+        provider: providerSettings?.provider,
+        model: providerSettings?.model,
+        generation: providerSettings
+          ? {
+              provider: providerSettings.provider,
+              model: providerSettings.model,
+              finishReason: wasAborted ? 'abort' : 'error',
+              finishedAt: Date.now(),
+            }
+          : undefined,
+        status: wasAborted ? 'aborted' : 'error',
+      });
     } finally {
+      streamScheduler.flushNow();
       setIsGenerating(false);
       setAbortController(undefined);
     }
@@ -124,17 +228,21 @@ export function ChatInterface({
   return (
     <div className={cn('flex h-full flex-col gap-3', className)}>
       <div className="min-h-0 flex-1 space-y-3 overflow-auto rounded-lg border p-3">
-        {messages.length === 0 ? <p className="text-sm text-muted-foreground">Describe the form you want to build.</p> : null}
-        {messages.map((message) => (
-          <article key={message.id} className={cn('rounded-md p-3 text-sm', message.role === 'user' ? 'bg-muted' : 'border')}>
-            <p className="mb-1 font-medium capitalize">{message.role}</p>
-            <p className="whitespace-pre-wrap">{message.content}</p>
-          </article>
-        ))}
+        <ChatMessages messages={messages} />
       </div>
       {error ? <p className="rounded-md border border-destructive/40 p-2 text-sm text-destructive">{error}</p> : null}
       <div className="grid gap-2">
-        <Textarea value={prompt} onChange={(event) => setPrompt(event.target.value)} placeholder="Create a multi-step onboarding form..." />
+        <Textarea
+          value={prompt}
+          onChange={(event) => setPrompt(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+              event.preventDefault();
+              void submitPrompt();
+            }
+          }}
+          placeholder="Create a multi-step onboarding form..."
+        />
         <div className="flex gap-2">
           <Button type="button" disabled={isGenerating || prompt.trim().length === 0} onClick={submitPrompt}>
             {isGenerating ? 'Generating...' : 'Generate form'}

@@ -17,6 +17,9 @@
         "@tanstack/react-form",
         "clsx",
         "lucide-react",
+        "react-markdown",
+        "rehype-highlight",
+        "remark-gfm",
         "tailwind-merge",
         "zod"
       ],
@@ -45,6 +48,21 @@
           "path": "src/components/formedible/ai/chat-interface.tsx",
           "type": "registry:component",
           "target": "components/formedible/ai/chat-interface.tsx"
+        },
+        {
+          "path": "src/components/formedible/ai/chat-messages.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/ai/chat-messages.tsx"
+        },
+        {
+          "path": "src/components/formedible/ai/markdown-message.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/ai/markdown-message.tsx"
+        },
+        {
+          "path": "src/components/formedible/ai/raw-output-panel.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/ai/raw-output-panel.tsx"
         },
         {
           "path": "src/lib/formedible/ai-adapters.ts",
@@ -80,6 +98,11 @@
           "path": "src/lib/formedible/ai-safe-persistence.ts",
           "type": "registry:lib",
           "target": "lib/formedible/ai-safe-persistence.ts"
+        },
+        {
+          "path": "src/lib/formedible/ai-stream-scheduler.ts",
+          "type": "registry:lib",
+          "target": "lib/formedible/ai-stream-scheduler.ts"
         },
         {
           "path": "src/lib/formedible/ai-types.ts",
