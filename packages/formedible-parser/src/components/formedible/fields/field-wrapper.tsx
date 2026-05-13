@@ -1,7 +1,23 @@
 import type { ReactNode } from 'react';
 
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
-import type { FormedibleFieldController, FormedibleFormValues, NormalizedFieldConfig } from '@/lib/formedible/types';
+import type { FormedibleFieldController, FormedibleFormValues, FormedibleHelpConfig, NormalizedFieldConfig } from '@/lib/formedible/types';
+
+function isHelpConfig(help: ReactNode | FormedibleHelpConfig): help is FormedibleHelpConfig {
+  return typeof help === 'object' && help !== null && ('tooltip' in help || 'text' in help);
+}
+
+function getHelpContent(help: NormalizedFieldConfig['help']): ReactNode {
+  if (!help) {
+    return undefined;
+  }
+
+  if (isHelpConfig(help)) {
+    return help.tooltip ?? help.text;
+  }
+
+  return help;
+}
 
 export interface FieldWrapperProps<TFormValues extends FormedibleFormValues = FormedibleFormValues> {
   readonly fieldConfig: NormalizedFieldConfig<TFormValues>;
@@ -10,6 +26,8 @@ export interface FieldWrapperProps<TFormValues extends FormedibleFormValues = Fo
 }
 
 export function FieldWrapper<TFormValues extends FormedibleFormValues>({ fieldConfig, field, children }: FieldWrapperProps<TFormValues>) {
+  const helpContent = getHelpContent(fieldConfig.help);
+
   return (
     <Field
       className={fieldConfig.className}
@@ -25,6 +43,7 @@ export function FieldWrapper<TFormValues extends FormedibleFormValues>({ fieldCo
       ) : undefined}
       {children}
       {fieldConfig.description ? <FieldDescription>{fieldConfig.description}</FieldDescription> : undefined}
+      {helpContent ? <FieldDescription>{helpContent}</FieldDescription> : undefined}
       {field.error ? <FieldError>{field.error}</FieldError> : undefined}
     </Field>
   );

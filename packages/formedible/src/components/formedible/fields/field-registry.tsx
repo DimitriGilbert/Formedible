@@ -12,6 +12,7 @@ import { MultiComboboxField } from '@/components/formedible/fields/multi-combobo
 import { MultiSelectField } from '@/components/formedible/fields/multi-select-field';
 import { NumberField } from '@/components/formedible/fields/number-field';
 import { ObjectField } from '@/components/formedible/fields/object-field';
+import { PasswordField } from '@/components/formedible/fields/password-field';
 import { PhoneField } from '@/components/formedible/fields/phone-field';
 import { RadioField } from '@/components/formedible/fields/radio-field';
 import { RatingField } from '@/components/formedible/fields/rating-field';
@@ -39,7 +40,7 @@ const fieldRegistry: Partial<Record<NormalizedFieldType, FieldComponent>> = {
   multiSelect: MultiSelectField,
   number: NumberField,
   object: ObjectField,
-  password: TextField,
+  password: PasswordField,
   phone: PhoneField,
   radio: RadioField,
   rating: RatingField,

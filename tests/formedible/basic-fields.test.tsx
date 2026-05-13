@@ -4,7 +4,10 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { renderToStaticMarkup } from 'react-dom/server';
 
+import { NumberField } from '../../packages/formedible/src/components/formedible/fields/number-field';
+import { PasswordField } from '../../packages/formedible/src/components/formedible/fields/password-field';
 import { TextField } from '../../packages/formedible/src/components/formedible/fields/text-field';
+import { TextareaField } from '../../packages/formedible/src/components/formedible/fields/textarea-field';
 import { useFormedible } from '../../packages/formedible/src/hooks/use-formedible';
 import type { FormedibleFieldConfig, FormedibleFieldType, FormedibleFormValues } from '../../packages/formedible/src/lib/formedible/types';
 import {
@@ -28,6 +31,7 @@ function toFormedibleFieldType(type: string): FormedibleFieldType {
 const primitiveImports = {
   'checkbox-field.tsx': "@/components/ui/checkbox",
   'number-field.tsx': "@/components/ui/input",
+  'password-field.tsx': "@/components/ui/input",
   'radio-field.tsx': "@/components/ui/radio-group",
   'select-field.tsx': "@/components/ui/select",
   'switch-field.tsx': "@/components/ui/switch",
@@ -85,6 +89,33 @@ function renderBasicExample(fields: readonly FieldDescriptor[]) {
   }
 
   return renderToStaticMarkup(<ExampleForm />);
+}
+
+function renderTextarea(fieldConfig: FormedibleFieldConfig<FormedibleFormValues>, value = '') {
+  return renderToStaticMarkup(
+    <TextareaField
+      fieldConfig={{ ...fieldConfig, type: 'textarea', disabled: false, required: false }}
+      field={{ id: String(fieldConfig.name), name: String(fieldConfig.name), value, onBlur: () => undefined, onChange: () => undefined }}
+    />,
+  );
+}
+
+function renderPassword(fieldConfig: FormedibleFieldConfig<FormedibleFormValues>, value = '') {
+  return renderToStaticMarkup(
+    <PasswordField
+      fieldConfig={{ ...fieldConfig, type: 'password', disabled: false, required: false }}
+      field={{ id: String(fieldConfig.name), name: String(fieldConfig.name), value, onBlur: () => undefined, onChange: () => undefined }}
+    />,
+  );
+}
+
+function renderNumber(fieldConfig: FormedibleFieldConfig<FormedibleFormValues>, value: number | string = '') {
+  return renderToStaticMarkup(
+    <NumberField
+      fieldConfig={{ ...fieldConfig, type: 'number', disabled: false, required: false }}
+      field={{ id: String(fieldConfig.name), name: String(fieldConfig.name), value, onBlur: () => undefined, onChange: () => undefined }}
+    />,
+  );
 }
 
 test('basic field components import shadcn primitives without raw substitutes', () => {
@@ -147,4 +178,170 @@ test('invalid fields expose field and control invalid states', () => {
 
   assert.match(markup, /data-invalid="true"/);
   assert.match(markup, /aria-invalid="true"/);
+});
+
+test('textarea reads legacy textareaConfig rows and maxLength', () => {
+  const markup = renderTextarea({
+    name: 'message',
+    type: 'textarea',
+    label: 'Message',
+    textareaConfig: { rows: 7, maxLength: 140 },
+  });
+
+  assert.match(markup, /rows="7"/);
+  assert.match(markup, /maxLength="140"/);
+});
+
+test('textarea top-level rows and maxLength take precedence over legacy textareaConfig', () => {
+  const markup = renderTextarea({
+    name: 'message',
+    type: 'textarea',
+    label: 'Message',
+    rows: 3,
+    maxLength: 60,
+    textareaConfig: { rows: 7, maxLength: 140 },
+  });
+
+  assert.match(markup, /rows="3"/);
+  assert.match(markup, /maxLength="60"/);
+});
+
+test('textarea renders legacy textareaConfig word count', () => {
+  const markup = renderTextarea(
+    {
+      name: 'message',
+      type: 'textarea',
+      label: 'Message',
+      textareaConfig: { showWordCount: true, maxLength: 140 },
+    },
+    'hello formedible world',
+  );
+
+  assert.match(markup, /3 words/);
+  assert.match(markup, /140 characters max/);
+});
+
+test('textarea supports legacy textareaConfig cols and resize', () => {
+  const markup = renderTextarea({
+    name: 'message',
+    type: 'textarea',
+    label: 'Message',
+    textareaConfig: { cols: 80, resize: 'vertical' },
+  });
+
+  assert.match(markup, /cols="80"/);
+  assert.match(markup, /resize:vertical/);
+});
+
+test('password preserves basic password input behavior', () => {
+  const markup = renderPassword({
+    name: 'password',
+    type: 'password',
+    label: 'Password',
+  });
+
+  assert.match(markup, /type="password"/);
+});
+
+test('password renders legacy passwordConfig toggle control', () => {
+  const markup = renderPassword({
+    name: 'password',
+    type: 'password',
+    label: 'Password',
+    passwordConfig: { showToggle: true },
+  });
+
+  assert.match(markup, /type="password"/);
+  assert.match(markup, /aria-label="Show password"/);
+});
+
+test('password renders legacy passwordConfig strength meter with minStrength', () => {
+  const markup = renderPassword(
+    {
+      name: 'password',
+      type: 'password',
+      label: 'Password',
+      passwordConfig: { strengthMeter: true, minStrength: 3 },
+    },
+    'correct horse battery staple',
+  );
+
+  assert.match(markup, /Password strength/);
+  assert.match(markup, /Minimum strength: 3\/4/);
+});
+
+test('number reads legacy numberConfig constraints', () => {
+  const markup = renderNumber({
+    name: 'quantity',
+    type: 'number',
+    label: 'Quantity',
+    numberConfig: { min: 2, max: 8, step: 2 },
+  });
+
+  assert.match(markup, /min="2"/);
+  assert.match(markup, /max="8"/);
+  assert.match(markup, /step="2"/);
+});
+
+test('number top-level constraints take precedence over legacy numberConfig', () => {
+  const markup = renderNumber({
+    name: 'quantity',
+    type: 'number',
+    label: 'Quantity',
+    min: 1,
+    max: 10,
+    step: 1,
+    numberConfig: { min: 2, max: 8, step: 2 },
+  });
+
+  assert.match(markup, /min="1"/);
+  assert.match(markup, /max="10"/);
+  assert.match(markup, /step="1"/);
+});
+
+test('text renders legacy datalist suggestions', () => {
+  const markup = renderToStaticMarkup(
+    <TextField
+      fieldConfig={{ name: 'city', type: 'text', label: 'City', disabled: false, required: false, datalist: ['Paris', { value: 'Berlin', label: 'Berlin, Germany' }] }}
+      field={{ id: 'city', name: 'city', value: '', onBlur: () => undefined, onChange: () => undefined }}
+    />,
+  );
+
+  assert.match(markup, /list="city-datalist"/);
+  assert.match(markup, /<datalist id="city-datalist">/);
+  assert.match(markup, /<option value="Paris"><\/option>/);
+  assert.match(markup, /<option value="Berlin">Berlin, Germany<\/option>/);
+});
+
+test('number renders legacy datalist suggestions', () => {
+  const markup = renderNumber({
+    name: 'quantity',
+    type: 'number',
+    label: 'Quantity',
+    datalist: ['1', '5'],
+  });
+
+  assert.match(markup, /list="quantity-datalist"/);
+  assert.match(markup, /<datalist id="quantity-datalist">/);
+  assert.match(markup, /<option value="5"><\/option>/);
+});
+
+test('field wrapper renders legacy help tooltip text as supplementary help', () => {
+  const markup = renderToStaticMarkup(
+    <TextField
+      fieldConfig={{
+        name: 'firstName',
+        type: 'text',
+        label: 'First name',
+        description: 'Used on your profile.',
+        disabled: false,
+        required: false,
+        help: { tooltip: 'We use this to personalize your experience.' },
+      }}
+      field={{ id: 'firstName', name: 'firstName', value: '', onBlur: () => undefined, onChange: () => undefined }}
+    />,
+  );
+
+  assert.match(markup, /Used on your profile\./);
+  assert.match(markup, /We use this to personalize your experience\./);
 });

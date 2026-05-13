@@ -89,6 +89,43 @@ export interface FormedibleArrayConfig<TFormValues extends FormedibleFormValues 
   readonly [customProp: string]: unknown;
 }
 
+export interface FormedibleTextareaConfig {
+  readonly rows?: number;
+  readonly cols?: number;
+  readonly maxLength?: number;
+  readonly resize?: 'none' | 'both' | 'horizontal' | 'vertical' | 'block' | 'inline';
+  readonly showWordCount?: boolean;
+  /**
+   * `cols` maps to the native textarea attribute; `resize` maps to the CSS
+   * resize property for legacy configuration compatibility.
+   */
+}
+
+export interface FormediblePasswordConfig {
+  /** Render a button that lets users switch between hidden and visible password text. */
+  readonly showToggle?: boolean;
+  /** Render a simple password strength meter derived from the current field value. */
+  readonly strengthMeter?: boolean;
+  /** Minimum desired strength on the 0-4 legacy scale; shown as guidance by the meter. */
+  readonly minStrength?: number;
+}
+
+export interface FormedibleHelpConfig {
+  /** Supplementary help text rendered below the field for legacy tooltip-only examples. */
+  readonly tooltip?: ReactNode;
+  /** Supplementary help text rendered below the field. */
+  readonly text?: ReactNode;
+}
+
+export interface FormedibleNumberConfig {
+  /** Native minimum value for legacy number fields. Top-level `min` takes precedence. */
+  readonly min?: number;
+  /** Native maximum value for legacy number fields. Top-level `max` takes precedence. */
+  readonly max?: number;
+  /** Native step value for legacy number fields. Top-level `step` takes precedence. */
+  readonly step?: number;
+}
+
 export type FormedibleValidationResult = string | null | undefined | false;
 
 export interface FormedibleFieldValidationContext<TFormValues extends FormedibleFormValues = FormedibleFormValues> {
@@ -147,6 +184,14 @@ export interface FormedibleFieldConfig<TFormValues extends FormedibleFormValues 
   readonly step?: number;
   readonly rows?: number;
   readonly maxLength?: number;
+  readonly textareaConfig?: FormedibleTextareaConfig;
+  readonly passwordConfig?: FormediblePasswordConfig;
+  readonly numberConfig?: FormedibleNumberConfig;
+  /** Native datalist suggestions for text-like and number inputs. */
+  readonly datalist?: readonly FormedibleFieldOption[];
+  readonly help?: ReactNode | FormedibleHelpConfig;
+  /** Legacy `emailConfig` is intentionally unsupported; use schema or `validation` for email-specific rules. */
+  readonly emailConfig?: never;
   readonly dateConfig?: FormedibleDateConfig<TFormValues>;
   readonly sliderConfig?: FormedibleSliderConfig;
   readonly ratingConfig?: FormedibleRatingConfig;
@@ -160,6 +205,13 @@ export interface FormedibleFieldConfig<TFormValues extends FormedibleFormValues 
   readonly fileConfig?: FormedibleFileConfig;
   readonly validation?: FormedibleFieldValidation<TFormValues>;
   readonly inlineValidation?: FormedibleInlineValidation<TFormValues>;
+  /**
+   * Arbitrary props are retained for custom renderers and metadata only.
+   * Known behavior configuration must use supported nested config objects, such as
+   * `textareaConfig.showWordCount` and `numberConfig.{min,max,step}`. Unsupported
+   * top-level legacy keys like `showWordCount` and `precision` are not consumed by
+   * built-in renderers.
+   */
   readonly [customProp: string]: unknown;
 }
 
@@ -188,6 +240,14 @@ export interface NormalizedFieldConfig<TFormValues extends FormedibleFormValues 
   readonly step?: number;
   readonly rows?: number;
   readonly maxLength?: number;
+  readonly textareaConfig?: FormedibleTextareaConfig;
+  readonly passwordConfig?: FormediblePasswordConfig;
+  readonly numberConfig?: FormedibleNumberConfig;
+  /** Native datalist suggestions for text-like and number inputs. */
+  readonly datalist?: readonly FormedibleFieldOption[];
+  readonly help?: ReactNode | FormedibleHelpConfig;
+  /** Legacy `emailConfig` is intentionally unsupported; use schema or `validation` for email-specific rules. */
+  readonly emailConfig?: never;
   readonly dateConfig?: FormedibleDateConfig<TFormValues>;
   readonly sliderConfig?: FormedibleSliderConfig;
   readonly ratingConfig?: FormedibleRatingConfig;

@@ -82,6 +82,11 @@
           "target": "components/formedible/fields/text-field.tsx"
         },
         {
+          "path": "src/components/formedible/fields/password-field.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/fields/password-field.tsx"
+        },
+        {
           "path": "src/components/formedible/fields/textarea-field.tsx",
           "type": "registry:component",
           "target": "components/formedible/fields/textarea-field.tsx"

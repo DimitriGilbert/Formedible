@@ -160,7 +160,7 @@ export function SystemPromptGenerator() {
         email: "- **email**: Email input with built-in email validation\n",
         url: "- **url**: URL input with URL validation\n",
         textarea: "- **textarea**: Multi-line text with textareaConfig (rows, maxLength, showWordCount)\n",
-        number: "- **number**: Number input with numberConfig (min, max, step, precision)\n",
+        number: "- **number**: Number input with numberConfig (min, max, step)\n",
         date: "- **date**: Date picker with calendar and dateConfig options\n",
         select: "- **select**: Dropdown selection with searchable options\n",
         multiSelect: "- **multiSelect**: Multiple selection dropdown with search and multiSelectConfig\n",

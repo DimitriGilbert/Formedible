@@ -1,4 +1,4 @@
-import type { FormedibleFieldConfig, NormalizedFieldConfig } from '../../../packages/formedible/src/lib/formedible/types';
+import type { FormedibleFieldConfig, FormedibleNumberConfig, FormediblePasswordConfig, NormalizedFieldConfig } from '../../../packages/formedible/src/lib/formedible/types';
 
 interface CompatibilityFormValues extends Record<string, unknown> {
   name: string;
@@ -14,10 +14,10 @@ interface CompatibilityFormValues extends Record<string, unknown> {
 const compatibilityFields = [
   { name: 'name', type: 'text', label: 'Name' },
   { name: 'email', type: 'email', required: true },
-  { name: 'password', type: 'password', showToggle: true, strengthMeter: true },
+  { name: 'password', type: 'password', passwordConfig: { showToggle: true, strengthMeter: true, minStrength: 3 } },
   { name: 'website', type: 'url' },
   { name: 'phone', type: 'tel' },
-  { name: 'message', type: 'textarea', rows: 6, showWordCount: true },
+  { name: 'message', type: 'textarea', rows: 6, textareaConfig: { rows: 4, maxLength: 500, showWordCount: true } },
   { name: 'salaryExpectation', type: 'number', min: 0, step: 1000 },
   { name: 'plan', type: 'select', options: ['basic', 'pro'] },
   { name: 'contactMethod', type: 'radio', options: [{ value: 'email', label: 'Email' }] },
@@ -57,4 +57,99 @@ const normalizedAlias = {
   required: false,
 } satisfies NormalizedFieldConfig<CompatibilityFormValues>;
 
-export { compatibilityFields, customFieldKeepsArbitraryProps, normalizedAlias };
+const textareaConfigSupportsLegacySizing = {
+  name: 'legacyTextareaConfig',
+  type: 'textarea',
+  textareaConfig: {
+    rows: 4,
+    cols: 80,
+    resize: 'vertical',
+  },
+} satisfies FormedibleFieldConfig<CompatibilityFormValues>;
+
+const passwordConfigSupportsLegacyOptions = {
+  name: 'legacyPasswordConfig',
+  type: 'password',
+  passwordConfig: {
+    showToggle: true,
+    strengthMeter: true,
+    minStrength: 3,
+  },
+} satisfies FormedibleFieldConfig<CompatibilityFormValues>;
+
+const explicitPasswordConfig: FormediblePasswordConfig = {
+  showToggle: false,
+  strengthMeter: true,
+  minStrength: 2,
+};
+
+const unsupportedPasswordConfigKeysAreRejected = {
+  name: 'unsupportedPasswordConfig',
+  type: 'password',
+  passwordConfig: {
+    showToggle: true,
+    // @ts-expect-error revealLabel is intentionally unsupported; passwordConfig only supports showToggle, strengthMeter, and minStrength.
+    revealLabel: 'Show password',
+  },
+} satisfies FormedibleFieldConfig<CompatibilityFormValues>;
+
+const numberConfigSupportsLegacyConstraints = {
+  name: 'legacyNumberConfig',
+  type: 'number',
+  numberConfig: {
+    min: 0,
+    max: 10,
+    step: 2,
+  },
+} satisfies FormedibleFieldConfig<CompatibilityFormValues>;
+
+const explicitNumberConfig: FormedibleNumberConfig = {
+  min: 0,
+  max: 10,
+  step: 1,
+};
+
+const datalistSupportsLegacySuggestions = {
+  name: 'city',
+  type: 'text',
+  datalist: ['Paris', { value: 'Berlin', label: 'Berlin, Germany' }],
+} satisfies FormedibleFieldConfig<CompatibilityFormValues>;
+
+const helpSupportsLegacyTooltip = {
+  name: 'firstName',
+  type: 'text',
+  help: { tooltip: 'Personalization helper text' },
+} satisfies FormedibleFieldConfig<CompatibilityFormValues>;
+
+const numberConfigPrecisionIsIntentionallyUnsupported = {
+  name: 'legacyNumberPrecision',
+  type: 'number',
+  numberConfig: {
+    min: 0,
+    // @ts-expect-error precision is intentionally unsupported because native number inputs and audited compatibility examples only restore min/max/step behavior.
+    precision: 2,
+  },
+} satisfies FormedibleFieldConfig<CompatibilityFormValues>;
+
+const emailConfigIsIntentionallyUnsupported = {
+  name: 'legacyEmailConfig',
+  type: 'email',
+  // @ts-expect-error emailConfig is intentionally unsupported because the audited compatibility examples have no stable email-specific behavior to restore.
+  emailConfig: {},
+} satisfies FormedibleFieldConfig<CompatibilityFormValues>;
+
+export {
+  compatibilityFields,
+  customFieldKeepsArbitraryProps,
+  datalistSupportsLegacySuggestions,
+  emailConfigIsIntentionallyUnsupported,
+  explicitNumberConfig,
+  explicitPasswordConfig,
+  helpSupportsLegacyTooltip,
+  normalizedAlias,
+  numberConfigPrecisionIsIntentionallyUnsupported,
+  numberConfigSupportsLegacyConstraints,
+  passwordConfigSupportsLegacyOptions,
+  textareaConfigSupportsLegacySizing,
+  unsupportedPasswordConfigKeysAreRejected,
+};
