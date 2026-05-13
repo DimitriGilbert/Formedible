@@ -6,9 +6,10 @@ import test from 'node:test';
 import { AI_BUILDER_DEFAULT_MODE, AIBuilder, canUseStorage, readJson, readPersistedAIBuilderState, STORAGE_KEYS, upsertConversation, writeJson } from '@/components/formedible/ai/ai-builder';
 import { AiFormRenderer, parseAiToFormedible } from '@/components/formedible/ai/ai-form-renderer';
 import { generateAiFormCode } from '@/components/formedible/ai/chat-interface';
-import { createDefaultProviderConfig, providerOptions, validateProviderConfig } from '@/components/formedible/ai/provider-selection';
-import { extractFormCode, parseAiToFormedible as parseAiCode } from '@/lib/formedible/ai-parser';
-import type { AiConversation, AiMessage, AIProvider, ProviderConfig } from '@/lib/formedible/ai-types';
+import { createDefaultProviderSecrets, createDefaultProviderSettings, providerOptions, validateProviderAccess } from '@/components/formedible/ai/provider-selection';
+import { createTanStackTextAdapter, DEFAULT_TANSTACK_AI_MODELS, SUPPORTED_TANSTACK_AI_PROVIDERS } from '@/lib/formedible/ai-adapters';
+import { parseAiToFormedible as parseAiCode } from '@/lib/formedible/ai-parser';
+import type { AiConversation, AiMessage, ProviderSecrets, ProviderSettings } from '@/lib/formedible/ai-types';
 
 const sampleFormCode = `{
   fields: [
@@ -69,7 +70,7 @@ test('public AI builder exports are real components and functions', () => {
   assert.equal(typeof AIBuilder, 'function');
   assert.equal(typeof AiFormRenderer, 'function');
   assert.equal(typeof parseAiToFormedible, 'function');
-  assert.equal(AI_BUILDER_DEFAULT_MODE, 'direct');
+  assert.equal(AI_BUILDER_DEFAULT_MODE, 'client');
 });
 
 test('parseAiToFormedible parses AI-produced schema and infers missing defaults', () => {
@@ -131,33 +132,35 @@ test('parser integration reports invalid generated schema without throwing', () 
 });
 
 test('provider selection preserves provider-specific default models', () => {
-  assert.ok(providerOptions.some((provider) => provider.value === 'openrouter'));
-  assert.ok(providerOptions.some((provider) => provider.value === 'openai-compatible'));
-  assert.deepEqual(createDefaultProviderConfig('openai-compatible'), {
-    provider: 'openai-compatible',
-    model: 'gpt-4o-mini',
-    apiKey: '',
+  assert.deepEqual(providerOptions.map((provider) => provider.value), ['openai', 'anthropic', 'openrouter']);
+  assert.deepEqual(createDefaultProviderSettings('openrouter'), {
+    provider: 'openrouter',
+    model: 'openai/gpt-4o-mini',
     temperature: 0.7,
     maxTokens: 4000,
   });
 });
 
-test('provider validation requires keys and openai-compatible endpoints', () => {
-  assert.match(validateProviderConfig(createDefaultProviderConfig('openai')) ?? '', /API key/i);
-  assert.match(validateProviderConfig(createDefaultProviderConfig('openai-compatible')) ?? '', /endpoint/i);
+test('provider validation requires keys for supported providers', () => {
+  assert.match(validateProviderAccess(createDefaultProviderSettings('openai'), createDefaultProviderSecrets('openai')) ?? '', /API key/i);
 
-  const compatibleConfig: ProviderConfig = {
-    ...createDefaultProviderConfig('openai-compatible'),
-    endpoint: 'https://example.test/v1',
-  };
+  const openRouterSettings: ProviderSettings = createDefaultProviderSettings('openrouter');
+  const openRouterSecrets: ProviderSecrets = { provider: 'openrouter', apiKey: 'openrouter-key' };
 
-  assert.equal(validateProviderConfig(compatibleConfig), undefined);
+  assert.equal(validateProviderAccess(openRouterSettings, openRouterSecrets), undefined);
 });
 
-test('AI builder reads and writes persisted provider config, UI state, and conversation history', () => {
+test('TanStack AI adapter boundary builds supported provider adapters', () => {
+  assert.deepEqual(SUPPORTED_TANSTACK_AI_PROVIDERS, ['openai', 'anthropic', 'openrouter']);
+  assert.equal(createTanStackTextAdapter({ provider: 'openai', model: DEFAULT_TANSTACK_AI_MODELS.openai }, { provider: 'openai', apiKey: 'openai-key' }).name, 'openai');
+  assert.equal(createTanStackTextAdapter({ provider: 'anthropic', model: DEFAULT_TANSTACK_AI_MODELS.anthropic }, { provider: 'anthropic', apiKey: 'anthropic-key' }).name, 'anthropic');
+  assert.equal(createTanStackTextAdapter({ provider: 'openrouter', model: DEFAULT_TANSTACK_AI_MODELS.openrouter }, { provider: 'openrouter', apiKey: 'openrouter-key' }).name, 'openrouter');
+});
+
+test('AI builder persists provider settings without API keys, plus UI state and conversation history', () => {
   const storage = new MemoryStorage();
   const restoreWindow = installWindowStorage(storage);
-  const providerConfig: ProviderConfig = { ...createDefaultProviderConfig('openrouter'), apiKey: 'persisted-key', model: 'anthropic/claude-3.5-sonnet', temperature: 0.3, maxTokens: 2222 };
+  const providerSettings: ProviderSettings = { ...createDefaultProviderSettings('openrouter'), model: 'anthropic/claude-3.5-sonnet', temperature: 0.3, maxTokens: 2222 };
   const conversations: readonly AiConversation[] = [
     {
       id: 'conversation-1',
@@ -180,22 +183,22 @@ test('AI builder reads and writes persisted provider config, UI state, and conve
   ];
 
   try {
-    window.localStorage.setItem(STORAGE_KEYS.providerConfig, JSON.stringify(providerConfig));
+    window.localStorage.setItem(STORAGE_KEYS.providerSettings, JSON.stringify(providerSettings));
     window.localStorage.setItem(STORAGE_KEYS.conversations, JSON.stringify(conversations));
     window.localStorage.setItem(STORAGE_KEYS.uiState, JSON.stringify({ currentConversationId: 'conversation-2' }));
 
     const persistedState = readPersistedAIBuilderState();
 
     assert.equal(canUseStorage(), true);
-    assert.deepEqual(persistedState.providerConfig, providerConfig);
+    assert.deepEqual(persistedState.providerSettings, providerSettings);
     assert.deepEqual(persistedState.conversations, conversations);
     assert.equal(persistedState.currentConversationId, 'conversation-2');
 
-    const nextProviderConfig: ProviderConfig = { ...createDefaultProviderConfig('openai-compatible'), apiKey: 'local-key', endpoint: 'https://llm.test/v1' };
-    writeJson(STORAGE_KEYS.providerConfig, nextProviderConfig);
+    const nextProviderSettings: ProviderSettings = createDefaultProviderSettings('openai');
+    writeJson(STORAGE_KEYS.providerSettings, nextProviderSettings);
     writeJson(STORAGE_KEYS.uiState, { currentConversationId: 'conversation-1' });
 
-    assert.deepEqual(JSON.parse(window.localStorage.getItem(STORAGE_KEYS.providerConfig) ?? '{}'), nextProviderConfig);
+    assert.deepEqual(JSON.parse(window.localStorage.getItem(STORAGE_KEYS.providerSettings) ?? '{}'), nextProviderSettings);
     assert.deepEqual(readJson(STORAGE_KEYS.uiState, {}), { currentConversationId: 'conversation-1' });
   } finally {
     restoreWindow();
@@ -207,13 +210,13 @@ test('AI builder storage helpers fall back safely when storage is unavailable fo
   Reflect.deleteProperty(globalThis, 'window');
 
   try {
-    const fallbackProviderConfig = createDefaultProviderConfig('anthropic');
-    const persistedState = readPersistedAIBuilderState(fallbackProviderConfig);
+    const fallbackProviderSettings = createDefaultProviderSettings('anthropic');
+    const persistedState = readPersistedAIBuilderState(fallbackProviderSettings);
 
     assert.equal(canUseStorage(), false);
     assert.deepEqual(readJson(STORAGE_KEYS.conversations, [] as readonly AiConversation[]), []);
     assert.doesNotThrow(() => writeJson(STORAGE_KEYS.uiState, { currentConversationId: 'conversation-1' }));
-    assert.deepEqual(persistedState.providerConfig, fallbackProviderConfig);
+    assert.deepEqual(persistedState.providerSettings, fallbackProviderSettings);
     assert.deepEqual(persistedState.conversations, []);
     assert.equal(persistedState.currentConversationId, undefined);
 
@@ -229,8 +232,8 @@ test('AI builder storage helpers fall back safely when storage is unavailable fo
     });
 
     assert.equal(canUseStorage(), false);
-    assert.deepEqual(readPersistedAIBuilderState().providerConfig, createDefaultProviderConfig());
-    assert.doesNotThrow(() => writeJson(STORAGE_KEYS.providerConfig, fallbackProviderConfig));
+    assert.deepEqual(readPersistedAIBuilderState().providerSettings, createDefaultProviderSettings());
+    assert.doesNotThrow(() => writeJson(STORAGE_KEYS.providerSettings, fallbackProviderSettings));
   } finally {
     if (previousWindow) {
       Object.defineProperty(globalThis, 'window', previousWindow);
@@ -241,202 +244,27 @@ test('AI builder storage helpers fall back safely when storage is unavailable fo
   }
 });
 
-test('chat generation extracts conversation form schemas', async () => {
+test('chat generation validates provider configuration before adapter dispatch', async () => {
   const userMessage: AiMessage = { id: 'm1', role: 'user', content: 'Create a signup form' };
   const messages: readonly AiMessage[] = [userMessage];
-  const result = await generateAiFormCode(
-    { prompt: 'Create a signup form', providerConfig: { ...createDefaultProviderConfig(), apiKey: 'test-key' }, messages, systemPrompt: 'System prompt', userMessage },
-    'direct',
-    undefined,
-    async () => ({ content: `Here is the form:\n\`\`\`formedible\n${sampleFormCode}\n\`\`\`` }),
+
+  await assert.rejects(
+    () => generateAiFormCode(
+      { prompt: 'Create a signup form', providerSettings: null, providerSecrets: null, messages, systemPrompt: 'System prompt', userMessage },
+      'client',
+    ),
+    /Provider settings are required/i,
   );
-
-  assert.equal(result.formCode, sampleFormCode);
-  assert.equal(extractFormCode(result.content), sampleFormCode);
 });
 
-interface CapturedDirectRequest {
-  readonly url: string;
-  readonly authorization: string;
-  readonly anthropicApiKey: string;
-  readonly body: unknown;
-}
+test('adapter configuration remains scoped to supported providers without custom generation callbacks', () => {
+  const adapterProviders = new Set(SUPPORTED_TANSTACK_AI_PROVIDERS);
 
-function responseForProvider(provider: AIProvider): Response {
-  if (provider === 'anthropic') {
-    return new Response(JSON.stringify({ content: [{ type: 'text', text: sampleFormCode }] }), { status: 200, headers: { 'Content-Type': 'application/json' } });
-  }
-
-  if (provider === 'google') {
-    return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: sampleFormCode }] } }] }), { status: 200, headers: { 'Content-Type': 'application/json' } });
-  }
-
-  return new Response(JSON.stringify({ choices: [{ message: { content: sampleFormCode } }] }), { status: 200, headers: { 'Content-Type': 'application/json' } });
-}
-
-async function captureDirectProviderRequest(providerConfig: ProviderConfig): Promise<CapturedDirectRequest> {
-  const previousFetch = globalThis.fetch;
-  const userMessage: AiMessage = { id: 'm1', role: 'user', content: 'Create a contact form' };
-  const messages: readonly AiMessage[] = [userMessage];
-  let requestUrl = '';
-  let requestAuthorization = '';
-  let requestAnthropicApiKey = '';
-  let requestBody: unknown;
-
-  globalThis.fetch = async (input, init) => {
-    requestUrl = String(input);
-    if (init?.headers instanceof Headers) {
-      requestAuthorization = init.headers.get('Authorization') ?? '';
-    } else if (typeof init?.headers === 'object' && init.headers !== null && !Array.isArray(init.headers)) {
-      const headers = init.headers as Readonly<Record<string, string>>;
-      requestAuthorization = headers.Authorization ?? '';
-      requestAnthropicApiKey = headers['x-api-key'] ?? '';
-    }
-    requestBody = typeof init?.body === 'string' ? JSON.parse(init.body) : undefined;
-
-    return responseForProvider(providerConfig.provider);
-  };
-
-  try {
-    const result = await generateAiFormCode(
-      { prompt: 'Create a contact form', providerConfig, messages, systemPrompt: 'System prompt', userMessage, conversationId: 'conversation-1' },
-      'direct',
-    );
-
-    assert.equal(result.formCode, sampleFormCode);
-    return { url: requestUrl, authorization: requestAuthorization, anthropicApiKey: requestAnthropicApiKey, body: requestBody };
-  } finally {
-    globalThis.fetch = previousFetch;
-  }
-}
-
-test('direct generation uses selected provider config through production adapters', async () => {
-  const openAiRequest = await captureDirectProviderRequest({ ...createDefaultProviderConfig('openai'), apiKey: 'openai-key', model: 'openai-model', temperature: 0.2, maxTokens: 1234 });
-  assert.equal(openAiRequest.url, 'https://api.openai.com/v1/chat/completions');
-  assert.equal(openAiRequest.authorization, 'Bearer openai-key');
-  assert.deepEqual(openAiRequest.body, {
-    model: 'openai-model',
-    temperature: 0.2,
-    max_tokens: 1234,
-    stream: false,
-    messages: [
-      { role: 'system', content: 'System prompt' },
-      { role: 'user', content: 'Create a contact form' },
-    ],
-  });
-
-  const anthropicRequest = await captureDirectProviderRequest({ ...createDefaultProviderConfig('anthropic'), apiKey: 'anthropic-key', model: 'anthropic-model', temperature: 0.3, maxTokens: 2345 });
-  assert.equal(anthropicRequest.url, 'https://api.anthropic.com/v1/messages');
-  assert.equal(anthropicRequest.anthropicApiKey, 'anthropic-key');
-  assert.deepEqual(anthropicRequest.body, {
-    model: 'anthropic-model',
-    system: 'System prompt',
-    max_tokens: 2345,
-    temperature: 0.3,
-    messages: [{ role: 'user', content: 'Create a contact form' }],
-  });
-
-  const googleRequest = await captureDirectProviderRequest({ ...createDefaultProviderConfig('google'), apiKey: 'google-key', model: 'google-model', temperature: 0.4, maxTokens: 3456 });
-  assert.equal(googleRequest.url, 'https://generativelanguage.googleapis.com/v1beta/models/google-model:generateContent?key=google-key');
-  assert.deepEqual(googleRequest.body, {
-    systemInstruction: { parts: [{ text: 'System prompt' }] },
-    generationConfig: { temperature: 0.4, maxOutputTokens: 3456 },
-    contents: [{ role: 'user', parts: [{ text: 'Create a contact form' }] }],
-  });
-
-  const mistralRequest = await captureDirectProviderRequest({ ...createDefaultProviderConfig('mistral'), apiKey: 'mistral-key', model: 'mistral-model', temperature: 0.5, maxTokens: 4567 });
-  assert.equal(mistralRequest.url, 'https://api.mistral.ai/v1/chat/completions');
-  assert.equal(mistralRequest.authorization, 'Bearer mistral-key');
-  assert.deepEqual(mistralRequest.body, {
-    model: 'mistral-model',
-    temperature: 0.5,
-    max_tokens: 4567,
-    stream: false,
-    messages: [
-      { role: 'system', content: 'System prompt' },
-      { role: 'user', content: 'Create a contact form' },
-    ],
-  });
-
-  const openRouterRequest = await captureDirectProviderRequest({ ...createDefaultProviderConfig('openrouter'), apiKey: 'openrouter-key', model: 'openrouter-model', temperature: 0.6, maxTokens: 5678 });
-  assert.equal(openRouterRequest.url, 'https://openrouter.ai/api/v1/chat/completions');
-  assert.equal(openRouterRequest.authorization, 'Bearer openrouter-key');
-  assert.deepEqual(openRouterRequest.body, {
-    model: 'openrouter-model',
-    temperature: 0.6,
-    max_tokens: 5678,
-    stream: false,
-    messages: [
-      { role: 'system', content: 'System prompt' },
-      { role: 'user', content: 'Create a contact form' },
-    ],
-  });
-
-  const compatibleRequest = await captureDirectProviderRequest({ ...createDefaultProviderConfig('openai-compatible'), apiKey: 'local-key', endpoint: 'https://llm.test/v1', model: 'local-model', temperature: 0.7, maxTokens: 6789 });
-  assert.equal(compatibleRequest.url, 'https://llm.test/v1/chat/completions');
-  assert.equal(compatibleRequest.authorization, 'Bearer local-key');
-  assert.deepEqual(compatibleRequest.body, {
-    model: 'local-model',
-    temperature: 0.7,
-    max_tokens: 6789,
-    stream: false,
-    messages: [
-      { role: 'system', content: 'System prompt' },
-      { role: 'user', content: 'Create a contact form' },
-    ],
-  });
-});
-
-test('backend generation sends streaming conversation contract', async () => {
-  const previousFetch = globalThis.fetch;
-  const userMessage: AiMessage = { id: 'm1', role: 'user', content: 'Create a contact form' };
-  const messages: readonly AiMessage[] = [userMessage];
-  let requestBody: unknown;
-
-  globalThis.fetch = async (_input, init) => {
-    requestBody = typeof init?.body === 'string' ? JSON.parse(init.body) : undefined;
-
-    return new Response(JSON.stringify({ content: sampleFormCode }), { status: 200, headers: { 'Content-Type': 'application/json' } });
-  };
-
-  try {
-    const result = await generateAiFormCode(
-      { prompt: 'Create a contact form', providerConfig: { ...createDefaultProviderConfig('openai'), apiKey: 'test-key' }, messages, systemPrompt: 'System prompt', userMessage, conversationId: 'conversation-1' },
-      'backend',
-      { endpoint: 'https://example.test/ai' },
-    );
-
-    assert.equal(result.formCode, sampleFormCode);
-    assert.deepEqual(requestBody, {
-      messages,
-      systemPrompt: 'System prompt',
-      userMessage,
-      providerConfig: { provider: 'openai', model: 'gpt-4o-mini', apiKey: 'test-key', temperature: 0.7, maxTokens: 4000 },
-      conversationId: 'conversation-1',
-    });
-  } finally {
-    globalThis.fetch = previousFetch;
-  }
-});
-
-test('backend generation accepts event-stream response chunks', async () => {
-  const previousFetch = globalThis.fetch;
-  const userMessage: AiMessage = { id: 'm1', role: 'user', content: 'Create a signup form' };
-  const messages: readonly AiMessage[] = [userMessage];
-
-  globalThis.fetch = async () => new Response(`data: ${JSON.stringify({ choices: [{ delta: { content: sampleFormCode } }] })}\n\ndata: [DONE]\n\n`, { status: 200, headers: { 'Content-Type': 'text/event-stream' } });
-
-  try {
-    const result = await generateAiFormCode(
-      { prompt: 'Create a signup form', providerConfig: { ...createDefaultProviderConfig(), apiKey: 'test-key' }, messages, systemPrompt: 'System prompt', userMessage },
-      'backend',
-      { endpoint: 'https://example.test/ai' },
-    );
-
-    assert.equal(result.formCode, sampleFormCode);
-  } finally {
-    globalThis.fetch = previousFetch;
-  }
+  assert.deepEqual(providerOptions.map((provider) => provider.value), [...adapterProviders]);
+  assert.deepEqual(providerOptions.map((provider) => Object.keys(provider).sort()), providerOptions.map(() => ['defaultModel', 'label', 'requiresKey', 'value']));
+  assert.equal(createTanStackTextAdapter({ provider: 'openai', model: DEFAULT_TANSTACK_AI_MODELS.openai }, { provider: 'openai', apiKey: 'openai-key' }).name, 'openai');
+  assert.equal(createTanStackTextAdapter({ provider: 'anthropic', model: DEFAULT_TANSTACK_AI_MODELS.anthropic }, { provider: 'anthropic', apiKey: 'anthropic-key' }).name, 'anthropic');
+  assert.equal(createTanStackTextAdapter({ provider: 'openrouter', model: DEFAULT_TANSTACK_AI_MODELS.openrouter }, { provider: 'openrouter', apiKey: 'openrouter-key' }).name, 'openrouter');
 });
 
 test('conversation updates reuse the synchronously created conversation for one prompt', () => {
@@ -480,6 +308,7 @@ test('AI builder install source uses lower-level installed aliases', () => {
     'src/components/formedible/ai/ai-form-renderer.tsx',
     'src/components/formedible/ai/chat-interface.tsx',
     'src/components/formedible/ai/provider-selection.tsx',
+    'src/lib/formedible/ai-adapters.ts',
     'src/lib/formedible/ai-parser.ts',
     'src/lib/formedible/ai-types.ts',
   ];

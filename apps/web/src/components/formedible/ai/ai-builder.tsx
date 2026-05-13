@@ -4,26 +4,26 @@ import { useEffect, useRef, useState } from 'react';
 
 import { AiFormRenderer } from '@/components/formedible/ai/ai-form-renderer';
 import { ChatInterface } from '@/components/formedible/ai/chat-interface';
-import { createDefaultProviderConfig, ProviderSelection, validateProviderConfig } from '@/components/formedible/ai/provider-selection';
+import { createDefaultProviderSecrets, createDefaultProviderSettings, ProviderSelection, validateProviderAccess } from '@/components/formedible/ai/provider-selection';
 import { Button } from '@/components/ui/button';
-import type { AiConversation, AiGenerationRequest, AiGenerationResult, AiMessage, AIBuilderMode, BackendConfig, ProviderConfig } from '@/lib/formedible/ai-types';
+import type { AiConversation, AiMessage, AIBuilderMode, ProviderSecrets, ProviderSettings } from '@/lib/formedible/ai-types';
 import type { FormedibleFormValues } from '@/lib/formedible/types';
 import { cn } from '@/lib/utils';
 
 export const STORAGE_KEYS = {
-  providerConfig: 'formedible-ai-builder-provider-config',
+  providerSettings: 'formedible-ai-builder-provider-settings',
   conversations: 'formedible-ai-builder-conversations',
   uiState: 'formedible-ai-builder-ui-state',
 } as const;
 
-export const AI_BUILDER_DEFAULT_MODE: AIBuilderMode = 'direct';
+export const AI_BUILDER_DEFAULT_MODE: AIBuilderMode = 'client';
 
 interface PersistedUiState {
   readonly currentConversationId?: string;
 }
 
 export interface PersistedAIBuilderState {
-  readonly providerConfig: ProviderConfig;
+  readonly providerSettings: ProviderSettings;
   readonly conversations: readonly AiConversation[];
   readonly currentConversationId?: string;
 }
@@ -31,12 +31,12 @@ export interface PersistedAIBuilderState {
 export interface AIBuilderProps {
   readonly className?: string;
   readonly mode?: AIBuilderMode;
-  readonly backendConfig?: BackendConfig;
-  readonly providerConfig?: ProviderConfig;
-  readonly onProviderConfigChange?: (providerConfig: ProviderConfig) => void;
+  readonly providerSettings?: ProviderSettings;
+  readonly providerSecrets?: ProviderSecrets;
+  readonly onProviderSettingsChange?: (providerSettings: ProviderSettings) => void;
+  readonly onProviderSecretsChange?: (providerSecrets: ProviderSecrets) => void;
   readonly onFormGenerated?: (formCode: string) => void;
   readonly onFormSubmit?: (formData: FormedibleFormValues) => void | Promise<void>;
-  readonly generateForm?: (request: AiGenerationRequest) => Promise<AiGenerationResult>;
 }
 
 export function canUseStorage(): boolean {
@@ -76,9 +76,9 @@ export function writeJson<TValue>(key: string, value: TValue) {
   }
 }
 
-export function readPersistedAIBuilderState(controlledProviderConfig?: ProviderConfig): PersistedAIBuilderState {
+export function readPersistedAIBuilderState(controlledProviderSettings?: ProviderSettings): PersistedAIBuilderState {
   return {
-    providerConfig: controlledProviderConfig ?? readJson(STORAGE_KEYS.providerConfig, createDefaultProviderConfig()),
+    providerSettings: controlledProviderSettings ?? readJson(STORAGE_KEYS.providerSettings, createDefaultProviderSettings()),
     conversations: readJson(STORAGE_KEYS.conversations, [] as readonly AiConversation[]),
     currentConversationId: readJson<PersistedUiState>(STORAGE_KEYS.uiState, {}).currentConversationId,
   };
@@ -132,28 +132,30 @@ function getLastFormCode(messages: readonly AiMessage[]): string {
 export function AIBuilder({
   className,
   mode = AI_BUILDER_DEFAULT_MODE,
-  backendConfig,
-  providerConfig: controlledProviderConfig,
-  onProviderConfigChange,
+  providerSettings: controlledProviderSettings,
+  providerSecrets: controlledProviderSecrets,
+  onProviderSettingsChange,
+  onProviderSecretsChange,
   onFormGenerated,
   onFormSubmit,
-  generateForm,
 }: AIBuilderProps) {
-  const [internalProviderConfig, setInternalProviderConfig] = useState<ProviderConfig>(() => readPersistedAIBuilderState(controlledProviderConfig).providerConfig);
+  const [internalProviderSettings, setInternalProviderSettings] = useState<ProviderSettings>(() => readPersistedAIBuilderState(controlledProviderSettings).providerSettings);
+  const [internalProviderSecrets, setInternalProviderSecrets] = useState<ProviderSecrets>(() => createDefaultProviderSecrets(controlledProviderSettings?.provider));
   const [conversations, setConversations] = useState<readonly AiConversation[]>(() => readPersistedAIBuilderState().conversations);
   const [currentConversationId, setCurrentConversationId] = useState<string | undefined>(() => readPersistedAIBuilderState().currentConversationId);
   const currentConversationIdRef = useRef<string | undefined>(currentConversationId);
-  const providerConfig = controlledProviderConfig ?? internalProviderConfig;
+  const providerSettings = controlledProviderSettings ?? internalProviderSettings;
+  const providerSecrets = controlledProviderSecrets ?? internalProviderSecrets;
   const currentConversation = conversations.find((conversation) => conversation.id === currentConversationId);
   const messages = currentConversation?.messages ?? [];
   const formCode = currentConversation?.formCode ?? getLastFormCode(messages);
-  const providerValidationError = mode === 'direct' ? validateProviderConfig(providerConfig) : undefined;
+  const providerValidationError = mode === 'client' ? validateProviderAccess(providerSettings, providerSecrets) : undefined;
 
   useEffect(() => {
-    if (!controlledProviderConfig) {
-      writeJson(STORAGE_KEYS.providerConfig, internalProviderConfig);
+    if (!controlledProviderSettings) {
+      writeJson(STORAGE_KEYS.providerSettings, internalProviderSettings);
     }
-  }, [controlledProviderConfig, internalProviderConfig]);
+  }, [controlledProviderSettings, internalProviderSettings]);
 
   useEffect(() => {
     writeJson(STORAGE_KEYS.conversations, conversations);
@@ -164,9 +166,11 @@ export function AIBuilder({
     writeJson(STORAGE_KEYS.uiState, { currentConversationId });
   }, [currentConversationId]);
 
-  function updateProviderConfig(nextConfig: ProviderConfig) {
-    setInternalProviderConfig(nextConfig);
-    onProviderConfigChange?.(nextConfig);
+  function updateProviderAccess(nextSettings: ProviderSettings, nextSecrets: ProviderSecrets) {
+    setInternalProviderSettings(nextSettings);
+    setInternalProviderSecrets(nextSecrets);
+    onProviderSettingsChange?.(nextSettings);
+    onProviderSecretsChange?.(nextSecrets);
   }
 
   function updateMessages(nextMessages: readonly AiMessage[]) {
@@ -198,7 +202,7 @@ export function AIBuilder({
   return (
     <section className={cn('grid min-h-[640px] gap-4 lg:grid-cols-[360px_1fr]', className)} data-conversation-id={currentConversationId ?? 'new'}>
       <div className="flex min-h-0 flex-col gap-4">
-        <ProviderSelection value={providerConfig} onChange={updateProviderConfig} />
+        <ProviderSelection settings={providerSettings} secrets={providerSecrets} onChange={updateProviderAccess} />
         {providerValidationError ? <p className="rounded-md border border-destructive/40 p-2 text-sm text-destructive">{providerValidationError}</p> : null}
         <div className="grid gap-2 rounded-lg border p-3">
           <Button type="button" variant="outline" onClick={startNewConversation}>New conversation</Button>
@@ -213,13 +217,12 @@ export function AIBuilder({
           ) : null}
         </div>
         <ChatInterface
-          providerConfig={providerConfig}
+          providerSettings={providerSettings}
+          providerSecrets={providerSecrets}
           mode={mode}
-          backendConfig={backendConfig}
           messages={messages}
           onMessagesChange={updateMessages}
           onFormGenerated={updateFormCode}
-          generateForm={generateForm}
           conversationId={currentConversationId}
           className="min-h-[420px]"
         />
@@ -235,4 +238,4 @@ export function AIBuilder({
   );
 }
 
-export type { AiConversation, AIBuilderMode, BackendConfig, ProviderConfig } from '@/lib/formedible/ai-types';
+export type { AiConversation, AIBuilderMode, ProviderSecrets, ProviderSettings } from '@/lib/formedible/ai-types';

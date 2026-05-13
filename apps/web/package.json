@@ -11,10 +11,14 @@
     "dev": "vite dev"
   },
   "dependencies": {
+    "@base-ui/react": "catalog:",
     "@formedible/env": "workspace:*",
     "@formedible/ui": "workspace:*",
-    "@base-ui/react": "catalog:",
     "@tailwindcss/vite": "^4.2.2",
+    "@tanstack/ai": "^0.16.0",
+    "@tanstack/ai-anthropic": "^0.8.6",
+    "@tanstack/ai-openai": "^0.8.5",
+    "@tanstack/ai-openrouter": "^0.8.5",
     "@tanstack/react-form": "^1.27.1",
     "@tanstack/react-query": "^5.99.0",
     "@tanstack/react-router": "^1.168.22",

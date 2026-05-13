@@ -10,10 +10,15 @@
       "description": "AI-assisted Formedible builder with provider selection, chat, parser integration, and live renderer.",
       "dependencies": [
         "@base-ui/react",
+        "@tanstack/ai",
+        "@tanstack/ai-anthropic",
+        "@tanstack/ai-openai",
+        "@tanstack/ai-openrouter",
         "@tanstack/react-form",
         "clsx",
         "lucide-react",
-        "tailwind-merge"
+        "tailwind-merge",
+        "zod"
       ],
       "files": [
         {
@@ -42,9 +47,19 @@
           "target": "components/formedible/ai/chat-interface.tsx"
         },
         {
+          "path": "src/lib/formedible/ai-adapters.ts",
+          "type": "registry:lib",
+          "target": "lib/formedible/ai-adapters.ts"
+        },
+        {
           "path": "src/lib/formedible/ai-parser.ts",
           "type": "registry:lib",
           "target": "lib/formedible/ai-parser.ts"
+        },
+        {
+          "path": "src/lib/formedible/ai-messages.ts",
+          "type": "registry:lib",
+          "target": "lib/formedible/ai-messages.ts"
         },
         {
           "path": "src/lib/formedible/ai-types.ts",

@@ -2,68 +2,85 @@
 
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { AIProvider, ProviderConfig } from '@/lib/formedible/ai-types';
+import type { AIProvider, ProviderSecrets, ProviderSettings } from '@/lib/formedible/ai-types';
 import { cn } from '@/lib/utils';
 
 export const providerOptions = [
   { value: 'openai', label: 'OpenAI', defaultModel: 'gpt-4o-mini', requiresKey: true },
-  { value: 'anthropic', label: 'Anthropic', defaultModel: 'claude-3-5-sonnet-latest', requiresKey: true },
-  { value: 'google', label: 'Google Gemini', defaultModel: 'gemini-1.5-pro', requiresKey: true },
-  { value: 'mistral', label: 'Mistral', defaultModel: 'mistral-large-latest', requiresKey: true },
+  { value: 'anthropic', label: 'Anthropic', defaultModel: 'claude-sonnet-4-5', requiresKey: true },
   { value: 'openrouter', label: 'OpenRouter', defaultModel: 'openai/gpt-4o-mini', requiresKey: true },
-  { value: 'openai-compatible', label: 'OpenAI Compatible', defaultModel: 'gpt-4o-mini', requiresKey: false },
 ] as const satisfies readonly { readonly value: AIProvider; readonly label: string; readonly defaultModel: string; readonly requiresKey: boolean }[];
 
 export interface ProviderSelectionProps {
-  readonly value: ProviderConfig;
-  readonly onChange: (value: ProviderConfig) => void;
+  readonly settings: ProviderSettings;
+  readonly secrets: ProviderSecrets;
+  readonly onChange: (settings: ProviderSettings, secrets: ProviderSecrets) => void;
   readonly className?: string;
 }
 
-export function createDefaultProviderConfig(provider: AIProvider = 'openai'): ProviderConfig {
+export function createDefaultProviderSettings(provider: AIProvider = 'openai'): ProviderSettings {
   const option = providerOptions.find((entry) => entry.value === provider) ?? providerOptions[0];
 
   return {
     provider: option.value,
     model: option.defaultModel,
-    apiKey: '',
     temperature: 0.7,
     maxTokens: 4000,
   };
 }
 
-export function validateProviderConfig(config: ProviderConfig | null): string | undefined {
-  if (!config) {
-    return 'Provider configuration is required.';
+export function createDefaultProviderSecrets(provider: AIProvider = 'openai'): ProviderSecrets {
+  return {
+    provider,
+    apiKey: '',
+  };
+}
+
+export function validateProviderAccess(settings: ProviderSettings | null, secrets: ProviderSecrets | null): string | undefined {
+  if (!settings) {
+    return 'Provider settings are required.';
   }
 
-  const provider = providerOptions.find((entry) => entry.value === config.provider);
+  if (!secrets) {
+    return 'Provider secrets are required.';
+  }
+
+  const provider = providerOptions.find((entry) => entry.value === settings.provider);
 
   if (!provider) {
     return 'Unsupported AI provider.';
   }
 
-  if (provider.requiresKey && config.apiKey.trim().length === 0) {
-    return `API key is required for ${provider.label}.`;
+  if (settings.provider !== secrets.provider) {
+    return 'Provider settings and secrets must target the same provider.';
   }
 
-  if (config.provider === 'openai-compatible' && (!config.endpoint || config.endpoint.trim().length === 0)) {
-    return 'Endpoint is required for OpenAI-compatible provider.';
+  if (provider.requiresKey && secrets.apiKey.trim().length === 0) {
+    return `API key is required for ${provider.label}.`;
   }
 
   return undefined;
 }
 
-export function ProviderSelection({ value, onChange, className }: ProviderSelectionProps) {
+function isAIProvider(value: string | null): value is AIProvider {
+  if (value === null) {
+    return false;
+  }
+
+  return providerOptions.some((provider) => provider.value === value);
+}
+
+export function ProviderSelection({ settings, secrets, onChange, className }: ProviderSelectionProps) {
   return (
     <div className={cn('grid gap-3 rounded-lg border p-3', className)}>
       <label className="grid gap-1 text-sm font-medium">
         Provider
         <Select
-          value={value.provider}
+          value={settings.provider}
           onValueChange={(providerValue) => {
-            const provider = providerValue as AIProvider;
-            onChange({ ...createDefaultProviderConfig(provider), apiKey: value.apiKey, endpoint: value.endpoint });
+            const provider = isAIProvider(providerValue) ? providerValue : providerOptions[0].value;
+            const nextProvider = providerOptions.find((entry) => entry.value === provider) ?? providerOptions[0];
+            onChange(createDefaultProviderSettings(nextProvider.value), { ...secrets, provider: nextProvider.value });
           }}
         >
           <SelectTrigger>
@@ -80,26 +97,20 @@ export function ProviderSelection({ value, onChange, className }: ProviderSelect
       </label>
       <label className="grid gap-1 text-sm font-medium">
         Model
-        <Input value={value.model} onChange={(event) => onChange({ ...value, model: event.target.value })} />
+        <Input value={settings.model} onChange={(event) => onChange({ ...settings, model: event.target.value }, secrets)} />
       </label>
       <label className="grid gap-1 text-sm font-medium">
         API key
-        <Input value={value.apiKey} type="password" onChange={(event) => onChange({ ...value, apiKey: event.target.value })} />
+        <Input value={secrets.apiKey} type="password" onChange={(event) => onChange(settings, { ...secrets, apiKey: event.target.value })} />
       </label>
-      {value.provider === 'openai-compatible' ? (
-        <label className="grid gap-1 text-sm font-medium">
-          API endpoint
-          <Input value={value.endpoint ?? ''} placeholder="https://api.example.com/v1" onChange={(event) => onChange({ ...value, endpoint: event.target.value })} />
-        </label>
-      ) : null}
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="grid gap-1 text-sm font-medium">
           Temperature
-          <Input value={value.temperature ?? ''} type="number" step="0.1" onChange={(event) => onChange({ ...value, temperature: Number(event.target.value) })} />
+          <Input value={settings.temperature ?? ''} type="number" step="0.1" onChange={(event) => onChange({ ...settings, temperature: Number(event.target.value) }, secrets)} />
         </label>
         <label className="grid gap-1 text-sm font-medium">
           Max tokens
-          <Input value={value.maxTokens ?? ''} type="number" step="1" onChange={(event) => onChange({ ...value, maxTokens: Number(event.target.value) })} />
+          <Input value={settings.maxTokens ?? ''} type="number" step="1" onChange={(event) => onChange({ ...settings, maxTokens: Number(event.target.value) }, secrets)} />
         </label>
       </div>
     </div>

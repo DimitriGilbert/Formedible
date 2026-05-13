@@ -144,15 +144,24 @@ export function BuilderWorkspace() {
     code: `import { useState } from 'react';
 
 import { AIBuilder } from '@/components/formedible/ai/ai-builder';
-import { createDefaultProviderConfig, ProviderSelection } from '@/components/formedible/ai/provider-selection';
+import { createDefaultProviderSecrets, createDefaultProviderSettings, ProviderSelection } from '@/components/formedible/ai/provider-selection';
 
 export function AiBuilderWorkspace() {
-  const [providerConfig, setProviderConfig] = useState(() => createDefaultProviderConfig('openrouter'));
+  const [providerSettings, setProviderSettings] = useState(() => createDefaultProviderSettings('openrouter'));
+  const [providerSecrets, setProviderSecrets] = useState(() => createDefaultProviderSecrets('openrouter'));
 
   return (
     <main className="grid gap-8 lg:grid-cols-[22rem_1fr]">
-      <ProviderSelection value={providerConfig} onChange={setProviderConfig} />
-      <AIBuilder providerConfig={providerConfig} onProviderConfigChange={setProviderConfig} />
+      <ProviderSelection settings={providerSettings} secrets={providerSecrets} onChange={(settings, secrets) => {
+        setProviderSettings(settings);
+        setProviderSecrets(secrets);
+      }} />
+      <AIBuilder
+        providerSettings={providerSettings}
+        providerSecrets={providerSecrets}
+        onProviderSettingsChange={setProviderSettings}
+        onProviderSecretsChange={setProviderSecrets}
+      />
     </main>
   );
 }`,
