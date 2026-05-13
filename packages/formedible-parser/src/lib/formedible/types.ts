@@ -128,6 +128,13 @@ export interface FormedibleNumberConfig {
 
 export type FormedibleValidationResult = string | null | undefined | false;
 
+export interface FormedibleStandardFieldSchema {
+  readonly '~standard': {
+    readonly version: 1;
+    readonly validate: (value: unknown) => unknown | Promise<unknown>;
+  };
+}
+
 export interface FormedibleFieldValidationContext<TFormValues extends FormedibleFormValues = FormedibleFormValues> {
   readonly value: unknown;
   readonly values: TFormValues;
@@ -136,6 +143,7 @@ export interface FormedibleFieldValidationContext<TFormValues extends Formedible
 
 export type FormedibleFieldValidation<TFormValues extends FormedibleFormValues = FormedibleFormValues> =
   | ((value: unknown, values: TFormValues, context: FormedibleFieldValidationContext<TFormValues>) => FormedibleValidationResult)
+  | FormedibleStandardFieldSchema
   | {
       readonly validator: (value: unknown, values: TFormValues) => FormedibleValidationResult;
       readonly message?: string;

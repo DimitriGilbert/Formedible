@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 import type { FormedibleFieldConfig, FormedibleNumberConfig, FormediblePasswordConfig, NormalizedFieldConfig } from '../../../packages/formedible/src/lib/formedible/types';
 
 interface CompatibilityFormValues extends Record<string, unknown> {
@@ -121,6 +123,12 @@ const helpSupportsLegacyTooltip = {
   help: { tooltip: 'Personalization helper text' },
 } satisfies FormedibleFieldConfig<CompatibilityFormValues>;
 
+const directSchemaValidationSupportsLegacyZodFields = {
+  name: 'email',
+  type: 'email',
+  validation: z.string().email(),
+} satisfies FormedibleFieldConfig<CompatibilityFormValues>;
+
 const numberConfigPrecisionIsIntentionallyUnsupported = {
   name: 'legacyNumberPrecision',
   type: 'number',
@@ -142,6 +150,7 @@ export {
   compatibilityFields,
   customFieldKeepsArbitraryProps,
   datalistSupportsLegacySuggestions,
+  directSchemaValidationSupportsLegacyZodFields,
   emailConfigIsIntentionallyUnsupported,
   explicitNumberConfig,
   explicitPasswordConfig,

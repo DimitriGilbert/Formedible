@@ -135,6 +135,42 @@ test('field-level validation uses TanStack field validators', () => {
   assert.equal(onChange(context('admin', { ...validValues, username: 'admin' })), 'Username is reserved');
 });
 
+test('field-level direct schema validation returns field errors without calling object validator properties', () => {
+  const validators = buildFieldValidators<ValidationValues, string>(
+    fieldConfig({
+      name: 'username',
+      validation: z.string().min(3, 'Username must be at least 3 characters'),
+    }),
+    undefined,
+    undefined,
+    undefined,
+  );
+
+  const onChange = validators.onChange as unknown as SyncRunner<ValidationValues>;
+
+  assert.equal(onChange(context('ab', { ...validValues, username: 'ab' })), 'Username must be at least 3 characters');
+  assert.equal(onChange(context('abcd', { ...validValues, username: 'abcd' })), undefined);
+});
+
+test('field-level validation object behavior remains supported', () => {
+  const validators = buildFieldValidators<ValidationValues, string>(
+    fieldConfig({
+      name: 'username',
+      validation: {
+        validator: (value) => (value === 'root' ? false : undefined),
+        message: 'Username is not allowed',
+      },
+    }),
+    undefined,
+    undefined,
+    undefined,
+  );
+
+  const onChange = validators.onChange as unknown as SyncRunner<ValidationValues>;
+
+  assert.equal(onChange(context('root', { ...validValues, username: 'root' })), 'Username is not allowed');
+});
+
 test('top-level schema validation resolves field errors without custom state', () => {
   const schema = z.object({
     email: z.string().email('Schema email error'),

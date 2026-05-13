@@ -6,6 +6,7 @@ import type {
   FormedibleCrossFieldValidation,
   FormedibleFieldValidation,
   FormedibleFormValues,
+  FormedibleStandardFieldSchema,
   FormedibleValidationResult,
   NormalizedFieldConfig,
 } from '@/lib/formedible/types';
@@ -94,7 +95,57 @@ function toStandardSchema<TFormValues extends FormedibleFormValues>(schema: unkn
     return undefined;
   }
 
+  if (typeof standard.validate !== 'function') {
+    return undefined;
+  }
+
   return schema as StandardSchemaV1<TFormValues, unknown>;
+}
+
+function toStandardFieldSchema(schema: unknown): FormedibleStandardFieldSchema | undefined {
+  if (typeof schema !== 'object' || schema === null || !('~standard' in schema)) {
+    return undefined;
+  }
+
+  const standard = schema['~standard'];
+
+  if (typeof standard !== 'object' || standard === null || !('version' in standard) || standard.version !== 1 || !('validate' in standard)) {
+    return undefined;
+  }
+
+  if (typeof standard.validate !== 'function') {
+    return undefined;
+  }
+
+  return schema as FormedibleStandardFieldSchema;
+}
+
+function isPromiseLike(value: unknown): value is PromiseLike<unknown> {
+  return typeof value === 'object' && value !== null && 'then' in value && typeof value.then === 'function';
+}
+
+function validationIssues(result: unknown): readonly unknown[] | undefined {
+  if (typeof result !== 'object' || result === null || !('issues' in result) || !Array.isArray(result.issues)) {
+    return undefined;
+  }
+
+  return result.issues;
+}
+
+function schemaValidationMessage(schema: FormedibleStandardFieldSchema, value: unknown): string | undefined {
+  const result = schema['~standard'].validate(value);
+
+  if (isPromiseLike(result)) {
+    return undefined;
+  }
+
+  return formatValidationError(validationIssues(result));
+}
+
+function isFieldValidationObject<TFormValues extends FormedibleFormValues>(
+  validation: FormedibleFieldValidation<TFormValues>,
+): validation is Extract<FormedibleFieldValidation<TFormValues>, { readonly validator: unknown }> {
+  return typeof validation === 'object' && validation !== null && 'validator' in validation && typeof validation.validator === 'function';
 }
 
 function resultToMessage(result: FormedibleValidationResult, fallback?: string): string | undefined {
@@ -169,6 +220,16 @@ function runFieldValidation<TFormValues extends FormedibleFormValues>(
 
   if (typeof validation === 'function') {
     return resultToMessage(validation(value, values, { value, values, fieldName }), 'Invalid value');
+  }
+
+  const fieldSchema = toStandardFieldSchema(validation);
+
+  if (fieldSchema) {
+    return schemaValidationMessage(fieldSchema, value);
+  }
+
+  if (!isFieldValidationObject(validation)) {
+    return undefined;
   }
 
   return resultToMessage(validation.validator(value, values), validation.message);
