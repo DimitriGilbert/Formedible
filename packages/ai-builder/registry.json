@@ -55,6 +55,11 @@
           "target": "components/formedible/ai/chat-messages.tsx"
         },
         {
+          "path": "src/components/formedible/ai/conversation-history.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/ai/conversation-history.tsx"
+        },
+        {
           "path": "src/components/formedible/ai/markdown-message.tsx",
           "type": "registry:component",
           "target": "components/formedible/ai/markdown-message.tsx"
@@ -63,6 +68,16 @@
           "path": "src/components/formedible/ai/raw-output-panel.tsx",
           "type": "registry:component",
           "target": "components/formedible/ai/raw-output-panel.tsx"
+        },
+        {
+          "path": "src/components/formedible/ai/sidebar-content.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/ai/sidebar-content.tsx"
+        },
+        {
+          "path": "src/components/formedible/ai/sidebar-icons.tsx",
+          "type": "registry:component",
+          "target": "components/formedible/ai/sidebar-icons.tsx"
         },
         {
           "path": "src/lib/formedible/ai-adapters.ts",

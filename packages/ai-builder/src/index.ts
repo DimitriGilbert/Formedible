@@ -1,7 +1,10 @@
 export { AIBuilder } from '@/components/formedible/ai/ai-builder';
 export { AiFormRenderer, parseAiToFormedible } from '@/components/formedible/ai/ai-form-renderer';
 export { ChatInterface, generateAiFormCode } from '@/components/formedible/ai/chat-interface';
+export { ConversationHistory } from '@/components/formedible/ai/conversation-history';
 export { createDefaultProviderSecrets, createDefaultProviderSettings, providerOptions, ProviderSelection, validateProviderAccess } from '@/components/formedible/ai/provider-selection';
+export { SidebarContent } from '@/components/formedible/ai/sidebar-content';
+export { SidebarIcons } from '@/components/formedible/ai/sidebar-icons';
 export { createTanStackTextAdapter, DEFAULT_TANSTACK_AI_MODELS, SUPPORTED_TANSTACK_AI_PROVIDERS } from '@/lib/formedible/ai-adapters';
 export { normalizePersistedAiMessage, normalizePersistedAiMessages, toPersistedAiMessage, toTanStackMessageInput, toTanStackMessageInputs, toTanStackSystemPrompts } from '@/lib/formedible/ai-messages';
 export { extractFormCode } from '@/lib/formedible/ai-parser';

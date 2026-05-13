@@ -26,7 +26,7 @@ export function parseSafeMessageParts(value: unknown): readonly AiMessagePart[] 
     }
 
     if ((entry.type === 'text' || entry.type === 'thinking') && typeof entry.text === 'string') {
-      parts.push({ type: entry.type, text: entry.text });
+      parts.push({ type: entry.type, text: redactSecretString(entry.text) });
       continue;
     }
 
@@ -84,8 +84,12 @@ export function redactUnknown(value: unknown): AiJsonValue {
 }
 
 export function parseSafeJsonValue(value: unknown): AiJsonValue | undefined {
-  if (value === null || typeof value === 'string' || typeof value === 'boolean') {
+  if (value === null || typeof value === 'boolean') {
     return value;
+  }
+
+  if (typeof value === 'string') {
+    return redactSecretString(value);
   }
 
   if (typeof value === 'number') {
@@ -148,7 +152,7 @@ function parseSafeStreamEvent(value: unknown): AiStreamEvent | undefined {
   if ((value.type === 'text-delta' || value.type === 'thinking-delta') && typeof value.delta === 'string') {
     return {
       type: value.type,
-      delta: value.delta,
+      delta: redactSecretString(value.delta),
       ...(isSerializableUnknown(value.raw) ? { raw: redactUnknown(value.raw) } : {}),
       receivedAt,
     };
@@ -196,8 +200,8 @@ function parseSafeErrorInfo(value: unknown): AiErrorInfo | undefined {
   }
 
   return {
-    message: value.message,
-    ...(typeof value.code === 'string' ? { code: value.code } : {}),
+    message: redactSecretString(value.message),
+    ...(typeof value.code === 'string' ? { code: redactSecretString(value.code) } : {}),
     ...(typeof value.recoverable === 'boolean' ? { recoverable: value.recoverable } : {}),
     ...(isSerializableUnknown(value.details) ? { details: redactUnknown(value.details) } : {}),
   };
@@ -273,4 +277,11 @@ function isSecretKey(key: string): boolean {
     || normalizedKey.includes('password')
     || normalizedKey.includes('bearer')
     || normalizedKey.includes('credential');
+}
+
+export function redactSecretString(value: string): string {
+  return value
+    .replace(/\bsk-[A-Za-z0-9_-]+\b/g, '[REDACTED]')
+    .replace(/\bBearer\s+[A-Za-z0-9._~+/=-]+\b/gi, 'Bearer [REDACTED]')
+    .replace(/\b(api[\s_-]?key|secret|token)\s*[:=]\s*[^\s,;"'`)}\]]+/gi, '$1=[REDACTED]');
 }

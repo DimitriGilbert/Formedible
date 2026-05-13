@@ -13,7 +13,7 @@ import type {
   ProviderSecrets,
   ProviderSettings,
 } from '@/lib/formedible/ai-types';
-import { parseSafeGenerationMetadata, parseSafeJsonRecord, parseSafeJsonRecordAllowEmpty, parseSafeJsonValue, parseSafeMessageParts, parseSafeStreamEvents, redactUnknown } from '@/lib/formedible/ai-safe-persistence';
+import { parseSafeGenerationMetadata, parseSafeJsonRecord, parseSafeJsonRecordAllowEmpty, parseSafeJsonValue, parseSafeMessageParts, parseSafeStreamEvents, redactSecretString, redactUnknown } from '@/lib/formedible/ai-safe-persistence';
 import type { ParsedFieldConfig, ParsedFormConfig } from '@/lib/formedible/parser-types';
 import type { FormedibleFieldOption, FormedibleFieldType } from '@/lib/formedible/types';
 
@@ -202,13 +202,17 @@ export function exportConversation(conversation: AiConversation): AiConversation
 export function createConversation(messages: readonly AiMessage[], formCode?: string, existingConversation?: AiConversation): AiConversation {
   const firstUserMessage = messages.find((message) => message.role === 'user');
   const now = Date.now();
+  const conversationId = existingConversation?.id ?? `conversation_${now}_${Math.random().toString(36).slice(2)}`;
   const nextFormCode = formCode || existingConversation?.formCode;
+  const generatedForms = createGeneratedFormSnapshots(conversationId, messages);
   const nextConversation = {
-    id: existingConversation?.id ?? `conversation_${now}_${Math.random().toString(36).slice(2)}`,
+    id: conversationId,
     title: existingConversation?.title || firstUserMessage?.content.slice(0, 48) || 'New AI form',
     messages,
     createdAt: existingConversation?.createdAt ?? now,
     updatedAt: now,
+    ...(generatedForms.length === 0 ? {} : { generatedForms }),
+    ...(generatedForms.at(-1)?.id ? { activeGeneratedFormId: generatedForms.at(-1)?.id } : {}),
   } satisfies Omit<AiConversation, 'formCode'>;
 
   return nextFormCode ? { ...nextConversation, formCode: nextFormCode } : nextConversation;
@@ -238,6 +242,30 @@ export function upsertConversation(
 export function getLastFormCode(messages: readonly AiMessage[]): string {
   const messageWithForm = [...messages].reverse().find((message) => message.formCode);
   return messageWithForm?.formCode ?? '';
+}
+
+function createGeneratedFormSnapshots(conversationId: string, messages: readonly AiMessage[]): readonly GeneratedFormSnapshot[] {
+  return messages.flatMap((message, index) => {
+    if (message.role !== 'assistant' || !message.formCode) {
+      return [];
+    }
+
+    const hasParseErrors = (message.parseErrors?.length ?? 0) > 0;
+    const status: GeneratedFormSnapshot['status'] = hasParseErrors ? 'parse-error' : message.formConfig ? 'parsed' : 'extracted';
+
+    return [{
+      id: `${conversationId}_form_${index}`,
+      conversationId,
+      messageId: message.id,
+      formCode: message.formCode,
+      ...(message.formConfig ? { formConfig: message.formConfig } : {}),
+      ...(message.parseErrors ? { parseErrors: message.parseErrors } : {}),
+      status,
+      createdAt: message.updatedAt ?? message.timestamp ?? message.createdAt ?? Date.now(),
+      ...(message.provider ? { provider: message.provider } : {}),
+      ...(message.model ? { model: message.model } : {}),
+    }];
+  });
 }
 
 function readProviderSettings(defaultProviderSettings: ProviderSettings): ProviderSettings {
@@ -388,7 +416,7 @@ function parseConversation(value: unknown): AiConversation | undefined {
   const metadata = parseConversationMetadata(value.metadata);
   const baseConversation = {
     id: value.id,
-    title: value.title,
+    title: redactSecretString(value.title),
     messages,
     createdAt,
     updatedAt,
@@ -428,9 +456,9 @@ function parseMessage(value: unknown): AiMessage | undefined {
   return {
     id: value.id,
     role: value.role,
-    content: value.content,
-    ...(typeof value.rawContent === 'string' ? { rawContent: value.rawContent } : {}),
-    ...(typeof value.thinking === 'string' ? { thinking: value.thinking } : {}),
+    content: redactSecretString(value.content),
+    ...(typeof value.rawContent === 'string' ? { rawContent: redactSecretString(value.rawContent) } : {}),
+    ...(typeof value.thinking === 'string' ? { thinking: redactSecretString(value.thinking) } : {}),
     ...(parts.length === 0 ? {} : { parts }),
     ...(events.length === 0 ? {} : { events }),
     ...(typeof value.formCode === 'string' ? { formCode: value.formCode } : {}),
@@ -767,9 +795,9 @@ function parseParseErrors(value: unknown): readonly AiParseError[] {
     }
 
     return [{
-      message: entry.message,
-      ...(typeof entry.code === 'string' ? { code: entry.code } : {}),
-      ...(typeof entry.field === 'string' ? { field: entry.field } : {}),
+      message: redactSecretString(entry.message),
+      ...(typeof entry.code === 'string' ? { code: redactSecretString(entry.code) } : {}),
+      ...(typeof entry.field === 'string' ? { field: redactSecretString(entry.field) } : {}),
       ...(parseNumber(entry.line) === undefined ? {} : { line: parseNumber(entry.line) }),
       ...(parseNumber(entry.column) === undefined ? {} : { column: parseNumber(entry.column) }),
       ...(parseSafeJsonValue(entry.details) === undefined ? {} : { details: redactUnknown(entry.details) }),
@@ -785,8 +813,8 @@ function parseConversationMetadata(value: unknown): AiConversationMetadata | und
   const values = parseSafeJsonRecord(value.values);
 
   return {
-    ...(typeof value.title === 'string' ? { title: value.title } : {}),
-    ...(typeof value.description === 'string' ? { description: value.description } : {}),
+    ...(typeof value.title === 'string' ? { title: redactSecretString(value.title) } : {}),
+    ...(typeof value.description === 'string' ? { description: redactSecretString(value.description) } : {}),
     ...(isAIProvider(value.activeProvider) ? { activeProvider: value.activeProvider } : {}),
     ...(typeof value.activeModel === 'string' ? { activeModel: value.activeModel } : {}),
     ...(values ? { values } : {}),

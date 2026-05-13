@@ -8,9 +8,12 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { AI_BUILDER_DEFAULT_MODE, AIBuilder, resolveInitialProviderAccess } from '@/components/formedible/ai/ai-builder';
 import { AiFormRenderer, parseAiToFormedible } from '@/components/formedible/ai/ai-form-renderer';
 import { generateAiFormCode, resolveMessageStatus } from '@/components/formedible/ai/chat-interface';
+import { ConversationHistory } from '@/components/formedible/ai/conversation-history';
 import { MarkdownMessage } from '@/components/formedible/ai/markdown-message';
 import { createDefaultProviderSecrets, createDefaultProviderSettings, providerOptions, validateProviderAccess } from '@/components/formedible/ai/provider-selection';
 import { RawOutputPanel } from '@/components/formedible/ai/raw-output-panel';
+import { SidebarContent } from '@/components/formedible/ai/sidebar-content';
+import { SidebarIcons } from '@/components/formedible/ai/sidebar-icons';
 import { createTanStackModelOptions, createTanStackTextAdapter, DEFAULT_TANSTACK_AI_MODELS, SUPPORTED_TANSTACK_AI_PROVIDERS } from '@/lib/formedible/ai-adapters';
 import { collectAiGenerationResult, streamAiResponse } from '@/lib/formedible/ai-generation';
 import { extractFormCode, parseAiToFormedible as parseAiCode } from '@/lib/formedible/ai-parser';
@@ -116,7 +119,10 @@ function installWindowStorage(storage: Storage): () => void {
 test('public AI builder exports are real components and functions', () => {
   assert.equal(typeof AIBuilder, 'function');
   assert.equal(typeof AiFormRenderer, 'function');
+  assert.equal(typeof ConversationHistory, 'function');
   assert.equal(typeof MarkdownMessage, 'function');
+  assert.equal(typeof SidebarContent, 'function');
+  assert.equal(typeof SidebarIcons, 'function');
   assert.equal(typeof parseAiToFormedible, 'function');
   assert.equal(AI_BUILDER_DEFAULT_MODE, 'client');
 });
@@ -403,16 +409,17 @@ test('AI builder storage validates unknown JSON and redacts secrets from exports
   const restoreWindow = installWindowStorage(storage);
   const conversation: AiConversation = {
     id: 'conversation-raw',
-    title: 'Raw output',
+    title: 'Raw output sk-title-secret',
     messages: [
       {
         id: 'assistant-raw',
         role: 'assistant',
-        content: 'Here is the form',
-        rawContent: 'raw text',
-        thinking: 'reasoning text',
+        content: 'Here is the form with API key sk-secret',
+        rawContent: 'raw text token=secret-token',
+        thinking: 'reasoning text Bearer secret-token',
+        parts: [{ type: 'thinking', text: 'thinking with secret=secret-string' }],
         events: [
-          { type: 'text-delta', delta: 'raw text', raw: { apiKey: 'secret-key', safe: 'value' }, receivedAt: 10 },
+          { type: 'text-delta', delta: 'raw text api_key=secret-key', raw: { apiKey: 'secret-key', safe: 'value' }, receivedAt: 10 },
           { type: 'finish', finishReason: 'stop', usage: { outputTokens: 12 }, receivedAt: 11 },
         ],
         formCode: sampleFormCode,
@@ -444,15 +451,19 @@ test('AI builder storage validates unknown JSON and redacts secrets from exports
 
     const persistedState = readPersistedAIBuilderState(createDefaultProviderSettings());
     assert.equal(persistedState.conversations.length, 1);
-    assert.equal(persistedState.conversations[0]?.messages[0]?.rawContent, 'raw text');
-    assert.equal(persistedState.conversations[0]?.messages[0]?.thinking, 'reasoning text');
+    assert.equal(persistedState.conversations[0]?.messages[0]?.rawContent, 'raw text token=[REDACTED]');
+    assert.equal(persistedState.conversations[0]?.messages[0]?.thinking, 'reasoning text Bearer [REDACTED]');
     assert.equal(persistedState.conversations[0]?.messages[0]?.status, 'completed');
 
     const exportedConversation = exportConversation(conversation);
     const exportedJson = JSON.stringify(exportedConversation);
 
     assert.match(exportedJson, /\[REDACTED\]/);
-    assert.doesNotMatch(exportedJson, /secret-key|secret-token/);
+    assert.match(exportedJson, /raw text/);
+    assert.match(exportedJson, /reasoning text/);
+    assert.match(exportedJson, /form-1/);
+    assert.match(exportedJson, /Parse warning/);
+    assert.doesNotMatch(exportedJson, /sk-secret|secret-key|secret-token|secret-string|sk-title-secret/);
   } finally {
     restoreWindow();
   }
@@ -805,6 +816,54 @@ test('conversation updates reuse the synchronously created conversation for one 
   assert.equal(secondUpdate.conversationId, firstUpdate.conversationId);
   assert.deepEqual(secondUpdate.conversations[0]?.messages, [userMessage, assistantMessage]);
   assert.equal(secondUpdate.conversations[0]?.formCode, sampleFormCode);
+  assert.equal(secondUpdate.conversations[0]?.generatedForms?.[0]?.formCode, sampleFormCode);
+  assert.equal(secondUpdate.conversations[0]?.generatedForms?.[0]?.messageId, assistantMessage.id);
+});
+
+test('sidebar history and settings render without backend or settings UI bypasses', () => {
+  const providerSettings = createDefaultProviderSettings('openrouter');
+  const providerSecrets: ProviderSecrets = { provider: 'openrouter', apiKey: '' };
+  const conversation: AiConversation = {
+    id: 'conversation-sidebar',
+    title: 'Sidebar conversation',
+    messages: [{ id: 'assistant-sidebar', role: 'assistant', content: 'Raw response', rawContent: 'Raw response', status: 'completed' }],
+    createdAt: 1,
+    updatedAt: 2,
+  };
+
+  const historyMarkup = renderToStaticMarkup(createElement(ConversationHistory, {
+    conversations: [conversation],
+    currentConversationId: conversation.id,
+    onSelectConversation: () => undefined,
+    onDeleteConversation: () => undefined,
+    onNewConversation: () => undefined,
+    onExportConversation: () => undefined,
+  }));
+  const modelMarkup = renderToStaticMarkup(createElement(SidebarContent, {
+    activeView: 'model',
+    isCollapsed: false,
+    conversations: [conversation],
+    currentConversation: conversation,
+    currentConversationId: conversation.id,
+    providerSettings,
+    providerSecrets,
+    onProviderAccessChange: () => undefined,
+    onSelectConversation: () => undefined,
+    onDeleteConversation: () => undefined,
+    onNewConversation: () => undefined,
+    onExportConversation: () => undefined,
+  }));
+  const iconsMarkup = renderToStaticMarkup(createElement(SidebarIcons, {
+    isCollapsed: false,
+    activeView: 'history',
+    onToggleCollapse: () => undefined,
+    onViewChange: () => undefined,
+  }));
+
+  assert.match(historyMarkup, /Sidebar conversation/);
+  assert.match(modelMarkup, /Model settings/);
+  assert.match(modelMarkup, /Current generation continues/);
+  assert.match(iconsMarkup, /AI builder sidebar/);
 });
 
 test('conversation history selection updates existing conversation and new conversation starts separately', () => {
@@ -835,9 +894,12 @@ test('AI builder install source uses lower-level installed aliases', () => {
     'src/components/formedible/ai/ai-form-renderer.tsx',
     'src/components/formedible/ai/chat-interface.tsx',
     'src/components/formedible/ai/chat-messages.tsx',
+    'src/components/formedible/ai/conversation-history.tsx',
     'src/components/formedible/ai/markdown-message.tsx',
     'src/components/formedible/ai/provider-selection.tsx',
     'src/components/formedible/ai/raw-output-panel.tsx',
+    'src/components/formedible/ai/sidebar-content.tsx',
+    'src/components/formedible/ai/sidebar-icons.tsx',
     'src/lib/formedible/ai-adapters.ts',
     'src/lib/formedible/ai-errors.ts',
     'src/lib/formedible/ai-generation.ts',

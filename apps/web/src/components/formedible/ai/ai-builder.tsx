@@ -5,8 +5,10 @@ import { useEffect, useRef, useState } from 'react';
 import { AiFormRenderer } from '@/components/formedible/ai/ai-form-renderer';
 import { ChatInterface } from '@/components/formedible/ai/chat-interface';
 import { createDefaultProviderSecrets, createDefaultProviderSettings, ProviderSelection, validateProviderAccess } from '@/components/formedible/ai/provider-selection';
+import { SidebarContent } from '@/components/formedible/ai/sidebar-content';
+import { SidebarIcons, type SidebarView } from '@/components/formedible/ai/sidebar-icons';
 import { Button } from '@/components/ui/button';
-import { getLastFormCode, persistConversations, persistProviderSettings, persistUiState, readPersistedAIBuilderState, upsertConversation } from '@/lib/formedible/ai-storage';
+import { exportConversation, getLastFormCode, persistConversations, persistProviderSettings, persistUiState, readPersistedAIBuilderState, upsertConversation } from '@/lib/formedible/ai-storage';
 import type { AiConversation, AiMessage, AIBuilderMode, ProviderSecrets, ProviderSettings } from '@/lib/formedible/ai-types';
 import type { FormedibleFormValues } from '@/lib/formedible/types';
 import { cn } from '@/lib/utils';
@@ -55,6 +57,8 @@ export function AIBuilder({
   const [internalProviderAccess, setInternalProviderAccess] = useState<AIBuilderProviderAccess>(() => resolveInitialProviderAccess(controlledProviderSettings, controlledProviderSecrets));
   const [conversations, setConversations] = useState<readonly AiConversation[]>(() => readPersistedAIBuilderState(createDefaultProviderSettings()).conversations);
   const [currentConversationId, setCurrentConversationId] = useState<string | undefined>(() => readPersistedAIBuilderState(createDefaultProviderSettings()).currentConversationId);
+  const [activeSidebarView, setActiveSidebarView] = useState<SidebarView | null>('history');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const currentConversationIdRef = useRef<string | undefined>(currentConversationId);
   const providerSettings = controlledProviderSettings ?? internalProviderAccess.settings;
   const providerSecrets = controlledProviderSecrets ?? (internalProviderAccess.secrets.provider === providerSettings.provider ? internalProviderAccess.secrets : createDefaultProviderSecrets(providerSettings.provider));
@@ -121,40 +125,87 @@ export function AIBuilder({
     setCurrentConversationId(conversationId);
   }
 
+  function deleteConversation(conversationId: string) {
+    setConversations((previousConversations) => {
+      const nextConversations = previousConversations.filter((conversation) => conversation.id !== conversationId);
+
+      if (currentConversationIdRef.current === conversationId) {
+        const nextCurrentConversationId = nextConversations.at(-1)?.id;
+        currentConversationIdRef.current = nextCurrentConversationId;
+        setCurrentConversationId(nextCurrentConversationId);
+      }
+
+      return nextConversations;
+    });
+  }
+
+  function downloadConversation(conversation: AiConversation) {
+    if (typeof document === 'undefined' || typeof URL === 'undefined') {
+      return;
+    }
+
+    const exportedConversation = exportConversation(conversation);
+    const fileName = `${conversation.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'formedible-conversation'}.json`;
+    const blob = new Blob([JSON.stringify(exportedConversation, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+
+    link.href = url;
+    link.download = fileName;
+    link.rel = 'noopener';
+    document.body.append(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  function toggleSidebarCollapse() {
+    setIsSidebarCollapsed((previousValue) => !previousValue);
+  }
+
   return (
-    <section className={cn('grid min-h-[640px] gap-4 lg:grid-cols-[360px_1fr]', className)} data-conversation-id={currentConversationId ?? 'new'}>
-      <div className="flex min-h-0 flex-col gap-4">
-        <ProviderSelection settings={providerSettings} secrets={providerSecrets} onChange={updateProviderAccess} />
-        {providerValidationError ? <p className="rounded-md border border-destructive/40 p-2 text-sm text-destructive">{providerValidationError}</p> : null}
-        <div className="grid gap-2 rounded-lg border p-3">
-          <Button type="button" variant="outline" onClick={startNewConversation}>New conversation</Button>
-          {conversations.length > 0 ? (
-            <div className="grid gap-1">
-              {conversations.map((conversation) => (
-                <Button key={conversation.id} type="button" variant={conversation.id === currentConversationId ? 'default' : 'ghost'} onClick={() => selectConversation(conversation.id)}>
-                  {conversation.title}
-                </Button>
-              ))}
-            </div>
-          ) : null}
+    <section className={cn('flex min-h-[640px] overflow-hidden rounded-lg border bg-background', className)} data-conversation-id={currentConversationId ?? 'new'}>
+      <SidebarIcons isCollapsed={isSidebarCollapsed} activeView={activeSidebarView} onToggleCollapse={toggleSidebarCollapse} onViewChange={setActiveSidebarView} />
+      <SidebarContent
+        activeView={activeSidebarView}
+        isCollapsed={isSidebarCollapsed}
+        conversations={conversations}
+        currentConversation={currentConversation}
+        currentConversationId={currentConversationId}
+        providerSettings={providerSettings}
+        providerSecrets={providerSecrets}
+        onProviderAccessChange={updateProviderAccess}
+        onSelectConversation={selectConversation}
+        onDeleteConversation={deleteConversation}
+        onNewConversation={startNewConversation}
+        onExportConversation={downloadConversation}
+      />
+      <div className="grid min-w-0 flex-1 gap-4 p-4 lg:grid-cols-[minmax(0,0.95fr)_minmax(360px,1.05fr)]">
+        <div className="flex min-h-0 flex-col gap-4">
+          {isSidebarCollapsed ? <ProviderSelection settings={providerSettings} secrets={providerSecrets} onChange={updateProviderAccess} /> : null}
+          {providerValidationError ? <p className="rounded-md border border-destructive/40 p-2 text-sm text-destructive">{providerValidationError}</p> : null}
+          <div className="flex items-center justify-between gap-2 rounded-lg border p-2">
+            <p className="truncate text-sm text-muted-foreground">{currentConversation ? currentConversation.title : 'New conversation'}</p>
+            <Button type="button" variant="outline" size="sm" onClick={startNewConversation}>New conversation</Button>
+          </div>
+          <ChatInterface
+            providerSettings={providerSettings}
+            providerSecrets={providerSecrets}
+            mode={mode}
+            messages={messages}
+            onMessagesChange={updateMessages}
+            onFormGenerated={updateFormCode}
+            conversationId={currentConversationId}
+            className="min-h-[420px]"
+          />
         </div>
-        <ChatInterface
-          providerSettings={providerSettings}
-          providerSecrets={providerSecrets}
-          mode={mode}
-          messages={messages}
-          onMessagesChange={updateMessages}
-          onFormGenerated={updateFormCode}
-          conversationId={currentConversationId}
-          className="min-h-[420px]"
-        />
-      </div>
-      <div className="min-h-0 rounded-lg border p-4">
-        {formCode ? (
-          <AiFormRenderer code={formCode} onSubmit={onFormSubmit} className="space-y-4" />
-        ) : (
-          <div className="flex h-full min-h-[320px] items-center justify-center text-sm text-muted-foreground">Generated forms appear here.</div>
-        )}
+        <div className="min-h-0 rounded-lg border p-4">
+          {formCode ? (
+            <AiFormRenderer code={formCode} onSubmit={onFormSubmit} className="space-y-4" />
+          ) : (
+            <div className="flex h-full min-h-[320px] items-center justify-center text-sm text-muted-foreground">Generated forms appear here.</div>
+          )}
+        </div>
       </div>
     </section>
   );
