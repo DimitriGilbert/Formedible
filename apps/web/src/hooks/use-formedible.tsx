@@ -204,6 +204,8 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
                 onChange: (nextValue) => field.handleChange(nextValue as FieldValueUpdate),
               }}
               renderField={renderField}
+              defaultComponent={config.defaultComponents?.[renderConfig.type]}
+              globalWrapper={config.globalWrapper}
             />
           );
         }}

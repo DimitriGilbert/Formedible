@@ -1,6 +1,17 @@
 import { z } from 'zod';
 
-import type { FormedibleAutocompleteConfig, FormedibleColorConfig, FormedibleFieldConfig, FormedibleMaskedInputConfig, FormedibleNumberConfig, FormediblePasswordConfig, NormalizedFieldConfig } from '../../../packages/formedible/src/lib/formedible/types';
+import type {
+  FormedibleAutocompleteConfig,
+  FormedibleColorConfig,
+  FormedibleFieldComponent,
+  FormedibleFieldConfig,
+  FormedibleFieldWrapper,
+  FormedibleMaskedInputConfig,
+  FormedibleNumberConfig,
+  FormediblePasswordConfig,
+  NormalizedFieldConfig,
+  UseFormedibleOptions,
+} from '../../../packages/formedible/src/lib/formedible/types';
 
 interface CompatibilityFormValues extends Record<string, unknown> {
   name: string;
@@ -143,6 +154,65 @@ const directSchemaValidationSupportsLegacyZodFields = {
   validation: z.string().email(),
 } satisfies FormedibleFieldConfig<CompatibilityFormValues>;
 
+const compatibilityFieldComponent: FormedibleFieldComponent<CompatibilityFormValues> = ({ fieldConfig, field, renderField }) => {
+  field.onChange(field.value);
+  renderField?.({ ...fieldConfig, name: 'email' });
+
+  return null;
+};
+
+const compatibilityFieldWrapper: FormedibleFieldWrapper<CompatibilityFormValues> = ({ fieldConfig, field, children }) => {
+  field.onBlur();
+
+  return fieldConfig.name === field.name ? children : null;
+};
+
+const customizationExtensionPoints = {
+  fields: [
+    {
+      name: 'name',
+      type: 'text',
+      component: compatibilityFieldComponent,
+      wrapper: compatibilityFieldWrapper,
+    },
+  ],
+  defaultComponents: {
+    email: compatibilityFieldComponent,
+  },
+  globalWrapper: compatibilityFieldWrapper,
+  formOptions: {
+    defaultValues: {
+      name: '',
+      email: '',
+      urgent: false,
+      skills: [],
+    },
+  },
+} satisfies UseFormedibleOptions<CompatibilityFormValues>;
+
+const customizationExtensionPointsRejectInvalidDefaultComponentKey = {
+  fields: [{ name: 'name', type: 'text' }],
+  defaultComponents: {
+    // @ts-expect-error unknownFieldType is not a normalized Formedible field type.
+    unknownFieldType: compatibilityFieldComponent,
+  },
+  formOptions: {
+    defaultValues: {
+      name: '',
+      email: '',
+      urgent: false,
+      skills: [],
+    },
+  },
+} satisfies UseFormedibleOptions<CompatibilityFormValues>;
+
+const customizationExtensionPointsRejectInvalidWrapperContract = {
+  name: 'email',
+  type: 'email',
+  // @ts-expect-error field wrapper props require the rendered field children contract.
+  wrapper: ({ fieldConfig, field }: { readonly fieldConfig: NormalizedFieldConfig<CompatibilityFormValues>; readonly field: string }) => null,
+} satisfies FormedibleFieldConfig<CompatibilityFormValues>;
+
 const autocompleteConfigSupportsLegacyOptions = {
   name: 'country',
   type: 'autocomplete',
@@ -215,6 +285,11 @@ export {
   datalistSupportsLegacySuggestions,
   directSchemaValidationSupportsLegacyZodFields,
   emailConfigIsIntentionallyUnsupported,
+  compatibilityFieldComponent,
+  compatibilityFieldWrapper,
+  customizationExtensionPoints,
+  customizationExtensionPointsRejectInvalidDefaultComponentKey,
+  customizationExtensionPointsRejectInvalidWrapperContract,
   explicitAutocompleteConfig,
   explicitMaskedInputConfig,
   explicitNumberConfig,

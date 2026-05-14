@@ -168,6 +168,144 @@ test('job application basic fields render shadcn primitives', () => {
   assert.match(markup, /data-slot="textarea"/);
 });
 
+test('field-level component overrides internal registry rendering', () => {
+  function ExampleForm() {
+    const { Form } = useFormedible<FormedibleFormValues>({
+      fields: [
+        {
+          name: 'firstName',
+          type: 'text',
+          label: 'First name',
+          component: ({ fieldConfig, field }) => (
+            <div data-custom-field="field-component">
+              {fieldConfig.label}:{field.name}
+            </div>
+          ),
+        },
+      ],
+      formOptions: {
+        defaultValues: { firstName: '' },
+        onSubmit: () => undefined,
+      },
+    });
+
+    return <Form />;
+  }
+
+  const markup = renderToStaticMarkup(<ExampleForm />);
+
+  assert.match(markup, /data-custom-field="field-component"/);
+  assert.match(markup, /First name:firstName/);
+  assert.doesNotMatch(markup, /data-slot="input"/);
+});
+
+test('field-level wrapper wraps one field without wrapping siblings', () => {
+  function ExampleForm() {
+    const { Form } = useFormedible<FormedibleFormValues>({
+      fields: [
+        {
+          name: 'wrappedName',
+          type: 'text',
+          label: 'Wrapped name',
+          wrapper: ({ children, field }) => <section data-field-wrapper={field.name}>{children}</section>,
+        },
+        { name: 'plainName', type: 'text', label: 'Plain name' },
+      ],
+      formOptions: {
+        defaultValues: { wrappedName: '', plainName: '' },
+        onSubmit: () => undefined,
+      },
+    });
+
+    return <Form />;
+  }
+
+  const markup = renderToStaticMarkup(<ExampleForm />);
+
+  assert.match(markup, /<section data-field-wrapper="wrappedName">/);
+  assert.match(markup, /Wrapped name/);
+  assert.match(markup, /Plain name/);
+  assert.doesNotMatch(markup, /data-field-wrapper="plainName"/);
+});
+
+test('form-level defaultComponents map field types while preserving registry fallback', () => {
+  function ExampleForm() {
+    const { Form } = useFormedible<FormedibleFormValues>({
+      fields: [
+        { name: 'customText', type: 'text', label: 'Custom text' },
+        { name: 'regularEmail', type: 'email', label: 'Regular email' },
+      ],
+      defaultComponents: {
+        text: ({ fieldConfig, field }) => (
+          <div data-default-component="text">
+            {fieldConfig.label}:{field.name}
+          </div>
+        ),
+      },
+      formOptions: {
+        defaultValues: { customText: '', regularEmail: '' },
+        onSubmit: () => undefined,
+      },
+    });
+
+    return <Form />;
+  }
+
+  const markup = renderToStaticMarkup(<ExampleForm />);
+
+  assert.match(markup, /data-default-component="text"/);
+  assert.match(markup, /Custom text:customText/);
+  assert.match(markup, /Regular email/);
+  assert.match(markup, /data-slot="input"/);
+});
+
+test('form-level globalWrapper wraps all rendered fields', () => {
+  function ExampleForm() {
+    const { Form } = useFormedible<FormedibleFormValues>({
+      fields: [
+        { name: 'firstName', type: 'text', label: 'First name' },
+        { name: 'lastName', type: 'text', label: 'Last name' },
+      ],
+      globalWrapper: ({ children, field }) => <div data-global-wrapper={field.name}>{children}</div>,
+      formOptions: {
+        defaultValues: { firstName: '', lastName: '' },
+        onSubmit: () => undefined,
+      },
+    });
+
+    return <Form />;
+  }
+
+  const markup = renderToStaticMarkup(<ExampleForm />);
+
+  assert.match(markup, /data-global-wrapper="firstName"/);
+  assert.match(markup, /data-global-wrapper="lastName"/);
+  assert.match(markup, /First name/);
+  assert.match(markup, /Last name/);
+});
+
+test('registry rendering remains stable without customization extension points', () => {
+  function ExampleForm() {
+    const { Form } = useFormedible<FormedibleFormValues>({
+      fields: [{ name: 'email', type: 'email', label: 'Email' }],
+      formOptions: {
+        defaultValues: { email: '' },
+        onSubmit: () => undefined,
+      },
+    });
+
+    return <Form />;
+  }
+
+  const markup = renderToStaticMarkup(<ExampleForm />);
+
+  assert.match(markup, /data-slot="input"/);
+  assert.match(markup, /type="email"/);
+  assert.doesNotMatch(markup, /data-custom-field/);
+  assert.doesNotMatch(markup, /data-field-wrapper/);
+  assert.doesNotMatch(markup, /data-global-wrapper/);
+});
+
 test('invalid fields expose field and control invalid states', () => {
   const markup = renderToStaticMarkup(
     <TextField

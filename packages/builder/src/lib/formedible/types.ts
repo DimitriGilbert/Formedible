@@ -211,6 +211,16 @@ export interface FormedibleInlineValidation<TFormValues extends FormedibleFormVa
   readonly showSuccess?: boolean;
 }
 
+export type FormedibleFieldComponent<TFormValues extends FormedibleFormValues = FormedibleFormValues> = ComponentType<FormedibleFieldRenderProps<TFormValues>>;
+
+export interface FormedibleFieldWrapperProps<TFormValues extends FormedibleFormValues = FormedibleFormValues> {
+  readonly fieldConfig: NormalizedFieldConfig<TFormValues>;
+  readonly field: FormedibleFieldController;
+  readonly children: ReactNode;
+}
+
+export type FormedibleFieldWrapper<TFormValues extends FormedibleFormValues = FormedibleFormValues> = ComponentType<FormedibleFieldWrapperProps<TFormValues>>;
+
 export interface FormedibleFieldConfig<TFormValues extends FormedibleFormValues = FormedibleFormValues> {
   readonly name: Extract<keyof TFormValues, string> | string;
   readonly type?: FormedibleFieldType;
@@ -261,6 +271,8 @@ export interface FormedibleFieldConfig<TFormValues extends FormedibleFormValues 
   readonly fileConfig?: FormedibleFileConfig;
   readonly validation?: FormedibleFieldValidation<TFormValues>;
   readonly inlineValidation?: FormedibleInlineValidation<TFormValues>;
+  readonly component?: FormedibleFieldComponent<TFormValues>;
+  readonly wrapper?: FormedibleFieldWrapper<TFormValues>;
   /**
    * Arbitrary props are retained for custom renderers and metadata only.
    * Known behavior configuration must use supported nested config objects, such as
@@ -321,6 +333,8 @@ export interface NormalizedFieldConfig<TFormValues extends FormedibleFormValues 
   readonly fileConfig?: FormedibleFileConfig;
   readonly validation?: FormedibleFieldValidation<TFormValues>;
   readonly inlineValidation?: FormedibleInlineValidation<TFormValues>;
+  readonly component?: FormedibleFieldComponent<TFormValues>;
+  readonly wrapper?: FormedibleFieldWrapper<TFormValues>;
   readonly [customProp: string]: unknown;
 }
 
@@ -394,6 +408,8 @@ export interface UseFormedibleOptions<TFormValues extends FormedibleFormValues =
   readonly progress?: FormedibleProgressConfig;
   readonly persistence?: FormediblePersistenceConfig<TFormValues>;
   readonly analytics?: FormedibleAnalyticsConfig<TFormValues>;
+  readonly defaultComponents?: Partial<Record<NormalizedFieldType, FormedibleFieldComponent<TFormValues>>>;
+  readonly globalWrapper?: FormedibleFieldWrapper<TFormValues>;
   readonly submitLabel?: ReactNode;
   readonly nextLabel?: ReactNode;
   readonly previousLabel?: ReactNode;
@@ -429,6 +445,8 @@ export interface FormedibleFieldRenderProps<TFormValues extends FormedibleFormVa
   readonly fieldConfig: NormalizedFieldConfig<TFormValues>;
   readonly field: FormedibleFieldController;
   readonly renderField?: (fieldConfig: NormalizedFieldConfig<TFormValues>, options?: FormedibleNestedRenderOptions) => ReactNode;
+  readonly defaultComponent?: FormedibleFieldComponent<TFormValues>;
+  readonly globalWrapper?: FormedibleFieldWrapper<TFormValues>;
 }
 
 export interface FormedibleDateConfig<TFormValues extends FormedibleFormValues = FormedibleFormValues> {
