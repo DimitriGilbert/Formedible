@@ -1,4 +1,4 @@
-import { Fragment, useId, useRef } from 'react';
+import { Fragment, useEffect, useId, useRef } from 'react';
 import { useForm } from '@tanstack/react-form';
 import type { DeepKeys } from '@tanstack/react-form';
 import type { ReactNode } from 'react';
@@ -20,7 +20,7 @@ import { getValueAtFieldPath } from '@/lib/formedible/field-path';
 import { resolveDynamicText } from '@/lib/formedible/dynamic-text';
 import { normalizeFieldConfig } from '@/lib/formedible/normalize-field-config';
 import { normalizeOptions } from '@/lib/formedible/normalize-options';
-import type { FormedibleFieldSection, FormedibleFormValues, UseFormedibleOptions } from '@/lib/formedible/types';
+import type { FormedibleFieldSection, FormedibleFormApiContext, FormedibleFormValues, UseFormedibleOptions } from '@/lib/formedible/types';
 import type { NormalizedFieldConfig } from '@/lib/formedible/types';
 import { buildFieldValidators, buildFormValidators } from '@/lib/formedible/validation';
 import { formatValidationError } from '@/lib/formedible/zod-errors';
@@ -31,6 +31,7 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
   const fields = normalizedOptions.fields;
   const pageValidationStateRef = useRef<(pageNumber: number) => FormAnalyticsPageValidationState>(() => ({ hasErrors: false, completionPercentage: 0 }));
   const abandonContextRef = useRef<FormAnalyticsAbandonContext>({ completionPercentage: 0 });
+  const autoSubmitTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const analytics = useFormAnalytics(config.analytics, {
     getPageValidationState: (pageNumber) => pageValidationStateRef.current(pageNumber),
     getAbandonContext: () => abandonContextRef.current,
@@ -40,15 +41,53 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
     validators: buildFormValidators(config.schema, config.crossFieldValidation),
     onSubmit: async ({ value }) => {
       analytics.trackFormComplete(value as TFormValues);
-      await config.formOptions.onSubmit?.({ value });
+      await config.formOptions.onSubmit?.({ value, formApi: getFormApiContext(value as TFormValues) });
       clearStorage();
     },
   });
+
+  useEffect(() => {
+    return () => {
+      if (autoSubmitTimeoutRef.current !== undefined) {
+        clearTimeout(autoSubmitTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  function getFormApiContext(values: TFormValues = form.state.values): FormedibleFormApiContext<TFormValues> {
+    return {
+      state: { values },
+      handleSubmit: () => form.handleSubmit(),
+    };
+  }
+
+  function getValuesWithFieldUpdate(fieldName: string, nextValue: unknown): TFormValues {
+    return { ...form.state.values, [fieldName]: nextValue } as TFormValues;
+  }
+
+  function scheduleAutoSubmit() {
+    if (!config.autoSubmitOnChange) {
+      return;
+    }
+
+    if (autoSubmitTimeoutRef.current !== undefined) {
+      clearTimeout(autoSubmitTimeoutRef.current);
+    }
+
+    autoSubmitTimeoutRef.current = setTimeout(() => {
+      form.handleSubmit();
+    }, config.autoSubmitDebounceMs ?? 300);
+  }
+
+  function handlePageChange(context: { readonly fromPage: number; readonly toPage: number; readonly timeSpent: number }) {
+    analytics.trackPageChange(context);
+    config.onPageChange?.(context.toPage, context.toPage > context.fromPage ? 'next' : 'previous');
+  }
   const multiPage = useMultiPage({
     fields,
     pages: config.pages,
     values: form.state.values,
-    onPageChange: analytics.trackPageChange,
+    onPageChange: handlePageChange,
   });
   const tabs = useFormTabs({ fields, tabs: config.tabs, values: form.state.values });
   const { saveToStorage, loadFromStorage, clearStorage } = useFormPersistence(form, config.persistence, {
@@ -170,7 +209,8 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
   function renderField(fieldConfig: NormalizedFieldConfig<TFormValues>, options?: { readonly name?: string; readonly key?: string; readonly localValues?: FormedibleFormValues }) {
     const fieldName = options?.name ?? fieldConfig.name;
     const dynamicConfig = withDynamicText(fieldConfig, options?.localValues ?? form.state.values);
-    const renderConfig = fieldName === fieldConfig.name ? dynamicConfig : normalizeFieldConfig<TFormValues>({ ...dynamicConfig, name: fieldName });
+    const fieldDisabledConfig = config.disabled ? ({ ...dynamicConfig, disabled: true } satisfies NormalizedFieldConfig<TFormValues>) : dynamicConfig;
+    const renderConfig = fieldName === fieldConfig.name ? fieldDisabledConfig : normalizeFieldConfig<TFormValues>({ ...fieldDisabledConfig, name: fieldName });
     const localValues = options?.localValues;
 
     if (!shouldRenderField(fieldConfig, localValues)) {
@@ -196,12 +236,23 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
                 value: field.state.value,
                 formValues: localValues ?? form.state.values,
                 error,
-                onFocus: () => analytics.trackFieldFocus(fieldName),
+                onFocus: () => {
+                  analytics.trackFieldFocus(fieldName);
+                  config.formOptions.onFocus?.({ value: form.state.values, formApi: getFormApiContext() });
+                },
                 onBlur: () => {
                   field.handleBlur();
-                  analytics.trackFieldBlur(fieldName);
+                  const fieldErrors = field.state.meta.errors.map(formatValidationError).filter((message): message is string => message !== undefined);
+                  analytics.trackFieldBlur(fieldName, { isValid: fieldErrors.length === 0, errors: fieldErrors });
+                  config.formOptions.onBlur?.({ value: form.state.values, formApi: getFormApiContext() });
                 },
-                onChange: (nextValue) => field.handleChange(nextValue as FieldValueUpdate),
+                onChange: (nextValue) => {
+                  field.handleChange(nextValue as FieldValueUpdate);
+                  analytics.trackFieldChange(fieldName, nextValue);
+                  const nextValues = getValuesWithFieldUpdate(fieldName, nextValue);
+                  config.formOptions.onChange?.({ value: nextValues, formApi: getFormApiContext(nextValues) });
+                  scheduleAutoSubmit();
+                },
               }}
               renderField={renderField}
               defaultComponent={config.defaultComponents?.[renderConfig.type]}
@@ -276,17 +327,53 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
     );
   }
 
-  function Form({ className, ...props }: FormProps) {
+  function Form({ className, onBlur, onFocus, onInput, onInvalid, onKeyDown, onKeyUp, onReset, ...props }: FormProps) {
+    const isSubmitting = Boolean((form.state as { readonly isSubmitting?: boolean }).isSubmitting);
+    const controlsDisabled = Boolean(config.disabled || config.loading || isSubmitting);
+    const shouldShowSubmitButton = config.showSubmitButton !== false;
+
     return (
       <FormRoot
+        {...props}
         className={className}
+        aria-busy={config.loading ? true : undefined}
+        onBlur={(event) => {
+          onBlur?.(event);
+          config.onFormBlur?.(event, getFormApiContext());
+        }}
+        onFocus={(event) => {
+          onFocus?.(event);
+          config.onFormFocus?.(event, getFormApiContext());
+        }}
+        onInput={(event) => {
+          onInput?.(event);
+          config.onFormInput?.(event, getFormApiContext());
+        }}
+        onInvalid={(event) => {
+          onInvalid?.(event);
+          config.onFormInvalid?.(event, getFormApiContext());
+        }}
+        onKeyDown={(event) => {
+          onKeyDown?.(event);
+          config.onFormKeyDown?.(event, getFormApiContext());
+        }}
+        onKeyUp={(event) => {
+          onKeyUp?.(event);
+          config.onFormKeyUp?.(event, getFormApiContext());
+        }}
+        onReset={(event) => {
+          onReset?.(event);
+          config.formOptions.onReset?.({ value: form.state.values, formApi: getFormApiContext() });
+          config.onFormReset?.(event, getFormApiContext());
+          analytics.trackFormReset('reset');
+        }}
         onSubmit={(event) => {
           event.preventDefault();
           event.stopPropagation();
           form.handleSubmit();
         }}
-        {...props}
       >
+        <fieldset disabled={controlsDisabled} className="contents">
         <form.Subscribe selector={(state) => state.values}>
           {(values) => {
             const formValues = values as FormedibleFormValues;
@@ -321,14 +408,19 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
                     submitLabel={config.submitLabel ?? 'Submit'}
                     onPrevious={multiPage.goToPreviousPage}
                     onNext={multiPage.goToNextPage}
+                    disabled={controlsDisabled}
+                    showSubmitButton={shouldShowSubmitButton}
                   />
+                ) : shouldShowSubmitButton ? (
+                  <Button type="submit" disabled={controlsDisabled}>{config.submitLabel ?? 'Submit'}</Button>
                 ) : (
-                  <Button type="submit">{config.submitLabel ?? 'Submit'}</Button>
+                  undefined
                 )}
               </FormLayout>
             );
           }}
         </form.Subscribe>
+        </fieldset>
       </FormRoot>
     );
   }

@@ -2,14 +2,20 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { JSDOM } from 'jsdom';
+import { act } from 'react';
+import { createRoot } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
+import type { FocusEvent, FormEvent, InputEvent, KeyboardEvent, ReactElement } from 'react';
 
 import { NumberField } from '../../packages/formedible/src/components/formedible/fields/number-field';
 import { PasswordField } from '../../packages/formedible/src/components/formedible/fields/password-field';
 import { TextField } from '../../packages/formedible/src/components/formedible/fields/text-field';
 import { TextareaField } from '../../packages/formedible/src/components/formedible/fields/textarea-field';
+import { createFormAnalyticsTracker } from '../../packages/formedible/src/hooks/use-form-analytics';
 import { useFormedible } from '../../packages/formedible/src/hooks/use-formedible';
-import type { FormedibleFieldConfig, FormedibleFieldType, FormedibleFormValues } from '../../packages/formedible/src/lib/formedible/types';
+import type { FormProps } from '../../packages/formedible/src/components/formedible/form';
+import type { FormedibleFieldConfig, FormedibleFieldController, FormedibleFieldType, FormedibleFormValues } from '../../packages/formedible/src/lib/formedible/types';
 import {
   checkoutCompatibilityExample,
   contactCompatibilityExample,
@@ -91,6 +97,96 @@ function renderBasicExample(fields: readonly FieldDescriptor[]) {
   return renderToStaticMarkup(<ExampleForm />);
 }
 
+function renderFormOptionsExample(config: {
+  readonly disabled?: boolean;
+  readonly loading?: boolean;
+  readonly showSubmitButton?: boolean;
+}) {
+  function ExampleForm() {
+    const { Form } = useFormedible<FormedibleFormValues>({
+      fields: [{ name: 'email', type: 'email', label: 'Email' }],
+      formOptions: {
+        defaultValues: { email: '' },
+        onSubmit: () => undefined,
+      },
+      ...config,
+    });
+
+    return <Form />;
+  }
+
+  return renderToStaticMarkup(<ExampleForm />);
+}
+
+function wait(ms: number) {
+  return new Promise<void>((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+function createFormEvent(type: string) {
+  return {
+    type,
+    preventDefault: () => undefined,
+    stopPropagation: () => undefined,
+  } as FormEvent<HTMLFormElement>;
+}
+
+function createInputFormEvent(type: string) {
+  return createFormEvent(type) as InputEvent<HTMLFormElement>;
+}
+
+function createKeyboardFormEvent(type: string, key: string) {
+  return {
+    ...createFormEvent(type),
+    key,
+  } as KeyboardEvent<HTMLFormElement>;
+}
+
+function createFocusFormEvent(type: string) {
+  return createFormEvent(type) as FocusEvent<HTMLFormElement>;
+}
+
+function renderClient(element: ReactElement) {
+  const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>');
+  const rootElement = dom.window.document.getElementById('root');
+
+  assert.ok(rootElement);
+
+  const previousWindow = globalThis.window;
+  const previousDocument = globalThis.document;
+  const previousHTMLElement = globalThis.HTMLElement;
+  const previousEvent = globalThis.Event;
+  const actGlobal = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean };
+  const previousActEnvironment = actGlobal.IS_REACT_ACT_ENVIRONMENT;
+
+  globalThis.window = dom.window as unknown as Window & typeof globalThis;
+  globalThis.document = dom.window.document;
+  globalThis.HTMLElement = dom.window.HTMLElement;
+  globalThis.Event = dom.window.Event;
+  actGlobal.IS_REACT_ACT_ENVIRONMENT = true;
+
+  const root = createRoot(rootElement);
+  act(() => {
+    root.render(element);
+  });
+
+  return {
+    document: dom.window.document,
+    unmount: () => {
+      act(() => {
+        root.unmount();
+      });
+      globalThis.window = previousWindow;
+      globalThis.document = previousDocument;
+      globalThis.HTMLElement = previousHTMLElement;
+      globalThis.Event = previousEvent;
+      actGlobal.IS_REACT_ACT_ENVIRONMENT = previousActEnvironment;
+      dom.window.close();
+    },
+  };
+}
+
 function renderTextarea(fieldConfig: FormedibleFieldConfig<FormedibleFormValues>, value = '') {
   return renderToStaticMarkup(
     <TextareaField
@@ -141,6 +237,274 @@ test('contact basic fields render shadcn primitives', () => {
   assert.match(markup, /data-slot="input"/);
   assert.match(markup, /data-slot="textarea"/);
   assert.match(markup, /data-slot="checkbox"/);
+});
+
+test('form options compatibility restores disabled, loading, and showSubmitButton behavior', () => {
+  const disabledMarkup = renderFormOptionsExample({ disabled: true });
+  const loadingMarkup = renderFormOptionsExample({ loading: true });
+  const hiddenSubmitMarkup = renderFormOptionsExample({ showSubmitButton: false });
+
+  assert.match(disabledMarkup, /<fieldset disabled=""/);
+  assert.match(disabledMarkup, /<button[^>]*disabled=""[^>]*>Submit<\/button>/);
+  assert.match(loadingMarkup, /aria-busy="true"/);
+  assert.match(loadingMarkup, /<button[^>]*disabled=""[^>]*>Submit<\/button>/);
+  assert.doesNotMatch(hiddenSubmitMarkup, />Submit<\/button>/);
+});
+
+test('multipage navigation respects disabled, loading, and hidden submit states', () => {
+  function renderMultiPageFormOptionsExample(config: {
+    readonly disabled?: boolean;
+    readonly loading?: boolean;
+    readonly showSubmitButton?: boolean;
+    readonly startOnLastPage?: boolean;
+  }) {
+    function ExampleForm() {
+      const { Form } = useFormedible<FormedibleFormValues>({
+        fields: [
+          { name: 'firstName', type: 'text', label: 'First name', page: 1, conditional: () => config.startOnLastPage !== true },
+          { name: 'email', type: 'email', label: 'Email', page: 2 },
+        ],
+        formOptions: {
+          defaultValues: { firstName: '', email: '' },
+          onSubmit: () => undefined,
+        },
+        ...config,
+      });
+
+      return <Form />;
+    }
+
+    return renderToStaticMarkup(<ExampleForm />);
+  }
+
+  const disabledFirstPageMarkup = renderMultiPageFormOptionsExample({ disabled: true });
+  const loadingFirstPageMarkup = renderMultiPageFormOptionsExample({ loading: true });
+  const disabledLastPageMarkup = renderMultiPageFormOptionsExample({ disabled: true, startOnLastPage: true });
+  const loadingLastPageMarkup = renderMultiPageFormOptionsExample({ loading: true, startOnLastPage: true });
+  const hiddenSubmitLastPageMarkup = renderMultiPageFormOptionsExample({ showSubmitButton: false, startOnLastPage: true });
+
+  assert.match(disabledFirstPageMarkup, /<button[^>]*disabled=""[^>]*>Previous<\/button>/);
+  assert.match(disabledFirstPageMarkup, /<button[^>]*disabled=""[^>]*>Next<\/button>/);
+  assert.match(loadingFirstPageMarkup, /<button[^>]*disabled=""[^>]*>Previous<\/button>/);
+  assert.match(loadingFirstPageMarkup, /<button[^>]*disabled=""[^>]*>Next<\/button>/);
+  assert.match(disabledLastPageMarkup, /<button[^>]*disabled=""[^>]*>Submit<\/button>/);
+  assert.match(loadingLastPageMarkup, /<button[^>]*disabled=""[^>]*>Submit<\/button>/);
+  assert.doesNotMatch(hiddenSubmitLastPageMarkup, />Submit<\/button>/);
+});
+
+test('analytics compatibility tracker fires restored callbacks with expected arguments', () => {
+  const calls: string[] = [];
+  const tracker = createFormAnalyticsTracker<FormedibleFormValues>(
+    {
+      onFieldChange: (fieldName, value, timestamp) => calls.push(`change:${fieldName}:${String(value)}:${timestamp}`),
+      onFieldComplete: (fieldName, isValid, timeSpent) => calls.push(`complete:${fieldName}:${String(isValid)}:${timeSpent}`),
+      onFieldError: (fieldName, errors, timestamp) => calls.push(`error:${fieldName}:${errors.join('|')}:${timestamp}`),
+      onFormReset: (timestamp, reason) => calls.push(`reset:${reason ?? 'none'}:${timestamp}`),
+    },
+    { now: () => 1000 },
+  );
+
+  tracker.trackFieldChange('email', 'ada@example.com');
+  tracker.trackFieldComplete('email', true, 45);
+  tracker.trackFieldError('email', ['Invalid email']);
+  tracker.trackFormReset('user');
+
+  assert.deepEqual(calls, [
+    'change:email:ada@example.com:1000',
+    'complete:email:true:45',
+    'error:email:Invalid email:1000',
+    'reset:user:1000',
+  ]);
+});
+
+test('useFormedible fires restored analytics callbacks through field and form runtime flows', async () => {
+  const calls: string[] = [];
+  let capturedField: FormedibleFieldController | undefined;
+
+  function ExampleForm() {
+    const { Form } = useFormedible<FormedibleFormValues>({
+      fields: [
+        {
+          name: 'email',
+          type: 'text',
+          label: 'Email',
+          required: true,
+          component: ({ field }) => {
+            capturedField = field;
+            return <input name={field.name} value={String(field.value ?? '')} onChange={(event) => field.onChange(event.target.value)} onBlur={field.onBlur} onFocus={field.onFocus} readOnly />;
+          },
+        },
+      ],
+      analytics: {
+        onFormStart: () => calls.push('form-start'),
+        onFieldFocus: (fieldName) => calls.push(`field-focus:${fieldName}`),
+        onFieldBlur: (fieldName) => calls.push(`field-blur:${fieldName}`),
+        onFieldChange: (fieldName, value) => calls.push(`field-change:${fieldName}:${String(value)}`),
+        onFieldComplete: (fieldName, isValid) => calls.push(`field-complete:${fieldName}:${String(isValid)}`),
+        onFieldError: (fieldName, errors) => calls.push(`field-error:${fieldName}:${errors.join('|')}`),
+        onFormComplete: (_timeSpent, formData) => calls.push(`form-complete:${String(formData.email)}`),
+        onFormReset: (_timestamp, reason) => calls.push(`form-reset:${reason ?? 'none'}`),
+      },
+      formOptions: {
+        defaultValues: { email: '' },
+        onSubmit: () => undefined,
+      },
+    });
+
+    return <Form />;
+  }
+
+  const rendered = renderClient(<ExampleForm />);
+  await act(async () => {
+    await wait(0);
+  });
+
+  const field = capturedField;
+  assert.ok(field);
+  act(() => {
+    field.onFocus?.();
+    field.onBlur();
+  });
+  await act(async () => {
+    await wait(0);
+  });
+  act(() => {
+    field.onFocus?.();
+    field.onChange('ada@example.com');
+    field.onBlur();
+    rendered.document.querySelector('form')?.requestSubmit();
+  });
+  await act(async () => {
+    await wait(0);
+  });
+  const defaultView = rendered.document.defaultView;
+  assert.ok(defaultView);
+  act(() => {
+    rendered.document.querySelector('form')?.dispatchEvent(new defaultView.Event('reset', { bubbles: true, cancelable: true }));
+  });
+  rendered.unmount();
+
+  assert.ok(calls.includes('form-start'));
+  assert.ok(calls.includes('field-focus:email'));
+  assert.ok(calls.includes('field-error:email:Email is required'));
+  assert.ok(calls.includes('field-complete:email:false'));
+  assert.ok(calls.includes('field-change:email:ada@example.com'));
+  assert.ok(calls.includes('field-blur:email'));
+  assert.ok(calls.includes('field-complete:email:true'));
+  assert.ok(calls.includes('form-complete:ada@example.com'));
+  assert.ok(calls.includes('form-reset:reset'));
+});
+
+test('useFormedible wires restored form event callbacks through the rendered form', () => {
+  const calls: string[] = [];
+  let capturedProps: FormProps | undefined;
+
+  function ExampleForm() {
+    const { Form } = useFormedible<FormedibleFormValues>({
+      fields: [{ name: 'email', type: 'email', label: 'Email' }],
+      formOptions: {
+        defaultValues: { email: 'ada@example.com' },
+        onSubmit: () => undefined,
+      },
+      onFormReset: (_event, formApi) => calls.push(`reset:${String(formApi.state.values.email)}`),
+      onFormInput: (_event, formApi) => calls.push(`input:${String(formApi.state.values.email)}`),
+      onFormInvalid: (_event, formApi) => calls.push(`invalid:${String(formApi.state.values.email)}`),
+      onFormKeyDown: (event, formApi) => calls.push(`keydown:${event.key}:${String(formApi.state.values.email)}`),
+      onFormKeyUp: (event, formApi) => calls.push(`keyup:${event.key}:${String(formApi.state.values.email)}`),
+      onFormFocus: (_event, formApi) => calls.push(`focus:${String(formApi.state.values.email)}`),
+      onFormBlur: (_event, formApi) => calls.push(`blur:${String(formApi.state.values.email)}`),
+    });
+    const element = Form({}) as ReactElement<FormProps>;
+    capturedProps = element.props;
+
+    return element;
+  }
+
+  renderToStaticMarkup(<ExampleForm />);
+
+  assert.ok(capturedProps);
+  capturedProps.onReset?.(createFormEvent('reset'));
+  capturedProps.onInput?.(createInputFormEvent('input'));
+  capturedProps.onInvalid?.(createFormEvent('invalid'));
+  capturedProps.onKeyDown?.(createKeyboardFormEvent('keydown', 'Enter'));
+  capturedProps.onKeyUp?.(createKeyboardFormEvent('keyup', 'Escape'));
+  capturedProps.onFocus?.(createFocusFormEvent('focus'));
+  capturedProps.onBlur?.(createFocusFormEvent('blur'));
+
+  assert.deepEqual(calls, [
+    'reset:ada@example.com',
+    'input:ada@example.com',
+    'invalid:ada@example.com',
+    'keydown:Enter:ada@example.com',
+    'keyup:Escape:ada@example.com',
+    'focus:ada@example.com',
+    'blur:ada@example.com',
+  ]);
+});
+
+test('autoSubmitOnChange submits only after debounced field changes and cleans up on unmount', async () => {
+  const calls: string[] = [];
+  let capturedField: FormedibleFieldController | undefined;
+
+  function ExampleForm() {
+    const { Form } = useFormedible<FormedibleFormValues>({
+      fields: [
+        {
+          name: 'email',
+          type: 'text',
+          label: 'Email',
+          component: ({ field }) => {
+            capturedField = field;
+            return <input name={field.name} value={String(field.value ?? '')} onChange={(event) => field.onChange(event.target.value)} readOnly />;
+          },
+        },
+      ],
+      autoSubmitOnChange: true,
+      autoSubmitDebounceMs: 20,
+      formOptions: {
+        defaultValues: { email: '' },
+        onSubmit: ({ value }) => {
+          calls.push(String(value.email));
+        },
+      },
+    });
+
+    return <Form />;
+  }
+
+  const rendered = renderClient(<ExampleForm />);
+  await act(async () => {
+    await wait(30);
+  });
+  assert.deepEqual(calls, []);
+
+  const field = capturedField;
+  assert.ok(field);
+  act(() => {
+    field.onChange('first@example.com');
+  });
+  await act(async () => {
+    await wait(30);
+  });
+  assert.deepEqual(calls, ['first@example.com']);
+
+  act(() => {
+    field.onChange('second@example.com');
+    field.onChange('third@example.com');
+  });
+  await act(async () => {
+    await wait(30);
+  });
+  assert.deepEqual(calls, ['first@example.com', 'third@example.com']);
+
+  act(() => {
+    field.onChange('late@example.com');
+  });
+  rendered.unmount();
+  await act(async () => {
+    await wait(30);
+  });
+  assert.deepEqual(calls, ['first@example.com', 'third@example.com']);
 });
 
 test('registration basic fields render shadcn primitives', () => {

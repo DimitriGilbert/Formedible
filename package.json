@@ -21,6 +21,8 @@
     "test:formedible:nested-fields": "tsc -p tests/formedible/tsconfig.nested-fields.json && tsx --tsconfig tests/formedible/tsconfig.nested-fields.json --test tests/formedible/nested-fields.test.tsx",
     "test:formedible:phase10": "tsc -p tests/formedible/tsconfig.phase10.json && tsx --tsconfig tests/formedible/tsconfig.phase10.json --test tests/formedible/phase10-behavior.test.ts",
     "test:sync": "tsc -p tests/sync/tsconfig.json && node --test tests/sync/.compiled/*.test.js",
+    "test:e2e": "pnpm --dir apps/web build && tsc -p tests/e2e/tsconfig.json && node --test tests/e2e/.compiled/*.test.js",
+    "test:e2e:existing": "tsc -p tests/e2e/tsconfig.json && node --test tests/e2e/.compiled/*.test.js",
     "dev:web": "turbo -F web dev"
   },
   "dependencies": {
@@ -30,13 +32,16 @@
   },
   "devDependencies": {
     "@formedible/config": "workspace:*",
+    "@types/jsdom": "^28.0.3",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
+    "agent-browser": "^0.27.0",
+    "jsdom": "^29.1.0",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "turbo": "^2.8.12",
     "tsx": "^4.21.0",
+    "turbo": "^2.8.12",
     "typescript": "catalog:"
   },
   "packageManager": "pnpm@10.10.0"

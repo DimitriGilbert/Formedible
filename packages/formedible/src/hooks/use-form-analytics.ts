@@ -19,8 +19,34 @@ export interface FormAnalyticsRuntimeOptions {
   readonly getAbandonContext?: () => FormAnalyticsAbandonContext;
 }
 
+export interface FormAnalyticsTrackerOptions {
+  readonly now?: () => number;
+}
+
 export function getFieldBlurTime(focusedAt: number | undefined, timestamp: number) {
   return focusedAt === undefined ? 0 : timestamp - focusedAt;
+}
+
+export function createFormAnalyticsTracker<TFormValues extends FormedibleFormValues>(
+  analytics: FormedibleAnalyticsConfig<TFormValues> | undefined,
+  options: FormAnalyticsTrackerOptions = {},
+) {
+  const now = options.now ?? Date.now;
+
+  return {
+    trackFieldChange(fieldName: Extract<keyof TFormValues, string> | string, value: unknown) {
+      analytics?.onFieldChange?.(fieldName, value, now());
+    },
+    trackFieldComplete(fieldName: Extract<keyof TFormValues, string> | string, isValid: boolean, timeSpent: number) {
+      analytics?.onFieldComplete?.(fieldName, isValid, timeSpent);
+    },
+    trackFieldError(fieldName: Extract<keyof TFormValues, string> | string, errors: readonly string[]) {
+      analytics?.onFieldError?.(fieldName, errors, now());
+    },
+    trackFormReset(reason?: string) {
+      analytics?.onFormReset?.(now(), reason);
+    },
+  };
 }
 
 export function useFormAnalytics<TFormValues extends FormedibleFormValues>(
@@ -70,12 +96,20 @@ export function useFormAnalytics<TFormValues extends FormedibleFormValues>(
     analyticsRef.current?.onFieldFocus?.(fieldName, timestamp);
   }
 
-  function trackFieldBlur(fieldName: string) {
+  function trackFieldBlur(fieldName: string, options: { readonly isValid: boolean; readonly errors?: readonly string[] } = { isValid: true }) {
     const timestamp = Date.now();
     const timeSpent = getFieldBlurTime(focusedAtRef.current[fieldName], timestamp);
 
     analyticsRef.current?.onFieldBlur?.(fieldName, timeSpent);
+    if (options.errors && options.errors.length > 0) {
+      analyticsRef.current?.onFieldError?.(fieldName, options.errors, timestamp);
+    }
+    analyticsRef.current?.onFieldComplete?.(fieldName, options.isValid, timeSpent);
     delete focusedAtRef.current[fieldName];
+  }
+
+  function trackFieldChange(fieldName: string, value: unknown) {
+    analyticsRef.current?.onFieldChange?.(fieldName, value, Date.now());
   }
 
   function trackFormComplete(formData: TFormValues) {
@@ -94,5 +128,9 @@ export function useFormAnalytics<TFormValues extends FormedibleFormValues>(
     );
   }
 
-  return { trackFieldFocus, trackFieldBlur, trackFormComplete, trackPageChange };
+  function trackFormReset(reason?: string) {
+    analyticsRef.current?.onFormReset?.(Date.now(), reason);
+  }
+
+  return { trackFieldFocus, trackFieldBlur, trackFieldChange, trackFormComplete, trackFormReset, trackPageChange };
 }

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { FocusEvent, FormEvent, KeyboardEvent, ReactNode } from 'react';
 import type { ComponentType } from 'react';
 
 export type FormedibleFormValues = Record<string, unknown>;
@@ -342,9 +342,31 @@ export interface FormedibleSubmitContext<TFormValues extends FormedibleFormValue
   readonly value: TFormValues;
 }
 
+export interface FormedibleFormApiContext<TFormValues extends FormedibleFormValues> {
+  readonly state: {
+    readonly values: TFormValues;
+  };
+  readonly handleSubmit: () => void | Promise<void>;
+}
+
+export interface FormedibleFormEventContext<TFormValues extends FormedibleFormValues> extends FormedibleSubmitContext<TFormValues> {
+  readonly formApi?: FormedibleFormApiContext<TFormValues>;
+}
+
+export type FormedibleFormEventHandler<TFormValues extends FormedibleFormValues, TEvent extends FormEvent = FormEvent> = (
+  event: TEvent,
+  formApi: FormedibleFormApiContext<TFormValues>,
+) => void;
+
 export interface FormedibleFormOptions<TFormValues extends FormedibleFormValues> {
   readonly defaultValues: TFormValues;
-  readonly onSubmit?: (context: FormedibleSubmitContext<TFormValues>) => void | Promise<void>;
+  readonly onSubmit?: (context: FormedibleFormEventContext<TFormValues>) => void | Promise<void>;
+  readonly onChange?: (context: FormedibleFormEventContext<TFormValues>) => void;
+  readonly onBlur?: (context: FormedibleFormEventContext<TFormValues>) => void;
+  readonly onFocus?: (context: FormedibleFormEventContext<TFormValues>) => void;
+  readonly onReset?: (context: FormedibleFormEventContext<TFormValues>) => void;
+  /** Removed debug/validation helper. Use TanStack Form validation state and rendered field errors instead. */
+  readonly onSubmitInvalid?: never;
   readonly [customProp: string]: unknown;
 }
 
@@ -383,17 +405,43 @@ export interface FormedibleAnalyticsConfig<TFormValues extends FormedibleFormVal
   readonly onFormStart?: (timestamp: number) => void;
   readonly onFieldFocus?: (fieldName: Extract<keyof TFormValues, string> | string, timestamp: number) => void;
   readonly onFieldBlur?: (fieldName: Extract<keyof TFormValues, string> | string, timeSpent: number) => void;
+  readonly onFieldChange?: (fieldName: Extract<keyof TFormValues, string> | string, value: unknown, timestamp: number) => void;
+  readonly onFieldComplete?: (fieldName: Extract<keyof TFormValues, string> | string, isValid: boolean, timeSpent: number) => void;
+  readonly onFieldError?: (fieldName: Extract<keyof TFormValues, string> | string, errors: readonly string[], timestamp: number) => void;
   readonly onPageChange?: (
     fromPage: number,
     toPage: number,
     timeSpent: number,
     pageValidationState?: { readonly hasErrors: boolean; readonly completionPercentage: number },
   ) => void;
+  /** Superseded: current package runtime does not emit page completion analytics. */
+  readonly onPageComplete?: never;
+  /** Superseded: current package runtime does not emit page abandonment analytics. */
+  readonly onPageAbandon?: never;
+  /** Superseded by TanStack Form validation state and rendered field errors. */
+  readonly onPageValidationError?: never;
+  /** Superseded: current package runtime does not emit tab analytics callbacks. */
+  readonly onTabChange?: never;
+  /** Superseded: current package runtime does not emit tab analytics callbacks. */
+  readonly onTabComplete?: never;
+  /** Superseded: current package runtime does not emit tab analytics callbacks. */
+  readonly onTabAbandon?: never;
+  /** Superseded: current package runtime does not emit tab analytics callbacks. */
+  readonly onTabValidationError?: never;
+  /** Superseded: current package runtime does not emit tab analytics callbacks. */
+  readonly onTabFirstVisit?: never;
   readonly onFormComplete?: (timeSpent: number, formData: TFormValues) => void;
   readonly onFormAbandon?: (
     completionPercentage: number,
     context?: { readonly currentPage?: number; readonly currentTab?: string; readonly lastActiveField?: string },
   ) => void;
+  readonly onFormReset?: (timestamp: number, reason?: string) => void;
+  /** Superseded: current package runtime does not measure render performance. */
+  readonly onRenderPerformance?: never;
+  /** Superseded: current package runtime does not measure validation performance. */
+  readonly onValidationPerformance?: never;
+  /** Superseded: current package runtime does not measure submission performance. */
+  readonly onSubmissionPerformance?: never;
   readonly [customProp: string]: unknown;
 }
 
@@ -413,6 +461,19 @@ export interface UseFormedibleOptions<TFormValues extends FormedibleFormValues =
   readonly submitLabel?: ReactNode;
   readonly nextLabel?: ReactNode;
   readonly previousLabel?: ReactNode;
+  readonly onPageChange?: (page: number, direction: 'next' | 'previous') => void;
+  readonly autoSubmitOnChange?: boolean;
+  readonly autoSubmitDebounceMs?: number;
+  readonly disabled?: boolean;
+  readonly loading?: boolean;
+  readonly showSubmitButton?: boolean;
+  readonly onFormReset?: FormedibleFormEventHandler<TFormValues>;
+  readonly onFormInput?: FormedibleFormEventHandler<TFormValues>;
+  readonly onFormInvalid?: FormedibleFormEventHandler<TFormValues>;
+  readonly onFormKeyDown?: FormedibleFormEventHandler<TFormValues, KeyboardEvent>;
+  readonly onFormKeyUp?: FormedibleFormEventHandler<TFormValues, KeyboardEvent>;
+  readonly onFormFocus?: FormedibleFormEventHandler<TFormValues, FocusEvent>;
+  readonly onFormBlur?: FormedibleFormEventHandler<TFormValues, FocusEvent>;
   readonly collapseLabel?: ReactNode;
   readonly expandLabel?: ReactNode;
   readonly formClassName?: string;
