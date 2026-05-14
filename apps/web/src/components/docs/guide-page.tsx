@@ -6,6 +6,7 @@ import { SectionDivider } from '@/components/layout/section-divider';
 import { SiteFooter } from '@/components/layout/site-footer';
 
 import { CodeBlock } from './code-block';
+import { ApiPropertyTable, type ApiPropertyTableRow } from './api-property-table';
 
 export type DocsGuideLink = {
   readonly title: string;
@@ -17,7 +18,25 @@ export type DocsGuideSection = {
   readonly title: string;
   readonly body: string;
   readonly bullets: readonly string[];
+  readonly table?: {
+    readonly headers: readonly string[];
+    readonly rows: readonly { readonly cells: readonly string[] }[];
+  };
 };
+
+function createApiPropertyTableRows(table: NonNullable<DocsGuideSection['table']>): readonly ApiPropertyTableRow[] {
+  const propertyIndex = table.headers.findIndex((header) => header.toLowerCase() === 'property');
+  const typeIndex = table.headers.findIndex((header) => header.toLowerCase() === 'type');
+  const defaultIndex = table.headers.findIndex((header) => header.toLowerCase() === 'default');
+  const descriptionIndex = table.headers.findIndex((header) => header.toLowerCase() === 'description');
+
+  return table.rows.map((row) => ({
+    name: row.cells[propertyIndex] ?? '',
+    type: row.cells[typeIndex] ?? '',
+    defaultValue: row.cells[defaultIndex],
+    description: row.cells[descriptionIndex] ?? '',
+  }));
+}
 
 type DocsGuidePageProps = {
   readonly eyebrow: string;
@@ -55,7 +74,7 @@ export function DocsGuidePage({ eyebrow, title, description, sections, codeExamp
       <SectionDivider />
 
       <section className="px-6 py-20 lg:px-12">
-        <PageContainer>
+        <div className="mx-auto w-full">
           <div className="overflow-hidden rounded-2xl">
             <div className="grid gap-px bg-border lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
               <div className="grid content-start">
@@ -73,6 +92,7 @@ export function DocsGuidePage({ eyebrow, title, description, sections, codeExamp
                         ))}
                       </ul>
                     ) : null}
+                    {section.table ? <ApiPropertyTable rows={createApiPropertyTableRows(section.table)} /> : null}
                   </div>
                 ))}
               </div>
@@ -104,7 +124,7 @@ export function DocsGuidePage({ eyebrow, title, description, sections, codeExamp
               </div>
             </div>
           </div>
-        </PageContainer>
+        </div>
       </section>
 
       <SiteFooter />

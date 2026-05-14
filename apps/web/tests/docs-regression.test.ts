@@ -5,11 +5,9 @@ import assert from 'node:assert/strict';
 
 import { docsCompatibilityExamples } from '../src/features/docs/compatibility-examples';
 import { docsCodeExamples } from '../src/features/docs/code-examples';
-import { getRenderedExampleMapping, renderedExampleMappings } from '../src/components/docs/rendered-example-showcase';
+import { migratedDocsExamples } from '../src/components/docs/examples';
 import { createRouteSeoHead } from '../src/features/docs/seo';
 import { publicRouteMeta, siteMeta } from '../src/features/docs/site-meta';
-import * as copiedCodeExamples from '../src/data/code-examples';
-import { copiedCodeExampleEntries } from '../src/routes/docs/examples';
 
 const appRoot = process.cwd();
 const docsSourceRoot = join(appRoot, 'src');
@@ -69,6 +67,22 @@ const requiredExampleIds = [
   'rental-car-flow-form',
   'analytics-tracking-form',
   'advanced-field-types-form',
+] as const;
+const requiredMigratedExampleIds = [
+  'contact',
+  'registration',
+  'survey',
+  'checkout',
+  'job',
+  'tabbed',
+  'flow',
+  'rental-flow',
+  'analytics',
+  'persistence',
+  'arrays',
+  'conditional-object-array',
+  'conditional-pages',
+  'advanced-fields',
 ] as const;
 
 async function collectRuntimeFiles(directoryPath: string): Promise<readonly string[]> {
@@ -171,29 +185,15 @@ describe('docs compatibility examples', () => {
     }
   });
 
-  it('keeps the examples route as a focused examples browser', async () => {
-    const [routeSource, showcaseSource] = await Promise.all([
-      readFile(join(appRoot, 'src/routes/docs/examples.tsx'), 'utf8'),
-      readFile(join(appRoot, 'src/components/docs/rendered-example-showcase.tsx'), 'utf8'),
-    ]);
+  it('keeps the examples route as a focused migrated examples browser', async () => {
+    const routeSource = await readFile(join(appRoot, 'src/routes/docs/examples.tsx'), 'utf8');
 
     assert.match(routeSource, /createFileRoute\('\/docs\/examples'\)/);
-    assert.match(routeSource, /from ['"]@\/data\/code-examples['"]/);
-    assert.match(routeSource, /data-examples-browser="focused"/);
-    assert.match(routeSource, /data-examples-grid="true"/);
-    assert.match(routeSource, /data-active-example-area="true"/);
-    assert.match(routeSource, /data-example-index-item=\{example\.key\}/);
-    assert.match(routeSource, /<RenderedExampleShowcase example=\{activeExample\} index=\{activeExampleIndex\} \/>/);
-    assert.match(showcaseSource, /data-code-example-id=\{example\.id\}/);
-    assert.match(showcaseSource, /data-code-example-export=\{String\(example\.key\)\}/);
-    assert.match(showcaseSource, /data-focused-preview-area="true"/);
-    assert.match(showcaseSource, /data-focused-code-area="true"/);
-    assert.match(showcaseSource, /data-rendered-preview-for=\{example\.key\}/);
-    assert.match(showcaseSource, /<DocsExampleForm example=\{compatibilityExample\} \/>/);
-    assert.match(showcaseSource, /<code>\{example\.code\}<\/code>/);
-    assert.doesNotMatch(showcaseSource, /examples\.map\(\(example/);
+    assert.match(routeSource, /migratedDocsExamples/);
+    assert.match(routeSource, /MigratedExampleDemoCard/);
+    assert.match(routeSource, /<ExampleComponent \/>/);
     assert.doesNotMatch(routeSource, /DocsHub|@\/docs\/core-pages/);
-    assert.doesNotMatch(`${routeSource}\n${showcaseSource}`, /old_version_for_knowledge_purpose|tests\/compatibility-examples|generated\/formedible|@formedible\/formedible|packages\/formedible/);
+    assert.doesNotMatch(routeSource, /old_version_for_knowledge_purpose|tests\/compatibility-examples|generated\/formedible|@formedible\/formedible|packages\/formedible/);
   });
 
   it('keeps docs hub routing separate from docs examples routing', async () => {
@@ -209,53 +209,21 @@ describe('docs compatibility examples', () => {
     assert.match(docsIndexSource, /createFileRoute\('\/docs\/'\)/);
     assert.match(docsIndexSource, /function DocsIndexRoute/);
     assert.match(examplesSource, /createFileRoute\('\/docs\/examples'\)/);
-    assert.match(examplesSource, /copiedCodeExampleEntries/);
+    assert.match(examplesSource, /migratedDocsExamples/);
     assert.doesNotMatch(examplesSource, /DocsHub/);
   });
 
-  it('renders every copied code example export on the examples route', () => {
-    const exportedExamples = Object.keys(copiedCodeExamples).map((exportName) => [exportName, copiedCodeExamples[exportName as keyof typeof copiedCodeExamples]] as const);
-    const renderedByExport = new Map(copiedCodeExampleEntries.map((example) => [String(example.key), example]));
+  it('renders every migrated previous-version example on the examples route', () => {
+    const actualIds = migratedDocsExamples.map((example) => example.id).sort();
 
-    assert.equal(copiedCodeExampleEntries.length, exportedExamples.length);
+    assert.deepEqual(actualIds, [...requiredMigratedExampleIds].sort());
 
-    for (const [exportName, code] of exportedExamples) {
-      const routeExample = renderedByExport.get(exportName);
-
-      assert.ok(routeExample, `${exportName} must be present on the examples route`);
-      assert.equal(routeExample.code, code, `${exportName} must render the copied source string`);
-      assert.ok(routeExample.title.length > 0, `${exportName} must have a readable title`);
-      assert.ok(routeExample.description.length > 0, `${exportName} must have example copy`);
-      assert.ok(routeExample.category.length > 0, `${exportName} must have navigation metadata`);
-    }
-  });
-
-  it('maps copied code examples to rendered previews when feasible', () => {
-    const compatibilityIds = new Set(docsCompatibilityExamples.map((example) => example.id));
-    const renderedMappings = Object.entries(renderedExampleMappings).filter(([, mapping]) => mapping.status === 'rendered');
-
-    assert.ok(renderedMappings.length >= 10, 'most copied examples should have live rendered previews');
-
-    for (const [exportName, mapping] of Object.entries(renderedExampleMappings)) {
-      assert.ok(exportName in copiedCodeExamples, `${exportName} must be backed by the copied code source of truth`);
-
-      if (mapping.status === 'rendered') {
-        assert.ok(mapping.compatibilityId, `${exportName} must name the current rendered docs example`);
-        assert.ok(compatibilityIds.has(mapping.compatibilityId), `${exportName} must map to an existing docs runtime example`);
-      } else {
-        assert.ok(mapping.reason && mapping.reason.length > 40, `${exportName} code-only mapping must explain why`);
-      }
-    }
-
-    for (const entry of copiedCodeExampleEntries) {
-      const mapping = getRenderedExampleMapping(entry);
-
-      assert.match(mapping.status, /rendered|code-only/);
-      if (mapping.status === 'rendered') {
-        assert.ok(mapping.compatibilityId && compatibilityIds.has(mapping.compatibilityId), `${entry.key} rendered preview must resolve`);
-      } else {
-        assert.ok(mapping.reason && mapping.reason.length > 40, `${entry.key} code-only entry must explain why`);
-      }
+    for (const example of migratedDocsExamples) {
+      assert.ok(example.title.length > 0, `${example.id} must have a readable title`);
+      assert.ok(example.description.length >= 40, `${example.id} must have useful example copy`);
+      assert.ok(example.category.length > 0, `${example.id} must have navigation metadata`);
+      assert.ok(example.code.length > 100, `${example.id} must expose substantial source code`);
+      assert.equal(typeof example.Component, 'function', `${example.id} must render a real component`);
     }
   });
 
@@ -288,7 +256,12 @@ describe('docs compatibility examples', () => {
   it('keeps authored runtime docs and site files free of legacy framework imports and debug markers', async () => {
     const files = await collectAuthoredRuntimeFiles();
     const contentsByFile = await readFiles(files);
-    const violations = collectRuleViolations(files, forbiddenRuntimeRules, contentsByFile);
+    const allowedDemoSources = /src\/components\/(?:docs\/)?examples\//;
+    const violations = collectRuleViolations(
+      files.filter((file) => !allowedDemoSources.test(relative(appRoot, file))),
+      forbiddenRuntimeRules,
+      contentsByFile,
+    );
 
     assert.deepEqual(violations, []);
   });

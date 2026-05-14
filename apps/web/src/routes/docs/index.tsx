@@ -29,12 +29,11 @@ const hubLinks = [
 ] as const;
 
 const hubColClasses = [
-  'md:col-span-7', 'md:col-span-5',
-  'md:col-span-5', 'md:col-span-7',
-  'md:col-span-7', 'md:col-span-5',
-  'md:col-span-5', 'md:col-span-7',
-  'md:col-span-7', 'md:col-span-5',
-  'md:col-span-5', 'md:col-span-7',
+  'md:col-span-1', 'md:col-span-2', 'md:col-span-1',
+  'md:col-span-1', 'md:col-span-3',
+  'md:col-span-2', 'md:col-span-1', 'md:col-span-1',
+  'md:col-span-1', 'md:col-span-1', 'md:col-span-2',
+  'md:col-span-4',
 ];
 
 const cardColClasses = [
@@ -101,12 +100,11 @@ function DocsHubLinks() {
   return (
     <section className="px-6 py-20 lg:px-12">
       <PageContainer>
-        <p className="text-sm font-semibold text-primary">Documentation routes</p>
-        <h2 className="mt-3 text-2xl font-bold tracking-tight text-foreground md:text-3xl">
-          Find what you need
+        <h2 className="mt-3 text-2xl font-bold tracking-tight text-primary md:text-3xl">
+          Documentation
         </h2>
         <div className="mt-8 overflow-hidden rounded-2xl">
-          <nav aria-label="Documentation routes" className="grid gap-px bg-border md:grid-cols-12">
+          <nav aria-label="Documentation routes" className="grid gap-px bg-border md:grid-cols-4">
             {hubLinks.map((link, i) => (
               <a
                 key={link.href}

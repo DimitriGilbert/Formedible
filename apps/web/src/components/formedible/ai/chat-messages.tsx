@@ -5,7 +5,7 @@ import { Bot, User } from 'lucide-react';
 import { MarkdownMessage } from '@/components/formedible/ai/markdown-message';
 import { RawOutputPanel } from '@/components/formedible/ai/raw-output-panel';
 import type { AiMessage } from '@/lib/formedible/ai-types';
-import { cn } from '@/lib/utils';
+import { cn } from '@formedible/ui/lib/utils';
 
 export interface ChatMessagesProps {
   readonly messages: readonly AiMessage[];

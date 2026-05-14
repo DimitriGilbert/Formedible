@@ -5,7 +5,12 @@ import { pathToFileURL } from 'node:url';
 const defaultRoutes = [
   {
     ownerRoot: 'packages/formedible',
-    destinationRoots: ['apps/web/src', 'packages/formedible-parser/src', 'packages/builder/src', 'packages/ai-builder/src'],
+    destinationRoots: ['packages/ui/src/components'],
+    useRegistryTargets: true,
+  },
+  {
+    ownerRoot: 'packages/formedible',
+    destinationRoots: ['packages/formedible-parser/src', 'packages/builder/src', 'packages/ai-builder/src'],
   },
   {
     ownerRoot: 'packages/formedible-parser',
@@ -87,6 +92,28 @@ async function readRegistryFiles(registryPath) {
   return files;
 }
 
+function readBooleanProperty(record, propertyName) {
+  const value = record[propertyName];
+
+  return typeof value === 'boolean' ? value : undefined;
+}
+
+function resolveSyncTargetPath(sourcePath, targetPath, useRegistryTargets) {
+  if (useRegistryTargets && targetPath.startsWith('@ui/')) {
+    return targetPath.slice('@ui/'.length);
+  }
+
+  if (!targetPath.startsWith('@')) {
+    return targetPath;
+  }
+
+  if (!sourcePath.startsWith('src/')) {
+    throw new Error(`Registry target alias requires a source path under src/ for copy-only sync. Source: ${sourcePath}. Target: ${targetPath}`);
+  }
+
+  return sourcePath.slice('src/'.length);
+}
+
 function resolveFromRoot(root, path) {
   return resolve(root, path);
 }
@@ -114,7 +141,7 @@ async function copyRegistryFiles(route, rootDirectory) {
     }
 
     for (const destinationRoot of route.destinationRoots) {
-      const targetPath = join(resolveFromRoot(rootDirectory, destinationRoot), file.targetPath);
+      const targetPath = join(resolveFromRoot(rootDirectory, destinationRoot), resolveSyncTargetPath(file.sourcePath, file.targetPath, route.useRegistryTargets === true));
       await mkdir(dirname(targetPath), { recursive: true });
       await copyFile(sourcePath, targetPath);
       copied += 1;
@@ -131,12 +158,13 @@ function parseRoute(value) {
 
   const ownerRoot = readStringProperty(value, 'ownerRoot');
   const destinationRoots = readStringArrayProperty(value, 'destinationRoots');
+  const useRegistryTargets = readBooleanProperty(value, 'useRegistryTargets');
 
   if (ownerRoot === undefined || destinationRoots === undefined) {
     throw new Error('Sync routes require ownerRoot and destinationRoots.');
   }
 
-  return { ownerRoot, destinationRoots };
+  return { ownerRoot, destinationRoots, useRegistryTargets };
 }
 
 async function readConfig(path) {

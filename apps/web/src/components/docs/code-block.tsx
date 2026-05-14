@@ -45,8 +45,8 @@ export function CodeBlock({ example }: CodeBlockProps) {
           {copyLabel}
         </button>
       </figcaption>
-      <pre className="overflow-x-auto rounded-xl bg-background p-5 text-sm leading-6 text-foreground [tab-size:2]">
-        <code>{example.code}</code>
+      <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded-xl bg-background p-5 text-sm leading-6 text-foreground [tab-size:2]">
+        <code className="break-words">{example.code}</code>
       </pre>
     </figure>
   );

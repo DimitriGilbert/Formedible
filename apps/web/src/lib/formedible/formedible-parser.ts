@@ -6,7 +6,7 @@ import type {
   FormedibleObjectConfig,
   FormediblePageConfig,
   UseFormedibleOptions,
-} from '@/lib/formedible/types';
+} from '@formedible/ui/components/formedible/lib/types';
 import type {
   EnhancedParserError,
   EnhancedParserOptions,

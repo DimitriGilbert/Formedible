@@ -1,4 +1,4 @@
-import type { FormedibleFieldConfig } from '@/lib/formedible/types';
+import type { FormedibleFieldConfig } from '@formedible/ui/components/formedible/lib/types';
 
 export interface ParserConfig {
   readonly strictValidation: boolean;

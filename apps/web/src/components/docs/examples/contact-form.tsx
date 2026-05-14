@@ -1,8 +1,9 @@
 "use client";
 
-import { useFormedible } from "@/hooks/use-formedible";
 import { z } from "zod";
 import { toast } from "sonner";
+
+import { useFormedible } from "@formedible/ui/components/formedible/hooks/use-formedible";
 
 export const contactSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),

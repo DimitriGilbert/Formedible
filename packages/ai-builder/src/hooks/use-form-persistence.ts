@@ -1,6 +1,5 @@
 import { useCallback, useEffect } from 'react';
-import type { DeepKeys } from '@tanstack/react-form';
-import type { DeepValue, Updater } from '@tanstack/react-form';
+import type { DeepKeys, DeepValue, Updater } from '@tanstack/react-form';
 
 import type { FormedibleFormValues, FormediblePersistenceConfig } from '@/lib/formedible/types';
 

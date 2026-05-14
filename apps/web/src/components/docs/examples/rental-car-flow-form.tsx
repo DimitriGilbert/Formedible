@@ -1,9 +1,9 @@
 "use client";
 
-import { useFormedible } from "@/hooks/use-formedible";
+import { useFormedible } from "@formedible/ui/components/formedible/hooks/use-formedible";
 import { z } from "zod";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@formedible/ui/components/button";
 import {
   Card,
   CardContent,
@@ -11,7 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@formedible/ui/components/card";
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@formedible/ui/components/badge";
 import {
   CalendarDays,
   MapPin,

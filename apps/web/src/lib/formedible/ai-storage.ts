@@ -16,7 +16,7 @@ import type {
 } from '@/lib/formedible/ai-types';
 import { parseSafeGenerationMetadata, parseSafeJsonRecord, parseSafeJsonRecordAllowEmpty, parseSafeJsonValue, parseSafeMessageParts, parseSafeStreamEvents, redactSecretString, redactUnknown } from '@/lib/formedible/ai-safe-persistence';
 import type { ParsedFieldConfig, ParsedFormConfig } from '@/lib/formedible/parser-types';
-import type { FormedibleFieldOption, FormedibleFieldType } from '@/lib/formedible/types';
+import type { FormedibleFieldOption, FormedibleFieldType } from '@formedible/ui/components/formedible/lib/types';
 
 export const AI_STORAGE_VERSION = 1;
 

@@ -2,7 +2,7 @@ import type { ComponentProps } from 'react';
 import { Checkbox as CheckboxPrimitive } from '@base-ui/react/checkbox';
 import { CheckIcon } from 'lucide-react';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@formedible/ui/lib/utils';
 
 type CheckboxProps = Omit<ComponentProps<typeof CheckboxPrimitive.Root>, 'className'> & {
   className?: string;

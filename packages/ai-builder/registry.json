@@ -23,116 +23,120 @@
         "tailwind-merge",
         "zod"
       ],
+      "registryDependencies": [
+        "https://formedible.dev/r/formedible-core.json",
+        "https://formedible.dev/r/formedible-parser.json"
+      ],
       "files": [
         {
           "path": "src/index.ts",
           "type": "registry:lib",
-          "target": "components/formedible/ai/index.ts"
+          "target": "@ui/formedible/ai/index.ts"
         },
         {
           "path": "src/components/formedible/ai/ai-builder.tsx",
           "type": "registry:component",
-          "target": "components/formedible/ai/ai-builder.tsx"
+          "target": "@ui/formedible/ai/ai-builder.tsx"
         },
         {
           "path": "src/components/formedible/ai/agent-settings.tsx",
           "type": "registry:component",
-          "target": "components/formedible/ai/agent-settings.tsx"
+          "target": "@ui/formedible/ai/agent-settings.tsx"
         },
         {
           "path": "src/components/formedible/ai/ai-form-renderer.tsx",
           "type": "registry:component",
-          "target": "components/formedible/ai/ai-form-renderer.tsx"
+          "target": "@ui/formedible/ai/ai-form-renderer.tsx"
         },
         {
           "path": "src/components/formedible/ai/provider-selection.tsx",
           "type": "registry:component",
-          "target": "components/formedible/ai/provider-selection.tsx"
+          "target": "@ui/formedible/ai/provider-selection.tsx"
         },
         {
           "path": "src/components/formedible/ai/chat-interface.tsx",
           "type": "registry:component",
-          "target": "components/formedible/ai/chat-interface.tsx"
+          "target": "@ui/formedible/ai/chat-interface.tsx"
         },
         {
           "path": "src/components/formedible/ai/chat-messages.tsx",
           "type": "registry:component",
-          "target": "components/formedible/ai/chat-messages.tsx"
+          "target": "@ui/formedible/ai/chat-messages.tsx"
         },
         {
           "path": "src/components/formedible/ai/conversation-history.tsx",
           "type": "registry:component",
-          "target": "components/formedible/ai/conversation-history.tsx"
+          "target": "@ui/formedible/ai/conversation-history.tsx"
         },
         {
           "path": "src/components/formedible/ai/markdown-message.tsx",
           "type": "registry:component",
-          "target": "components/formedible/ai/markdown-message.tsx"
+          "target": "@ui/formedible/ai/markdown-message.tsx"
         },
         {
           "path": "src/components/formedible/ai/parser-settings.tsx",
           "type": "registry:component",
-          "target": "components/formedible/ai/parser-settings.tsx"
+          "target": "@ui/formedible/ai/parser-settings.tsx"
         },
         {
           "path": "src/components/formedible/ai/raw-output-panel.tsx",
           "type": "registry:component",
-          "target": "components/formedible/ai/raw-output-panel.tsx"
+          "target": "@ui/formedible/ai/raw-output-panel.tsx"
         },
         {
           "path": "src/components/formedible/ai/sidebar-content.tsx",
           "type": "registry:component",
-          "target": "components/formedible/ai/sidebar-content.tsx"
+          "target": "@ui/formedible/ai/sidebar-content.tsx"
         },
         {
           "path": "src/components/formedible/ai/sidebar-icons.tsx",
           "type": "registry:component",
-          "target": "components/formedible/ai/sidebar-icons.tsx"
+          "target": "@ui/formedible/ai/sidebar-icons.tsx"
         },
         {
           "path": "src/lib/formedible/ai-adapters.ts",
           "type": "registry:lib",
-          "target": "lib/formedible/ai-adapters.ts"
+          "target": "@ui/formedible/lib/ai-adapters.ts"
         },
         {
           "path": "src/lib/formedible/ai-errors.ts",
           "type": "registry:lib",
-          "target": "lib/formedible/ai-errors.ts"
+          "target": "@ui/formedible/lib/ai-errors.ts"
         },
         {
           "path": "src/lib/formedible/ai-generation.ts",
           "type": "registry:lib",
-          "target": "lib/formedible/ai-generation.ts"
+          "target": "@ui/formedible/lib/ai-generation.ts"
         },
         {
           "path": "src/lib/formedible/ai-parser.ts",
           "type": "registry:lib",
-          "target": "lib/formedible/ai-parser.ts"
+          "target": "@ui/formedible/lib/ai-parser.ts"
         },
         {
           "path": "src/lib/formedible/ai-messages.ts",
           "type": "registry:lib",
-          "target": "lib/formedible/ai-messages.ts"
+          "target": "@ui/formedible/lib/ai-messages.ts"
         },
         {
           "path": "src/lib/formedible/ai-storage.ts",
           "type": "registry:lib",
-          "target": "lib/formedible/ai-storage.ts"
+          "target": "@ui/formedible/lib/ai-storage.ts"
         },
         {
           "path": "src/lib/formedible/ai-safe-persistence.ts",
           "type": "registry:lib",
-          "target": "lib/formedible/ai-safe-persistence.ts"
+          "target": "@ui/formedible/lib/ai-safe-persistence.ts"
         },
         {
           "path": "src/lib/formedible/ai-stream-scheduler.ts",
           "type": "registry:lib",
-          "target": "lib/formedible/ai-stream-scheduler.ts"
+          "target": "@ui/formedible/lib/ai-stream-scheduler.ts"
         },
         {
           "path": "src/lib/formedible/ai-types.ts",
           "type": "registry:lib",
-          "target": "lib/formedible/ai-types.ts"
+          "target": "@ui/formedible/lib/ai-types.ts"
         }
       ]
     }

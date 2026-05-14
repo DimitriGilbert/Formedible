@@ -1,11 +1,11 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@formedible/ui/components/button';
+import { Input } from '@formedible/ui/components/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@formedible/ui/components/select';
 import type { AIProvider, ProviderSecrets, ProviderSettings } from '@/lib/formedible/ai-types';
 import type { ProviderSecretPersistencePreference, ProviderSecretStorageMode } from '@/lib/formedible/ai-storage';
-import { cn } from '@/lib/utils';
+import { cn } from '@formedible/ui/lib/utils';
 
 export const providerOptions = [
   { value: 'openai', label: 'OpenAI', defaultModel: 'gpt-4o-mini', requiresKey: true },

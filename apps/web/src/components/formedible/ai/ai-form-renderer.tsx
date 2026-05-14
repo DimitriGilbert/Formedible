@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react';
 
-import { useFormedible } from '@/hooks/use-formedible';
+import { useFormedible } from '@formedible/ui/components/formedible/hooks/use-formedible';
 import { parseAiToFormedible } from '@/lib/formedible/ai-parser';
 import type { AiFormParseResult, AiParserConfig } from '@/lib/formedible/ai-types';
-import type { FormedibleFormValues, UseFormedibleOptions } from '@/lib/formedible/types';
+import type { FormedibleFormValues, UseFormedibleOptions } from '@formedible/ui/components/formedible/lib/types';
 
 export interface AiFormRendererProps {
   readonly code: string;

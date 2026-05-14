@@ -1,8 +1,10 @@
 "use client";
 
-import { useFormedible } from "@/hooks/use-formedible";
+import { useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
+
+import { useFormedible } from "@formedible/ui/components/formedible/hooks/use-formedible";
 
 export const arrayFieldsSchema = z.object({
   teamMembers: z
@@ -31,6 +33,8 @@ export const arrayFieldsSchema = z.object({
     .max(3, "Maximum 3 emergency contacts"),
 });
 
+type ArrayFieldsFormValues = z.infer<typeof arrayFieldsSchema>;
+
 export const arrayFieldsFormCode = `const arrayFieldsSchema = z.object({
   teamMembers: z
     .array(
@@ -57,6 +61,8 @@ export const arrayFieldsFormCode = `const arrayFieldsSchema = z.object({
     )
     .max(3, "Maximum 3 emergency contacts"),
 });
+
+const [formattedSubmission, setFormattedSubmission] = useState<string | null>(null);
 
 const arrayFieldsForm = useFormedible({
   schema: arrayFieldsSchema,
@@ -213,7 +219,7 @@ const arrayFieldsForm = useFormedible({
     onSubmit: async ({ value }) => {
       console.log("Array fields form submitted:", value);
 
-      const formatValue = (val: any): string => {
+      const formatValue = (val: unknown): string => {
         if (val === null || val === undefined) return "null";
         if (typeof val === "boolean") return val.toString();
         if (typeof val === "number") return val.toString();
@@ -241,7 +247,7 @@ const arrayFieldsForm = useFormedible({
         description: "Check console for detailed data",
         action: {
           label: "View Data",
-          onClick: () => alert(\`Form Data:\\n\\n\${formattedData}\`),
+          onClick: () => setFormattedSubmission(\`Form Data:\\n\\n\${formattedData}\`),
         },
       });
     },
@@ -249,7 +255,9 @@ const arrayFieldsForm = useFormedible({
 });`;
 
 export function ArrayFieldsFormExample() {
-  const arrayFieldsForm = useFormedible({
+  const [formattedSubmission, setFormattedSubmission] = useState<string | null>(null);
+
+  const arrayFieldsForm = useFormedible<ArrayFieldsFormValues>({
     schema: arrayFieldsSchema,
     fields: [
       {
@@ -405,7 +413,7 @@ export function ArrayFieldsFormExample() {
         console.log("Array fields form submitted:", value);
 
         // Format the array data for display
-        const formatValue = (val: any): string => {
+        const formatValue = (val: unknown): string => {
           if (val === null || val === undefined) return "null";
           if (typeof val === "boolean") return val.toString();
           if (typeof val === "number") return val.toString();
@@ -433,12 +441,21 @@ export function ArrayFieldsFormExample() {
           description: "Check console for detailed data",
           action: {
             label: "View Data",
-            onClick: () => alert(`Form Data:\n\n${formattedData}`),
+            onClick: () => setFormattedSubmission(`Form Data:\n\n${formattedData}`),
           },
         });
       },
     },
   });
 
-  return <arrayFieldsForm.Form className="space-y-4" />;
+  return (
+    <div className="space-y-4">
+      <arrayFieldsForm.Form className="space-y-4" />
+      {formattedSubmission ? (
+        <pre className="rounded-md border bg-muted p-4 text-sm whitespace-pre-wrap" aria-live="polite">
+          {formattedSubmission}
+        </pre>
+      ) : null}
+    </div>
+  );
 }

@@ -2,7 +2,7 @@ import { Link, useLocation } from '@tanstack/react-router';
 
 import { siteNavigation } from '@/features/docs/navigation';
 import { siteMeta } from '@/features/docs/site-meta';
-import { cn } from '@/lib/utils';
+import { cn } from '@formedible/ui/lib/utils';
 
 function normalizeHash(hash: string): string {
   if (hash === '') {

@@ -1,8 +1,9 @@
 "use client";
 
-import { useFormedible } from "@/hooks/use-formedible";
 import { z } from "zod";
 import { toast } from "sonner";
+
+import { useFormedible } from "@formedible/ui/components/formedible/hooks/use-formedible";
 
 export const checkoutSchema = z.object({
   firstName: z.string().min(1),
@@ -17,6 +18,8 @@ export const checkoutSchema = z.object({
   shippingMethod: z.enum(["standard", "express", "overnight"]),
   giftMessage: z.string().optional(),
 });
+
+type CheckoutFormValues = z.infer<typeof checkoutSchema>;
 
 export const checkoutFormCode = `const checkoutSchema = z.object({
   firstName: z.string().min(1),
@@ -60,7 +63,7 @@ const checkoutForm = useFormedible({
       type: "text",
       label: "Card Number",
       page: 2,
-      conditional: (values: any) => values.paymentMethod === "card",
+      conditional: (values: z.infer<typeof checkoutSchema>) => values.paymentMethod === "card",
       placeholder: "1234 5678 9012 3456",
     },
     {
@@ -68,7 +71,7 @@ const checkoutForm = useFormedible({
       type: "text",
       label: "Expiry Date",
       page: 2,
-      conditional: (values: any) => values.paymentMethod === "card",
+      conditional: (values: z.infer<typeof checkoutSchema>) => values.paymentMethod === "card",
       placeholder: "MM/YY",
     },
 
@@ -125,7 +128,7 @@ const checkoutForm = useFormedible({
 });`;
 
 export function CheckoutFormExample() {
-  const checkoutForm = useFormedible({
+  const checkoutForm = useFormedible<CheckoutFormValues>({
     schema: checkoutSchema,
     fields: [
       // Page 1 - Shipping
@@ -153,7 +156,7 @@ export function CheckoutFormExample() {
         type: "text",
         label: "Card Number",
         page: 2,
-        conditional: (values: any) => values.paymentMethod === "card",
+        conditional: (values) => values.paymentMethod === "card",
         placeholder: "1234 5678 9012 3456",
       },
       {
@@ -161,7 +164,7 @@ export function CheckoutFormExample() {
         type: "text",
         label: "Expiry Date",
         page: 2,
-        conditional: (values: any) => values.paymentMethod === "card",
+        conditional: (values) => values.paymentMethod === "card",
         placeholder: "MM/YY",
       },
 

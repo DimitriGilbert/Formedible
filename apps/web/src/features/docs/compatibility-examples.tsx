@@ -1,5 +1,5 @@
-import { useFormedible } from '@/hooks/use-formedible';
-import type { FormedibleSubmitContext, UseFormedibleOptions } from '@/lib/formedible/types';
+import { useFormedible } from '@formedible/ui/components/formedible/hooks/use-formedible';
+import type { FormedibleSubmitContext, UseFormedibleOptions } from '@formedible/ui/components/formedible/lib/types';
 
 type DocsFormValues = Record<string, unknown>;
 

@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 
 import { generateFormCode } from '@/lib/formedible/code-generation';
-import { cn } from '@/lib/utils';
+import { cn } from '@formedible/ui/lib/utils';
 import type { FormField, FormMetadata } from '@/lib/formedible/builder-types';
 
 export interface CodeGeneratorProps {

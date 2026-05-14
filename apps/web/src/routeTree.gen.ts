@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as PrototypeRouteImport } from './routes/prototype'
 import { Route as BuilderRouteImport } from './routes/builder'
 import { Route as AiBuilderRouteImport } from './routes/ai-builder'
+import { Route as R404RouteImport } from './routes/404'
 import { Route as DocsRouteRouteImport } from './routes/docs/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PrototypeIndexRouteImport } from './routes/prototype.index'
@@ -47,6 +48,11 @@ const BuilderRoute = BuilderRouteImport.update({
 const AiBuilderRoute = AiBuilderRouteImport.update({
   id: '/ai-builder',
   path: '/ai-builder',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const R404Route = R404RouteImport.update({
+  id: '/404',
+  path: '/404',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DocsRouteRoute = DocsRouteRouteImport.update({
@@ -158,6 +164,7 @@ const DocsAdvancedFeaturesRoute = DocsAdvancedFeaturesRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/docs': typeof DocsRouteRouteWithChildren
+  '/404': typeof R404Route
   '/ai-builder': typeof AiBuilderRoute
   '/builder': typeof BuilderRoute
   '/prototype': typeof PrototypeRouteWithChildren
@@ -183,6 +190,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/404': typeof R404Route
   '/ai-builder': typeof AiBuilderRoute
   '/builder': typeof BuilderRoute
   '/docs/advanced-features': typeof DocsAdvancedFeaturesRoute
@@ -209,6 +217,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/docs': typeof DocsRouteRouteWithChildren
+  '/404': typeof R404Route
   '/ai-builder': typeof AiBuilderRoute
   '/builder': typeof BuilderRoute
   '/prototype': typeof PrototypeRouteWithChildren
@@ -237,6 +246,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/docs'
+    | '/404'
     | '/ai-builder'
     | '/builder'
     | '/prototype'
@@ -262,6 +272,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/404'
     | '/ai-builder'
     | '/builder'
     | '/docs/advanced-features'
@@ -287,6 +298,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/docs'
+    | '/404'
     | '/ai-builder'
     | '/builder'
     | '/prototype'
@@ -314,6 +326,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DocsRouteRoute: typeof DocsRouteRouteWithChildren
+  R404Route: typeof R404Route
   AiBuilderRoute: typeof AiBuilderRoute
   BuilderRoute: typeof BuilderRoute
   PrototypeRoute: typeof PrototypeRouteWithChildren
@@ -340,6 +353,13 @@ declare module '@tanstack/react-router' {
       path: '/ai-builder'
       fullPath: '/ai-builder'
       preLoaderRoute: typeof AiBuilderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/404': {
+      id: '/404'
+      path: '/404'
+      fullPath: '/404'
+      preLoaderRoute: typeof R404RouteImport
       parentRoute: typeof rootRouteImport
     }
     '/docs': {
@@ -553,6 +573,7 @@ const PrototypeRouteWithChildren = PrototypeRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DocsRouteRoute: DocsRouteRouteWithChildren,
+  R404Route: R404Route,
   AiBuilderRoute: AiBuilderRoute,
   BuilderRoute: BuilderRoute,
   PrototypeRoute: PrototypeRouteWithChildren,

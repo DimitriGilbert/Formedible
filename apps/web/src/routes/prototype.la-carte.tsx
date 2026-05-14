@@ -84,7 +84,7 @@ function BentoSection() {
             <div className="mt-4 flex-1">
               <ScrollArea className="h-full">
                 <pre className="text-sm leading-6 text-foreground [tab-size:2]">
-                  <code>{`import { useFormedible } from '@/hooks/use-formedible';
+                  <code>{`import { useFormedible } from '@formedible/ui/components/formedible/hooks/use-formedible';
 import { z } from 'zod';
 
 const schema = z.object({

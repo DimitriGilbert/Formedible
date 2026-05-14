@@ -18,6 +18,10 @@ const heroFeatures = [
   'AI generation',
 ];
 
+const bentoCardClassName = 'group bg-background p-6 outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring';
+
+const bentoLinkClassName = 'mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary';
+
 function LandingPage() {
   return (
     <div className="overflow-x-hidden">
@@ -79,12 +83,12 @@ function BentoSection() {
       <div className="mx-auto w-full max-w-[1400px] overflow-hidden rounded-2xl">
         <div className="grid gap-px bg-border md:grid-cols-12">
 
-          <div className="md:col-span-5 md:row-span-2 rounded-tl-2xl bg-muted p-6 md:p-8 flex flex-col">
+          <div className="group md:col-span-5 md:row-span-2 rounded-tl-2xl bg-muted p-6 md:p-8 flex flex-col">
             <p className="text-sm font-semibold text-foreground">Usage</p>
             <div className="mt-4 flex-1">
               <ScrollArea className="h-full">
                 <pre className="text-sm leading-6 text-foreground [tab-size:2]">
-                  <code>{`import { useFormedible } from '@/hooks/use-formedible';
+                  <code>{`import { useFormedible } from '@formedible/ui/components/formedible/hooks/use-formedible';
 import { z } from 'zod';
 
 const schema = z.object({
@@ -112,56 +116,88 @@ const { Form } = useFormedible({
                 </pre>
               </ScrollArea>
             </div>
+            <Link to="/docs/getting-started" className={bentoLinkClassName}>
+              Getting started
+              <ArrowRight size={14} strokeWidth={1.5} className="transition-transform group-hover:translate-x-1" />
+            </Link>
           </div>
 
-          <div className="bg-background p-6 md:col-span-4">
+          <Link to="/docs/validation" className={`${bentoCardClassName} md:col-span-4`}>
             <p className="text-sm font-semibold text-foreground">Validation</p>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
               Zod schemas, inline validators, async checks, cross-field rules. Errors surface next to the field that caused them.
             </p>
-          </div>
+            <span className={bentoLinkClassName}>
+              Read validation docs
+              <ArrowRight size={14} strokeWidth={1.5} className="transition-transform group-hover:translate-x-1" />
+            </span>
+          </Link>
 
-          <div className="bg-background p-6 md:col-span-3">
+          <Link to="/docs/advanced-features" className={`${bentoCardClassName} md:col-span-3`}>
             <p className="text-sm font-semibold text-foreground">Multi-page</p>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
               Pages, tabs, conditional routing, dynamic copy, and progress tracking. Declared as data on each field.
             </p>
-          </div>
+            <span className={bentoLinkClassName}>
+              Read advanced docs
+              <ArrowRight size={14} strokeWidth={1.5} className="transition-transform group-hover:translate-x-1" />
+            </span>
+          </Link>
 
-          <div className="bg-background p-6 md:col-span-3">
+          <Link to="/docs/fields" className={`${bentoCardClassName} md:col-span-3`}>
             <p className="text-sm font-semibold text-foreground">25+ field types</p>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
               Text, select, date, switch, slider, file upload, combobox, rating, color picker, phone, location, and more.
             </p>
-          </div>
+            <span className={bentoLinkClassName}>
+              Browse field docs
+              <ArrowRight size={14} strokeWidth={1.5} className="transition-transform group-hover:translate-x-1" />
+            </span>
+          </Link>
 
-          <div className="bg-background p-6 md:col-span-4">
+          <Link to="/docs/api" className={`${bentoCardClassName} md:col-span-4`}>
             <p className="text-sm font-semibold text-foreground">Component overrides</p>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
               Swap any field renderer, wrapper, label, or error component. Full control without forking.
             </p>
-          </div>
+            <span className={bentoLinkClassName}>
+              Read API docs
+              <ArrowRight size={14} strokeWidth={1.5} className="transition-transform group-hover:translate-x-1" />
+            </span>
+          </Link>
 
-          <div className="bg-background p-6 md:col-span-5">
-            <p className="text-sm font-semibold text-foreground">Builder & AI</p>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              Drag fields in the visual builder or describe them in natural language. Both export the same typed field model.
-            </p>
-          </div>
-
-          <div className="bg-background p-6 md:col-span-4">
+          <Link to="/docs/persistence" className={`${bentoCardClassName} md:col-span-3`}>
             <p className="text-sm font-semibold text-foreground">Persistence</p>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
               Auto-save drafts to localStorage. Resume exactly where you left off.
             </p>
-          </div>
+            <span className={bentoLinkClassName}>
+              Read persistence docs
+              <ArrowRight size={14} strokeWidth={1.5} className="transition-transform group-hover:translate-x-1" />
+            </span>
+          </Link>
 
-          <div className="bg-background p-6 md:col-span-3">
+          <Link to="/docs/builder" className={`${bentoCardClassName} md:col-span-5`}>
+            <p className="text-sm font-semibold text-foreground">Builder & AI</p>
+            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+              Drag fields in the visual builder or describe them in natural language. Both export the same typed field model.
+            </p>
+            <span className={bentoLinkClassName}>
+              Open builder docs
+              <ArrowRight size={14} strokeWidth={1.5} className="transition-transform group-hover:translate-x-1" />
+            </span>
+          </Link>
+
+          <Link to="/docs/advanced-features" className={`${bentoCardClassName} md:col-span-4`}>
             <p className="text-sm font-semibold text-foreground">Conditional logic</p>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
               Show, hide, or require fields based on other values. Declarative, no imperative glue.
             </p>
-          </div>
+            <span className={bentoLinkClassName}>
+              Read logic docs
+              <ArrowRight size={14} strokeWidth={1.5} className="transition-transform group-hover:translate-x-1" />
+            </span>
+          </Link>
 
         </div>
       </div>

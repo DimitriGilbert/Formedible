@@ -13,21 +13,24 @@
         "clsx",
         "tailwind-merge"
       ],
+      "registryDependencies": [
+        "https://formedible.dev/r/formedible-core.json"
+      ],
       "files": [
         {
           "path": "src/lib/formedible/formedible-parser.ts",
           "type": "registry:lib",
-          "target": "lib/formedible/formedible-parser.ts"
+          "target": "@ui/formedible/lib/formedible-parser.ts"
         },
         {
           "path": "src/lib/formedible/parser-types.ts",
           "type": "registry:lib",
-          "target": "lib/formedible/parser-types.ts"
+          "target": "@ui/formedible/lib/parser-types.ts"
         },
         {
           "path": "src/lib/formedible/parser-config-schema.ts",
           "type": "registry:lib",
-          "target": "lib/formedible/parser-config-schema.ts"
+          "target": "@ui/formedible/lib/parser-config-schema.ts"
         }
       ]
     }

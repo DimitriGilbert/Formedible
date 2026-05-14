@@ -10,7 +10,7 @@ import type { AIBuilderProviderAccess } from '@/components/formedible/ai/ai-buil
 import type { ProviderSecretPersistencePreference } from '@/lib/formedible/ai-storage';
 import type { AiConversation, ProviderSecrets, ProviderSettings } from '@/lib/formedible/ai-types';
 import type { ParserConfig } from '@/lib/formedible/parser-config-schema';
-import { cn } from '@/lib/utils';
+import { cn } from '@formedible/ui/lib/utils';
 
 export interface SidebarContentProps {
   readonly activeView: SidebarView | null;

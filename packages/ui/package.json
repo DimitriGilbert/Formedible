@@ -6,6 +6,13 @@
   "exports": {
     "./globals.css": "./src/styles/globals.css",
     "./lib/*": "./src/lib/*.ts",
+    "./components/formedible/hooks/use-formedible": "./src/components/formedible/hooks/use-formedible.tsx",
+    "./components/formedible/hooks/*": "./src/components/formedible/hooks/*.ts",
+    "./components/formedible/lib/*": "./src/components/formedible/lib/*.ts",
+    "./components/formedible/fields/advanced-field-utils": "./src/components/formedible/fields/advanced-field-utils.ts",
+    "./components/formedible/fields/*": "./src/components/formedible/fields/*.tsx",
+    "./components/formedible/layout/*": "./src/components/formedible/layout/*.tsx",
+    "./components/formedible/*": "./src/components/formedible/*.tsx",
     "./components/*": "./src/components/*.tsx",
     "./hooks/*": "./src/hooks/*.ts",
     "./postcss.config": "./postcss.config.mjs"
@@ -15,6 +22,7 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.0.0",
+    "@tanstack/react-form": "^1.27.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "catalog:",

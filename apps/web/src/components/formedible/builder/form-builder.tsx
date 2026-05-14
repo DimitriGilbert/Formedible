@@ -2,13 +2,13 @@
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '@formedible/ui/components/button';
 import { globalFieldStore } from '@/components/formedible/builder/field-store';
 import { defaultTabs } from '@/components/formedible/builder/default-tabs';
-import { cn } from '@/lib/utils';
+import { cn } from '@formedible/ui/lib/utils';
 import { defaultFormMetadata } from '@/lib/formedible/builder-types';
 import type { FormBuilderProps, FormMetadata, TabConfig } from '@/lib/formedible/builder-types';
-import type { FormedibleFieldType } from '@/lib/formedible/types';
+import type { FormedibleFieldType } from '@formedible/ui/components/formedible/lib/types';
 
 const emptyInitialFields: NonNullable<FormBuilderProps['initialFields']> = [];
 

@@ -2,9 +2,9 @@
 
 import { useMemo } from 'react';
 
-import { useFormedible } from '@/hooks/use-formedible';
-import { cn } from '@/lib/utils';
-import type { FormedibleFormValues, UseFormedibleOptions } from '@/lib/formedible/types';
+import { useFormedible } from '@formedible/ui/components/formedible/hooks/use-formedible';
+import { cn } from '@formedible/ui/lib/utils';
+import type { FormedibleFormValues, UseFormedibleOptions } from '@formedible/ui/components/formedible/lib/types';
 
 export interface FormPreviewProps {
   readonly config: UseFormedibleOptions<FormedibleFormValues>;

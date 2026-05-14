@@ -2,12 +2,12 @@
 
 import { useSyncExternalStore } from 'react';
 
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Field, FieldDescription, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { cn } from '@/lib/utils';
+import { Button } from '@formedible/ui/components/button';
+import { Checkbox } from '@formedible/ui/components/checkbox';
+import { Field, FieldDescription, FieldLabel } from '@formedible/ui/components/field';
+import { Input } from '@formedible/ui/components/input';
+import { Textarea } from '@formedible/ui/components/textarea';
+import { cn } from '@formedible/ui/lib/utils';
 import { globalFieldStore } from '@/components/formedible/builder/field-store';
 import type { FormField } from '@/lib/formedible/builder-types';
 

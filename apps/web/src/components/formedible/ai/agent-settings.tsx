@@ -1,8 +1,8 @@
 'use client';
 
-import { Input } from '@/components/ui/input';
+import { Input } from '@formedible/ui/components/input';
 import type { ProviderSecrets, ProviderSettings } from '@/lib/formedible/ai-types';
-import { cn } from '@/lib/utils';
+import { cn } from '@formedible/ui/lib/utils';
 
 export interface AgentSettingsProps {
   readonly settings: ProviderSettings;

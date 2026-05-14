@@ -1,11 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { useFormedible } from "@/hooks/use-formedible";
+import { useFormedible } from "@formedible/ui/components/formedible/hooks/use-formedible";
 import { z } from "zod";
 import { toast } from "sonner";
 import { EnergyRatingComponent } from "@/components/examples/energy-rating-component";
-import type { FormedibleSliderVisualizationProps } from "@/lib/formedible/types";
+import type { FormedibleSliderVisualizationProps } from "@formedible/ui/components/formedible/lib/types";
 
 export const advancedFieldTypesSchema = z.object({
   satisfaction: z.number().min(1).max(5),

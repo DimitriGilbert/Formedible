@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router';
 import { ArrowRight } from 'lucide-react';
 
-import { useFormedible } from '@/hooks/use-formedible';
+import { useFormedible } from '@formedible/ui/components/formedible/hooks/use-formedible';
 
 import { CodeBlock } from './code-block';
 

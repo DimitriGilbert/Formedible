@@ -80,7 +80,7 @@ export function DocsLayout() {
               <h2 className="mt-3 text-sm font-semibold text-foreground">Real forms rendered from the current hook.</h2>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
                 These examples deliberately import <code className="rounded bg-muted px-1.5 py-0.5 text-foreground">useFormedible</code> from{' '}
-                <code className="rounded bg-muted px-1.5 py-0.5 text-foreground">@/hooks/use-formedible</code>, then render the returned <code className="rounded bg-muted px-1.5 py-0.5 text-foreground">Form</code> component.
+                <code className="rounded bg-muted px-1.5 py-0.5 text-foreground">/ui/components/formedible/hooks/use-formedible</code>, then render the returned <code className="rounded bg-muted px-1.5 py-0.5 text-foreground">Form</code> component.
               </p>
             </div>
 

@@ -1,7 +1,7 @@
 import type { ComponentProps } from 'react';
 import { Switch as SwitchPrimitive } from '@base-ui/react/switch';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@formedible/ui/lib/utils';
 
 type SwitchProps = Omit<ComponentProps<typeof SwitchPrimitive.Root>, 'className'> & {
   className?: string;

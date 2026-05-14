@@ -3,7 +3,7 @@ import { Radio as RadioPrimitive } from '@base-ui/react/radio';
 import { RadioGroup as RadioGroupPrimitive } from '@base-ui/react/radio-group';
 import { CircleIcon } from 'lucide-react';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@formedible/ui/lib/utils';
 
 type RadioGroupProps = Omit<RadioGroupPrimitive.Props<string>, 'className' | 'onValueChange'> & {
   className?: string;

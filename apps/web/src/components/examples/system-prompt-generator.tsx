@@ -1,8 +1,8 @@
 
-import { useFormedible } from "@/hooks/use-formedible";
+import { useFormedible } from "@formedible/ui/components/formedible/hooks/use-formedible";
 import { z } from "zod";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@formedible/ui/components/button";
 import {
   Card,
   CardContent,

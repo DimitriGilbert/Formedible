@@ -1,8 +1,8 @@
 
-import { useFormedible } from "@/hooks/use-formedible";
+import { useFormedible } from "@formedible/ui/components/formedible/hooks/use-formedible";
 import { z } from "zod";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@formedible/ui/components/button";
 import {
   Card,
   CardContent,
@@ -83,7 +83,7 @@ export function InstallationPromptGenerator() {
     // Basic Usage
     prompt += `## 🎯 Quick Start Example\n\n`;
     prompt += `\`\`\`${useTypeScript ? "tsx" : "jsx"}\n`;
-    prompt += `import { useFormedible } from "@/hooks/use-formedible";\n`;
+    prompt += `import { useFormedible } from "@formedible/ui/components/formedible/hooks/use-formedible";\n`;
     prompt += `import { z } from "zod";\n\n`;
 
     prompt += `const contactSchema = z.object({\n`;

@@ -1,6 +1,6 @@
 import { Code, Eye, Settings } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '@formedible/ui/components/button';
 import { CodeGenerator } from '@/components/formedible/builder/code-generator';
 import { FieldConfigurator } from '@/components/formedible/builder/field-configurator';
 import { FormPreview } from '@/components/formedible/builder/form-preview';

@@ -8,14 +8,14 @@ import { ChatInterface } from '@/components/formedible/ai/chat-interface';
 import { createDefaultProviderSecrets, createDefaultProviderSettings, ProviderSelection, validateProviderAccess } from '@/components/formedible/ai/provider-selection';
 import { SidebarContent } from '@/components/formedible/ai/sidebar-content';
 import { SidebarIcons, type SidebarView } from '@/components/formedible/ai/sidebar-icons';
-import { Button } from '@/components/ui/button';
+import { Button } from '@formedible/ui/components/button';
 import { clearStoredProviderSecrets, exportConversation, getLastFormCode, persistConversations, persistProviderSecrets, persistProviderSettings, persistUiState, readPersistedAIBuilderState, readStoredProviderSecrets, upsertConversation } from '@/lib/formedible/ai-storage';
 import type { ProviderSecretPersistencePreference } from '@/lib/formedible/ai-storage';
 import type { AiConversation, AiMessage, AiParserConfig, AIBuilderMode, ProviderSecrets, ProviderSettings } from '@/lib/formedible/ai-types';
 import { defaultParserConfig, generateSystemPrompt, mergeParserConfig } from '@/lib/formedible/parser-config-schema';
 import type { ParserConfig } from '@/lib/formedible/parser-config-schema';
-import type { FormedibleFormValues } from '@/lib/formedible/types';
-import { cn } from '@/lib/utils';
+import type { FormedibleFormValues } from '@formedible/ui/components/formedible/lib/types';
+import { cn } from '@formedible/ui/lib/utils';
 
 export const AI_BUILDER_DEFAULT_MODE: AIBuilderMode = 'client';
 

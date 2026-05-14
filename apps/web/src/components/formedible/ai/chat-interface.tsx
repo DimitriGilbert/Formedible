@@ -3,8 +3,8 @@
 import { useState } from 'react';
 
 import { ChatMessages } from '@/components/formedible/ai/chat-messages';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@formedible/ui/components/button';
+import { Textarea } from '@formedible/ui/components/textarea';
 import { collectAiGenerationResult, streamAiResponse } from '@/lib/formedible/ai-generation';
 import { extractFormCode, parseAiToFormedible } from '@/lib/formedible/ai-parser';
 import { createAiStreamScheduler } from '@/lib/formedible/ai-stream-scheduler';
@@ -19,7 +19,7 @@ import type {
   ProviderSecrets,
   ProviderSettings,
 } from '@/lib/formedible/ai-types';
-import { cn } from '@/lib/utils';
+import { cn } from '@formedible/ui/lib/utils';
 
 export interface ChatInterfaceProps {
   readonly providerSettings: ProviderSettings | null;

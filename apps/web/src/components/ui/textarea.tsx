@@ -1,6 +1,6 @@
 import type { ComponentProps } from 'react';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@formedible/ui/lib/utils';
 
 function Textarea({ className, ...props }: ComponentProps<'textarea'>) {
   return (

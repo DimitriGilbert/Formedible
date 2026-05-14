@@ -69,5 +69,19 @@ interface InputRangeProps {
 }
 
 function InputRange({ id, name, min, max, step, value, disabled, invalid, className, onBlur, onChange }: InputRangeProps) {
-  return <Slider id={id} name={name} min={min} max={max} step={step} value={value} disabled={disabled} aria-invalid={invalid ? true : undefined} className={className} onBlur={onBlur} onValueChange={onChange} />;
+  return (
+    <Slider
+      id={id}
+      name={name}
+      min={min}
+      max={max}
+      step={step}
+      value={value}
+      disabled={disabled}
+      aria-invalid={invalid ? true : undefined}
+      className={className}
+      onBlur={onBlur}
+      onValueChange={(nextValue) => onChange(Array.isArray(nextValue) ? (nextValue[0] ?? min) : nextValue)}
+    />
+  );
 }

@@ -1,8 +1,9 @@
 "use client";
 
-import { useFormedible } from "@/hooks/use-formedible";
 import { z } from "zod";
 import { toast } from "sonner";
+
+import { useFormedible } from "@formedible/ui/components/formedible/hooks/use-formedible";
 
 export const registrationSchema = z.object({
   firstName: z.string().min(1, "First name is required"),

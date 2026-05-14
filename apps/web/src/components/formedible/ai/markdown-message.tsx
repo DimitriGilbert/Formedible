@@ -8,8 +8,8 @@ import remarkGfm from 'remark-gfm';
 import type { Components } from 'react-markdown';
 import type { ReactNode } from 'react';
 
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { Button } from '@formedible/ui/components/button';
+import { cn } from '@formedible/ui/lib/utils';
 
 export interface MarkdownMessageProps {
   readonly content: string;

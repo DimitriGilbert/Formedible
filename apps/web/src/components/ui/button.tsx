@@ -1,6 +1,6 @@
 import type { ComponentProps } from 'react';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@formedible/ui/lib/utils';
 
 type ButtonProps = ComponentProps<'button'> & {
   readonly variant?: 'default' | 'outline' | 'ghost';

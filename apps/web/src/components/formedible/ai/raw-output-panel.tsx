@@ -3,11 +3,11 @@
 import { Check, Copy } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '@formedible/ui/components/button';
 import { parseAiToFormedible } from '@/lib/formedible/ai-parser';
 import { parseSafeStreamEvents, redactUnknown } from '@/lib/formedible/ai-safe-persistence';
 import type { AiFormParseResult, AiMessage, AiStreamEvent } from '@/lib/formedible/ai-types';
-import { cn } from '@/lib/utils';
+import { cn } from '@formedible/ui/lib/utils';
 
 export interface RawOutputPanelProps {
   readonly message: AiMessage;

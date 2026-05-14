@@ -2,9 +2,9 @@
 
 import { Download, MessageSquare, Plus, Trash2 } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '@formedible/ui/components/button';
 import type { AiConversation } from '@/lib/formedible/ai-types';
-import { cn } from '@/lib/utils';
+import { cn } from '@formedible/ui/lib/utils';
 
 export interface ConversationHistoryProps {
   readonly conversations: readonly AiConversation[];

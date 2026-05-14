@@ -19,7 +19,7 @@ export const docsCodeExamples: Record<DocsCodeExampleId, DocsCodeExample> = {
     title: 'Clean-room app surface',
     description: 'Use the generated hook and copied components inside your app. No package runtime import is required.',
     language: 'tsx',
-    code: `import { useFormedible } from '@/hooks/use-formedible';
+    code: `import { useFormedible } from '@formedible/ui/components/formedible/hooks/use-formedible';
 
 type LeadFormValues = {
   email: string;
@@ -70,7 +70,7 @@ export function LeadCaptureForm() {
     language: 'tsx',
     code: `import { z } from 'zod';
 
-import { useFormedible } from '@/hooks/use-formedible';
+import { useFormedible } from '@formedible/ui/components/formedible/hooks/use-formedible';
 
 const onboardingSchema = z.object({
   name: z.string().min(2),
@@ -173,9 +173,9 @@ export function AiBuilderWorkspace() {
     language: 'tsx',
     code: `import type { ReactNode } from 'react';
 
-import { NumberField } from '@/components/formedible/fields/number-field';
-import { TextField } from '@/components/formedible/fields/text-field';
-import type { FormedibleFieldRenderProps, FormedibleFormValues, NormalizedFieldType } from '@/lib/formedible/types';
+import { NumberField } from '@formedible/ui/components/formedible/fields/number-field';
+import { TextField } from '@formedible/ui/components/formedible/fields/text-field';
+import type { FormedibleFieldRenderProps, FormedibleFormValues, NormalizedFieldType } from '@formedible/ui/components/formedible/lib/types';
 
 type FieldComponent = <TFormValues extends FormedibleFormValues>(props: FormedibleFieldRenderProps<TFormValues>) => ReactNode;
 

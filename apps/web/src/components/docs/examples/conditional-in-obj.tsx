@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormedible } from "@/hooks/use-formedible";
+import { useFormedible } from "@formedible/ui/components/formedible/hooks/use-formedible";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Card, CardContent } from "@formedible/ui/components/card";

@@ -15,51 +15,54 @@
         "lucide-react",
         "tailwind-merge"
       ],
+      "registryDependencies": [
+        "https://formedible.dev/r/formedible-core.json"
+      ],
       "files": [
         {
           "path": "src/index.ts",
           "type": "registry:lib",
-          "target": "components/formedible/builder/index.ts"
+          "target": "@ui/formedible/builder/index.ts"
         },
         {
           "path": "src/components/formedible/builder/form-builder.tsx",
           "type": "registry:component",
-          "target": "components/formedible/builder/form-builder.tsx"
+          "target": "@ui/formedible/builder/form-builder.tsx"
         },
         {
           "path": "src/components/formedible/builder/field-configurator.tsx",
           "type": "registry:component",
-          "target": "components/formedible/builder/field-configurator.tsx"
+          "target": "@ui/formedible/builder/field-configurator.tsx"
         },
         {
           "path": "src/components/formedible/builder/form-preview.tsx",
           "type": "registry:component",
-          "target": "components/formedible/builder/form-preview.tsx"
+          "target": "@ui/formedible/builder/form-preview.tsx"
         },
         {
           "path": "src/components/formedible/builder/code-generator.tsx",
           "type": "registry:component",
-          "target": "components/formedible/builder/code-generator.tsx"
+          "target": "@ui/formedible/builder/code-generator.tsx"
         },
         {
           "path": "src/components/formedible/builder/field-store.ts",
           "type": "registry:lib",
-          "target": "components/formedible/builder/field-store.ts"
+          "target": "@ui/formedible/builder/field-store.ts"
         },
         {
           "path": "src/components/formedible/builder/default-tabs.tsx",
           "type": "registry:lib",
-          "target": "components/formedible/builder/default-tabs.tsx"
+          "target": "@ui/formedible/builder/default-tabs.tsx"
         },
         {
           "path": "src/lib/formedible/builder-types.ts",
           "type": "registry:lib",
-          "target": "lib/formedible/builder-types.ts"
+          "target": "@ui/formedible/lib/builder-types.ts"
         },
         {
           "path": "src/lib/formedible/code-generation.ts",
           "type": "registry:lib",
-          "target": "lib/formedible/code-generation.ts"
+          "target": "@ui/formedible/lib/code-generation.ts"
         }
       ]
     }

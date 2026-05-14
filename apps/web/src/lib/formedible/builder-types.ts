@@ -1,6 +1,6 @@
 import type { ComponentType, ReactNode } from 'react';
 
-import type { FormedibleFieldConfig, FormedibleFieldType, FormedibleFormValues } from '@/lib/formedible/types';
+import type { FormedibleFieldConfig, FormedibleFieldType, FormedibleFormValues } from '@formedible/ui/components/formedible/lib/types';
 
 export interface BuilderFieldTypeDefinition {
   readonly value: FormedibleFieldType;

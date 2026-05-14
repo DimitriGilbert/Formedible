@@ -2,8 +2,8 @@
 
 import { Bug, ChevronLeft, ChevronRight, FileText, Globe, History, SlidersHorizontal } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { Button } from '@formedible/ui/components/button';
+import { cn } from '@formedible/ui/lib/utils';
 
 export type SidebarView = 'history' | 'provider' | 'model' | 'parser' | 'debug';
 
