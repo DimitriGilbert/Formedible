@@ -5,6 +5,7 @@ import type {
   AiConversation,
   AiConversationExport,
   AiConversationMetadata,
+  AiJsonValue,
   AiMessage,
   AiMessageRole,
   AiMessageStatus,
@@ -531,7 +532,7 @@ function parseParsedFormConfig(value: unknown): ParsedFormConfig | undefined {
   const tabs = parseTabs(value.tabs);
   const progress = parseProgress(value.progress);
   const persistence = parsePersistence(value.persistence);
-  const schema = parseSafeJsonValue(value.schema);
+  const schema = parseStrictSafeJsonValue(value.schema);
   const config = {
     fields,
     formOptions,
@@ -548,6 +549,11 @@ function parseParsedFormConfig(value: unknown): ParsedFormConfig | undefined {
     ...(typeof value.collapseLabel === 'string' ? { collapseLabel: value.collapseLabel } : {}),
     ...(typeof value.expandLabel === 'string' ? { expandLabel: value.expandLabel } : {}),
     ...(typeof value.formClassName === 'string' ? { formClassName: value.formClassName } : {}),
+    ...(typeof value.autoSubmitOnChange === 'boolean' ? { autoSubmitOnChange: value.autoSubmitOnChange } : {}),
+    ...(parseNumber(value.autoSubmitDebounceMs) === undefined ? {} : { autoSubmitDebounceMs: parseNumber(value.autoSubmitDebounceMs) }),
+    ...(typeof value.disabled === 'boolean' ? { disabled: value.disabled } : {}),
+    ...(typeof value.loading === 'boolean' ? { loading: value.loading } : {}),
+    ...(typeof value.showSubmitButton === 'boolean' ? { showSubmitButton: value.showSubmitButton } : {}),
   } satisfies ParsedFormConfig;
 
   return config;
@@ -574,6 +580,25 @@ function parseFieldConfig(value: unknown): ParsedFieldConfig | undefined {
   const nestedFields = parseFieldConfigs(value.nestedFields);
   const arrayConfig = parseArrayConfig(value.arrayConfig);
   const objectConfig = parseObjectConfig(value.objectConfig);
+  const section = parseFieldSection(value.section);
+  const textareaConfig = parseTextareaConfig(value.textareaConfig);
+  const passwordConfig = parsePasswordConfig(value.passwordConfig);
+  const numberConfig = parseNumberConfig(value.numberConfig);
+  const datalist = parseFieldOptions(value.datalist);
+  const help = parseHelpConfig(value.help);
+  const autocompleteConfig = parseAutocompleteConfig(value.autocompleteConfig);
+  const maskedInputConfig = parseMaskedInputConfig(value.maskedInputConfig);
+  const colorConfig = parseColorConfig(value.colorConfig);
+  const dateConfig = parseDateConfig(value.dateConfig);
+  const sliderConfig = parseSliderConfig(value.sliderConfig);
+  const ratingConfig = parseRatingConfig(value.ratingConfig);
+  const multiSelectConfig = parseMultiSelectConfig(value.multiSelectConfig);
+  const comboboxConfig = parseComboboxConfig(value.comboboxConfig);
+  const multiComboboxConfig = parseMultiComboboxConfig(value.multiComboboxConfig);
+  const phoneConfig = parsePhoneConfig(value.phoneConfig);
+  const durationConfig = parseDurationConfig(value.durationConfig);
+  const locationConfig = parseLocationConfig(value.locationConfig);
+  const fileConfig = parseFileConfig(value.fileConfig);
   const field = {
     name: value.name,
     ...(isFormedibleFieldType(value.type) ? { type: value.type } : {}),
@@ -587,7 +612,7 @@ function parseFieldConfig(value: unknown): ParsedFieldConfig | undefined {
     ...(typeof value.inputClassName === 'string' ? { inputClassName: value.inputClassName } : {}),
     ...(parseNumber(value.page) === undefined ? {} : { page: parseNumber(value.page) }),
     ...(typeof value.tab === 'string' ? { tab: value.tab } : {}),
-    ...(typeof value.section === 'string' ? { section: value.section } : {}),
+    ...(section ? { section } : {}),
     ...(typeof value.conditional === 'string' ? { conditional: value.conditional } : {}),
     ...(options.length === 0 ? {} : { options }),
     ...(optionSets ? { optionSets } : {}),
@@ -599,9 +624,416 @@ function parseFieldConfig(value: unknown): ParsedFieldConfig | undefined {
     ...(parseNumber(value.step) === undefined ? {} : { step: parseNumber(value.step) }),
     ...(parseNumber(value.rows) === undefined ? {} : { rows: parseNumber(value.rows) }),
     ...(parseNumber(value.maxLength) === undefined ? {} : { maxLength: parseNumber(value.maxLength) }),
+    ...(typeof value.mask === 'string' ? { mask: value.mask } : {}),
+    ...(textareaConfig ? { textareaConfig } : {}),
+    ...(passwordConfig ? { passwordConfig } : {}),
+    ...(numberConfig ? { numberConfig } : {}),
+    ...(datalist.length === 0 ? {} : { datalist }),
+    ...(help === undefined ? {} : { help }),
+    ...(autocompleteConfig ? { autocompleteConfig } : {}),
+    ...(maskedInputConfig ? { maskedInputConfig } : {}),
+    ...(colorConfig ? { colorConfig } : {}),
+    ...(dateConfig ? { dateConfig } : {}),
+    ...(sliderConfig ? { sliderConfig } : {}),
+    ...(ratingConfig ? { ratingConfig } : {}),
+    ...(multiSelectConfig ? { multiSelectConfig } : {}),
+    ...(comboboxConfig ? { comboboxConfig } : {}),
+    ...(multiComboboxConfig ? { multiComboboxConfig } : {}),
+    ...(phoneConfig ? { phoneConfig } : {}),
+    ...(durationConfig ? { durationConfig } : {}),
+    ...(locationConfig ? { locationConfig } : {}),
+    ...(fileConfig ? { fileConfig } : {}),
   } satisfies ParsedFieldConfig;
 
   return field;
+}
+
+function parseTextareaConfig(value: unknown): ParsedFieldConfig['textareaConfig'] | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const config = {
+    ...(parseNumber(value.rows) === undefined ? {} : { rows: parseNumber(value.rows) }),
+    ...(parseNumber(value.cols) === undefined ? {} : { cols: parseNumber(value.cols) }),
+    ...(parseNumber(value.maxLength) === undefined ? {} : { maxLength: parseNumber(value.maxLength) }),
+    ...(isTextareaResize(value.resize) ? { resize: value.resize } : {}),
+    ...(typeof value.showWordCount === 'boolean' ? { showWordCount: value.showWordCount } : {}),
+  } satisfies NonNullable<ParsedFieldConfig['textareaConfig']>;
+
+  return Object.keys(config).length === 0 ? undefined : config;
+}
+
+function parsePasswordConfig(value: unknown): ParsedFieldConfig['passwordConfig'] | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const config = {
+    ...(typeof value.showToggle === 'boolean' ? { showToggle: value.showToggle } : {}),
+    ...(typeof value.strengthMeter === 'boolean' ? { strengthMeter: value.strengthMeter } : {}),
+    ...(parseNumber(value.minStrength) === undefined ? {} : { minStrength: parseNumber(value.minStrength) }),
+  } satisfies NonNullable<ParsedFieldConfig['passwordConfig']>;
+
+  return Object.keys(config).length === 0 ? undefined : config;
+}
+
+function parseNumberConfig(value: unknown): ParsedFieldConfig['numberConfig'] | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const config = {
+    ...(parseNumber(value.min) === undefined ? {} : { min: parseNumber(value.min) }),
+    ...(parseNumber(value.max) === undefined ? {} : { max: parseNumber(value.max) }),
+    ...(parseNumber(value.step) === undefined ? {} : { step: parseNumber(value.step) }),
+  } satisfies NonNullable<ParsedFieldConfig['numberConfig']>;
+
+  return Object.keys(config).length === 0 ? undefined : config;
+}
+
+function parseHelpConfig(value: unknown): ParsedFieldConfig['help'] | undefined {
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const config = {
+    ...(typeof value.tooltip === 'string' ? { tooltip: value.tooltip } : {}),
+    ...(typeof value.text === 'string' ? { text: value.text } : {}),
+  } satisfies Exclude<NonNullable<ParsedFieldConfig['help']>, string>;
+
+  return Object.keys(config).length === 0 ? undefined : config;
+}
+
+function parseAutocompleteConfig(value: unknown): ParsedFieldConfig['autocompleteConfig'] | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const options = parseFieldOptions(value.options);
+  const config = {
+    ...(options.length === 0 ? {} : { options }),
+    ...(parseNumber(value.debounceMs) === undefined ? {} : { debounceMs: parseNumber(value.debounceMs) }),
+    ...(parseNumber(value.minChars) === undefined ? {} : { minChars: parseNumber(value.minChars) }),
+    ...(parseNumber(value.maxResults) === undefined ? {} : { maxResults: parseNumber(value.maxResults) }),
+    ...(typeof value.allowCustom === 'boolean' ? { allowCustom: value.allowCustom } : {}),
+    ...(typeof value.placeholder === 'string' ? { placeholder: value.placeholder } : {}),
+    ...(typeof value.noOptionsText === 'string' ? { noOptionsText: value.noOptionsText } : {}),
+    ...(typeof value.loadingText === 'string' ? { loadingText: value.loadingText } : {}),
+  } satisfies NonNullable<ParsedFieldConfig['autocompleteConfig']>;
+
+  return Object.keys(config).length === 0 ? undefined : config;
+}
+
+function parseMaskedInputConfig(value: unknown): ParsedFieldConfig['maskedInputConfig'] | undefined {
+  if (!isRecord(value) || typeof value.mask !== 'string') {
+    return undefined;
+  }
+
+  return {
+    mask: value.mask,
+    ...(typeof value.placeholder === 'string' ? { placeholder: value.placeholder } : {}),
+    ...(typeof value.showMask === 'boolean' ? { showMask: value.showMask } : {}),
+    ...(typeof value.guide === 'boolean' ? { guide: value.guide } : {}),
+    ...(typeof value.keepCharPositions === 'boolean' ? { keepCharPositions: value.keepCharPositions } : {}),
+  } satisfies NonNullable<ParsedFieldConfig['maskedInputConfig']>;
+}
+
+function parseColorConfig(value: unknown): ParsedFieldConfig['colorConfig'] | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const presetColors = parseStringArray(value.presetColors);
+  const config = {
+    ...(isColorFormat(value.format) ? { format: value.format } : {}),
+    ...(typeof value.showPreview === 'boolean' ? { showPreview: value.showPreview } : {}),
+    ...(presetColors.length === 0 ? {} : { presetColors }),
+    ...(typeof value.allowCustom === 'boolean' ? { allowCustom: value.allowCustom } : {}),
+  } satisfies NonNullable<ParsedFieldConfig['colorConfig']>;
+
+  return Object.keys(config).length === 0 ? undefined : config;
+}
+
+function parseDateConfig(value: unknown): ParsedFieldConfig['dateConfig'] | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const minDate = parseDateConfigBoundary(value.minDate);
+  const maxDate = parseDateConfigBoundary(value.maxDate);
+  const config = {
+    ...(minDate === undefined ? {} : { minDate }),
+    ...(maxDate === undefined ? {} : { maxDate }),
+    ...(typeof value.format === 'string' ? { format: value.format } : {}),
+  } satisfies NonNullable<ParsedFieldConfig['dateConfig']>;
+
+  return Object.keys(config).length === 0 ? undefined : config;
+}
+
+function parseDateConfigBoundary(value: unknown): string | undefined {
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  if (value instanceof Date && Number.isFinite(value.getTime())) {
+    return value.toISOString();
+  }
+
+  return undefined;
+}
+
+function parseSliderConfig(value: unknown): ParsedFieldConfig['sliderConfig'] | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const valueMapping = parseSliderValueMapping(value.valueMapping);
+  const marks = parseSliderMarks(value.marks);
+  const config = {
+    ...(parseNumber(value.min) === undefined ? {} : { min: parseNumber(value.min) }),
+    ...(parseNumber(value.max) === undefined ? {} : { max: parseNumber(value.max) }),
+    ...(parseNumber(value.step) === undefined ? {} : { step: parseNumber(value.step) }),
+    ...(valueMapping.length === 0 ? {} : { valueMapping }),
+    ...(typeof value.valueLabelPrefix === 'string' ? { valueLabelPrefix: value.valueLabelPrefix } : {}),
+    ...(typeof value.valueLabelSuffix === 'string' ? { valueLabelSuffix: value.valueLabelSuffix } : {}),
+    ...(parseNumber(value.valueDisplayPrecision) === undefined ? {} : { valueDisplayPrecision: parseNumber(value.valueDisplayPrecision) }),
+    ...(typeof value.showRawValue === 'boolean' ? { showRawValue: value.showRawValue } : {}),
+    ...(typeof value.showValue === 'boolean' ? { showValue: value.showValue } : {}),
+    ...(marks.length === 0 ? {} : { marks }),
+  } satisfies NonNullable<ParsedFieldConfig['sliderConfig']>;
+
+  return Object.keys(config).length === 0 ? undefined : config;
+}
+
+function parseSliderValueMapping(value: unknown): NonNullable<NonNullable<ParsedFieldConfig['sliderConfig']>['valueMapping']> {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((entry) => {
+    if (!isRecord(entry)) {
+      return [];
+    }
+
+    const sliderValue = parseNumber(entry.sliderValue);
+    const displayValue = parseSerializableReactNode(entry.displayValue);
+
+    if (sliderValue === undefined || displayValue === undefined) {
+      return [];
+    }
+
+    return [{
+      sliderValue,
+      displayValue,
+      ...(parseSerializableReactNode(entry.label) === undefined ? {} : { label: parseSerializableReactNode(entry.label) }),
+    }];
+  });
+}
+
+function parseSliderMarks(value: unknown): NonNullable<NonNullable<ParsedFieldConfig['sliderConfig']>['marks']> {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((entry) => {
+    if (!isRecord(entry)) {
+      return [];
+    }
+
+    const markValue = parseNumber(entry.value);
+    const label = parseSerializableReactNode(entry.label);
+
+    if (markValue === undefined || label === undefined) {
+      return [];
+    }
+
+    return [{ value: markValue, label }];
+  });
+}
+
+function parseRatingConfig(value: unknown): ParsedFieldConfig['ratingConfig'] | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const config = {
+    ...(parseNumber(value.max) === undefined ? {} : { max: parseNumber(value.max) }),
+    ...(typeof value.allowHalf === 'boolean' ? { allowHalf: value.allowHalf } : {}),
+    ...(isRatingIcon(value.icon) ? { icon: value.icon } : {}),
+    ...(isRatingSize(value.size) ? { size: value.size } : {}),
+    ...(typeof value.showValue === 'boolean' ? { showValue: value.showValue } : {}),
+  } satisfies NonNullable<ParsedFieldConfig['ratingConfig']>;
+
+  return Object.keys(config).length === 0 ? undefined : config;
+}
+
+function parseMultiSelectConfig(value: unknown): ParsedFieldConfig['multiSelectConfig'] | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const config = {
+    ...(parseNumber(value.maxSelections) === undefined ? {} : { maxSelections: parseNumber(value.maxSelections) }),
+    ...(typeof value.searchable === 'boolean' ? { searchable: value.searchable } : {}),
+    ...(typeof value.creatable === 'boolean' ? { creatable: value.creatable } : {}),
+    ...(typeof value.placeholder === 'string' ? { placeholder: value.placeholder } : {}),
+    ...(typeof value.noOptionsText === 'string' ? { noOptionsText: value.noOptionsText } : {}),
+  } satisfies NonNullable<ParsedFieldConfig['multiSelectConfig']>;
+
+  return Object.keys(config).length === 0 ? undefined : config;
+}
+
+function parseComboboxConfig(value: unknown): ParsedFieldConfig['comboboxConfig'] | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const config = {
+    ...(typeof value.searchable === 'boolean' ? { searchable: value.searchable } : {}),
+    ...(typeof value.placeholder === 'string' ? { placeholder: value.placeholder } : {}),
+    ...(typeof value.searchPlaceholder === 'string' ? { searchPlaceholder: value.searchPlaceholder } : {}),
+    ...(typeof value.noOptionsText === 'string' ? { noOptionsText: value.noOptionsText } : {}),
+  } satisfies NonNullable<ParsedFieldConfig['comboboxConfig']>;
+
+  return Object.keys(config).length === 0 ? undefined : config;
+}
+
+function parseMultiComboboxConfig(value: unknown): ParsedFieldConfig['multiComboboxConfig'] | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const multiSelectConfig = parseMultiSelectConfig(value);
+  const comboboxConfig = parseComboboxConfig(value);
+  const config = {
+    ...(multiSelectConfig ?? {}),
+    ...(comboboxConfig ?? {}),
+  } satisfies NonNullable<ParsedFieldConfig['multiComboboxConfig']>;
+
+  return Object.keys(config).length === 0 ? undefined : config;
+}
+
+function parsePhoneConfig(value: unknown): ParsedFieldConfig['phoneConfig'] | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const allowedCountries = parseStringArray(value.allowedCountries);
+  const config = {
+    ...(typeof value.defaultCountry === 'string' ? { defaultCountry: value.defaultCountry } : {}),
+    ...(isPhoneFormat(value.format) ? { format: value.format } : {}),
+    ...(allowedCountries.length === 0 ? {} : { allowedCountries }),
+    ...(typeof value.placeholder === 'string' ? { placeholder: value.placeholder } : {}),
+  } satisfies NonNullable<ParsedFieldConfig['phoneConfig']>;
+
+  return Object.keys(config).length === 0 ? undefined : config;
+}
+
+function parseDurationConfig(value: unknown): ParsedFieldConfig['durationConfig'] | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const config = {
+    ...(isDurationFormat(value.format) ? { format: value.format } : {}),
+    ...(parseNumber(value.maxHours) === undefined ? {} : { maxHours: parseNumber(value.maxHours) }),
+    ...(parseNumber(value.maxMinutes) === undefined ? {} : { maxMinutes: parseNumber(value.maxMinutes) }),
+    ...(parseNumber(value.maxSeconds) === undefined ? {} : { maxSeconds: parseNumber(value.maxSeconds) }),
+    ...(typeof value.showLabels === 'boolean' ? { showLabels: value.showLabels } : {}),
+  } satisfies NonNullable<ParsedFieldConfig['durationConfig']>;
+
+  return Object.keys(config).length === 0 ? undefined : config;
+}
+
+function parseLocationConfig(value: unknown): ParsedFieldConfig['locationConfig'] | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const defaultLocation = parseLocationValue(value.defaultLocation);
+  const searchOptions = parseLocationSearchOptions(value.searchOptions);
+  const config = {
+    ...(defaultLocation ? { defaultLocation } : {}),
+    ...(typeof value.enableSearch === 'boolean' ? { enableSearch: value.enableSearch } : {}),
+    ...(typeof value.enableGeolocation === 'boolean' ? { enableGeolocation: value.enableGeolocation } : {}),
+    ...(typeof value.enableManualEntry === 'boolean' ? { enableManualEntry: value.enableManualEntry } : {}),
+    ...(typeof value.showMap === 'boolean' ? { showMap: value.showMap } : {}),
+    ...(typeof value.searchPlaceholder === 'string' ? { searchPlaceholder: value.searchPlaceholder } : {}),
+    ...(searchOptions ? { searchOptions } : {}),
+  } satisfies NonNullable<ParsedFieldConfig['locationConfig']>;
+
+  return Object.keys(config).length === 0 ? undefined : config;
+}
+
+function parseLocationValue(value: unknown): NonNullable<NonNullable<ParsedFieldConfig['locationConfig']>['defaultLocation']> | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const lat = parseNumber(value.lat);
+  const lng = parseNumber(value.lng);
+
+  if (lat === undefined || lng === undefined) {
+    return undefined;
+  }
+
+  return {
+    lat,
+    lng,
+    ...(typeof value.address === 'string' ? { address: value.address } : {}),
+    ...(typeof value.city === 'string' ? { city: value.city } : {}),
+    ...(typeof value.state === 'string' ? { state: value.state } : {}),
+    ...(typeof value.country === 'string' ? { country: value.country } : {}),
+  };
+}
+
+function parseLocationSearchOptions(value: unknown): NonNullable<NonNullable<ParsedFieldConfig['locationConfig']>['searchOptions']> | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const config = {
+    ...(parseNumber(value.debounceMs) === undefined ? {} : { debounceMs: parseNumber(value.debounceMs) }),
+    ...(parseNumber(value.minQueryLength) === undefined ? {} : { minQueryLength: parseNumber(value.minQueryLength) }),
+    ...(parseNumber(value.maxResults) === undefined ? {} : { maxResults: parseNumber(value.maxResults) }),
+  } satisfies NonNullable<NonNullable<ParsedFieldConfig['locationConfig']>['searchOptions']>;
+
+  return Object.keys(config).length === 0 ? undefined : config;
+}
+
+function parseFileConfig(value: unknown): ParsedFieldConfig['fileConfig'] | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const config = {
+    ...(typeof value.accept === 'string' ? { accept: value.accept } : {}),
+    ...(typeof value.multiple === 'boolean' ? { multiple: value.multiple } : {}),
+    ...(parseNumber(value.maxSize) === undefined ? {} : { maxSize: parseNumber(value.maxSize) }),
+    ...(parseNumber(value.maxFiles) === undefined ? {} : { maxFiles: parseNumber(value.maxFiles) }),
+  } satisfies NonNullable<ParsedFieldConfig['fileConfig']>;
+
+  return Object.keys(config).length === 0 ? undefined : config;
+}
+
+function parseFieldSection(value: unknown): ParsedFieldConfig['section'] | undefined {
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  if (!isRecord(value) || typeof value.title !== 'string') {
+    return undefined;
+  }
+
+  return {
+    title: value.title,
+    ...(typeof value.description === 'string' ? { description: value.description } : {}),
+  };
 }
 
 function parseFieldOptions(value: unknown): readonly FormedibleFieldOption[] {
@@ -872,6 +1304,81 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+function parseStrictSafeJsonValue(value: unknown): AiJsonValue | undefined {
+  if (value === null || typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    return redactSecretString(value);
+  }
+
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : undefined;
+  }
+
+  if (Array.isArray(value)) {
+    const entries: AiJsonValue[] = [];
+
+    for (const entry of value) {
+      const parsedEntry = parseStrictSafeJsonValue(entry);
+
+      if (parsedEntry === undefined) {
+        return undefined;
+      }
+
+      entries.push(parsedEntry);
+    }
+
+    return entries;
+  }
+
+  if (!isPlainJsonRecord(value)) {
+    return undefined;
+  }
+
+  const entries: [string, AiJsonValue][] = [];
+
+  for (const [key, entryValue] of Object.entries(value)) {
+    if (isSecretJsonKey(key)) {
+      entries.push([key, '[REDACTED]']);
+      continue;
+    }
+
+    const parsedEntry = parseStrictSafeJsonValue(entryValue);
+
+    if (parsedEntry === undefined) {
+      return undefined;
+    }
+
+    entries.push([key, parsedEntry]);
+  }
+
+  return Object.fromEntries(entries);
+}
+
+function isPlainJsonRecord(value: unknown): value is Record<string, unknown> {
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  const prototype = Object.getPrototypeOf(value) as unknown;
+  return prototype === Object.prototype || prototype === null;
+}
+
+function isSecretJsonKey(key: string): boolean {
+  const normalizedKey = key.toLowerCase();
+  return normalizedKey === 'key'
+    || normalizedKey.includes('apikey')
+    || normalizedKey.includes('api_key')
+    || normalizedKey.includes('secret')
+    || normalizedKey.includes('token')
+    || normalizedKey.includes('authorization')
+    || normalizedKey.includes('password')
+    || normalizedKey.includes('bearer')
+    || normalizedKey.includes('credential');
+}
+
 function isAIProvider(value: unknown): value is AIProvider {
   return typeof value === 'string' && supportedProviders.some((provider) => provider === value);
 }
@@ -892,6 +1399,30 @@ function isArrayItemType(value: unknown): value is FormedibleFieldType | 'string
   return value === 'string' || isFormedibleFieldType(value);
 }
 
+function isTextareaResize(value: unknown): value is NonNullable<NonNullable<ParsedFieldConfig['textareaConfig']>['resize']> {
+  return value === 'none' || value === 'both' || value === 'horizontal' || value === 'vertical' || value === 'block' || value === 'inline';
+}
+
+function isColorFormat(value: unknown): value is NonNullable<NonNullable<ParsedFieldConfig['colorConfig']>['format']> {
+  return value === 'hex' || value === 'rgb' || value === 'hsl';
+}
+
+function isRatingIcon(value: unknown): value is NonNullable<NonNullable<ParsedFieldConfig['ratingConfig']>['icon']> {
+  return value === 'star' || value === 'heart' || value === 'thumbs';
+}
+
+function isRatingSize(value: unknown): value is NonNullable<NonNullable<ParsedFieldConfig['ratingConfig']>['size']> {
+  return value === 'sm' || value === 'md' || value === 'lg';
+}
+
+function isPhoneFormat(value: unknown): value is NonNullable<NonNullable<ParsedFieldConfig['phoneConfig']>['format']> {
+  return value === 'national' || value === 'international';
+}
+
+function isDurationFormat(value: unknown): value is NonNullable<NonNullable<ParsedFieldConfig['durationConfig']>['format']> {
+  return value === 'hms' || value === 'hm' || value === 'ms' || value === 'hours' || value === 'minutes' || value === 'seconds';
+}
+
 function isProviderSecretStorageMode(value: unknown): value is ProviderSecretStorageMode {
   return value === 'memory' || value === 'session' || value === 'local';
 }
@@ -902,6 +1433,14 @@ function parseNumber(value: unknown): number | undefined {
 
 function parseOptionalNumber(value: unknown): number | undefined {
   return value === undefined ? undefined : parseNumber(value);
+}
+
+function parseSerializableReactNode(value: unknown): string | number | undefined {
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  return parseNumber(value);
 }
 
 function parseStringArray(value: unknown): readonly string[] {
