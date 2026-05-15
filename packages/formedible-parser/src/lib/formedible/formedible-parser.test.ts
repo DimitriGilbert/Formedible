@@ -143,6 +143,22 @@ describe('FormedibleParser', () => {
     assert.match(result.errors[0]?.message ?? '', /name|type|field/i);
   });
 
+  it('normalizes common UI field type aliases before validation', () => {
+    const result = FormedibleParser.parseAiOutput(`{
+      fields: [
+        { name: 'visitType', type: 'radio-group', label: 'Visit type', options: [{ value: 'dine_in', label: 'Dine in' }] },
+        { name: 'features', type: 'multi-select', label: 'Features', options: [{ value: 'speed', label: 'Speed' }] },
+        { name: 'favoriteColor', type: 'color-picker', label: 'Favorite color' }
+      ],
+      formOptions: { defaultValues: { visitType: 'dine_in', features: [], favoriteColor: '#f59e0b' } }
+    }`);
+
+    assert.equal(result.success, true);
+    assert.equal(result.config?.fields[0]?.type, 'radio');
+    assert.equal(result.config?.fields[1]?.type, 'multiSelect');
+    assert.equal(result.config?.fields[2]?.type, 'colorPicker');
+  });
+
   it('infers schema information from field definitions', () => {
     const result = FormedibleParser.parseWithSchemaInference(`{
       fields: [

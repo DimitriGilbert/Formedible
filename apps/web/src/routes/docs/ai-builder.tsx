@@ -90,19 +90,20 @@ export { canUseStorage, exportConversation, persistConversations, persistProvide
   },
   {
     title: 'Provider and model lists',
-    body: 'Provider support lives in two files: providerOptions for UI defaults, and ai-adapters for TanStack AI provider and model lists.',
+    body: 'Provider support lives in providerOptions, ai-adapters, and the provider model catalog fetcher.',
     bullets: [
       'providerOptions contains openai, anthropic, and openrouter, all requiring keys.',
-      'DEFAULT_TANSTACK_AI_MODELS sets openai to gpt-4o-mini, anthropic to claude-sonnet-4-5, and openrouter to openai/gpt-4o-mini.',
-      'createTanStackTextAdapter falls back to the provider default when a model is unsupported.',
+      'DEFAULT_TANSTACK_AI_MODELS sets openai to gpt-5.4-mini, anthropic to claude-sonnet-4-6, and openrouter to minimax/minimax-2.7.',
+      'createTanStackTextAdapter preserves custom model strings instead of falling back silently.',
+      'Model catalogs are fetched from provider APIs, cached locally, and refreshed on demand.',
       'createTanStackModelOptions only returns Anthropic thinking options when thinkingBudgetTokens is positive.',
     ],
     table: {
-      headers: ['Provider', 'Default model', 'Additional models in source'],
+      headers: ['Provider', 'Default model', 'Model catalog source'],
       rows: [
-        { cells: ['openai', 'gpt-4o-mini', 'gpt-4o, gpt-4.1, gpt-4.1-mini, gpt-4.1-nano, o3-mini'] },
-        { cells: ['anthropic', 'claude-sonnet-4-5', 'claude-opus-4-6, claude-opus-4-5, claude-sonnet-4-6, claude-haiku-4-5, claude-opus-4-1, claude-sonnet-4, claude-3-7-sonnet, claude-opus-4, claude-3-5-haiku, claude-3-haiku, claude-opus-4.6-fast, claude-opus-4.7'] },
-        { cells: ['openrouter', 'openai/gpt-4o-mini', 'anthropic/claude-sonnet-4, anthropic/claude-3.7-sonnet, meta-llama/llama-3.3-70b-instruct'] },
+        { cells: ['openai', 'gpt-5.4-mini', 'GET https://api.openai.com/v1/models'] },
+        { cells: ['anthropic', 'claude-sonnet-4-6', 'GET https://api.anthropic.com/v1/models'] },
+        { cells: ['openrouter', 'minimax/minimax-2.7', 'GET https://openrouter.ai/api/v1/models?output_modalities=text'] },
       ],
     },
     snippet: {
@@ -111,9 +112,9 @@ export { canUseStorage, exportConversation, persistConversations, persistProvide
       code: `export const SUPPORTED_TANSTACK_AI_PROVIDERS = ['openai', 'anthropic', 'openrouter'] as const satisfies readonly AIProvider[];
 
 export const DEFAULT_TANSTACK_AI_MODELS = {
-  openai: 'gpt-4o-mini',
-  anthropic: 'claude-sonnet-4-5',
-  openrouter: 'openai/gpt-4o-mini',
+  openai: 'gpt-5.4-mini',
+  anthropic: 'claude-sonnet-4-6',
+  openrouter: 'minimax/minimax-2.7',
 } as const;
 
 export function createTanStackTextAdapter(settings: ProviderSettings, secrets: ProviderSecrets): AnyTextAdapter {
@@ -121,14 +122,14 @@ export function createTanStackTextAdapter(settings: ProviderSettings, secrets: P
   assertNoUnsupportedRuntimeOptions(settings);
 
   if (settings.provider === 'openai') {
-    return createOpenaiChat(resolveSupportedModel(settings.model, SUPPORTED_OPENAI_MODELS, DEFAULT_TANSTACK_AI_MODELS.openai), secrets.apiKey);
+    return createOpenaiChat(settings.model as unknown as OpenAIAdapterModel, secrets.apiKey);
   }
 
   if (settings.provider === 'anthropic') {
-    return createAnthropicChat(resolveSupportedModel(settings.model, SUPPORTED_ANTHROPIC_MODELS, DEFAULT_TANSTACK_AI_MODELS.anthropic), secrets.apiKey);
+    return createAnthropicChat(settings.model as unknown as AnthropicAdapterModel, secrets.apiKey);
   }
 
-  return createOpenRouterText(resolveSupportedModel(settings.model, SUPPORTED_OPENROUTER_MODELS, DEFAULT_TANSTACK_AI_MODELS.openrouter), secrets.apiKey);
+  return createOpenRouterText(settings.model as unknown as OpenRouterAdapterModel, secrets.apiKey);
 }`,
     },
   },
@@ -145,9 +146,9 @@ export function createTanStackTextAdapter(settings: ProviderSettings, secrets: P
       title: 'packages/ai-builder/src/components/formedible/ai/provider-selection.tsx',
       language: 'ts',
       code: `export const providerOptions = [
-  { value: 'openai', label: 'OpenAI', defaultModel: 'gpt-4o-mini', requiresKey: true },
-  { value: 'anthropic', label: 'Anthropic', defaultModel: 'claude-sonnet-4-5', requiresKey: true },
-  { value: 'openrouter', label: 'OpenRouter', defaultModel: 'openai/gpt-4o-mini', requiresKey: true },
+  { value: 'openai', label: 'OpenAI', defaultModel: 'gpt-5.4-mini', requiresKey: true },
+  { value: 'anthropic', label: 'Anthropic', defaultModel: 'claude-sonnet-4-6', requiresKey: true },
+  { value: 'openrouter', label: 'OpenRouter', defaultModel: 'minimax/minimax-2.7', requiresKey: true },
 ] as const;
 
 export function validateProviderAccess(settings: ProviderSettings | null, secrets: ProviderSecrets | null): string | undefined {

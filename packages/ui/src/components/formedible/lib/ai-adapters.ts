@@ -15,46 +15,14 @@ export type OpenRouterAdapterModel = Parameters<typeof createOpenRouterText>[0];
 export const SUPPORTED_TANSTACK_AI_PROVIDERS = ['openai', 'anthropic', 'openrouter'] as const satisfies readonly AIProvider[];
 
 export const DEFAULT_TANSTACK_AI_MODELS = {
-  openai: 'gpt-4o-mini',
-  anthropic: 'claude-sonnet-4-5',
-  openrouter: 'openai/gpt-4o-mini',
+  openai: 'gpt-5.4-mini',
+  anthropic: 'claude-sonnet-4-6',
+  openrouter: 'minimax/minimax-2.7',
 } as const satisfies {
-  readonly openai: OpenAIAdapterModel;
-  readonly anthropic: AnthropicAdapterModel;
-  readonly openrouter: OpenRouterAdapterModel;
+  readonly openai: string;
+  readonly anthropic: string;
+  readonly openrouter: string;
 };
-
-const SUPPORTED_OPENAI_MODELS = [
-  DEFAULT_TANSTACK_AI_MODELS.openai,
-  'gpt-4o',
-  'gpt-4.1',
-  'gpt-4.1-mini',
-  'gpt-4.1-nano',
-  'o3-mini',
-] as const satisfies readonly OpenAIAdapterModel[];
-
-const SUPPORTED_ANTHROPIC_MODELS = [
-  DEFAULT_TANSTACK_AI_MODELS.anthropic,
-  'claude-opus-4-6',
-  'claude-opus-4-5',
-  'claude-sonnet-4-6',
-  'claude-haiku-4-5',
-  'claude-opus-4-1',
-  'claude-sonnet-4',
-  'claude-3-7-sonnet',
-  'claude-opus-4',
-  'claude-3-5-haiku',
-  'claude-3-haiku',
-  'claude-opus-4.6-fast',
-  'claude-opus-4.7',
-] as const satisfies readonly AnthropicAdapterModel[];
-
-const SUPPORTED_OPENROUTER_MODELS = [
-  DEFAULT_TANSTACK_AI_MODELS.openrouter,
-  'anthropic/claude-sonnet-4',
-  'anthropic/claude-3.7-sonnet',
-  'meta-llama/llama-3.3-70b-instruct',
-] as const satisfies readonly OpenRouterAdapterModel[];
 
 export interface AiProviderFeatureSupport {
   readonly temperature: boolean;
@@ -101,14 +69,14 @@ export function createTanStackTextAdapter(settings: ProviderSettings, secrets: P
   assertNoUnsupportedRuntimeOptions(settings);
 
   if (settings.provider === 'openai') {
-    return createOpenaiChat(resolveSupportedModel(settings.model, SUPPORTED_OPENAI_MODELS, DEFAULT_TANSTACK_AI_MODELS.openai), secrets.apiKey);
+    return createOpenaiChat(settings.model as unknown as OpenAIAdapterModel, secrets.apiKey);
   }
 
   if (settings.provider === 'anthropic') {
-    return createAnthropicChat(resolveSupportedModel(settings.model, SUPPORTED_ANTHROPIC_MODELS, DEFAULT_TANSTACK_AI_MODELS.anthropic), secrets.apiKey);
+    return createAnthropicChat(settings.model as unknown as AnthropicAdapterModel, secrets.apiKey);
   }
 
-  return createOpenRouterText(resolveSupportedModel(settings.model, SUPPORTED_OPENROUTER_MODELS, DEFAULT_TANSTACK_AI_MODELS.openrouter), secrets.apiKey);
+  return createOpenRouterText(settings.model as unknown as OpenRouterAdapterModel, secrets.apiKey);
 }
 
 export function createTanStackModelOptions(settings: ProviderSettings): OpenAITextProviderOptions | AnthropicTextProviderOptions | OpenRouterTextModelOptions | undefined {
@@ -124,8 +92,4 @@ export function createTanStackModelOptions(settings: ProviderSettings): OpenAITe
       budget_tokens: settings.thinkingBudgetTokens,
     },
   } satisfies AnthropicTextProviderOptions;
-}
-
-function resolveSupportedModel<TModel extends string>(model: string, supportedModels: readonly TModel[], fallbackModel: TModel): TModel {
-  return supportedModels.find((supportedModel) => supportedModel === model) ?? fallbackModel;
 }

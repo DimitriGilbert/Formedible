@@ -8,9 +8,10 @@ export { createDefaultProviderSecrets, createDefaultProviderSettings, providerOp
 export { SidebarContent } from '@/components/formedible/ai/sidebar-content';
 export { SidebarIcons } from '@/components/formedible/ai/sidebar-icons';
 export { createTanStackTextAdapter, DEFAULT_TANSTACK_AI_MODELS, SUPPORTED_TANSTACK_AI_PROVIDERS } from '@/lib/formedible/ai-adapters';
+export { fetchProviderModels, getRecentModelCutoff, isRecentIsoTimestamp, isRecentUnixTimestamp, MODEL_CATALOG_MAX_AGE_MONTHS } from '@/lib/formedible/ai-model-catalog';
 export { normalizePersistedAiMessage, normalizePersistedAiMessages, toPersistedAiMessage, toTanStackMessageInput, toTanStackMessageInputs, toTanStackSystemPrompts } from '@/lib/formedible/ai-messages';
 export { extractFormCode } from '@/lib/formedible/ai-parser';
-export { canUseStorage, clearConversations, clearStoredProviderSecrets, createConversation, exportConversation, getLastFormCode, persistConversations, persistProviderSecrets, persistProviderSettings, persistUiState, readJson, readPersistedAIBuilderState, readStoredProviderSecrets, STORAGE_KEYS, upsertConversation, writeJson } from '@/lib/formedible/ai-storage';
+export { canUseStorage, clearConversations, clearStoredProviderSecrets, createConversation, exportConversation, getLastFormCode, persistConversations, persistProviderModelCatalog, persistProviderSecrets, persistProviderSettings, persistUiState, readJson, readPersistedAIBuilderState, readProviderModelCatalogs, readStoredProviderSecrets, STORAGE_KEYS, upsertConversation, writeJson } from '@/lib/formedible/ai-storage';
 export type { AnthropicAdapterModel, OpenAIAdapterModel, OpenRouterAdapterModel } from '@/lib/formedible/ai-adapters';
 export type { PersistedAiMessage, TanStackAiMessageInput } from '@/lib/formedible/ai-messages';
 export type { PersistedAIBuilderState, PersistedUiState, ProviderSecretPersistencePreference, ProviderSecretStorageMode, StorageArea, StoredProviderSecrets } from '@/lib/formedible/ai-storage';
@@ -39,5 +40,8 @@ export type {
   AiUsageMetadata,
   GeneratedFormSnapshot,
   ProviderSecrets,
+  ProviderModelCatalog,
+  ProviderModelCatalogEntry,
+  ProviderModelCatalogs,
   ProviderSettings,
 } from '@/lib/formedible/ai-types';

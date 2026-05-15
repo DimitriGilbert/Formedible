@@ -2,7 +2,12 @@
   "routes": [
     {
       "ownerRoot": "packages/formedible-parser",
-      "destinationRoots": ["apps/web/src", "packages/builder/src", "packages/ai-builder/src"]
+      "destinationRoots": ["packages/ui/src/components"],
+      "useRegistryTargets": true
+    },
+    {
+      "ownerRoot": "packages/formedible-parser",
+      "destinationRoots": ["packages/builder/src", "packages/ai-builder/src"]
     }
   ]
 }

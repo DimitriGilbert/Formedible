@@ -118,6 +118,22 @@ const allowedTopLevelKeys = new Set([
 ]);
 
 const supportedFieldTypeSet = new Set<string>(supportedFieldTypes);
+const fieldTypeAliases = {
+  'radio-group': 'radio',
+  radioGroup: 'radio',
+  'checkbox-group': 'multiSelect',
+  checkboxGroup: 'multiSelect',
+  multiselect: 'multiSelect',
+  'multi-select': 'multiSelect',
+  'text-area': 'textarea',
+  'number-input': 'number',
+  'date-picker': 'date',
+  'file-upload': 'file',
+  'color-picker': 'colorPicker',
+  color: 'colorPicker',
+  telephone: 'phone',
+} as const satisfies Readonly<Record<string, FormedibleFieldType>>;
+const fieldTypeAliasMap: ReadonlyMap<string, FormedibleFieldType> = new Map(Object.entries(fieldTypeAliases));
 const zodSentinel = '__FORMEDIBLE_ZOD_EXPRESSION__';
 const maxCodeLength = 1000000;
 
@@ -559,6 +575,98 @@ function sanitizeFields(fields: readonly unknown[]): readonly FormedibleFieldCon
   return fields.map((field, index) => sanitizeField(field, index));
 }
 
+function normalizeAiGeneratedField(field: unknown, pageNumber: number | undefined): unknown {
+  if (!isRecord(field)) {
+    return field;
+  }
+
+  const normalized: Record<string, unknown> = { ...field };
+
+  if (typeof normalized.type === 'string') {
+    normalized.type = fieldTypeAliasMap.get(normalized.type) ?? normalized.type;
+  }
+
+  if (typeof normalized.name !== 'string' && typeof normalized.id === 'string') {
+    normalized.name = normalized.id;
+  }
+
+  delete normalized.id;
+
+  if (typeof normalized.description !== 'string' && typeof normalized.helperText === 'string') {
+    normalized.description = normalized.helperText;
+  }
+
+  delete normalized.helperText;
+
+  if (normalized.type === 'rating') {
+    const ratingConfig = isRecord(normalized.ratingConfig) ? { ...normalized.ratingConfig } : {};
+
+    if (typeof normalized.maxRating === 'number' && typeof ratingConfig.max !== 'number') {
+      ratingConfig.max = normalized.maxRating;
+    }
+
+    if (typeof normalized.icons === 'string' && typeof ratingConfig.icon !== 'string') {
+      ratingConfig.icon = normalized.icons === 'star' || normalized.icons === 'heart' || normalized.icons === 'thumbs' ? normalized.icons : undefined;
+    }
+
+    normalized.ratingConfig = ratingConfig;
+  }
+
+  delete normalized.maxRating;
+  delete normalized.icons;
+  delete normalized.visibleIf;
+
+  if (pageNumber !== undefined && typeof normalized.page !== 'number') {
+    normalized.page = pageNumber;
+  }
+
+  return normalized;
+}
+
+function normalizeAiGeneratedPage(page: unknown, index: number): { readonly pageConfig: Record<string, unknown>; readonly fields: readonly unknown[] } | undefined {
+  if (!isRecord(page)) {
+    return undefined;
+  }
+
+  const pageNumber = typeof page.page === 'number' ? page.page : index + 1;
+  const pageConfig: Record<string, unknown> = {
+    page: pageNumber,
+    title: typeof page.title === 'string' ? page.title : `Page ${pageNumber}`,
+  };
+
+  copyString(page, pageConfig, 'description');
+
+  return {
+    pageConfig,
+    fields: Array.isArray(page.fields) ? page.fields.map((field) => normalizeAiGeneratedField(field, pageNumber)) : [],
+  };
+}
+
+function normalizeAiGeneratedConfig(parsed: Record<string, unknown>): Record<string, unknown> {
+  const source = isRecord(parsed.form) ? parsed.form : parsed;
+  const normalized: Record<string, unknown> = { ...source };
+
+  if (!Array.isArray(normalized.fields) && Array.isArray(normalized.pages)) {
+    const pages = normalized.pages.flatMap((page, index) => {
+      const normalizedPage = normalizeAiGeneratedPage(page, index);
+      return normalizedPage ? [normalizedPage] : [];
+    });
+
+    normalized.fields = pages.flatMap((page) => page.fields);
+    normalized.pages = pages.map((page) => page.pageConfig);
+  } else if (Array.isArray(normalized.fields)) {
+    normalized.fields = normalized.fields.map((field) => normalizeAiGeneratedField(field, undefined));
+  }
+
+  if (isRecord(normalized.settings) && typeof normalized.submitLabel !== 'string' && typeof normalized.settings.submitButtonText === 'string') {
+    normalized.submitLabel = normalized.settings.submitButtonText;
+  }
+
+  delete normalized.settings;
+
+  return normalized;
+}
+
 function sanitizePages(value: unknown): readonly FormediblePageConfig<FormedibleFormValues>[] | undefined {
   if (!Array.isArray(value)) {
     return undefined;
@@ -581,16 +689,17 @@ function sanitizePages(value: unknown): readonly FormediblePageConfig<Formedible
 }
 
 function validateAndSanitize(parsed: Record<string, unknown>, options?: ParserOptions | EnhancedParserOptions): ParsedFormConfig {
+  const normalizedParsed = normalizeAiGeneratedConfig(parsed);
   const strictValidation = options?.strictValidation ?? true;
   const configuredTopLevelKeys = options?.allowedKeys === undefined ? undefined : new Set(options.allowedKeys);
   const configuredFieldTypes = options?.allowedFieldTypes === undefined ? undefined : new Set(options.allowedFieldTypes);
 
-  if (!Array.isArray(parsed.fields)) {
+  if (!Array.isArray(normalizedParsed.fields)) {
     throw createParserError('Fields must be an array', 'INVALID_FIELDS');
   }
 
   const output: Record<string, unknown> = {
-    fields: sanitizeFields(parsed.fields).map((field) => {
+    fields: sanitizeFields(normalizedParsed.fields).map((field) => {
       const fieldType = field.type;
       if (configuredFieldTypes !== undefined && typeof fieldType === 'string' && !configuredFieldTypes.has(fieldType)) {
         throw createParserError(`Field type '${field.type}' is not allowed.`, 'DISALLOWED_FIELD_TYPE');
@@ -598,7 +707,7 @@ function validateAndSanitize(parsed: Record<string, unknown>, options?: ParserOp
 
       return filterFieldByAllowedKeys(field, options?.allowedFieldKeys);
     }),
-    formOptions: isRecord(parsed.formOptions) ? sanitizePlainConfig(parsed.formOptions) : { defaultValues: {} },
+    formOptions: isRecord(normalizedParsed.formOptions) ? sanitizePlainConfig(normalizedParsed.formOptions) : { defaultValues: {} },
   };
 
   if (isRecord(output.formOptions) && options?.allowedFormOptionsKeys !== undefined) {
@@ -609,7 +718,7 @@ function validateAndSanitize(parsed: Record<string, unknown>, options?: ParserOp
     output.formOptions = { ...output.formOptions, defaultValues: {} };
   }
 
-  for (const [key, value] of Object.entries(parsed)) {
+  for (const [key, value] of Object.entries(normalizedParsed)) {
     if (!allowedTopLevelKeys.has(key)) {
       if (strictValidation) {
         throw createParserError(`Unsupported top-level key '${key}'`, 'UNSUPPORTED_TOP_LEVEL_KEY');

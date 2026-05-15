@@ -46,6 +46,7 @@ export function ChatMessages({ messages, className }: ChatMessagesProps) {
       {messages.map((message) => {
         const status = renderStatus(message);
         const isAssistant = message.role === 'assistant';
+        const isStreaming = message.status === 'streaming';
 
         return (
           <article key={message.id} className={cn('rounded-lg p-3 text-sm', message.role === 'user' ? 'bg-muted' : 'border bg-background')}>
@@ -62,8 +63,8 @@ export function ChatMessages({ messages, className }: ChatMessagesProps) {
                 <p className="mt-2 whitespace-pre-wrap text-xs text-muted-foreground">{message.thinking}</p>
               </details>
             ) : null}
-            {isAssistant ? <MarkdownMessage content={message.content} /> : <p className="whitespace-pre-wrap">{message.content}</p>}
-            {isAssistant ? <RawOutputPanel message={message} className="mt-3" /> : null}
+            {isAssistant && !isStreaming ? <MarkdownMessage content={message.content} /> : <p className="whitespace-pre-wrap">{message.content}</p>}
+            {isAssistant && !isStreaming ? <RawOutputPanel message={message} className="mt-3" /> : null}
           </article>
         );
       })}

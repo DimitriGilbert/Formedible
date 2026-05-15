@@ -10,6 +10,9 @@ import type {
   AiMessageRole,
   AiMessageStatus,
   AiParseError,
+  ProviderModelCatalog,
+  ProviderModelCatalogEntry,
+  ProviderModelCatalogs,
   GeneratedFormSnapshot,
   ProviderSecrets,
   ProviderSettings,
@@ -23,6 +26,7 @@ export const AI_STORAGE_VERSION = 1;
 export const STORAGE_KEYS = {
   providerSettings: 'formedible-ai-builder-provider-settings',
   providerSecrets: 'formedible-ai-builder-provider-secrets',
+  modelCatalogs: 'formedible-ai-builder-model-catalogs',
   conversations: 'formedible-ai-builder-conversations',
   uiState: 'formedible-ai-builder-ui-state',
 } as const;
@@ -145,6 +149,15 @@ export function persistProviderSettings(providerSettings: ProviderSettings): voi
   writeJson(STORAGE_KEYS.providerSettings, createEnvelope(providerSettings));
 }
 
+export function persistProviderModelCatalog(catalog: ProviderModelCatalog): void {
+  const catalogs = readProviderModelCatalogs();
+  writeJson(STORAGE_KEYS.modelCatalogs, createEnvelope({ ...catalogs, [catalog.provider]: catalog }));
+}
+
+export function readProviderModelCatalogs(): ProviderModelCatalogs {
+  return readJson(STORAGE_KEYS.modelCatalogs, {}, (value) => parseEnvelope(value, parseProviderModelCatalogs) ?? parseProviderModelCatalogs(value));
+}
+
 export function persistConversations(conversations: readonly AiConversation[]): void {
   writeJson(STORAGE_KEYS.conversations, createEnvelope(conversations.map(sanitizeConversationForPersistence)));
 }
@@ -224,7 +237,9 @@ export function upsertConversation(
   activeConversationId: string | undefined,
   nextMessages: readonly AiMessage[],
 ): ConversationUpdateResult {
-  const existingConversation = previousConversations.find((conversationEntry) => conversationEntry.id === activeConversationId);
+  const firstMessageId = nextMessages[0]?.id;
+  const existingConversation = previousConversations.find((conversationEntry) => conversationEntry.id === activeConversationId)
+    ?? previousConversations.find((conversationEntry) => firstMessageId !== undefined && conversationEntry.messages[0]?.id === firstMessageId);
   const nextConversation = createConversation(nextMessages, getLastFormCode(nextMessages) || existingConversation?.formCode, existingConversation);
 
   if (existingConversation) {
@@ -349,6 +364,72 @@ function parseProviderSettings(value: unknown): ProviderSettings | undefined {
   return {
     provider: value.provider,
     ...sharedSettings,
+  };
+}
+
+function parseProviderModelCatalogs(value: unknown): ProviderModelCatalogs {
+  if (!isRecord(value)) {
+    return {};
+  }
+
+  const entries: [AIProvider, ProviderModelCatalog][] = [];
+
+  for (const provider of supportedProviders) {
+    const catalog = parseProviderModelCatalog(value[provider], provider);
+
+    if (catalog) {
+      entries.push([provider, catalog]);
+    }
+  }
+
+  return Object.fromEntries(entries) as ProviderModelCatalogs;
+}
+
+function parseProviderModelCatalog(value: unknown, provider: AIProvider): ProviderModelCatalog | undefined {
+  if (!isRecord(value) || value.provider !== provider) {
+    return undefined;
+  }
+
+  const fetchedAt = parseNumber(value.fetchedAt);
+  const models = parseProviderModelCatalogEntries(value.models);
+
+  if (fetchedAt === undefined) {
+    return undefined;
+  }
+
+  return {
+    provider,
+    models,
+    fetchedAt,
+    ...(typeof value.error === 'string' ? { error: value.error } : {}),
+  };
+}
+
+function parseProviderModelCatalogEntries(value: unknown): readonly ProviderModelCatalogEntry[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.flatMap((entry) => {
+    const model = parseProviderModelCatalogEntry(entry);
+    return model ? [model] : [];
+  });
+}
+
+function parseProviderModelCatalogEntry(value: unknown): ProviderModelCatalogEntry | undefined {
+  if (!isRecord(value) || typeof value.id !== 'string') {
+    return undefined;
+  }
+
+  const contextLength = parseOptionalNumber(value.contextLength);
+
+  return {
+    id: value.id,
+    ...(typeof value.label === 'string' ? { label: value.label } : {}),
+    ...(typeof value.createdAt === 'string' ? { createdAt: value.createdAt } : {}),
+    ...(contextLength === undefined ? {} : { contextLength }),
+    ...(typeof value.inputPricePerMillionTokens === 'string' ? { inputPricePerMillionTokens: value.inputPricePerMillionTokens } : {}),
+    ...(typeof value.outputPricePerMillionTokens === 'string' ? { outputPricePerMillionTokens: value.outputPricePerMillionTokens } : {}),
   };
 }
 

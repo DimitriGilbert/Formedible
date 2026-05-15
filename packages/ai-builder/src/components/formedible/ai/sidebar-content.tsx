@@ -8,7 +8,7 @@ import type { SidebarView } from '@/components/formedible/ai/sidebar-icons';
 import { ProviderSelection } from '@/components/formedible/ai/provider-selection';
 import type { AIBuilderProviderAccess } from '@/components/formedible/ai/ai-builder';
 import type { ProviderSecretPersistencePreference } from '@/lib/formedible/ai-storage';
-import type { AiConversation, ProviderSecrets, ProviderSettings } from '@/lib/formedible/ai-types';
+import type { AiConversation, ProviderModelCatalogs, ProviderSecrets, ProviderSettings } from '@/lib/formedible/ai-types';
 import type { ParserConfig } from '@/lib/formedible/parser-config-schema';
 import { cn } from '@/lib/utils';
 
@@ -21,10 +21,13 @@ export interface SidebarContentProps {
   readonly providerSettings: ProviderSettings;
   readonly providerSecrets: ProviderSecrets;
   readonly providerSecretPersistence: ProviderSecretPersistencePreference;
+  readonly modelCatalogs: ProviderModelCatalogs;
+  readonly refreshingProvider?: ProviderSettings['provider'];
   readonly parserConfig: ParserConfig;
   readonly onProviderAccessChange: (settings: ProviderSettings, secrets: ProviderSecrets) => void;
   readonly onProviderSecretPersistenceChange: (preference: ProviderSecretPersistencePreference) => void;
   readonly onClearProviderSecrets: () => void;
+  readonly onRefreshProviderModels: () => void;
   readonly onParserConfigChange: (config: ParserConfig) => void;
   readonly onSelectConversation: (conversationId: string) => void;
   readonly onDeleteConversation: (conversationId: string) => void;
@@ -55,11 +58,11 @@ function ProviderPanel({ providerSettings, providerSecrets, providerSecretPersis
   return <ProviderSelection settings={access.settings} secrets={access.secrets} persistencePreference={providerSecretPersistence} onChange={onProviderAccessChange} onPersistencePreferenceChange={onProviderSecretPersistenceChange} onClearStoredSecrets={onClearProviderSecrets} />;
 }
 
-function ModelPanel({ providerSettings, providerSecrets, onProviderAccessChange }: Pick<SidebarContentProps, 'providerSettings' | 'providerSecrets' | 'onProviderAccessChange'>) {
-  return <AgentSettings settings={providerSettings} secrets={providerSecrets} onChange={onProviderAccessChange} />;
+function ModelPanel({ providerSettings, providerSecrets, modelCatalogs, refreshingProvider, onProviderAccessChange, onRefreshProviderModels }: Pick<SidebarContentProps, 'providerSettings' | 'providerSecrets' | 'modelCatalogs' | 'refreshingProvider' | 'onProviderAccessChange' | 'onRefreshProviderModels'>) {
+  return <AgentSettings settings={providerSettings} secrets={providerSecrets} modelCatalog={modelCatalogs[providerSettings.provider]} isRefreshingModels={refreshingProvider === providerSettings.provider} onRefreshModels={onRefreshProviderModels} onChange={onProviderAccessChange} />;
 }
 
-export function SidebarContent({ activeView, isCollapsed, conversations, currentConversation, currentConversationId, providerSettings, providerSecrets, providerSecretPersistence, parserConfig, onProviderAccessChange, onProviderSecretPersistenceChange, onClearProviderSecrets, onParserConfigChange, onSelectConversation, onDeleteConversation, onNewConversation, onExportConversation, className }: SidebarContentProps) {
+export function SidebarContent({ activeView, isCollapsed, conversations, currentConversation, currentConversationId, providerSettings, providerSecrets, providerSecretPersistence, modelCatalogs, refreshingProvider, parserConfig, onProviderAccessChange, onProviderSecretPersistenceChange, onClearProviderSecrets, onRefreshProviderModels, onParserConfigChange, onSelectConversation, onDeleteConversation, onNewConversation, onExportConversation, className }: SidebarContentProps) {
   if (isCollapsed || !activeView) {
     return null;
   }
@@ -79,7 +82,7 @@ export function SidebarContent({ activeView, isCollapsed, conversations, current
           />
         ) : null}
         {activeView === 'provider' ? <ProviderPanel providerSettings={providerSettings} providerSecrets={providerSecrets} providerSecretPersistence={providerSecretPersistence} onProviderAccessChange={onProviderAccessChange} onProviderSecretPersistenceChange={onProviderSecretPersistenceChange} onClearProviderSecrets={onClearProviderSecrets} /> : null}
-        {activeView === 'model' ? <ModelPanel providerSettings={providerSettings} providerSecrets={providerSecrets} onProviderAccessChange={onProviderAccessChange} /> : null}
+        {activeView === 'model' ? <ModelPanel providerSettings={providerSettings} providerSecrets={providerSecrets} modelCatalogs={modelCatalogs} refreshingProvider={refreshingProvider} onProviderAccessChange={onProviderAccessChange} onRefreshProviderModels={onRefreshProviderModels} /> : null}
         {activeView === 'parser' ? <ParserSettings config={parserConfig} onChange={onParserConfigChange} /> : null}
         {activeView === 'debug' ? <DebugPanel conversation={currentConversation} /> : null}
       </div>

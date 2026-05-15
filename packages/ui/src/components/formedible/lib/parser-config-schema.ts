@@ -216,6 +216,11 @@ export function generateSystemPrompt(config: ParserConfig): string {
     `Maximum nesting depth: ${config.maxNestingDepth} levels.`,
     'Normal prose conversation is allowed when no form is requested.',
     'When generating a form, return the Formedible config object inside a lowercase ```formedible fenced block.',
+    'The fenced object must be the config itself. Do not wrap it in { form: ... }, { survey: ... }, or any other envelope.',
+    'Required shape: { fields: [...], formOptions: { defaultValues: {...} } }. The top-level fields array is mandatory.',
+    'For multi-step forms, put pages in a top-level pages array and assign each field a numeric page property. Do not put fields inside page objects.',
+    'Every field must use name, not id. Example field: { name: "overallRating", type: "rating", label: "Overall rating", ratingConfig: { max: 5 }, required: true }.',
+    'Use Formedible keys only: description instead of helperText, ratingConfig.max instead of maxRating, ratingConfig.icon instead of icons, submitLabel instead of settings.submitButtonText.',
     'Do not include executable callbacks, React components, JSX, imports, classes, functions, or unsupported config keys in generated forms.',
   ];
 

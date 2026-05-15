@@ -16,24 +16,11 @@ export interface AiStreamSchedulerOptions {
 }
 
 function createDefaultFrameScheduler(): AiFrameScheduler {
-  return (callback) => {
-    if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
-      return window.requestAnimationFrame(callback);
-    }
-
-    return globalThis.setTimeout(callback, 16) as unknown as number;
-  };
+  return (callback) => globalThis.setTimeout(callback, 16) as unknown as number;
 }
 
 function createDefaultFrameCancellation(): AiFrameCancellation {
-  return (frameId) => {
-    if (typeof window !== 'undefined' && typeof window.cancelAnimationFrame === 'function') {
-      window.cancelAnimationFrame(frameId);
-      return;
-    }
-
-    globalThis.clearTimeout(frameId);
-  };
+  return (frameId) => globalThis.clearTimeout(frameId);
 }
 
 export class AiStreamScheduler {

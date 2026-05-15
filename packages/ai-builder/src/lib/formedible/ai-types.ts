@@ -49,6 +49,24 @@ export interface ProviderSecrets {
   readonly apiKey: string;
 }
 
+export interface ProviderModelCatalogEntry {
+  readonly id: string;
+  readonly label?: string;
+  readonly createdAt?: string;
+  readonly contextLength?: number;
+  readonly inputPricePerMillionTokens?: string;
+  readonly outputPricePerMillionTokens?: string;
+}
+
+export interface ProviderModelCatalog {
+  readonly provider: AIProvider;
+  readonly models: readonly ProviderModelCatalogEntry[];
+  readonly fetchedAt: number;
+  readonly error?: string;
+}
+
+export type ProviderModelCatalogs = Readonly<Partial<Record<AIProvider, ProviderModelCatalog>>>;
+
 export interface AiUsageMetadata {
   readonly inputTokens?: number;
   readonly outputTokens?: number;

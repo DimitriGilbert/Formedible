@@ -6,7 +6,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 import { AI_BUILDER_DEFAULT_MODE, AIBuilder, resolveInitialProviderAccess } from '@/components/formedible/ai/ai-builder';
-import { AgentSettings } from '@/components/formedible/ai/agent-settings';
+import { AgentSettings, getFilteredModelOptions } from '@/components/formedible/ai/agent-settings';
 import { AiFormRenderer, parseAiToFormedible } from '@/components/formedible/ai/ai-form-renderer';
 import { generateAiFormCode, resolveMessageStatus } from '@/components/formedible/ai/chat-interface';
 import { ConversationHistory } from '@/components/formedible/ai/conversation-history';
@@ -35,7 +35,7 @@ const sampleFormCode = `{
 
 const generationProviderSettings: ProviderSettings = {
   provider: 'openrouter',
-  model: 'openai/gpt-4o-mini',
+  model: 'minimax/minimax-2.7',
   temperature: 0.2,
   maxTokens: 1000,
 };
@@ -182,6 +182,57 @@ test('parser rejects field types excluded by old allowlist config', () => {
   assert.match(result.error ?? '', /not allowed/i);
 });
 
+test('parser normalizes common UI field type aliases before validation', () => {
+  const result = parseAiCode(`{
+    fields: [
+      { name: 'visitType', type: 'radio-group', label: 'Visit type', options: [{ value: 'dine_in', label: 'Dine in' }, { value: 'takeout', label: 'Takeout' }] },
+      { name: 'features', type: 'multi-select', label: 'Features', options: [{ value: 'speed', label: 'Speed' }] },
+      { name: 'favoriteColor', type: 'color-picker', label: 'Favorite color' }
+    ],
+    formOptions: { defaultValues: { visitType: 'dine_in', features: [], favoriteColor: '#f59e0b' } }
+  }`);
+
+  assert.equal(result.success, true);
+  assert.equal(result.formOptions.fields[0]?.type, 'radio');
+  assert.equal(result.formOptions.fields[1]?.type, 'multiSelect');
+  assert.equal(result.formOptions.fields[2]?.type, 'colorPicker');
+});
+
+test('parser normalizes common enveloped page-field AI output', () => {
+  const result = parseAiCode(`{
+    form: {
+      title: 'Restaurant Customer Feedback Survey',
+      description: 'Share feedback.',
+      pages: [
+        {
+          id: 'food_quality',
+          title: 'Food Quality',
+          description: 'Tell us about the food.',
+          fields: [
+            { id: 'overall_food_rating', type: 'rating', label: 'Food quality?', required: true, maxRating: 5, icons: 'star', helperText: '1 low, 5 high' },
+            { id: 'best_dish', type: 'text', label: 'Best dish?', required: false }
+          ]
+        }
+      ],
+      settings: { submitButtonText: 'Submit Feedback' }
+    }
+  }`);
+
+  assert.equal(result.success, true);
+  assert.equal(result.formOptions.title, 'Restaurant Customer Feedback Survey');
+  assert.equal(result.formOptions.submitLabel, 'Submit Feedback');
+  assert.deepEqual(result.formOptions.pages, [{ page: 1, title: 'Food Quality', description: 'Tell us about the food.' }]);
+  assert.deepEqual(result.formOptions.fields[0], {
+    name: 'overall_food_rating',
+    type: 'rating',
+    label: 'Food quality?',
+    description: '1 low, 5 high',
+    page: 1,
+    required: true,
+    ratingConfig: { max: 5, icon: 'star' },
+  });
+});
+
 test('parser integration reports invalid generated schema without throwing', () => {
   const result = parseAiToFormedible('{ fields: [{ name: 1, type: "unknown" }] }');
 
@@ -236,12 +287,23 @@ test('generation form extraction requires lowercase formedible fences', async ()
 
 test('provider selection preserves provider-specific default models', () => {
   assert.deepEqual(providerOptions.map((provider) => provider.value), ['openai', 'anthropic', 'openrouter']);
+  assert.equal(createDefaultProviderSettings('openai').model, 'gpt-5.4-mini');
+  assert.equal(createDefaultProviderSettings('anthropic').model, 'claude-sonnet-4-6');
   assert.deepEqual(createDefaultProviderSettings('openrouter'), {
     provider: 'openrouter',
-    model: 'openai/gpt-4o-mini',
+    model: 'minimax/minimax-2.7',
     temperature: 0.7,
-    maxTokens: 4000,
+    maxTokens: 16000,
   });
+});
+
+test('parser system prompt states the exact top-level Formedible contract', () => {
+  const prompt = generateSystemPrompt(defaultParserConfig);
+
+  assert.match(prompt, /Do not wrap it in \{ form: \.\.\. \}/);
+  assert.match(prompt, /top-level fields array is mandatory/);
+  assert.match(prompt, /Every field must use name, not id/);
+  assert.match(prompt, /Do not put fields inside page objects/);
 });
 
 test('provider validation requires keys for supported providers', () => {
@@ -258,6 +320,12 @@ test('TanStack AI adapter boundary builds supported provider adapters', () => {
   assert.equal(createTanStackTextAdapter({ provider: 'openai', model: DEFAULT_TANSTACK_AI_MODELS.openai }, { provider: 'openai', apiKey: 'openai-key' }).name, 'openai');
   assert.equal(createTanStackTextAdapter({ provider: 'anthropic', model: DEFAULT_TANSTACK_AI_MODELS.anthropic }, { provider: 'anthropic', apiKey: 'anthropic-key' }).name, 'anthropic');
   assert.equal(createTanStackTextAdapter({ provider: 'openrouter', model: DEFAULT_TANSTACK_AI_MODELS.openrouter }, { provider: 'openrouter', apiKey: 'openrouter-key' }).name, 'openrouter');
+});
+
+test('TanStack AI adapter boundary preserves custom model strings', () => {
+  assert.equal(createTanStackTextAdapter({ provider: 'openai', model: 'custom-openai-model' }, { provider: 'openai', apiKey: 'openai-key' }).model, 'custom-openai-model');
+  assert.equal(createTanStackTextAdapter({ provider: 'anthropic', model: 'custom-anthropic-model' }, { provider: 'anthropic', apiKey: 'anthropic-key' }).model, 'custom-anthropic-model');
+  assert.equal(createTanStackTextAdapter({ provider: 'openrouter', model: 'custom/provider-model' }, { provider: 'openrouter', apiKey: 'openrouter-key' }).model, 'custom/provider-model');
 });
 
 test('provider-specific options only emit Anthropic thinking configuration', () => {
@@ -329,7 +397,7 @@ test('AI builder rejects legacy provider settings with unsupported endpoints or 
       version: 1,
       data: {
         provider: 'openrouter',
-        model: 'openai/gpt-4o-mini',
+        model: 'minimax/minimax-2.7',
         endpoint: 'https://example.test/v1',
       },
     });
@@ -340,7 +408,7 @@ test('AI builder rejects legacy provider settings with unsupported endpoints or 
       version: 1,
       data: {
         provider: 'openai',
-        model: 'gpt-4o-mini',
+        model: 'gpt-5.4-mini',
         thinkingBudgetTokens: 512,
       },
     });
@@ -354,7 +422,7 @@ test('AI builder rejects legacy provider settings with unsupported endpoints or 
 test('AI builder initializes uncontrolled secrets from persisted provider settings without persisting keys', () => {
   const storage = new MemoryStorage();
   const restoreWindow = installWindowStorage(storage);
-  const providerSettings: ProviderSettings = { ...createDefaultProviderSettings('anthropic'), model: 'claude-sonnet-4-5', temperature: 0.2 };
+  const providerSettings: ProviderSettings = { ...createDefaultProviderSettings('anthropic'), model: 'claude-sonnet-4-6', temperature: 0.2 };
 
   try {
     persistProviderSettings(providerSettings);
@@ -430,7 +498,7 @@ test('AI builder storage validates unknown JSON and redacts secrets from exports
         formCode: sampleFormCode,
         parseErrors: [{ message: 'Parse warning', details: { token: 'secret-token', line: 1 } }],
         provider: 'openrouter',
-        model: 'openai/gpt-4o-mini',
+        model: 'minimax/minimax-2.7',
         timestamp: 12,
         status: 'completed',
       },
@@ -444,7 +512,7 @@ test('AI builder storage validates unknown JSON and redacts secrets from exports
         status: 'extracted',
         createdAt: 12,
         provider: 'openrouter',
-        model: 'openai/gpt-4o-mini',
+        model: 'minimax/minimax-2.7',
       },
     ],
     createdAt: 1,
@@ -753,7 +821,7 @@ test('raw output panel shows raw text, thinking, parsed forms, events, metadata,
     ],
     formCode: sampleFormCode,
     provider: 'openrouter',
-    model: 'openai/gpt-4o-mini',
+    model: 'minimax/minimax-2.7',
     status: 'completed',
   };
   const html = renderToStaticMarkup(createElement(RawOutputPanel, { message }));
@@ -825,6 +893,17 @@ test('conversation updates reuse the synchronously created conversation for one 
   assert.equal(secondUpdate.conversations[0]?.generatedForms?.[0]?.messageId, assistantMessage.id);
 });
 
+test('conversation updates dedupe rapid first-message updates before active id commits', () => {
+  const userMessage: AiMessage = { id: 'user-rapid', role: 'user', content: 'Create a signup form' };
+  const assistantMessage: AiMessage = { id: 'assistant-rapid', role: 'assistant', content: 'Streaming' };
+  const firstUpdate = upsertConversation([], undefined, [userMessage, assistantMessage]);
+  const secondUpdate = upsertConversation(firstUpdate.conversations, undefined, [userMessage, { ...assistantMessage, content: 'Streaming more' }]);
+
+  assert.equal(secondUpdate.conversations.length, 1);
+  assert.equal(secondUpdate.conversationId, firstUpdate.conversationId);
+  assert.equal(secondUpdate.conversations[0]?.messages[1]?.content, 'Streaming more');
+});
+
 test('sidebar history and settings render without backend or settings UI bypasses', () => {
   const providerSettings = createDefaultProviderSettings('openrouter');
   const providerSecrets: ProviderSecrets = { provider: 'openrouter', apiKey: '' };
@@ -853,10 +932,12 @@ test('sidebar history and settings render without backend or settings UI bypasse
     providerSettings,
     providerSecrets,
     providerSecretPersistence: { mode: 'local', rememberKey: true },
+    modelCatalogs: {},
     parserConfig: defaultParserConfig,
     onProviderAccessChange: () => undefined,
     onProviderSecretPersistenceChange: () => undefined,
     onClearProviderSecrets: () => undefined,
+    onRefreshProviderModels: () => undefined,
     onParserConfigChange: () => undefined,
     onSelectConversation: () => undefined,
     onDeleteConversation: () => undefined,
@@ -872,8 +953,17 @@ test('sidebar history and settings render without backend or settings UI bypasse
 
   assert.match(historyMarkup, /Sidebar conversation/);
   assert.match(modelMarkup, /Model settings/);
-  assert.match(modelMarkup, /openai\/gpt-4o-mini/);
+  assert.match(modelMarkup, /minimax\/minimax-2.7/);
   assert.match(iconsMarkup, /AI builder sidebar/);
+});
+
+test('model autocomplete filters catalog entries and preserves custom selected model', () => {
+  const options = getFilteredModelOptions([
+    { id: 'openai/gpt-5.4-mini', label: 'GPT 5.4 mini' },
+    { id: 'anthropic/claude-sonnet-4-6', label: 'Claude Sonnet 4.6' },
+  ], 'sonnet', 'custom/model');
+
+  assert.deepEqual(options.map((option) => option.id), ['custom/model', 'anthropic/claude-sonnet-4-6']);
 });
 
 test('provider settings explain BYOK persistence and model settings keep Anthropic thinking scoped', () => {

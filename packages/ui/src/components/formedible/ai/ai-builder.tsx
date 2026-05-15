@@ -9,9 +9,10 @@ import { createDefaultProviderSecrets, createDefaultProviderSettings, ProviderSe
 import { SidebarContent } from '@formedible/ui/components/formedible/ai/sidebar-content';
 import { SidebarIcons, type SidebarView } from '@formedible/ui/components/formedible/ai/sidebar-icons';
 import { Button } from '@formedible/ui/components/button';
-import { clearStoredProviderSecrets, exportConversation, getLastFormCode, persistConversations, persistProviderSecrets, persistProviderSettings, persistUiState, readPersistedAIBuilderState, readStoredProviderSecrets, upsertConversation } from '@formedible/ui/components/formedible/lib/ai-storage';
+import { fetchProviderModels } from '@formedible/ui/components/formedible/lib/ai-model-catalog';
+import { clearStoredProviderSecrets, exportConversation, getLastFormCode, persistConversations, persistProviderModelCatalog, persistProviderSecrets, persistProviderSettings, persistUiState, readPersistedAIBuilderState, readProviderModelCatalogs, readStoredProviderSecrets, upsertConversation } from '@formedible/ui/components/formedible/lib/ai-storage';
 import type { ProviderSecretPersistencePreference } from '@formedible/ui/components/formedible/lib/ai-storage';
-import type { AiConversation, AiMessage, AiParserConfig, AIBuilderMode, ProviderSecrets, ProviderSettings } from '@formedible/ui/components/formedible/lib/ai-types';
+import type { AIProvider, AiConversation, AiMessage, AiParserConfig, AIBuilderMode, ProviderModelCatalog, ProviderModelCatalogs, ProviderSecrets, ProviderSettings } from '@formedible/ui/components/formedible/lib/ai-types';
 import { defaultParserConfig, generateSystemPrompt, mergeParserConfig } from '@formedible/ui/components/formedible/lib/parser-config-schema';
 import type { ParserConfig } from '@formedible/ui/components/formedible/lib/parser-config-schema';
 import type { FormedibleFormValues } from '@formedible/ui/components/formedible/lib/types';
@@ -76,6 +77,8 @@ export function AIBuilder({
   const [internalProviderAccess, setInternalProviderAccess] = useState<AIBuilderProviderAccess>(() => resolveInitialProviderAccess(controlledProviderSettings, controlledProviderSecrets));
   const [providerSecretPersistence, setProviderSecretPersistence] = useState<ProviderSecretPersistencePreference>(() => readProviderSecretPersistencePreference());
   const [parserConfig, setParserConfig] = useState<ParserConfig>(() => mergeParserConfig(defaultParserConfig));
+  const [modelCatalogs, setModelCatalogs] = useState<ProviderModelCatalogs>(() => readProviderModelCatalogs());
+  const [refreshingProvider, setRefreshingProvider] = useState<AIProvider | undefined>(undefined);
   const [conversations, setConversations] = useState<readonly AiConversation[]>(() => readPersistedAIBuilderState(createDefaultProviderSettings()).conversations);
   const [currentConversationId, setCurrentConversationId] = useState<string | undefined>(() => readPersistedAIBuilderState(createDefaultProviderSettings()).currentConversationId);
   const [activeSidebarView, setActiveSidebarView] = useState<SidebarView | null>('history');
@@ -114,6 +117,14 @@ export function AIBuilder({
   }, [controlledProviderSecrets, internalProviderAccess.secrets.provider, providerSettings.provider]);
 
   useEffect(() => {
+    if (providerValidationError || modelCatalogs[providerSettings.provider] || providerSecrets.apiKey.trim().length === 0 || refreshingProvider) {
+      return;
+    }
+
+    void refreshProviderModels();
+  }, [modelCatalogs, providerSecrets.apiKey, providerSettings.provider, providerValidationError, refreshingProvider]);
+
+  useEffect(() => {
     persistConversations(conversations);
   }, [conversations]);
 
@@ -135,6 +146,23 @@ export function AIBuilder({
   function clearProviderSecrets() {
     clearStoredProviderSecrets();
     updateProviderAccess(providerSettings, createDefaultProviderSecrets(providerSettings.provider));
+  }
+
+  async function refreshProviderModels() {
+    const provider = providerSettings.provider;
+    setRefreshingProvider(provider);
+
+    try {
+      const catalog = await fetchProviderModels({ provider, apiKey: providerSecrets.apiKey });
+      updateProviderModelCatalog(catalog);
+    } finally {
+      setRefreshingProvider((previousProvider) => (previousProvider === provider ? undefined : previousProvider));
+    }
+  }
+
+  function updateProviderModelCatalog(catalog: ProviderModelCatalog) {
+    setModelCatalogs((previousCatalogs) => ({ ...previousCatalogs, [catalog.provider]: catalog }));
+    persistProviderModelCatalog(catalog);
   }
 
   function updateMessages(nextMessages: readonly AiMessage[]) {
@@ -202,7 +230,7 @@ export function AIBuilder({
   }
 
   return (
-    <section className={cn('flex min-h-[640px] overflow-hidden rounded-lg border bg-background', className)} data-conversation-id={currentConversationId ?? 'new'}>
+    <section className={cn('flex h-full min-h-0 overflow-hidden rounded-lg border bg-background', className)} data-conversation-id={currentConversationId ?? 'new'}>
       <SidebarIcons isCollapsed={isSidebarCollapsed} activeView={activeSidebarView} onToggleCollapse={toggleSidebarCollapse} onViewChange={setActiveSidebarView} />
       <SidebarContent
         activeView={activeSidebarView}
@@ -213,19 +241,22 @@ export function AIBuilder({
           providerSettings={providerSettings}
           providerSecrets={providerSecrets}
           providerSecretPersistence={providerSecretPersistence}
+          modelCatalogs={modelCatalogs}
+          refreshingProvider={refreshingProvider}
           parserConfig={parserConfig}
           onProviderAccessChange={updateProviderAccess}
           onProviderSecretPersistenceChange={updateProviderSecretPersistence}
           onClearProviderSecrets={clearProviderSecrets}
+          onRefreshProviderModels={refreshProviderModels}
           onParserConfigChange={setParserConfig}
         onSelectConversation={selectConversation}
         onDeleteConversation={deleteConversation}
         onNewConversation={startNewConversation}
         onExportConversation={downloadConversation}
       />
-      <div className="grid min-w-0 flex-1 gap-4 p-4 lg:grid-cols-[minmax(0,0.95fr)_minmax(360px,1.05fr)]">
-        <div className="flex min-h-0 flex-col gap-4">
-          {isSidebarCollapsed ? <div className="grid gap-3"><ProviderSelection settings={providerSettings} secrets={providerSecrets} persistencePreference={providerSecretPersistence} onChange={updateProviderAccess} onPersistencePreferenceChange={updateProviderSecretPersistence} onClearStoredSecrets={clearProviderSecrets} /><AgentSettings settings={providerSettings} secrets={providerSecrets} onChange={updateProviderAccess} /></div> : null}
+      <div className="grid min-h-0 min-w-0 flex-1 gap-4 p-4 lg:grid-cols-[minmax(0,0.95fr)_minmax(360px,1.05fr)]">
+        <div className="flex min-h-0 min-w-0 flex-col gap-4 overflow-hidden">
+          {isSidebarCollapsed ? <div className="grid gap-3"><ProviderSelection settings={providerSettings} secrets={providerSecrets} persistencePreference={providerSecretPersistence} onChange={updateProviderAccess} onPersistencePreferenceChange={updateProviderSecretPersistence} onClearStoredSecrets={clearProviderSecrets} /><AgentSettings settings={providerSettings} secrets={providerSecrets} modelCatalog={modelCatalogs[providerSettings.provider]} isRefreshingModels={refreshingProvider === providerSettings.provider} onRefreshModels={refreshProviderModels} onChange={updateProviderAccess} /></div> : null}
           {providerValidationError ? <p className="rounded-md border border-destructive/40 p-2 text-sm text-destructive">{providerValidationError}</p> : null}
           <div className="flex items-center justify-between gap-2 rounded-lg border p-2">
             <p className="truncate text-sm text-muted-foreground">{currentConversation ? currentConversation.title : 'New conversation'}</p>
@@ -241,10 +272,10 @@ export function AIBuilder({
             conversationId={currentConversationId}
             systemPrompt={systemPrompt}
             parserConfig={aiParserConfig}
-            className="min-h-[420px]"
+            className="min-h-0 flex-1"
           />
         </div>
-        <div className="min-h-0 rounded-lg border p-4">
+        <div className="min-h-0 min-w-0 overflow-auto rounded-lg border p-4">
           {formCode ? (
             <AiFormRenderer code={formCode} parserConfig={aiParserConfig} onSubmit={onFormSubmit} className="space-y-4" />
           ) : (

@@ -37,16 +37,16 @@ function RootDocument() {
           <HeadContent />
           <script src="https://chemin.dbuild.dev/script.js" data-id="7040d34e-b41f-4f20-88d1-b86ac93266c4" data-utcoffset="2" data-server="https://chemin.dbuild.dev" />
         </head>
-        <body className="min-h-svh bg-background text-foreground antialiased">
+        <body className="h-svh overflow-hidden bg-background text-foreground antialiased">
           <a
             href="#main-content"
             className="sr-only z-[60] rounded-md bg-background px-4 py-2 text-sm font-semibold text-foreground shadow-lg ring-1 ring-border focus:not-sr-only focus:fixed focus:left-4 focus:top-4"
           >
             Skip to content
           </a>
-          <div className="grid min-h-svh grid-rows-[auto_1fr]">
+          <div className="grid h-svh grid-rows-[auto_1fr] overflow-hidden">
             <Header />
-            <div id="main-content" className="min-h-0" tabIndex={-1}>
+            <div id="main-content" className="min-h-0 overflow-auto" tabIndex={-1}>
               <Outlet />
             </div>
           </div>

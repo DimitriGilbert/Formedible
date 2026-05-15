@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 import { ChatMessages } from '@formedible/ui/components/formedible/ai/chat-messages';
 import { Button } from '@formedible/ui/components/button';
+import { ScrollArea } from '@formedible/ui/components/scroll-area';
 import { Textarea } from '@formedible/ui/components/textarea';
 import { collectAiGenerationResult, streamAiResponse } from '@formedible/ui/components/formedible/lib/ai-generation';
 import { extractFormCode, parseAiToFormedible } from '@formedible/ui/components/formedible/lib/ai-parser';
@@ -229,10 +230,12 @@ export function ChatInterface({
   }
 
   return (
-    <div className={cn('flex h-full flex-col gap-3', className)}>
-      <div className="min-h-0 flex-1 space-y-3 overflow-auto rounded-lg border p-3">
-        <ChatMessages messages={messages} />
-      </div>
+    <div className={cn('flex h-full min-h-0 flex-col gap-3 overflow-hidden', className)}>
+      <ScrollArea className="min-h-0 flex-1 overscroll-contain rounded-lg border">
+        <div className="p-3">
+          <ChatMessages messages={messages} />
+        </div>
+      </ScrollArea>
       {error ? <p className="rounded-md border border-destructive/40 p-2 text-sm text-destructive">{error}</p> : null}
       <div className="grid gap-2">
         <Textarea

@@ -2,7 +2,8 @@
   "routes": [
     {
       "ownerRoot": "packages/ai-builder",
-      "destinationRoots": ["apps/web/src"]
+      "destinationRoots": ["packages/ui/src/components"],
+      "useRegistryTargets": true
     }
   ]
 }

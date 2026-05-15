@@ -1,14 +1,27 @@
 'use client';
 
+import { useMemo, useState } from 'react';
+
+import { Button } from '@formedible/ui/components/button';
 import { Input } from '@formedible/ui/components/input';
-import type { ProviderSecrets, ProviderSettings } from '@formedible/ui/components/formedible/lib/ai-types';
+import type { ProviderModelCatalog, ProviderModelCatalogEntry, ProviderSecrets, ProviderSettings } from '@formedible/ui/components/formedible/lib/ai-types';
 import { cn } from '@formedible/ui/lib/utils';
 
 export interface AgentSettingsProps {
   readonly settings: ProviderSettings;
   readonly secrets: ProviderSecrets;
+  readonly modelCatalog?: ProviderModelCatalog;
+  readonly isRefreshingModels?: boolean;
+  readonly onRefreshModels?: () => void;
   readonly onChange: (settings: ProviderSettings, secrets: ProviderSecrets) => void;
   readonly className?: string;
+}
+
+interface ModelAutocompleteProps {
+  readonly value: string;
+  readonly models: readonly ProviderModelCatalogEntry[];
+  readonly disabled?: boolean;
+  readonly onChange: (model: string) => void;
 }
 
 function parseOptionalNumber(value: string): number | undefined {
@@ -51,7 +64,69 @@ function updateMaxTokens(settings: ProviderSettings, maxTokens: number | undefin
   return { ...settings, maxTokens };
 }
 
-export function AgentSettings({ settings, secrets, onChange, className }: AgentSettingsProps) {
+export function getFilteredModelOptions(models: readonly ProviderModelCatalogEntry[], query: string, selectedModel: string): readonly ProviderModelCatalogEntry[] {
+  const normalizedQuery = query.trim().toLowerCase();
+  const filteredModels = normalizedQuery.length === 0
+    ? models
+    : models.filter((model) => `${model.id} ${model.label ?? ''}`.toLowerCase().includes(normalizedQuery));
+  const selectedExists = filteredModels.some((model) => model.id === selectedModel) || selectedModel.trim().length === 0;
+
+  return [
+    ...(selectedExists ? [] : [{ id: selectedModel, label: 'Current custom model' }]),
+    ...filteredModels,
+  ].slice(0, 20);
+}
+
+function ModelAutocomplete({ value, models, disabled, onChange }: ModelAutocompleteProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const filteredOptions = useMemo(() => getFilteredModelOptions(models, value, value), [models, value]);
+  const showDropdown = isOpen && filteredOptions.length > 0;
+
+  return (
+    <div className="relative">
+      <Input
+        value={value}
+        autoComplete="off"
+        disabled={disabled}
+        placeholder="Type or search model id"
+        className={cn(showDropdown && 'rounded-b-none')}
+        onBlur={() => setTimeout(() => setIsOpen(false), 150)}
+        onChange={(event) => {
+          onChange(event.target.value);
+          setIsOpen(true);
+        }}
+        onFocus={() => setIsOpen(true)}
+      />
+      {showDropdown ? (
+        <div className="absolute left-0 right-0 top-full z-50 max-h-72 overflow-y-auto rounded-b-md border border-t-0 bg-popover p-1 text-popover-foreground shadow-md">
+          {filteredOptions.map((model) => (
+            <Button
+              key={model.id}
+              type="button"
+              variant="ghost"
+              className="flex h-auto w-full flex-col items-start rounded-sm px-3 py-2 text-left text-sm"
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                onChange(model.id);
+                setIsOpen(false);
+              }}
+            >
+              <span className="font-medium">{model.label ?? model.id}</span>
+              {model.label && model.label !== model.id ? <span className="text-xs text-muted-foreground">{model.id}</span> : null}
+              {model.createdAt ? <span className="text-xs text-muted-foreground">Released {model.createdAt.slice(0, 10)}</span> : null}
+            </Button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+export function AgentSettings({ settings, secrets, modelCatalog, isRefreshingModels = false, onRefreshModels, onChange, className }: AgentSettingsProps) {
+  const modelCatalogHelpText = settings.provider === 'openai'
+    ? 'OpenAI model list is filtered by release date; the endpoint does not expose text-only capability metadata.'
+    : 'Model list is filtered to provider models released in the last six months.';
+
   return (
     <section className={cn('grid gap-3 rounded-lg border bg-background p-3', className)} aria-labelledby="ai-builder-agent-settings-title">
       <div>
@@ -59,8 +134,14 @@ export function AgentSettings({ settings, secrets, onChange, className }: AgentS
         <p className="mt-1 text-xs text-muted-foreground">Tune the active TanStack AI adapter without enabling custom endpoints.</p>
       </div>
       <label className="grid gap-1 text-sm font-medium">
-        Model
-        <Input value={settings.model} onChange={(event) => onChange({ ...settings, model: event.target.value }, secrets)} />
+        <span className="flex items-center justify-between gap-2">
+          Model
+          <Button type="button" variant="outline" size="sm" disabled={!onRefreshModels || isRefreshingModels || secrets.apiKey.trim().length === 0} onClick={onRefreshModels}>{isRefreshingModels ? 'Refreshing...' : 'Refresh models'}</Button>
+        </span>
+        <ModelAutocomplete value={settings.model} models={modelCatalog?.models ?? []} disabled={false} onChange={(model) => onChange({ ...settings, model }, secrets)} />
+        <span className="text-xs font-normal text-muted-foreground">
+          {modelCatalog?.error ? modelCatalog.error : modelCatalog?.fetchedAt ? `Last refreshed ${new Date(modelCatalog.fetchedAt).toLocaleString()}. ${modelCatalogHelpText}` : `Type a custom model string or refresh from the provider. ${modelCatalogHelpText}`}
+        </span>
       </label>
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="grid gap-1 text-sm font-medium">

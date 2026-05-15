@@ -25,7 +25,8 @@
       ],
       "registryDependencies": [
         "https://formedible.dev/r/formedible-core.json",
-        "https://formedible.dev/r/formedible-parser.json"
+        "https://formedible.dev/r/formedible-parser.json",
+        "scroll-area"
       ],
       "files": [
         {
@@ -107,6 +108,11 @@
           "path": "src/lib/formedible/ai-generation.ts",
           "type": "registry:lib",
           "target": "@ui/formedible/lib/ai-generation.ts"
+        },
+        {
+          "path": "src/lib/formedible/ai-model-catalog.ts",
+          "type": "registry:lib",
+          "target": "@ui/formedible/lib/ai-model-catalog.ts"
         },
         {
           "path": "src/lib/formedible/ai-parser.ts",
