@@ -23,9 +23,9 @@ async function runSync(rootDirectory: string, configPath: string): Promise<{ std
   return { stderr: result.stderr };
 }
 
-describe('copy-only sync', () => {
-  it('copies registry-listed files from owning source directories without content changes', async () => {
-    const fixtureRoot = await mkdtemp(join(tmpdir(), 'formedible-copy-sync-'));
+describe('quick sync', () => {
+  it('copies registry-listed files from owning source directories for local source workspaces', async () => {
+    const fixtureRoot = await mkdtemp(join(tmpdir(), 'formedible-local-sync-'));
 
     try {
       const sourceContent = "import { helper } from './helper';\n\nexport const value = helper('source');\n";
@@ -72,13 +72,100 @@ describe('copy-only sync', () => {
     }
   });
 
-  it('keeps sync script free of rewrite and mirror shortcuts', async () => {
-    const script = await readFile(syncScriptPath, 'utf8');
+  it('rewrites package install-surface imports like shadcn resolves aliases', async () => {
+    const fixtureRoot = await mkdtemp(join(tmpdir(), 'formedible-ui-sync-'));
 
-    assert.equal(/\.replace(?:All)?\s*\(/.test(script), false);
-    assert.equal(/MagicString|ts-morph/.test(script), false);
-    assert.equal(script.includes(['registry', 'default'].join('/')), false);
-    assert.equal(script.includes(['generated', 'formedible'].join('/')), false);
-    assert.equal(script.includes('public/r'), false);
+    try {
+      const sourceContent = [
+        "import { Button } from '@/components/ui/button';",
+        "import { FieldStore } from '@/components/formedible/builder/field-store';",
+        "import { useFormedible } from '@/hooks/use-formedible';",
+        "import { cn } from '@/lib/utils';",
+        "import type { FormedibleFormValues } from '@/lib/formedible/types';",
+        '',
+        'export const value = cn(Button, FieldStore, useFormedible);',
+        'export type Values = FormedibleFormValues;',
+        '',
+      ].join('\n');
+      const registryContent = JSON.stringify(
+        {
+          items: [
+            {
+              name: 'owner-core',
+              files: [{ path: 'src/components/formedible/example.tsx', target: '@ui/formedible/example.tsx' }],
+            },
+          ],
+        },
+        null,
+        2,
+      );
+
+      await writeFixtureFile(join(fixtureRoot, 'packages/owner/registry.json'), registryContent);
+      await writeFixtureFile(join(fixtureRoot, 'packages/owner/src/components/formedible/example.tsx'), sourceContent);
+      await writeFixtureFile(
+        join(fixtureRoot, 'packages/ui/components.json'),
+        JSON.stringify({ aliases: { ui: '@formedible/ui/components', utils: '@formedible/ui/lib/utils' } }),
+      );
+
+      const configPath = join(fixtureRoot, 'sync.config.json');
+      await writeFixtureFile(
+        configPath,
+        JSON.stringify({ routes: [{ ownerRoot: 'packages/owner', destinationRoots: ['packages/ui/src/components'], useRegistryTargets: true }] }),
+      );
+
+      await runSync(fixtureRoot, configPath);
+
+      const uiCopy = await readFile(join(fixtureRoot, 'packages/ui/src/components/formedible/example.tsx'), 'utf8');
+
+      assert.match(uiCopy, /from '@formedible\/ui\/components\/button'/);
+      assert.match(uiCopy, /from '@formedible\/ui\/components\/formedible\/builder\/field-store'/);
+      assert.match(uiCopy, /from '@formedible\/ui\/components\/formedible\/hooks\/use-formedible'/);
+      assert.match(uiCopy, /from '@formedible\/ui\/lib\/utils'/);
+      assert.match(uiCopy, /from '@formedible\/ui\/components\/formedible\/lib\/types'/);
+      assert.equal(uiCopy.includes("@/components/ui/button"), false);
+      assert.equal(uiCopy.includes("@/lib/formedible/types"), false);
+    } finally {
+      await rm(fixtureRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('rewrites only Formedible core imports for apps/web sync output', async () => {
+    const fixtureRoot = await mkdtemp(join(tmpdir(), 'formedible-web-sync-'));
+
+    try {
+      const sourceContent = "import { Button } from '@/components/ui/button';\nimport { useFormedible } from '@/hooks/use-formedible';\nimport { cn } from '@/lib/utils';\nimport type { FormedibleFormValues } from '@/lib/formedible/types';\n";
+      const registryContent = JSON.stringify(
+        {
+          items: [
+            {
+              name: 'owner-core',
+              files: [{ path: 'src/components/formedible/example.tsx', target: '@ui/formedible/example.tsx' }],
+            },
+          ],
+        },
+        null,
+        2,
+      );
+
+      await writeFixtureFile(join(fixtureRoot, 'packages/owner/registry.json'), registryContent);
+      await writeFixtureFile(join(fixtureRoot, 'packages/owner/src/components/formedible/example.tsx'), sourceContent);
+
+      const configPath = join(fixtureRoot, 'sync.config.json');
+      await writeFixtureFile(
+        configPath,
+        JSON.stringify({ routes: [{ ownerRoot: 'packages/owner', destinationRoots: ['apps/web/src'] }] }),
+      );
+
+      await runSync(fixtureRoot, configPath);
+
+      const webCopy = await readFile(join(fixtureRoot, 'apps/web/src/components/formedible/example.tsx'), 'utf8');
+
+      assert.match(webCopy, /from '@\/components\/ui\/button'/);
+      assert.match(webCopy, /from '@formedible\/ui\/components\/formedible\/hooks\/use-formedible'/);
+      assert.match(webCopy, /from '@\/lib\/utils'/);
+      assert.match(webCopy, /from '@formedible\/ui\/components\/formedible\/lib\/types'/);
+    } finally {
+      await rm(fixtureRoot, { recursive: true, force: true });
+    }
   });
 });

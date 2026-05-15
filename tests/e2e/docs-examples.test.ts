@@ -162,7 +162,8 @@ async function verifyCheckoutConditionalPaymentFields(session: string): Promise<
 }
 
 async function verifyArrayFieldInteractions(session: string): Promise<void> {
-  await runAgentBrowser(['find', 'role', 'button', 'click', '--name', 'Advanced examples (8)', '--exact'], session);
+  await clickVisibleButtonByText(session, 'Advanced examples (8)');
+  await runAgentBrowser(['wait', '--text', 'Dynamic Array Fields'], session);
   await clickVisibleExampleButton(session, 'Dynamic Array Fields');
   await runAgentBrowser(['wait', '--text', 'Team Members'], session);
 

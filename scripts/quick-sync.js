@@ -1,4 +1,4 @@
-import { access, copyFile, mkdir, readFile } from 'node:fs/promises';
+import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -14,15 +14,26 @@ const defaultRoutes = [
   },
   {
     ownerRoot: 'packages/formedible-parser',
-    destinationRoots: ['apps/web/src', 'packages/builder/src', 'packages/ai-builder/src'],
+    destinationRoots: ['packages/ui/src/components'],
+    useRegistryTargets: true,
+  },
+  {
+    ownerRoot: 'packages/formedible-parser',
+    destinationRoots: ['packages/builder/src', 'packages/ai-builder/src'],
   },
   {
     ownerRoot: 'packages/builder',
-    destinationRoots: ['apps/web/src', 'packages/ai-builder/src'],
+    destinationRoots: ['packages/ui/src/components'],
+    useRegistryTargets: true,
+  },
+  {
+    ownerRoot: 'packages/builder',
+    destinationRoots: ['packages/ai-builder/src'],
   },
   {
     ownerRoot: 'packages/ai-builder',
-    destinationRoots: ['apps/web/src'],
+    destinationRoots: ['packages/ui/src/components'],
+    useRegistryTargets: true,
   },
 ];
 
@@ -118,6 +129,141 @@ function resolveFromRoot(root, path) {
   return resolve(root, path);
 }
 
+function readAliasValue(componentsConfig, aliasName) {
+  if (!isRecord(componentsConfig)) {
+    return undefined;
+  }
+
+  const aliases = componentsConfig.aliases;
+
+  if (!isRecord(aliases)) {
+    return undefined;
+  }
+
+  return readStringProperty(aliases, aliasName);
+}
+
+function rewriteAliasSpecifier(specifier, aliases) {
+  const uiAlias = aliases.ui;
+  const utilsAlias = aliases.utils;
+
+  if (specifier === '@/lib/utils') {
+    return utilsAlias;
+  }
+
+  if (specifier.startsWith('@/components/ui/')) {
+    return `${uiAlias}/${specifier.slice('@/components/ui/'.length)}`;
+  }
+
+  if (specifier.startsWith('@/components/formedible/')) {
+    return `${uiAlias}/formedible/${specifier.slice('@/components/formedible/'.length)}`;
+  }
+
+  if (specifier.startsWith('@/lib/formedible/')) {
+    return `${uiAlias}/formedible/lib/${specifier.slice('@/lib/formedible/'.length)}`;
+  }
+
+  if (specifier.startsWith('@/hooks/')) {
+    return `${uiAlias}/formedible/hooks/${specifier.slice('@/hooks/'.length)}`;
+  }
+
+  return specifier;
+}
+
+function rewriteWebSpecifier(specifier) {
+  if (specifier === '@/hooks/use-formedible') {
+    return '@formedible/ui/components/formedible/hooks/use-formedible';
+  }
+
+  if (specifier.startsWith('@/components/formedible/hooks/')) {
+    return `@formedible/ui/components/formedible/hooks/${specifier.slice('@/components/formedible/hooks/'.length)}`;
+  }
+
+  if (specifier.startsWith('@/components/formedible/fields/')) {
+    return `@formedible/ui/components/formedible/fields/${specifier.slice('@/components/formedible/fields/'.length)}`;
+  }
+
+  if (specifier === '@/components/formedible/form') {
+    return '@formedible/ui/components/formedible/form';
+  }
+
+  if (specifier.startsWith('@/components/formedible/form/')) {
+    return `@formedible/ui/components/formedible/form/${specifier.slice('@/components/formedible/form/'.length)}`;
+  }
+
+  if (specifier.startsWith('@/components/formedible/layout/')) {
+    return `@formedible/ui/components/formedible/layout/${specifier.slice('@/components/formedible/layout/'.length)}`;
+  }
+
+  if (specifier.startsWith('@/components/formedible/lib/')) {
+    return `@formedible/ui/components/formedible/lib/${specifier.slice('@/components/formedible/lib/'.length)}`;
+  }
+
+  if (specifier === '@/lib/formedible/types') {
+    return '@formedible/ui/components/formedible/lib/types';
+  }
+
+  if (specifier === '@/lib/formedible/field-registry') {
+    return '@formedible/ui/components/formedible/lib/field-registry';
+  }
+
+  if (specifier === '@/lib/formedible/template-interpolation') {
+    return '@formedible/ui/components/formedible/lib/template-interpolation';
+  }
+
+  return specifier;
+}
+
+function rewriteModuleSpecifiers(content, aliases) {
+  return content.replace(/(from\s+['"]|import\s*\(\s*['"]|export\s+[^;]*?from\s+['"])(@\/[^'"]+)(['"])/g, (match, prefix, specifier, suffix) => {
+    return `${prefix}${rewriteAliasSpecifier(specifier, aliases)}${suffix}`;
+  });
+}
+
+function rewriteWebCoreSpecifiers(content) {
+  return content.replace(/(from\s+['"]|import\s*\(\s*['"]|export\s+[^;]*?from\s+['"])(@\/[^'"]+)(['"])/g, (match, prefix, specifier, suffix) => {
+    return `${prefix}${rewriteWebSpecifier(specifier)}${suffix}`;
+  });
+}
+
+async function readDestinationAliases(rootDirectory, destinationRoot) {
+  const componentsConfigPath = destinationRoot === 'packages/ui/src/components'
+    ? join(rootDirectory, 'packages/ui/components.json')
+    : join(rootDirectory, 'apps/web/components.json');
+
+  if (!(await pathExists(componentsConfigPath))) {
+    return undefined;
+  }
+
+  const componentsConfig = await readJsonFile(componentsConfigPath);
+  const ui = readAliasValue(componentsConfig, 'ui');
+  const utils = readAliasValue(componentsConfig, 'utils');
+
+  if (ui === undefined || utils === undefined) {
+    throw new Error(`components.json is missing ui/utils aliases: ${componentsConfigPath}`);
+  }
+
+  return { ui, utils };
+}
+
+async function syncContentForDestination(content, rootDirectory, destinationRoot) {
+  if (destinationRoot === 'packages/ui/src/components') {
+    const aliases = await readDestinationAliases(rootDirectory, destinationRoot);
+
+    if (aliases === undefined) {
+      throw new Error(`Unable to resolve shadcn aliases for ${destinationRoot}`);
+    }
+
+    return rewriteModuleSpecifiers(content, aliases);
+  }
+
+  if (destinationRoot === 'apps/web/src') {
+    return rewriteWebCoreSpecifiers(content);
+  }
+
+  return content;
+}
+
 async function copyRegistryFiles(route, rootDirectory) {
   const ownerRoot = resolveFromRoot(rootDirectory, route.ownerRoot);
   const registryPath = join(ownerRoot, 'registry.json');
@@ -132,6 +278,10 @@ async function copyRegistryFiles(route, rootDirectory) {
   let missing = 0;
 
   for (const file of files) {
+    if (file.sourcePath === 'src/index.ts' && route.useRegistryTargets !== true) {
+      continue;
+    }
+
     const sourcePath = join(ownerRoot, file.sourcePath);
 
     if (!(await pathExists(sourcePath))) {
@@ -143,7 +293,9 @@ async function copyRegistryFiles(route, rootDirectory) {
     for (const destinationRoot of route.destinationRoots) {
       const targetPath = join(resolveFromRoot(rootDirectory, destinationRoot), resolveSyncTargetPath(file.sourcePath, file.targetPath, route.useRegistryTargets === true));
       await mkdir(dirname(targetPath), { recursive: true });
-      await copyFile(sourcePath, targetPath);
+      const sourceContent = await readFile(sourcePath, 'utf8');
+      const syncedContent = await syncContentForDestination(sourceContent, rootDirectory, destinationRoot);
+      await writeFile(targetPath, syncedContent);
       copied += 1;
     }
   }

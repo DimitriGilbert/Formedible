@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 
-import { FormBuilder } from '@/components/formedible/builder/form-builder';
+import { FormBuilder } from '@formedible/ui/components/formedible/builder/form-builder';
 import { PageContainer } from '@/components/layout/page-container';
 import { SectionDivider } from '@/components/layout/section-divider';
 import { SiteFooter } from '@/components/layout/site-footer';

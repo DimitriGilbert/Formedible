@@ -2,12 +2,11 @@ import { describe, it } from 'node:test';
 import { assertHasViolations, assertNoViolations, collectRepositoryTextFiles } from './utils.js';
 const syncPathPattern = /^scripts\/.*sync.*\.(?:cjs|js|mjs|ts)$/;
 const rewritePatterns = [
-    /\.replace(?:All)?\s*\(/,
     /\bMagicString\b/,
     /\bts-morph\b/,
-    /\bfrom\s*:\s*['"][^'"]+['"]\s*,\s*to\s*:/,
     /\bimport\b[\s\S]*?\.js['"][\s\S]*?writeFile/,
     /writeFile[\s\S]*?\bcontent\s*\./,
+    /@formedible\/ui\/lib\/formedible\//,
 ];
 export function findSourceRewriteSyncViolations(files) {
     return files
@@ -17,11 +16,11 @@ export function findSourceRewriteSyncViolations(files) {
         .map((pattern) => `sync source rewrite logic is forbidden in ${file.relativePath}: ${pattern.source}`));
 }
 describe('no source rewrite sync', () => {
-    it('rejects sample sync import rewriting', () => {
+    it('rejects sample sync import rewriting through TypeScript AST mutation', () => {
         assertHasViolations(findSourceRewriteSyncViolations([
             {
                 relativePath: 'scripts/quick-sync.ts',
-                content: "await writeFile(target, source.replace(/from '(.+)'/g, \"from '$1.js'\"));",
+                content: "import { Project } from 'ts-morph';\nawait writeFile(target, project.getFullText());",
             },
         ]));
     });

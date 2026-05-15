@@ -24,9 +24,9 @@ const sections = [
   },
   {
     title: 'Getting started',
-    body: 'Import FormBuilder from the copied builder path and mount it where your app owns navigation, persistence, review state, and save actions. The default view ships with Builder, Preview, and Code tabs.',
+    body: 'Import FormBuilder from the installed shadcn UI package path and mount it where your app owns navigation, persistence, review state, and save actions. The default view ships with Builder, Preview, and Code tabs.',
     bullets: [
-      'Import FormBuilder from @/components/formedible/builder/form-builder.',
+      'Import FormBuilder from @formedible/ui/components/formedible/builder/form-builder.',
       'Render it inside an app route, modal, or admin workspace with a clear aria label or nearby heading.',
       'Use the default tabs first: Builder for editing fields, Preview for rendered output, and Code for generated source.',
     ],

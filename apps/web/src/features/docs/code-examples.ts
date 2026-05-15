@@ -118,9 +118,9 @@ export function OnboardingForm() {
   'builder-imports': {
     id: 'builder-imports',
     title: 'Builder shell path',
-    description: 'The builder is an app component path, so consumers can compose it beside their own navigation and persistence layer.',
+    description: 'The builder installs into the shadcn UI package, so consumers can compose it beside their own navigation and persistence layer.',
     language: 'tsx',
-    code: `import { FormBuilder } from '@/components/formedible/builder/form-builder';
+    code: `import { FormBuilder } from '@formedible/ui/components/formedible/builder/form-builder';
 
 export function BuilderWorkspace() {
   return (
@@ -143,8 +143,8 @@ export function BuilderWorkspace() {
     language: 'tsx',
     code: `import { useState } from 'react';
 
-import { AIBuilder } from '@/components/formedible/ai/ai-builder';
-import { createDefaultProviderSecrets, createDefaultProviderSettings, ProviderSelection } from '@/components/formedible/ai/provider-selection';
+import { AIBuilder } from '@formedible/ui/components/formedible/ai/ai-builder';
+import { createDefaultProviderSecrets, createDefaultProviderSettings, ProviderSelection } from '@formedible/ui/components/formedible/ai/provider-selection';
 
 export function AiBuilderWorkspace() {
   const [providerSettings, setProviderSettings] = useState(() => createDefaultProviderSettings('openrouter'));
