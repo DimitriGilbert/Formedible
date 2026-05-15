@@ -8,24 +8,24 @@ const routeHead = createRouteSeoHead('/docs/builder');
 
 const relatedLinks = [
   { title: 'API', description: 'Hook options, field config, tabs, pages, persistence, analytics, and form props.', href: '/docs/api' },
-  { title: 'AI Builder', description: 'Prompt-assisted form drafts that feed the same builder and field model.', href: '/docs/ai-builder' },
-  { title: 'Getting Started', description: 'Install the copied app surface and render your first Formedible form.', href: '/docs/getting-started' },
+  { title: 'AI Builder', description: 'Generate draft forms, then send them through the parser and field model.', href: '/docs/ai-builder' },
+  { title: 'Getting Started', description: 'Install the copied files and render your first Formedible form.', href: '/docs/getting-started' },
 ] satisfies readonly DocsGuideLink[];
 
 const sections = [
   {
     title: 'Public exports',
-    body: 'The builder package root exports the visual builder, the tab helpers, the external field store, and the code-generation functions. Treat that file as the import contract.',
+    body: 'Import builder pieces from the package root. It exports the visual builder, tab helpers, field store, and code-generation functions.',
     bullets: [
       'FormBuilder, FieldConfigurator, FormPreview, and CodeGenerator are root exports.',
-      'FieldStore and globalFieldStore are also root exports, so store behavior is not only an internal detail.',
+      'FieldStore and globalFieldStore are root exports.',
       'generateFormCode and generateCodeFromParsedConfig are exported from the same root file.',
     ],
     snippet: {
       title: 'packages/builder/src/index.ts',
       language: 'ts',
-      code: `export { FormBuilder } from '@/components/formedible/builder/form-builder';
-export { FieldStore, globalFieldStore } from '@/components/formedible/builder/field-store';
+      code: `export { FormBuilder } from '@/components/ui/formedible/builder/form-builder';
+export { FieldStore, globalFieldStore } from '@/components/ui/formedible/builder/field-store';
 export {
   createTabsWithDisabled,
   createTabsWithOrder,
@@ -33,13 +33,13 @@ export {
   getBuilderAndCodeTabs,
   getBuilderAndPreviewTabs,
   getBuilderOnlyTabs,
-} from '@/components/formedible/builder/default-tabs';
-export { generateCodeFromParsedConfig, generateFormCode } from '@/lib/formedible/code-generation';`,
+} from '@/components/ui/formedible/builder/default-tabs';
+export { generateCodeFromParsedConfig, generateFormCode } from '@/components/ui/formedible/lib/code-generation';`,
     },
   },
   {
     title: 'FormBuilder props and rendering path',
-    body: 'FormBuilder sorts enabled tabs, imports provided initial fields into the global field store, calls onChange after metadata or field updates, and calls onSubmit from the Save Form button.',
+    body: 'FormBuilder wires the tab UI to the global field store. It imports initial fields, reports changes, and calls onSubmit from Save Form.',
     bullets: [
       'tabs defaults to defaultTabs and defaultTab defaults to builder.',
       'initialMetadata is merged over defaultFormMetadata, including nested settings.',
@@ -79,7 +79,7 @@ export { generateCodeFromParsedConfig, generateFormCode } from '@/lib/formedible
   },
   {
     title: 'Tab system',
-    body: 'The default tab module defines three TabConfig objects and helper functions that return slices or ordered copies of those objects.',
+    body: 'The default tab module defines builder, preview, and code tabs. Helper functions return fixed, ordered, or disabled copies.',
     bullets: [
       'defaultTabs is [builderTab, previewTab, codeTab].',
       'getBuilderOnlyTabs, getBuilderAndPreviewTabs, and getBuilderAndCodeTabs return fixed arrays.',
@@ -111,7 +111,7 @@ export function createTabsWithDisabled(disabledTabIds: readonly string[]): reado
   },
   {
     title: 'Field store',
-    body: 'FieldStore owns fields by id, keeps a separate order array, rebuilds a readonly snapshot, and notifies structure or field-level listeners after changes.',
+    body: 'FieldStore keeps fields by id plus a separate order array. After each change, it rebuilds the readonly snapshot and notifies listeners.',
     bullets: [
       'addField generates ids like field_1 and creates a default name, label, required flag, and page.',
       'updateField patches a field, rebuilds the snapshot, notifies structure listeners, and notifies listeners for that field id.',
@@ -149,7 +149,7 @@ export function createTabsWithDisabled(disabledTabIds: readonly string[]): reado
   },
   {
     title: 'Code generation',
-    body: 'generateFormCode returns three strings: a complete component, the serialized config object, and the schema expression. The submit handler in the generated config dispatches a formedible-submit event.',
+    body: 'generateFormCode returns a full component string, a serialized config string, and a schema string. The generated submit handler dispatches a formedible-submit event.',
     bullets: [
       'GeneratedCodeResult has fullCode, formConfig, and schemaCode properties.',
       'Field schema mapping covers strings, number-like fields, boolean fields, arrays, and object fields.',
@@ -192,8 +192,8 @@ function BuilderRoute() {
   return (
     <DocsGuidePage
       eyebrow="Builder"
-      title="Mount the visual builder as a first-party app surface."
-      description="Compose fields, preview the rendered form, and generate source from the same model used by useFormedible. The builder stays in your app, beside your review and save flow."
+      title="Mount the visual builder inside your app."
+      description="Compose fields, preview the form, and generate code from the same model used by useFormedible. Keep the builder next to your review and save flow."
       codeExampleIds={['builder-imports']}
       sections={sections}
       related={relatedLinks}

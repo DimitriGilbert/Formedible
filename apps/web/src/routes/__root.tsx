@@ -35,6 +35,7 @@ function RootDocument() {
       <html lang="en" className="scroll-smooth">
         <head>
           <HeadContent />
+          <script src="https://chemin.dbuild.dev/script.js" data-id="7040d34e-b41f-4f20-88d1-b86ac93266c4" data-utcoffset="2" data-server="https://chemin.dbuild.dev" />
         </head>
         <body className="min-h-svh bg-background text-foreground antialiased">
           <a

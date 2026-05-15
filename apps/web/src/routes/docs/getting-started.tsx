@@ -125,8 +125,8 @@ function GettingStartedRoute() {
   return (
     <DocsGuidePage
       eyebrow="Start here"
-      title="Install Formedible and render your first form."
-      description="Run one shadcn command, add a small useFormedible config, and submit real values. You can tune the copied fields after the first form works."
+      title="Install Formedible and render a form."
+      description="Install the registry item, add fields, then submit real values. Tune the copied files after the first form works."
       codeExampleIds={['shadcn-install-surface', 'typed-hook-usage']}
       related={[
         { title: 'Fields', description: 'Pick field types and options for the next input.', href: '/docs/fields' },
@@ -137,7 +137,7 @@ function GettingStartedRoute() {
       sections={[
         {
           title: 'Install the component',
-          body: 'Run this from the app that owns your shadcn setup. It copies the hook, field components, validation helpers, and types into your UI directory.',
+          body: 'Run this in the app that owns your UI components. It copies the hook, fields, validation helpers, and types into your project.',
           bullets: [
             'Run the command in your web app package.',
             'Import the copied hook from your local UI path.',
@@ -149,13 +149,13 @@ function GettingStartedRoute() {
             code: installSnippet,
           },
           references: [
-            { title: 'Registry manifest', description: 'Declares formedible-core, dependencies, shadcn components, and copied files.', href: `${githubRoot}/packages/formedible/registry.json` },
+            { title: 'Registry manifest', description: 'Lists formedible-core, dependencies, UI components, and copied files.', href: `${githubRoot}/packages/formedible/registry.json` },
             { title: 'Public registry item', description: 'The JSON used by the install command.', href: `${githubRoot}/packages/formedible/public/r/formedible-core.json` },
           ],
         },
         {
           title: 'Create a form',
-          body: 'Start with fields, default values, and an onSubmit handler. The hook returns a Form component you can render anywhere in your route or component.',
+          body: 'Start with fields, default values, and onSubmit. Render the Form component returned by the hook.',
           bullets: [
             'Keep field names aligned with your value keys.',
             'Set every default value up front.',
@@ -173,7 +173,7 @@ function GettingStartedRoute() {
         },
         {
           title: 'Add schema validation',
-          body: 'Put your Zod schema on the top-level schema option. Formedible sends it through the validation pipeline before submit.',
+          body: 'Put the Zod schema on the top-level schema option. Keep field names and schema keys in sync.',
           bullets: [
             'Keep schema keys and field names the same.',
             'Use schema at the top level, not formOptions.validators.',
@@ -191,11 +191,11 @@ function GettingStartedRoute() {
         },
         {
           title: 'Customize the copied fields',
-          body: 'Once the form submits, change one field with component or edit the copied field files for app-wide behavior. The registry install is source you own.',
+          body: 'For one field, pass component. For app-wide defaults, edit the copied field files or use defaultComponents.',
           bullets: [
             'Use component for one field override.',
             'Use defaultComponents for a type-wide override.',
-            'Edit the copied field registry when you want a permanent local default.',
+            'Edit the copied field registry for a permanent local default.',
           ],
           snippet: {
             title: 'One field override',
@@ -210,7 +210,7 @@ function GettingStartedRoute() {
         },
         {
           title: 'Where to go next',
-          body: 'Use the focused docs when you add a new field, validation rule, or runtime option. Open a live example when you want to copy a known-working shape.',
+          body: 'Use the next page that matches what you are changing. Open a live example when you want a working config to copy.',
           bullets: [
             'Fields: choose text, select, arrays, objects, and custom field options.',
             'Validation: add schema, field, async, or cross-field rules.',

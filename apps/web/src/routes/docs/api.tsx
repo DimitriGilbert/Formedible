@@ -27,7 +27,7 @@ const relatedLinks = [
   { title: 'Validation', description: 'Schema, inline, async, and cross-field validation patterns.', href: '/docs/validation' },
   { title: 'Persistence', description: 'Draft payload shape, restore behavior, storage choice, and live demo link.', href: '/docs/persistence' },
   { title: 'Analytics', description: 'Callback names, argument order, and emitted tracking points.', href: '/docs/analytics' },
-  { title: 'Examples', description: 'Rendered forms that use the same hook and field model documented here.', href: '/docs/examples' },
+  { title: 'Examples', description: 'Rendered forms using the same hook and field model.', href: '/docs/examples' },
 ] satisfies readonly DocsGuideLink[];
 
 const useFormedibleSnippet = `import { useFormedible } from '@/components/ui/formedible/hooks/use-formedible';
@@ -162,11 +162,11 @@ const tabs = [
 const sections = [
   {
     title: 'useFormedible hook',
-    body: 'The hook is exported from the package source. Its generic defaults to FormedibleFormValues, which is Record<string, unknown>. The hook takes UseFormedibleOptions<TFormValues> and returns the rendered Form component plus helpers from the underlying hook stack.',
+    body: 'useFormedible takes UseFormedibleOptions<TFormValues>. It returns Form, the TanStack form instance, page helpers, and persistence helpers.',
     bullets: [
       'Signature in source: useFormedible<TFormValues extends FormedibleFormValues = FormedibleFormValues>(config: UseFormedibleOptions<TFormValues>).',
       'The implementation passes formOptions.defaultValues to TanStack Form and builds validators from schema, crossFieldValidation, asyncValidation, and each field config.',
-      'The returned Form component is declared inside the hook, so it closes over config, form state, analytics, pages, tabs, and persistence helpers.',
+      'Form closes over config, form state, analytics, pages, tabs, and persistence helpers.',
     ],
     snippet: { title: 'Typed hook call', language: 'tsx', code: useFormedibleSnippet },
     references: [
@@ -177,7 +177,7 @@ const sections = [
   },
   {
     title: 'UseFormedibleOptions',
-    body: 'This is the full public config shape used by useFormedible. fields and formOptions are required by the interface; every other entry is optional and only has runtime behavior where the hook or its child hooks read it.',
+    body: 'fields and formOptions are required. Other options only matter when the hook or a child hook reads them.',
     bullets: [
       'Fields are normalized before rendering. Type aliases such as multiselect and colorPicker are compatibility inputs and normalize to the canonical renderer keys.',
       'Tabs win over pages for field filtering. In use-formedible.tsx, activeFields checks tabs first, pages second, then falls back to all fields.',
@@ -186,7 +186,7 @@ const sections = [
     table: {
       headers: propertyTableHeaders,
       rows: [
-        createPropertyRow('fields', 'readonly FormedibleFieldConfig<TFormValues>[]', 'Required', 'Field definitions rendered by FieldRenderer after normalizeOptions.'),
+        createPropertyRow('fields', 'readonly FormedibleFieldConfig<TFormValues>[]', 'Required', 'Field definitions rendered by FieldRenderer after normalization.'),
         createPropertyRow('formOptions', 'FormedibleFormOptions<TFormValues>', 'Required', 'Default values plus submit/change/blur/focus/reset callbacks.'),
         createPropertyRow('schema', 'unknown', 'undefined', 'Standard-schema input passed to buildFormValidators and buildFieldValidators.'),
         createPropertyRow('crossFieldValidation', 'readonly FormedibleCrossFieldValidation<TFormValues>[]', 'undefined', 'Rules with fields and validator(values), used by form and field validators.'),
@@ -232,7 +232,7 @@ const sections = [
   },
   {
     title: 'Field config lookup',
-    body: 'Field config is part of UseFormedibleOptions, but it deserves its own lookup because fields drive rendering, validation, pages, tabs, nested objects, and arrays.',
+    body: 'Fields drive rendering, validation, pages, tabs, nested objects, and arrays.',
     bullets: [
       'Supported type strings are declared in FormedibleFieldType. NormalizedFieldType excludes the legacy aliases after normalization.',
       'Nested fields are carried through nestedFields, arrayConfig.objectConfig.fields, and objectConfig.fields.',
@@ -263,7 +263,7 @@ const sections = [
   },
   {
     title: 'FormedibleFormOptions',
-    body: 'formOptions is required. The hook reads defaultValues during useForm setup, then calls the lifecycle callbacks from submit and field events.',
+    body: 'formOptions is required. Put defaultValues here, plus submit and field event callbacks.',
     bullets: [
       'defaultValues is the only required property inside FormedibleFormOptions.',
       'onSubmit receives { value, formApi } after onFormComplete analytics and before persistence is cleared.',
@@ -292,7 +292,7 @@ const sections = [
   },
   {
     title: 'Persistence config',
-    body: 'Persistence stores a JSON payload with values, timestamp, and optionally currentPage. The hook returns manual save/load/clear helpers and also saves on value changes when persistence is configured.',
+    body: 'Persistence stores values, timestamp, and currentPage when present. The hook also returns save, load, and clear helpers.',
     bullets: [
       'Payload shape is { values: Partial<TFormValues>, timestamp: number, currentPage?: number }.',
       'Storage defaults to sessionStorage. localStorage is selected only when storage is localStorage; SSR returns no storage.',
@@ -318,7 +318,7 @@ const sections = [
   },
   {
     title: 'Analytics config',
-    body: 'Analytics callbacks keep positional arguments. The current runtime emits form start, field focus/blur/change/complete/error, page change, form complete, form abandon, and reset.',
+    body: 'Analytics callbacks use positional arguments. The runtime emits form, field, page, abandon, and reset events.',
     bullets: [
       'onFormStart runs once from the analytics hook mount effect.',
       'Field events are emitted by FieldRenderer controller handlers in use-formedible.tsx.',
@@ -350,7 +350,7 @@ const sections = [
   },
   {
     title: 'Pages, tabs, and progress',
-    body: 'Pages and tabs are separate routing modes inside the rendered form. If visible tabs exist, field filtering uses the active tab and page filtering is not used for the current render pass.',
+    body: 'Pages and tabs are separate modes. When visible tabs exist, active tab filtering wins over page filtering.',
     bullets: [
       'Visible pages come from field page numbers, sorted ascending, filtered by page conditional and field conditional. Empty results fall back to [1].',
       'progressValue is 100 for a single visible page. Multi-page flows use currentIndex / (totalPages - 1) * 100.',
@@ -383,7 +383,7 @@ const sections = [
   },
   {
     title: 'Return value',
-    body: 'The hook returns the native Form wrapper, the TanStack Form instance, multi-page state/helpers, and persistence helpers. Removed validation debug helpers are not part of this contract.',
+    body: 'The hook returns Form, the TanStack form instance, page state, page helpers, and persistence helpers. Removed validation debug helpers are not returned.',
     bullets: [
       'Page helpers are returned even for single-page forms. useMultiPage falls back to visiblePages [1] and progressValue 100.',
       'Persistence helpers are returned even when persistence is not configured; they no-op or return undefined when storage is unavailable.',
@@ -417,7 +417,7 @@ const sections = [
   },
   {
     title: 'Form component props',
-    body: 'The exported package form component is a thin ComponentProps<\'form\'> wrapper. The Form returned from useFormedible accepts that same prop shape and then replaces submit handling with form.handleSubmit.',
+    body: 'The returned Form accepts native form props. Submit is handled by form.handleSubmit, not the native onSubmit prop.',
     bullets: [
       'Native event props run first. Matching onForm* callbacks from UseFormedibleOptions run next with event plus formApi context.',
       'The returned Form prevents default submit, stops propagation, and calls form.handleSubmit. Put submit work in formOptions.onSubmit.',
@@ -459,8 +459,8 @@ function ApiRoute() {
   return (
     <DocsGuidePage
       eyebrow="API reference"
-      title="Code-first Formedible API reference"
-      description="A source-backed lookup for the hook config, form options, field model, pages, tabs, persistence, analytics, returned helpers, and native form props. Each section includes direct evidence from source, tests, or examples."
+      title="Formedible API reference"
+      description="Lookup tables for hook config, form options, fields, pages, tabs, persistence, analytics, returned helpers, and native form props. Each section links to source, tests, or examples."
       sections={sections}
       codeExampleIds={['shadcn-install-surface', 'typed-hook-usage']}
       related={relatedLinks}

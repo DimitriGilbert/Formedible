@@ -1,6 +1,6 @@
 # @formedible/builder
 
-The builder package owns the visual Formedible builder: field configuration, preview, generated code, field store, and tab composition. It depends on the core Formedible source and exports a package-root API from `src/index.ts`.
+This package contains the visual Formedible builder: field configuration, preview, generated code, field store, and tabs. It uses core Formedible code and exports its public API from `src/index.ts`.
 
 Public install item:
 
@@ -8,7 +8,7 @@ Public install item:
 pnpm dlx shadcn@latest add https://formedible.dev/r/form-builder.json
 ```
 
-The registry item is `form-builder` in `packages/builder/registry.json`. It depends on `https://formedible.dev/r/formedible-core.json` and copies builder files to `@ui/formedible/builder/*` plus shared builder libs under `@ui/formedible/lib/*`.
+The registry item is `form-builder` in `packages/builder/registry.json`. It depends on `https://formedible.dev/r/formedible-core.json` and copies builder files to `@ui/formedible/builder/*`, plus shared builder libs under `@ui/formedible/lib/*`.
 
 ## Public exports
 
@@ -165,7 +165,7 @@ pnpm run check-types:builder
 pnpm run check-types
 ```
 
-## Source-backed docs and tests
+## Docs and tests
 
 - Docs route: `/docs/builder`.
 - Interactive route: `/builder`.

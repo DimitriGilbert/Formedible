@@ -13,15 +13,15 @@ function createPropertyRow(name: string, type: string, defaultValue: string, des
 }
 
 const relatedLinks = [
-  { title: 'AI Builder', description: 'Generate draft forms, then hand parser-safe output to review and rendering flows.', href: '/docs/ai-builder' },
+  { title: 'AI Builder', description: 'Generate draft forms, then parse the output before rendering it.', href: '/docs/ai-builder' },
   { title: 'API', description: 'Hook options, field config, formOptions, and the renderer contract used after parsing.', href: '/docs/api' },
-  { title: 'Getting Started', description: 'Install the copied surface and render the first typed form.', href: '/docs/getting-started' },
+  { title: 'Getting Started', description: 'Install the copied files and render the first typed form.', href: '/docs/getting-started' },
 ] satisfies readonly DocsGuideLink[];
 
 const sections = [
   {
     title: 'Public exports',
-    body: 'The parser package root exports FormedibleParser, the fence extractor, supported field type metadata, parser types, and parser-config helpers.',
+    body: 'Import parser pieces from the package root. It exports FormedibleParser, fence extraction, field type metadata, parser types, and config helpers.',
     bullets: [
       'FormedibleParser and extractFormedibleCode come from lib/formedible/formedible-parser.',
       'ParserConfig, defaultParserConfig, mergeParserConfig, validateParserConfig, and generateSystemPrompt come from parser-config-schema.',
@@ -35,7 +35,7 @@ const sections = [
   extractFormedibleCode,
   supportedFieldTypeInfo,
   supportedFieldTypes,
-} from '@/lib/formedible/formedible-parser';
+} from '@/components/ui/formedible/lib/formedible-parser';
 
 export {
   defaultParserConfig,
@@ -43,12 +43,12 @@ export {
   mergeParserConfig,
   parserConfigFields,
   validateParserConfig,
-} from '@/lib/formedible/parser-config-schema';`,
+} from '@/components/ui/formedible/lib/parser-config-schema';`,
     },
   },
   {
     title: 'Main API',
-    body: 'FormedibleParser exposes throwing methods for direct parser work and non-throwing result methods for chat/editor flows.',
+    body: 'FormedibleParser has throwing methods for direct parser work and result-returning methods for chat or editor flows.',
     bullets: [
       'parse rejects empty strings, oversized strings, executable syntax, invalid object syntax, and invalid config shape.',
       'parseStructured accepts the chosen structured candidate, clones serializable values, then validates and sanitizes.',
@@ -97,7 +97,7 @@ export {
   },
   {
     title: 'Extraction',
-    body: 'extractFormedibleCode only treats a lowercase formedible fence as form code. Other common code fences produce a validation error.',
+    body: 'extractFormedibleCode only accepts a lowercase formedible fence. Other common code fences return a validation error.',
     bullets: [
       'A matching fence returns source fenced and the trimmed block body.',
       'json, ts, tsx, typescript, javascript, and js fences return source none with a validation error.',
@@ -132,9 +132,9 @@ export {
   },
   {
     title: 'Security',
-    body: 'The parser rejects executable syntax before object parsing, then sanitizes config keys and values before returning a ParsedFormConfig.',
+    body: 'The parser rejects executable syntax before object parsing. It then sanitizes config keys and values before returning ParsedFormConfig.',
     bullets: [
-      'executableSyntaxPattern includes arrow functions, function declarations, classes, constructor calls, eval, Function, timers, require, dynamic import, and capitalized JSX-like markup.',
+      'executableSyntaxPattern includes arrow functions, function declarations, classes, constructor calls, eval, Function, timers, require, dynamic imports, and capitalized JSX-like markup.',
       'sanitizePlainConfig rejects component, render, children, onChange, onBlur, onFocus, onSubmit, and conditional keys.',
       'sanitizeField rejects unsupported field keys and unsupported field types.',
       'validateAndSanitize rejects unsupported top-level keys when strictValidation is true.',
@@ -181,7 +181,7 @@ function sanitizePlainConfig(value: unknown): Record<string, unknown> | undefine
   },
   {
     title: 'Parser configuration',
-    body: 'ParserConfig is a typed settings object used by parser settings screens, schema validation, and parser behavior.',
+    body: 'ParserConfig is the settings object for parser screens, schema validation, and parser behavior.',
     bullets: [
       'strictValidation controls whether unsupported top-level keys fail or get skipped.',
       'enableSchemaInference toggles inferred schema output from parsed fields.',
@@ -245,7 +245,7 @@ function sanitizePlainConfig(value: unknown): Record<string, unknown> | undefine
   },
   {
     title: 'Schema inference',
-    body: 'Schema inference maps parsed fields to Zod-style strings only when options.enabled is true. mergeSchemas combines parsed fields with baseSchema.properties by strategy.',
+    body: 'Schema inference maps parsed fields to Zod-style strings only when options.enabled is true. mergeSchemas combines parsed fields with baseSchema.properties by the selected strategy.',
     bullets: [
       'Text and textarea fields can add min or max string checks from field limits.',
       'Number and slider fields can add min or max numeric checks from field limits.',
@@ -294,7 +294,7 @@ function ParserRoute() {
     <DocsGuidePage
       eyebrow="Parser"
       title="Parse generated form config without running generated code."
-      description="Use the parser as the handoff between AI output, migration text, or builder exports and the Formedible field model your app can review and render."
+      description="Use the parser between AI output, migration text, or builder exports and the Formedible field model your app reviews and renders."
       sections={sections}
       related={relatedLinks}
     />

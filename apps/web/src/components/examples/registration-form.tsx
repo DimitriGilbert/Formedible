@@ -15,6 +15,14 @@ export const registrationSchema = z.object({
   plan: z.enum(["basic", "pro", "enterprise"]),
 });
 
+type RegistrationFormValues = z.infer<typeof registrationSchema>;
+
+const savedRegistrations: RegistrationFormValues[] = [];
+
+function saveRegistration(value: RegistrationFormValues) {
+  savedRegistrations.push(value);
+}
+
 export const registrationFormCode = `const registrationSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
@@ -26,6 +34,14 @@ export const registrationFormCode = `const registrationSchema = z.object({
   notifications: z.boolean(),
   plan: z.enum(["basic", "pro", "enterprise"]),
 });
+
+type RegistrationFormValues = z.infer<typeof registrationSchema>;
+
+const savedRegistrations: RegistrationFormValues[] = [];
+
+function saveRegistration(value: RegistrationFormValues) {
+  savedRegistrations.push(value);
+}
 
 const registrationForm = useFormedible({
   schema: registrationSchema,
@@ -96,7 +112,7 @@ const registrationForm = useFormedible({
       plan: "basic" as const,
     },
     onSubmit: async ({ value }) => {
-      console.log("Registration completed:", value);
+      saveRegistration(value);
       toast.success("Registration completed!", {
         description: "Welcome to our platform!",
       });
@@ -174,7 +190,7 @@ export function RegistrationFormExample() {
         plan: "basic" as const,
       },
       onSubmit: async ({ value }) => {
-        console.log("Registration completed:", value);
+        saveRegistration(value);
         toast.success("Registration completed!", {
           description: "Welcome to our platform!",
         });

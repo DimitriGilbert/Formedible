@@ -14,6 +14,14 @@ export const surveySchema = z.object({
   state: z.string().optional(),
 });
 
+type SurveyFormValues = z.infer<typeof surveySchema>;
+
+const savedSurveyResponses: SurveyFormValues[] = [];
+
+function saveSurveyResponse(value: SurveyFormValues) {
+  savedSurveyResponses.push(value);
+}
+
 export const surveyFormCode = `const surveySchema = z.object({
   satisfaction: z.number().min(1).max(5),
   recommend: z.enum(["yes", "maybe", "no"]),
@@ -25,7 +33,15 @@ export const surveyFormCode = `const surveySchema = z.object({
   state: z.string().optional(),
 });
 
-const surveyForm = useFormedible({
+type SurveyFormValues = z.infer<typeof surveySchema>;
+
+const savedSurveyResponses: SurveyFormValues[] = [];
+
+function saveSurveyResponse(value: SurveyFormValues) {
+  savedSurveyResponses.push(value);
+}
+
+const surveyForm = useFormedible<SurveyFormValues>({
   schema: surveySchema,
   fields: [
     {
@@ -48,13 +64,13 @@ const surveyForm = useFormedible({
       name: "improvements",
       type: "textarea",
       label: "What could we improve?",
-      conditional: (values: any) => values.satisfaction < 4,
+      conditional: (values) => values.satisfaction < 4,
     },
     {
       name: "referralSource",
       type: "select",
       label: "How did you hear about us?",
-      conditional: (values: any) => values.recommend === "yes",
+      conditional: (values) => values.recommend === "yes",
       options: [
         { value: "friend", label: "Friend or colleague" },
         { value: "social", label: "Social media" },
@@ -67,7 +83,7 @@ const surveyForm = useFormedible({
       name: "otherSource",
       type: "text",
       label: "Please specify",
-      conditional: (values: any) => values.referralSource === "other",
+      conditional: (values) => values.referralSource === "other",
     },
     {
       name: "features",
@@ -99,8 +115,8 @@ const surveyForm = useFormedible({
       name: "state",
       type: "select",
       label: "State/Province",
-      conditional: (values: any) => !!values.country,
-      options: (values: any) => {
+      conditional: (values) => !!values.country,
+      options: (values) => {
         if (values.country === "us") {
           return [
             { value: "ca", label: "California" },
@@ -146,7 +162,7 @@ const surveyForm = useFormedible({
       state: "",
     },
     onSubmit: async ({ value }) => {
-      console.log("Survey submitted:", value);
+      saveSurveyResponse(value);
       toast.success("Thank you for your feedback!", {
         description: "Your response helps us improve.",
       });
@@ -155,7 +171,7 @@ const surveyForm = useFormedible({
 });`;
 
 export function SurveyFormExample() {
-  const surveyForm = useFormedible({
+  const surveyForm = useFormedible<SurveyFormValues>({
     schema: surveySchema,
     fields: [
       {
@@ -178,13 +194,13 @@ export function SurveyFormExample() {
         name: "improvements",
         type: "textarea",
         label: "What could we improve?",
-        conditional: (values: any) => values.satisfaction < 4,
+        conditional: (values) => values.satisfaction < 4,
       },
       {
         name: "referralSource",
         type: "select",
         label: "How did you hear about us?",
-        conditional: (values: any) => values.recommend === "yes",
+        conditional: (values) => values.recommend === "yes",
         options: [
           { value: "friend", label: "Friend or colleague" },
           { value: "social", label: "Social media" },
@@ -197,7 +213,7 @@ export function SurveyFormExample() {
         name: "otherSource",
         type: "text",
         label: "Please specify",
-        conditional: (values: any) => values.referralSource === "other",
+        conditional: (values) => values.referralSource === "other",
       },
       {
         name: "features",
@@ -229,8 +245,8 @@ export function SurveyFormExample() {
         name: "state",
         type: "select",
         label: "State/Province",
-        conditional: (values: any) => !!values.country,
-        options: (values: any) => {
+        conditional: (values) => !!values.country,
+        options: (values) => {
           if (values.country === "us") {
             return [
               { value: "ca", label: "California" },
@@ -276,7 +292,7 @@ export function SurveyFormExample() {
         state: "",
       },
       onSubmit: async ({ value }) => {
-        console.log("Survey submitted:", value);
+        saveSurveyResponse(value);
         toast.success("Thank you for your feedback!", {
           description: "Your response helps us improve.",
         });

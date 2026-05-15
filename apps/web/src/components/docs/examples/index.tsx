@@ -143,7 +143,7 @@ export const migratedDocsExamples = [
     Component: RentalCarFlowForm,
     code: RentalCarFlowCode,
     codeTitle: 'Rental Car Flow Form',
-    codeDescription: 'Comprehensive 19-step personalized rental flow.',
+    codeDescription: 'A 19-step personalized rental flow.',
   },
   {
     id: 'analytics',

@@ -56,7 +56,7 @@ const commonFieldRows = [
 const sections = [
   {
     title: 'Field configuration',
-    body: 'Start from the source contract, not the marketing copy. FormedibleFieldConfig defines the public keys, normalizeFieldConfig fills runtime defaults, and the registry only renders normalized field types.',
+    body: 'FormedibleFieldConfig defines the public keys. normalizeFieldConfig fills runtime defaults before the registry chooses a renderer.',
     bullets: [
       'Source: packages/formedible/src/lib/formedible/types.ts lines 224-284 define the top-level field keys and nested config objects.',
       'Renderer lookup: packages/formedible/src/components/formedible/fields/field-registry.tsx maps normalized field types to components.',
@@ -74,7 +74,7 @@ const sections = [
   },
   {
     title: 'Text inputs',
-    body: 'Text-like fields share the same field shape, then branch into the renderer-specific config objects shown below. Validation still belongs in your schema or field validators.',
+    body: 'Text-like fields share the same base config. Add renderer-specific config only when the field needs it.',
     bullets: [
       'Text, email, url, and tel share text-field.tsx; datalist renders native suggestions there and in number-field.tsx.',
       'Textarea config: { textareaConfig: { rows: 4, maxLength: 500, resize: "vertical", showWordCount: true } }. See textarea-field.tsx and tests/formedible/basic-fields.test.tsx.',
@@ -138,7 +138,7 @@ export const accountFields = [
   },
   {
     title: 'Selection fields',
-    body: 'Selection fields split into option controls and boolean controls. String options are accepted, but the utility normalizes them to objects before rendering.',
+    body: 'Selection fields use options; checkbox and switch use booleans. String options are normalized before render.',
     bullets: [
       'Select config: { name: "role", type: "select", options: [{ value: "qa", label: "QA" }] }. See apps/web/src/components/docs/examples/array-fields-form.tsx.',
       'Radio config: { name: "destination", type: "radio", options: ["beach", "mountains", "city"] }. See tests/formedible/advanced-fields.test.tsx vacationFlowFields.',
@@ -186,7 +186,7 @@ export const preferenceFields = [
   },
   {
     title: 'Advanced inputs',
-    body: 'Advanced controls keep behavior in nested config objects: ratingConfig, sliderConfig, colorConfig, phoneConfig, durationConfig, locationConfig, dateConfig, and fileConfig.',
+    body: 'Advanced fields keep settings in nested config objects. Use the config that matches the field type.',
     bullets: [
       'Live example: /docs/examples?example=advanced-fields, id advanced-fields, source apps/web/src/components/docs/examples/advanced-field-types-form.tsx.',
       'Rating config: { ratingConfig: { max: 5, allowHalf: true, icon: "star", size: "lg", showValue: true } }. Source: rating-field.tsx.',
@@ -261,7 +261,7 @@ export const advancedFields = [
   },
   {
     title: 'Multi-value fields',
-    body: 'multiSelect, combobox, autocomplete, and multiCombobox use the same option model. Their nested configs control search text, creation, max selections, and autocomplete loading behavior.',
+    body: 'multiSelect, combobox, autocomplete, and multiCombobox share the option model. Their nested configs control search, creation, limits, and autocomplete loading.',
     bullets: [
       'multiSelect config: { multiSelectConfig: { searchable: true, creatable: true, maxSelections: 3, placeholder: "Pick skills" } }. Source: multi-select-field.tsx.',
       'combobox config: { comboboxConfig: { searchable: true, searchPlaceholder: "Search countries", noOptionsText: "No match" } }. Source: combobox-field.tsx.',
@@ -332,7 +332,7 @@ export const discoveryFields = [
   },
   {
     title: 'Structural fields',
-    body: 'array and object fields reuse the normal renderer for child fields. The source builds nested field paths, passes local item values, and prefers objectConfig.fields over nestedFields for object fields.',
+    body: 'array and object fields render child fields with nested paths. objectConfig.fields wins over nestedFields for object fields.',
     bullets: [
       'Working link: /docs/examples?example=arrays, id arrays, source apps/web/src/components/docs/examples/array-fields-form.tsx.',
       'Object arrays use { arrayConfig: { itemType: "object", minItems: 1, maxItems: 10, sortable: true, defaultValue: { name: "", email: "" }, objectConfig: { layout: "grid", columns: 2, fields: [{ name: "name", type: "text", label: "Name" }, { name: "email", type: "email", label: "Email" }] } } }. Source: array-field.tsx.',
@@ -399,7 +399,7 @@ export const teamFields = [
   },
   {
     title: 'Dynamic behavior',
-    body: 'Dynamic behavior is still field config: conditional visibility, option functions, and token-based text are resolved at render time against current form values or local array item values.',
+    body: 'Dynamic behavior lives in field config. Conditions, option functions, and text tokens resolve from current values.',
     bullets: [
       'Visibility config: { conditional: "billingAddress" } checks a path; { conditional: (values) => values.destination === "beach" } runs against current values.',
       'Dynamic text uses tokens in label, description, placeholder, page title, page description, and section copy. See resolveDynamicText in dynamic-text.ts and use-formedible.tsx.',
@@ -463,7 +463,7 @@ export const travelFields = [
   },
   {
     title: 'Custom rendering',
-    body: 'Custom rendering is explicit. A field component wins first, then a defaultComponents override, then the registry. Field wrapper and global wrapper wrap the selected component in that order.',
+    body: 'Custom rendering has a fixed order: field component, defaultComponents, then registry. Field wrapper wraps first, then globalWrapper.',
     bullets: [
       'Per-field component wins first through the component key. Then defaultComponents[renderConfig.type], then getFieldComponent(type) from field-registry.tsx.',
       'Per-field wrapper wraps a single field; globalWrapper wraps rendered fields from useFormedible options. Both receive fieldConfig, field, and children.',
@@ -522,7 +522,7 @@ export function GlobalWrapper({ children }: { readonly children: ReactNode }) {
 const relatedLinks = [
   { title: 'API', description: 'Hook options, config types, and renderer contracts.', href: '/docs/api' },
   { title: 'Validation', description: 'Schema, field, async, inline, and cross-field validation patterns.', href: '/docs/validation' },
-  { title: 'Getting Started', description: 'Install the copied app surface and render your first typed form.', href: '/docs/getting-started' },
+  { title: 'Getting Started', description: 'Install the copied files and render your first typed form.', href: '/docs/getting-started' },
   { title: 'Dynamic Array Fields', description: 'Open sortable object arrays and scalar arrays in the live examples browser.', href: '/docs/examples?example=arrays' },
   { title: 'Advanced Field Types', description: 'Open ratings, files, location, duration, color, and custom slider visuals.', href: '/docs/examples?example=advanced-fields' },
 ] satisfies readonly DocsGuideLink[];
@@ -536,8 +536,8 @@ function FieldsRoute() {
   return (
     <DocsGuidePage
       eyebrow="Field model"
-      title="Field docs tied to the renderer source."
-      description="Use the config keys below with the source files and live examples that consume them."
+      title="Field configuration"
+      description="Use these config keys with the source files and examples that read them."
       codeExampleIds={['field-registry-extension']}
       related={relatedLinks}
       aside={(

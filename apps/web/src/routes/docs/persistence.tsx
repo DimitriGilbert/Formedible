@@ -12,7 +12,7 @@ function sourceReference(title: string, path: string, description: string): Docs
   return { title, description, href: `${sourceBase}/${path}` };
 }
 
-const persistenceExample = { title: 'Live example: persistence', description: 'Project inquiry form with localStorage, restoreOnMount, debounce, and excluded agreement field.', href: '/docs/examples?example=persistence' };
+const persistenceExample = { title: 'Live example: persistence', description: 'Project inquiry form with localStorage, restoreOnMount, debounce, and an excluded agreement field.', href: '/docs/examples?example=persistence' };
 
 const propertyTableHeaders = ['Property', 'Type', 'Default', 'Description'] as const;
 
@@ -22,26 +22,26 @@ function createPropertyRow(name: string, type: string, defaultValue: string, des
 
 const relatedLinks = [
   { title: 'API', description: 'Hook return values, FormediblePersistenceConfig, and form lifecycle details.', href: '/docs/api' },
-  { title: 'Form Persistence & Auto-Save', description: 'Open the live draft restore, manual controls, and excluded fields demo.', href: '/docs/examples?example=persistence' },
+  { title: 'Form Persistence & Auto-Save', description: 'Open the draft restore demo with manual controls and excluded fields.', href: '/docs/examples?example=persistence' },
 ] satisfies readonly DocsGuideLink[];
 
 const sections = [
   {
     title: 'Configuration',
-    body: 'Persistence is a useFormedible option with five supported properties. The runtime chooses browser storage from the config, returns no storage during SSR, and defaults to sessionStorage unless storage is localStorage.',
+    body: 'Persistence is a useFormedible option with five properties. In the browser, Formedible uses the configured storage and falls back to sessionStorage unless you choose localStorage.',
     bullets: [
-      'key is required and is passed directly to storage.setItem, getItem, and removeItem.',
-      'storage accepts localStorage or sessionStorage; leaving it blank uses sessionStorage.',
-      'exclude is applied before each payload is stringified, so excluded top-level field names do not come back on restore.',
+      'key is required and is passed to storage.setItem, getItem, and removeItem.',
+      'storage accepts localStorage or sessionStorage; blank means sessionStorage.',
+      'exclude removes top-level field names before Formedible writes the payload.',
     ],
     table: {
       headers: propertyTableHeaders,
       rows: [
-        createPropertyRow('key', 'string', 'Required', 'Storage key for the saved draft. Include product area, form name, and a version such as onboarding:v2.'),
-        createPropertyRow('storage', "'localStorage' | 'sessionStorage'", "'sessionStorage'", 'Browser storage target. Pick localStorage for drafts that should survive closed tabs.'),
-        createPropertyRow('debounceMs', 'number', '500', 'Delay after value changes before Formedible writes the draft.'),
-        createPropertyRow('exclude', 'readonly (Extract<keyof TFormValues, string> | string)[]', '[]', 'Field names removed from the saved values object before each write.'),
-        createPropertyRow('restoreOnMount', 'boolean', 'false', 'Loads the saved payload during mount and applies its values and page when present.'),
+        createPropertyRow('key', 'string', 'Required', 'Storage key for the saved draft. Include product area, form name, and a version, such as onboarding:v2.'),
+        createPropertyRow('storage', "'localStorage' | 'sessionStorage'", "'sessionStorage'", 'Browser storage target. Use localStorage for drafts that should survive closed tabs.'),
+        createPropertyRow('debounceMs', 'number', '500', 'Delay after value changes before Formedible writes a draft.'),
+        createPropertyRow('exclude', 'readonly (Extract<keyof TFormValues, string> | string)[]', '[]', 'Field names removed from saved values before each write.'),
+        createPropertyRow('restoreOnMount', 'boolean', 'false', 'Loads the saved payload on mount and applies its values and page when present.'),
       ],
     },
     snippet: {
@@ -61,18 +61,18 @@ const sections = [
 });`,
     },
     references: [
-      sourceReference('Types: FormediblePersistenceConfig', 'packages/formedible/src/lib/formedible/types.ts#L395-L402', 'The persistence option contract.'),
+      sourceReference('Types: FormediblePersistenceConfig', 'packages/formedible/src/lib/formedible/types.ts#L395-L402', 'The persistence option shape.'),
       sourceReference('Source: getConfiguredStorage', 'packages/formedible/src/hooks/use-form-persistence.ts#L23-L29', 'SSR guard and localStorage/sessionStorage selection.'),
       persistenceExample,
     ],
   },
   {
     title: 'Auto-save behavior',
-    body: 'The persistence hook watches form.state.values. When config exists in a browser, it schedules saveToStorage after debounceMs or 500 ms, then clears that timer if values change again before it fires.',
+    body: 'The persistence hook watches form.state.values. In the browser, it schedules saveToStorage after debounceMs, or 500 ms by default, and cancels that write if values change first.',
     bullets: [
-      'createPersistedFormPayload writes values and timestamp every time.',
-      'currentPage is included only when the runtime passes a current page number.',
-      'The submit path calls clearStorage after onSubmit resolves, so a completed draft is removed from the configured key.',
+      'createPersistedFormPayload always writes values and timestamp.',
+      'currentPage is included only when Formedible passes a page number.',
+      'After onSubmit resolves, Formedible clears the configured storage key.',
     ],
     snippet: {
       title: 'What the hook writes',
@@ -91,18 +91,18 @@ const sections = [
 // }`,
     },
     references: [
-      sourceReference('Source: createPersistedFormPayload', 'packages/formedible/src/hooks/use-form-persistence.ts#L31-L52', 'Excluded fields, timestamp, and optional currentPage payload creation.'),
+      sourceReference('Source: createPersistedFormPayload', 'packages/formedible/src/hooks/use-form-persistence.ts#L31-L52', 'Excluded fields, timestamp, and optional currentPage payload.'),
       sourceReference('Source: debounce effect', 'packages/formedible/src/hooks/use-form-persistence.ts#L150-L162', 'Debounced writes tied to form values.'),
       sourceReference('Test: payload shape', 'tests/formedible/phase10-behavior.test.ts#L94-L107', 'Asserts values, timestamp, currentPage, and exclude behavior.'),
     ],
   },
   {
     title: 'Manual controls',
-    body: 'useFormedible returns the persistence helpers from useFormPersistence. They use the same configured key and storage target as auto-save, so manual buttons and debounce writes share one payload format.',
+    body: 'useFormedible returns the persistence helpers from useFormPersistence. Manual buttons and debounce writes use the same key, storage target, and payload format.',
     bullets: [
-      'saveToStorage writes the current form values with the current page supplied by useFormedible.',
-      'loadFromStorage parses the payload, sets each saved field, restores currentPage only when it is not greater than the configured total page count, and returns the payload.',
-      'clearStorage removes the configured key when a storage object and config are available.',
+      'saveToStorage writes current form values with the current page from useFormedible.',
+      'loadFromStorage sets saved fields, restores a valid currentPage, and returns the parsed payload.',
+      'clearStorage removes the configured key when storage is available.',
     ],
     snippet: {
       title: 'Manual draft buttons',
@@ -126,18 +126,18 @@ return (
   },
   {
     title: 'Payload structure',
-    body: 'The stored value is JSON.stringify(payload), where payload has values, timestamp, and optional currentPage. loadPersistedFormPayload returns undefined when JSON is malformed or the shape is missing values or timestamp.',
+    body: 'The stored value is JSON.stringify(payload). The parser returns undefined for bad JSON, missing values, or a missing timestamp.',
     bullets: [
-      'values must parse as an object and timestamp must parse as a number.',
-      'currentPage is copied only when the parsed value is a number.',
-      'loadFromStorage applies values with form.setFieldValue before returning the parsed payload.',
+      'values must parse as an object; timestamp must parse as a number.',
+      'currentPage is kept only when it parses as a number.',
+      'loadFromStorage calls form.setFieldValue for each saved field before returning the payload.',
     ],
     table: {
       headers: propertyTableHeaders,
       rows: [
-        createPropertyRow('values', 'Partial<TFormValues>', 'Required', 'Saved field values after exclude has been applied.'),
+        createPropertyRow('values', 'Partial<TFormValues>', 'Required', 'Saved field values after exclude runs.'),
         createPropertyRow('timestamp', 'number', 'Required', 'Save time in milliseconds since the Unix epoch.'),
-        createPropertyRow('currentPage', 'number', 'undefined', 'Saved page number for multi-page forms. It restores when the saved number is not greater than the current total page count.'),
+        createPropertyRow('currentPage', 'number', 'undefined', 'Saved page number for multi-page forms. It restores when the saved number fits within the current page count.'),
       ],
     },
     snippet: {
@@ -157,11 +157,11 @@ return (
   },
   {
     title: 'UX patterns',
-    body: 'The source gives you storage mechanics, not a status banner. If the product needs visible draft controls, build them around the returned helpers and the payload timestamp returned by loadFromStorage.',
+    body: 'Formedible gives you storage mechanics, not a status banner. Build visible draft controls around the returned helpers and the timestamp from loadFromStorage.',
     bullets: [
-      'Use restoreOnMount for automatic restore, or call loadFromStorage from a user-initiated control when restore needs consent.',
-      'Use the returned timestamp to show when a draft was saved; the hook stores Date.now in milliseconds.',
-      'Use a new key when the field set changes, because the parser validates payload shape but does not migrate old field names.',
+      'Use restoreOnMount for automatic restore.',
+      'Call loadFromStorage from a button when users should choose whether to restore.',
+      'Change the key when field names change; the parser validates shape but does not migrate old drafts.',
     ],
     snippet: {
       title: 'Timestamp-driven restore copy',
@@ -174,7 +174,7 @@ if (restored) {
     },
     references: [
       sourceReference('Source: loadFromStorage return value', 'packages/formedible/src/hooks/use-form-persistence.ts#L110-L134', 'loadFromStorage returns the parsed payload after applying values and page state.'),
-      sourceReference('Example: persistence form', 'apps/web/src/components/docs/examples/persistence-form.tsx', 'The live docs example uses localStorage, debounceMs 1500, exclude, and restoreOnMount.'),
+      sourceReference('Example: persistence form', 'apps/web/src/components/docs/examples/persistence-form.tsx', 'The live example uses localStorage, debounceMs 1500, exclude, and restoreOnMount.'),
       persistenceExample,
     ],
   },
@@ -189,8 +189,8 @@ function PersistenceRoute() {
   return (
     <DocsGuidePage
       eyebrow="Persistence"
-      title="Restore drafts with a small, explicit storage contract."
-      description="Persistence stores form values under a stable key, writes on a debounce, filters fields you exclude, and can restore a draft as soon as the form mounts."
+      title="Restore drafts with a clear storage contract."
+      description="Persistence saves form values under a stable key, writes after a debounce, skips excluded fields, and can restore a draft on mount."
       sections={sections}
       related={relatedLinks}
     />

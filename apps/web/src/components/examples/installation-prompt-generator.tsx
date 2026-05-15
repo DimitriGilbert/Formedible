@@ -33,6 +33,7 @@ export function InstallationPromptGenerator() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [generatedPrompt, setGeneratedPrompt] = useState("");
   const [copied, setCopied] = useState(false);
+  const [, setCopyError] = useState<string | null>(null);
 
   const generateInstallationPrompt = (
     values: InstallationFormValues
@@ -94,6 +95,15 @@ export function InstallationPromptGenerator() {
 
     if (useTypeScript) {
       prompt += `type ContactFormValues = z.infer<typeof contactSchema>;\n\n`;
+      prompt += `const savedContactSubmissions: ContactFormValues[] = [];\n`;
+      prompt += `const saveContactSubmission = (value: ContactFormValues): void => {\n`;
+      prompt += `  savedContactSubmissions.push(value);\n`;
+      prompt += `};\n\n`;
+    } else {
+      prompt += `const savedContactSubmissions = [];\n`;
+      prompt += `const saveContactSubmission = (value) => {\n`;
+      prompt += `  savedContactSubmissions.push(value);\n`;
+      prompt += `};\n\n`;
     }
 
     prompt += `export function ContactForm() {\n`;
@@ -104,13 +114,12 @@ export function InstallationPromptGenerator() {
     prompt += `    fields: [\n`;
     prompt += `      { name: "name", type: "text", label: "Full Name", placeholder: "John Doe" },\n`;
     prompt += `      { name: "email", type: "email", label: "Email", placeholder: "john@example.com" },\n`;
-    prompt += `      { name: "message", type: "textarea", label: "Message", placeholder: "Your message..." },\n`;
+    prompt += `      { name: "message", type: "textarea", label: "Message", placeholder: "Your message" },\n`;
     prompt += `    ],\n`;
     prompt += `    formOptions: {\n`;
     prompt += `      defaultValues: { name: "", email: "", message: "" },\n`;
     prompt += `      onSubmit: async ({ value }) => {\n`;
-    prompt += `        console.log("Form submitted:", value);\n`;
-    prompt += `        // Handle submission\n`;
+    prompt += `        saveContactSubmission(value);\n`;
     prompt += `      },\n`;
     prompt += `    },\n`;
     prompt += `  });\n\n`;
@@ -146,9 +155,12 @@ export function InstallationPromptGenerator() {
     try {
       await navigator.clipboard.writeText(generatedPrompt);
       setCopied(true);
+      setCopyError(null);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error("Failed to copy to clipboard:", error);
+      const message = error instanceof Error ? error.message : "Clipboard copy failed";
+      setCopyError(message);
+      setCopied(false);
     }
   };
 
@@ -197,7 +209,7 @@ export function InstallationPromptGenerator() {
         name: "hasSpecialRequirements",
         type: "switch",
         label: "Special Requirements",
-        description: "Any specific setup needs?",
+        description: "Specific setup needs?",
         page: 2,
       },
       {
@@ -223,7 +235,7 @@ export function InstallationPromptGenerator() {
       {
         page: 2,
         title: "Additional Requirements",
-        description: "Any special setup needs?",
+        description: "Special setup needs?",
       },
     ],
 

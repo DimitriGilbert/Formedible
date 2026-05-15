@@ -24,7 +24,7 @@ export const docsCodeExamples: Record<DocsCodeExampleId, DocsCodeExample> = {
   'typed-hook-usage': {
     id: 'typed-hook-usage',
     title: 'Typed fields over TanStack Form',
-    description: 'Formedible keeps TanStack Form close to the surface while rendering shadcn-compatible field UI.',
+    description: 'Formedible renders shadcn-compatible fields while keeping TanStack Form in reach.',
     language: 'tsx',
     code: `import { z } from 'zod';
 
@@ -76,7 +76,7 @@ export function OnboardingForm() {
   'builder-imports': {
     id: 'builder-imports',
     title: 'Builder shell path',
-    description: 'The builder installs into the shadcn UI package, so consumers can compose it beside their own navigation and persistence layer.',
+    description: 'The builder installs into your shadcn UI path, so you can place it beside your own navigation and persistence code.',
     language: 'tsx',
     code: `import { FormBuilder } from '@/components/ui/formedible/builder/form-builder';
 
@@ -97,7 +97,7 @@ export function BuilderWorkspace() {
   'ai-builder-imports': {
     id: 'ai-builder-imports',
     title: 'AI Builder shell path',
-    description: 'AI-assisted generation stays reviewable because it produces the same field model used by hand-written forms.',
+    description: 'AI generation returns the same field model used by hand-written forms.',
     language: 'tsx',
     code: `import { useState } from 'react';
 

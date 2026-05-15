@@ -81,11 +81,11 @@ const relatedLinks = [
 const sections = [
   {
     title: 'Validation overview',
-    body: 'The validation pipeline is small enough to read. Field validators run on change, blur, and submit. Each pass checks built-in constraints, field.validation, the top-level schema, then cross-field rules. Async checks run on change.',
+    body: 'Field validators run on change, blur, and submit. Each pass checks built-ins, field.validation, schema, then cross-field rules; async checks run on change.',
     bullets: [
       'The hook calls buildFormValidators(config.schema, config.crossFieldValidation) and buildFieldValidators(field, config.schema, config.crossFieldValidation, config.asyncValidation).',
       'A returned string becomes the field message. null or undefined passes. false falls back to Invalid value, except cross-field rules fall back to Invalid field combination.',
-      'The pipeline test file builds the validators directly, so the docs below match the tested runtime instead of old formOptions validators guidance.',
+      'The pipeline tests build validators directly, so these examples follow the tested runtime.',
     ],
     snippet: {
       title: 'Runtime order in buildFieldValidators',
@@ -105,7 +105,7 @@ const sections = [
   },
   {
     title: 'Built-in constraints',
-    body: 'Use built-ins for simple field-local checks. These keys live on the field config, not in a separate validation object. required short-circuits empty values; email, maxLength, min, and max run after the value is present.',
+    body: 'Put simple field-local checks on the field config. required handles empty values first; email, maxLength, min, and max run after a value exists.',
     bullets: [
       'required returns “{label} is required” when the value is empty.',
       'type: email returns “Please enter a valid email address” when the value is a non-empty invalid email string.',
@@ -146,7 +146,7 @@ const fields = [
   },
   {
     title: 'Form-level schema',
-    body: 'Put the Standard Schema object on the top-level schema option. Zod works because it exposes the Standard Schema v1 contract. Keep TanStack formOptions for defaultValues and submit handlers only.',
+    body: 'Put the Standard Schema object on the top-level schema option. Keep formOptions for defaultValues and submit handlers.',
     bullets: [
       'buildFormValidators maps schema issues into TanStack Form field errors on change, blur, and submit.',
       'buildFieldValidators also asks the same schema for the current field message, so a field can show its schema error during normal field validation.',
@@ -186,7 +186,7 @@ const { Form } = useFormedible<JobApplicationValues>({
   },
   {
     title: 'Field-level validation',
-    body: 'Use field.validation when the rule belongs to one field and needs the current value, form values, or field name. The function form returns string | null | undefined | false. The object form lets false use your message.',
+    body: 'Put one-field sync rules on field.validation. Return a string, null, undefined, or false.',
     bullets: [
       'Function validation receives value, values, and a context object containing value, values, and fieldName.',
       'A direct field schema is also supported, for example z.string().min(3, “Username must be at least 3 characters”).',
@@ -230,7 +230,7 @@ const fields = [
   },
   {
     title: 'Async validation',
-    body: 'Use asyncValidation for server-backed or delayed checks keyed by field name. The validator receives value, current values, and AbortSignal. The runtime runs asyncValidation before inlineValidation and uses asyncValidation.debounceMs when both exist.',
+    body: 'Put server-backed or delayed checks in asyncValidation, keyed by field name. The validator receives value, values, and AbortSignal.',
     bullets: [
       'Return a string for a server message, null or undefined to pass, or false to show Invalid value.',
       'Use signal in fetch so newer keystrokes can cancel older requests cleanly.',
@@ -276,7 +276,7 @@ const { Form } = useFormedible<SignupValues>({
   },
   {
     title: 'Cross-field validation',
-    body: 'Use crossFieldValidation when a rule reads multiple fields. Each rule lists the fields it touches. The field validator listens to sibling fields, and the form validator maps the same message to each listed field.',
+    body: 'Put multi-field rules in crossFieldValidation. List every field the rule touches so sibling changes trigger validation.',
     bullets: [
       'The runtime derives onChangeListenTo from the fields list, so confirmPassword revalidates when password changes.',
       'Return a string for the clearest field error. Returning false maps to Invalid field combination.',
@@ -316,7 +316,7 @@ const { Form } = useFormedible<PasswordValues>({
   },
   {
     title: 'Inline validation',
-    body: 'Use inlineValidation when an async on-change rule should travel with the field definition. It uses the same return contract as asyncValidation and can set showSuccess for UI that wants to show a passing state.',
+    body: 'Put field-owned async on-change rules in inlineValidation. It uses the same return contract as asyncValidation.',
     bullets: [
       'enabled must be true before the runtime builds the inline async validator.',
       'When asyncValidation for the same field exists, that rule runs first and its debounceMs wins.',
@@ -367,8 +367,8 @@ function ValidationRoute() {
   return (
     <DocsGuidePage
       eyebrow="Validation"
-      title="Validation docs you can wire into a real form."
-      description="Copy the pattern that matches the rule: built-in field constraint, top-level schema, field validator, async check, cross-field rule, or inline async rule. Each section points back to the source or test that proves the behavior."
+      title="Validation"
+      description="Pick where the rule belongs: field config, top-level schema, field.validation, asyncValidation, crossFieldValidation, or inlineValidation. Each section links to source or tests."
       codeExampleIds={['typed-hook-usage']}
       related={relatedLinks}
       sections={sections}

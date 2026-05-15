@@ -84,18 +84,17 @@ function ExamplesRoute() {
               </Link>
 
               <h1 className="mt-6 max-w-xl text-4xl font-bold leading-[1.1] tracking-tight text-foreground md:text-5xl">
-                Interactive Examples
+                Examples you can run
               </h1>
               <p className="mt-5 max-w-lg text-base leading-relaxed text-muted-foreground">
-                Real examples migrated from the previous docs implementation. These are live Formedible components,
-                including custom slider visualizations, dynamic text, conditional pages, persistence, analytics, and
-                nested array/object fields.
+                Try live Formedible forms for custom sliders, dynamic text, conditional pages, persistence, analytics,
+                and nested array or object fields.
               </p>
             </div>
 
             <div className="min-w-0 overflow-hidden rounded-2xl">
               <div className="grid grid-cols-3 gap-px bg-border">
-                <Metric value={String(migratedDocsExamples.length)} label="Examples" />
+                <Metric value={String(migratedDocsExamples.length)} label="Live forms" />
                 <Metric value={String(categories.length - 1)} label="Categories" />
                 <Metric value={String(totalLineCount)} label="Lines" />
               </div>

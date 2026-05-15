@@ -1,6 +1,8 @@
 # Formedible
 
-Formedible is a React form kit shipped through shadcn registry JSON. The core install copies `useFormedible`, field components, layout pieces, validation helpers, persistence, analytics, and types into your app so you can own the code.
+Formedible is a shadcn component for creating forms with TanStack Form.
+
+Links: [shadcn](https://ui.shadcn.com/) · [TanStack Form](https://tanstack.com/form)
 
 ## Install and render a form
 
@@ -48,7 +50,7 @@ export function ContactForm() {
 }
 ```
 
-Core facts from source:
+Notes from source:
 
 - `formedible-core` is declared in `packages/formedible/registry.json` and generated at `packages/formedible/public/r/formedible-core.json`.
 - The public item depends on `@tanstack/react-form`, `clsx`, `lucide-react`, and `tailwind-merge`.
@@ -80,30 +82,30 @@ Example IDs are registered in `apps/web/src/components/docs/examples/index.tsx`:
 | --- | --- | --- |
 | `@formedible/formedible` | Core hook, field components, layout, validation, persistence, analytics, public registry item. | `packages/formedible/src/`, `packages/formedible/registry.json` |
 | `@formedible/formedible-parser` | Parser package for Formedible config input; syncs core pieces into its source. | `packages/formedible-parser/src/`, `packages/formedible-parser/registry.json` |
-| `@formedible/builder` | Visual builder package with preview/code-generation surface. | `packages/builder/src/`, `packages/builder/registry.json` |
+| `@formedible/builder` | Visual builder package with preview and code generation. | `packages/builder/src/`, `packages/builder/registry.json` |
 | `@formedible/ai-builder` | AI builder package using TanStack AI providers, parser integration, chat, and live rendering. | `packages/ai-builder/src/`, `packages/ai-builder/registry.json` |
 | `@formedible/ui` | Internal synced UI package consumed by the docs app. Not a user install target. | `packages/ui/src/components/formedible/` |
 | `@formedible/env` | Shared environment helpers for the web app. | `packages/env/src/` |
 | `@formedible/config` | Shared TypeScript config package. | `packages/config/` |
 | `web` | TanStack Start docs app, live examples, builder routes, and registry host. | `apps/web/src/` |
 
-## Maintainer workflow for core changes
+## Maintainer steps for core changes
 
-Do core work in the owner package first. Do not patch synced Formedible files directly in the web app, builder packages, parser package, or UI mirror.
+Edit core files in the owner package first. Do not patch synced Formedible files directly in the web app, builder packages, parser package, or UI mirror.
 
 ```bash
 # 1. Edit core source
 $EDITOR packages/formedible/src/
 
-# 2. Build the core package; sync reads from the package source and registry shape
+# 2. Build the core package
 pnpm run build:pkg
 
-# 3. Sync registry-listed source into mirrors and dependent packages
+# 3. Sync registry files into mirrors and dependent packages
 node scripts/quick-sync.js
 # or
 pnpm run sync-components
 
-# 4. Verify all packages and type test projects
+# 4. Verify all packages and type tests
 pnpm run check-types
 
 # 5. Build the workspace before release-style changes

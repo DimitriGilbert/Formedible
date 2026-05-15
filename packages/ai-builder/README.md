@@ -1,6 +1,6 @@
 # @formedible/ai-builder
 
-The AI builder package wraps core Formedible, the parser package, and TanStack AI adapters into an interactive form-generation workspace. It handles provider settings, API-key storage preferences, chat messages, streamed output, lowercase `formedible` fence extraction, parser settings, generated form preview, and conversation export.
+This package adds an AI form builder on top of core Formedible, the parser package, and TanStack AI adapters. It handles provider settings, API-key storage preferences, chat messages, streamed output, lowercase `formedible` fence extraction, parser settings, generated form preview, and conversation export.
 
 Public install item:
 
@@ -110,7 +110,7 @@ export function AiBuilderPage() {
 }
 ```
 
-`AIBuilderProps` is defined in `src/components/formedible/ai/ai-builder.tsx:22`. The current `AIBuilderMode` is `'client'` (`src/lib/formedible/ai-types.ts:6`). Provider validation requires matching provider settings and secrets; unsupported custom endpoints are rejected by `createTanStackTextAdapter` (`src/lib/formedible/ai-adapters.ts:83`).
+`AIBuilderProps` is defined in `src/components/formedible/ai/ai-builder.tsx:22`. The current `AIBuilderMode` is `'client'` (`src/lib/formedible/ai-types.ts:6`). Provider validation requires matching provider settings and secrets. `createTanStackTextAdapter` rejects unsupported custom endpoints (`src/lib/formedible/ai-adapters.ts:83`).
 
 ## Render AI output without the full chat UI
 
@@ -178,7 +178,7 @@ export const supportedProviderNames = [...SUPPORTED_TANSTACK_AI_PROVIDERS];
 
 Supported providers are `openai`, `anthropic`, and `openrouter` (`src/lib/formedible/ai-adapters.ts:15`). Default models are `gpt-4o-mini`, `claude-sonnet-4-5`, and `openai/gpt-4o-mini` (`src/lib/formedible/ai-adapters.ts:17`).
 
-## Parser contract
+## Parser rules
 
 AI form extraction requires a lowercase fenced block:
 
@@ -188,9 +188,9 @@ AI form extraction requires a lowercase fenced block:
 ```
 ````
 
-`packages/ai-builder/src/components/formedible/ai/ai-builder.test.ts` checks that `json`, `ts`, and unfenced object output are not treated as generated form code. This package delegates the final parse contract to `@formedible/formedible-parser`.
+`packages/ai-builder/src/components/formedible/ai/ai-builder.test.ts` checks that `json`, `ts`, and unfenced object output are not treated as generated form code. This package leaves final parsing to `@formedible/formedible-parser`.
 
-## Storage contract
+## Storage rules
 
 Storage helpers persist provider settings, optional provider secrets, UI state, and conversations. Conversation export sanitizes generated form configs by dropping executable callbacks and converting serializable values, as covered by `src/lib/formedible/ai-storage.test.ts`.
 
@@ -214,7 +214,7 @@ pnpm run check-types:ai-builder
 pnpm run check-types
 ```
 
-## Source-backed docs and tests
+## Docs and tests
 
 - Docs route: `/docs/ai-builder`.
 - Interactive route: `/ai-builder`.

@@ -13,15 +13,15 @@ function createPropertyRow(name: string, type: string, defaultValue: string, des
 }
 
 const relatedLinks = [
-  { title: 'Builder', description: 'Use the visual builder when form authors prefer fields, tabs, and preview controls over chat.', href: '/docs/builder' },
+  { title: 'Builder', description: 'Use the visual builder when authors want fields, tabs, and preview controls instead of chat.', href: '/docs/builder' },
   { title: 'Parser', description: 'See how generated text becomes a checked Formedible form config.', href: '/docs/parser' },
-  { title: 'Getting started', description: 'Install shape, first form, and project conventions for the copied component path.', href: '/docs/getting-started' },
+  { title: 'Getting started', description: 'Install the copied files and render your first form.', href: '/docs/getting-started' },
 ] satisfies readonly DocsGuideLink[];
 
 const sections = [
   {
     title: 'Public exports',
-    body: 'The AI builder root exports the main AIBuilder component, parser integration pieces, provider setup helpers, TanStack AI adapter helpers, storage helpers, and public types.',
+    body: 'Import AI builder pieces from the package root. It exports AIBuilder, parser pieces, provider helpers, TanStack AI adapters, storage helpers, and public types.',
     bullets: [
       'AIBuilder, ProviderSelection, ParserSettings, ChatInterface, and AiFormRenderer are root exports.',
       'createDefaultProviderSettings, createDefaultProviderSecrets, providerOptions, and validateProviderAccess are exported from provider-selection.',
@@ -31,18 +31,18 @@ const sections = [
     snippet: {
       title: 'packages/ai-builder/src/index.ts',
       language: 'ts',
-      code: `export { AIBuilder } from '@/components/formedible/ai/ai-builder';
-export { AiFormRenderer, parseAiToFormedible } from '@/components/formedible/ai/ai-form-renderer';
-export { ChatInterface, generateAiFormCode } from '@/components/formedible/ai/chat-interface';
-export { ParserSettings } from '@/components/formedible/ai/parser-settings';
-export { createDefaultProviderSecrets, createDefaultProviderSettings, providerOptions, ProviderSelection, validateProviderAccess } from '@/components/formedible/ai/provider-selection';
-export { createTanStackTextAdapter, DEFAULT_TANSTACK_AI_MODELS, SUPPORTED_TANSTACK_AI_PROVIDERS } from '@/lib/formedible/ai-adapters';
-export { canUseStorage, exportConversation, persistConversations, persistProviderSecrets, persistProviderSettings, readPersistedAIBuilderState, STORAGE_KEYS } from '@/lib/formedible/ai-storage';`,
+      code: `export { AIBuilder } from '@/components/ui/formedible/ai/ai-builder';
+export { AiFormRenderer, parseAiToFormedible } from '@/components/ui/formedible/ai/ai-form-renderer';
+export { ChatInterface, generateAiFormCode } from '@/components/ui/formedible/ai/chat-interface';
+export { ParserSettings } from '@/components/ui/formedible/ai/parser-settings';
+export { createDefaultProviderSecrets, createDefaultProviderSettings, providerOptions, ProviderSelection, validateProviderAccess } from '@/components/ui/formedible/ai/provider-selection';
+export { createTanStackTextAdapter, DEFAULT_TANSTACK_AI_MODELS, SUPPORTED_TANSTACK_AI_PROVIDERS } from '@/components/ui/formedible/lib/ai-adapters';
+export { canUseStorage, exportConversation, persistConversations, persistProviderSecrets, persistProviderSettings, readPersistedAIBuilderState, STORAGE_KEYS } from '@/components/ui/formedible/lib/ai-storage';`,
     },
   },
   {
     title: 'AIBuilder provider setup',
-    body: 'AIBuilder can run with internal provider state or caller-owned providerSettings and providerSecrets. The component always passes provider access, system prompt, parser config, messages, and form callbacks into ChatInterface.',
+    body: 'AIBuilder can own provider state or accept controlled providerSettings and providerSecrets. It passes provider access, system prompt, parser config, messages, and form callbacks into ChatInterface.',
     bullets: [
       'mode defaults to client.',
       'resolveInitialProviderAccess reads persisted settings, then chooses controlled secrets, stored secrets, or an empty key for the active provider.',
@@ -90,11 +90,11 @@ export { canUseStorage, exportConversation, persistConversations, persistProvide
   },
   {
     title: 'Provider and model lists',
-    body: 'Provider support is defined in two places: providerOptions for UI defaults, and ai-adapters for TanStack AI provider/model allowlists and fallback behavior.',
+    body: 'Provider support lives in two files: providerOptions for UI defaults, and ai-adapters for TanStack AI provider and model lists.',
     bullets: [
       'providerOptions contains openai, anthropic, and openrouter, all requiring keys.',
       'DEFAULT_TANSTACK_AI_MODELS sets openai to gpt-4o-mini, anthropic to claude-sonnet-4-5, and openrouter to openai/gpt-4o-mini.',
-      'createTanStackTextAdapter resolves unsupported model strings back to the provider default.',
+      'createTanStackTextAdapter falls back to the provider default when a model is unsupported.',
       'createTanStackModelOptions only returns Anthropic thinking options when thinkingBudgetTokens is positive.',
     ],
     table: {
@@ -134,7 +134,7 @@ export function createTanStackTextAdapter(settings: ProviderSettings, secrets: P
   },
   {
     title: 'Provider validation and model options',
-    body: 'The provider-selection component blocks mismatched secrets, unsupported providers, custom endpoints, non-Anthropic thinking budgets, and missing API keys.',
+    body: 'Provider selection rejects mismatched secrets, unsupported providers, custom endpoints, non-Anthropic thinking budgets, and missing API keys.',
     bullets: [
       'createDefaultProviderSettings picks the selected provider option and copies its defaultModel.',
       'validateProviderAccess requires settings and secrets to target the same provider.',
@@ -167,7 +167,7 @@ export function validateProviderAccess(settings: ProviderSettings | null, secret
   },
   {
     title: 'Chat streaming and parser handoff',
-    body: 'ChatInterface streams events into one assistant message. On completion it extracts a Formedible fence, parses it, stores parse errors on the message, and calls onFormGenerated with the extracted code.',
+    body: 'ChatInterface streams events into one assistant message. When the stream completes, it extracts a Formedible fence, parses it, stores parse errors on the message, and calls onFormGenerated.',
     bullets: [
       'Enter submits the prompt and Shift+Enter keeps the newline because the handler only submits when event.key is Enter and shiftKey is false.',
       'streamAiResponse events are scheduled through createAiStreamScheduler before the assistant message is updated.',
@@ -197,8 +197,8 @@ const finalAssistantMessage: AiMessage = {
     },
   },
   {
-    title: 'Parser integration and live rendering',
-    body: 'AI Builder does not render generated text directly. parseAiToFormedible calls FormedibleParser.parseAiOutput, can infer missing default values, and AiFormRenderer passes parsed options into useFormedible.',
+    title: 'Parser integration and preview',
+    body: 'AI Builder does not render generated text directly. parseAiToFormedible calls FormedibleParser.parseAiOutput, and AiFormRenderer passes parsed options into useFormedible.',
     bullets: [
       'parseAiToFormedible forwards strictValidation and allowed key/type lists into FormedibleParser.parseAiOutput.',
       'inferDefaultValues fills booleans with false, number-like fields with 0, multiSelect/array with [], object/location with {}, and other fields with an empty string.',
@@ -276,7 +276,7 @@ function AiBuilderRoute() {
     <DocsGuidePage
       eyebrow="AI Builder"
       title="Generate forms from chat, then review the live result."
-      description="AI Builder turns an LLM prompt into Formedible code, parses that code through the local parser, and shows the form beside the chat so teams can edit before they ship."
+      description="AI Builder turns a prompt into Formedible code, parses it locally, and shows the form beside the chat so teams can review it before shipping."
       codeExampleIds={['ai-builder-imports']}
       related={relatedLinks}
       sections={sections}

@@ -77,6 +77,12 @@ const rentalCarSchema = z.object({
 
 type RentalCarFormValues = z.infer<typeof rentalCarSchema>;
 
+const savedRentalBookings: RentalCarFormValues[] = [];
+
+function saveRentalBooking(value: RentalCarFormValues) {
+  savedRentalBookings.push(value);
+}
+
 // const tripPurposeLabels = {
 //   business: "Business Trip",
 //   vacation: "Vacation",
@@ -178,9 +184,9 @@ export function RentalCarFlowForm() {
       {
         name: "passengerCount",
         type: "slider",
-        label: "How many people will join {{firstName}} in {{destination}}?",
+        label: "How large is the group joining {{firstName}} in {{destination}}?",
         description:
-          "Including {{firstName}}, how many passengers for this trip?",
+          "Passenger count for this trip, including {{firstName}}",
         page: 6,
         sliderConfig: {
           min: 1,
@@ -289,7 +295,7 @@ export function RentalCarFlowForm() {
         name: "hasSpecialNeeds",
         type: "switch",
         label:
-          "Does {{firstName}} have any special accessibility requirements?",
+          "Does {{firstName}} have special accessibility requirements?",
         description:
           "We want to ensure {{firstName}}'s {{destination}} trip is comfortable and accessible",
         page: 10,
@@ -303,7 +309,7 @@ export function RentalCarFlowForm() {
         description:
           "Help us make {{firstName}}'s {{destination}} experience perfect",
         placeholder:
-          "Describe any accessibility needs, mobility requirements, or special accommodations...",
+          "Describe accessibility needs, mobility requirements, or special accommodations...",
         page: 11,
         conditional: (values) => values.hasSpecialNeeds === true,
         textareaConfig: {
@@ -373,7 +379,7 @@ export function RentalCarFlowForm() {
         name: "wantsChildSeat",
         type: "switch",
         label:
-          "Will {{firstName}}'s group need any child car seats for {{destination}}?",
+          "Will {{firstName}}'s group need child car seats for {{destination}}?",
         description: "Safety first for the little travelers",
         page: 16,
       },
@@ -383,7 +389,7 @@ export function RentalCarFlowForm() {
         name: "childSeatCount",
         type: "slider",
         label:
-          "How many child seats does {{firstName}} need for {{destination}}?",
+          "Child seat count for {{firstName}}'s {{destination}} trip",
         description: "We'll have them ready for pickup",
         page: 17,
         conditional: (values) => values.wantsChildSeat === true,
@@ -401,7 +407,7 @@ export function RentalCarFlowForm() {
         type: "phone",
         label: "What's the best number to reach {{firstName}}?",
         description:
-          "We'll use this for pickup updates and any trip-related communication",
+          "We'll use this for pickup updates and trip-related communication",
         page: 18,
         phoneConfig: {
           format: "national",
@@ -566,7 +572,7 @@ export function RentalCarFlowForm() {
       onSubmit: async ({ value }) => {
         // Simulate API submission
         await new Promise((resolve) => setTimeout(resolve, 2000));
-        console.log("Rental car booking submitted:", value);
+        saveRentalBooking(value);
         setIsSubmitted(true);
       },
     },
@@ -685,6 +691,12 @@ const rentalCarSchema = z.object({
 
 type RentalCarFormValues = z.infer<typeof rentalCarSchema>;
 
+const savedRentalBookings: RentalCarFormValues[] = [];
+
+function saveRentalBooking(value: RentalCarFormValues) {
+  savedRentalBookings.push(value);
+}
+
 // const tripPurposeLabels = {
 //   business: "Business Trip",
 //   vacation: "Vacation",
@@ -785,8 +797,8 @@ export function RentalCarFlowForm() {
       {
         name: "passengerCount",
         type: "slider",
-        label: "How many people will join {{firstName}} in {{destination}}?",
-        description: "Including {{firstName}}, how many passengers for this trip?",
+        label: "How large is the group joining {{firstName}} in {{destination}}?",
+        description: "Passenger count for this trip, including {{firstName}}",
         page: 6,
         sliderConfig: {
           min: 1,
@@ -855,7 +867,7 @@ export function RentalCarFlowForm() {
       {
         name: "hasSpecialNeeds",
         type: "switch",
-        label: "Does {{firstName}} have any special accessibility requirements?",
+        label: "Does {{firstName}} have special accessibility requirements?",
         description: "We want to ensure {{firstName}}'s {{destination}} trip is comfortable and accessible",
         page: 10
       },
@@ -866,7 +878,7 @@ export function RentalCarFlowForm() {
         type: "textarea", 
         label: "What special accommodations does {{firstName}} need?",
         description: "Help us make {{firstName}}'s {{destination}} experience perfect",
-        placeholder: "Describe any accessibility needs, mobility requirements, or special accommodations...",
+        placeholder: "Describe accessibility needs, mobility requirements, or special accommodations...",
         page: 11,
         conditional: (values) => values.hasSpecialNeeds === true,
         textareaConfig: {
@@ -927,7 +939,7 @@ export function RentalCarFlowForm() {
       {
         name: "wantsChildSeat",
         type: "switch", 
-        label: "Will {{firstName}}'s group need any child car seats for {{destination}}?",
+        label: "Will {{firstName}}'s group need child car seats for {{destination}}?",
         description: "Safety first for the little travelers",
         page: 16
       },
@@ -936,7 +948,7 @@ export function RentalCarFlowForm() {
       {
         name: "childSeatCount",
         type: "slider",
-        label: "How many child seats does {{firstName}} need for {{destination}}?",
+        label: "Child seat count for {{firstName}}'s {{destination}} trip",
         description: "We'll have them ready for pickup",
         page: 17,
         conditional: (values) => values.wantsChildSeat === true,
@@ -953,7 +965,7 @@ export function RentalCarFlowForm() {
         name: "phone",
         type: "phone",
         label: "What's the best number to reach {{firstName}}?",
-        description: "We'll use this for pickup updates and any trip-related communication",
+        description: "We'll use this for pickup updates and trip-related communication",
         page: 18,
         phoneConfig: {
           format: "national",
@@ -1106,7 +1118,7 @@ export function RentalCarFlowForm() {
       onSubmit: async ({ value }) => {
         // Simulate API submission
         await new Promise(resolve => setTimeout(resolve, 2000));
-        console.log("Rental car booking submitted:", value);
+        saveRentalBooking(value);
         setIsSubmitted(true);
       }
     },

@@ -1,8 +1,8 @@
 # @formedible/formedible
 
-Core Formedible source lives here. This package owns the `useFormedible` hook, field renderers, layout components, validation helpers, persistence, analytics, and TypeScript contracts copied into user apps by the `formedible-core` registry item.
+This package contains the core Formedible code: `useFormedible`, field renderers, layout components, validation helpers, persistence, analytics, and shared TypeScript types.
 
-This package is private. The public install path is the registry item built from `packages/formedible/registry.json`.
+This package is private. Install the registry item instead:
 
 ```bash
 pnpm dlx shadcn@latest add https://formedible.dev/r/formedible-core.json
@@ -10,7 +10,7 @@ pnpm dlx shadcn@latest add https://formedible.dev/r/formedible-core.json
 
 ## What gets installed
 
-`packages/formedible/registry.json` defines one item: `formedible-core`. It copies source files to `@ui/formedible/...` targets and declares npm dependencies `@tanstack/react-form`, `clsx`, `lucide-react`, and `tailwind-merge`.
+`packages/formedible/registry.json` defines `formedible-core`. It copies files to `@ui/formedible/...` targets and declares `@tanstack/react-form`, `clsx`, `lucide-react`, and `tailwind-merge`.
 
 Main copied areas:
 
@@ -26,7 +26,7 @@ Generated public files live in `packages/formedible/public/r/registry.json` and 
 
 ## Public API names
 
-There is no package root `src/index.ts` in this package. Users import the copied files directly. The stable names come from source exports:
+There is no package root `src/index.ts`. Users import the copied files directly. Stable names come from these exports:
 
 | Name | Import after registry install | Source |
 | --- | --- | --- |
@@ -81,7 +81,7 @@ export function NewsletterForm() {
 }
 ```
 
-`useFormedible<TFormValues>()` takes `UseFormedibleOptions<TFormValues>`. `fields` and `formOptions.defaultValues` are required by the type. Optional features include `schema`, `crossFieldValidation`, `asyncValidation`, `pages`, `tabs`, `progress`, `persistence`, `analytics`, `defaultComponents`, `globalWrapper`, form labels, native form event hooks, `autoSubmitOnChange`, and disabled/loading state (`src/lib/formedible/types.ts:448`).
+`useFormedible<TFormValues>()` takes `UseFormedibleOptions<TFormValues>`. `fields` and `formOptions.defaultValues` are required by the type. Optional settings include `schema`, `crossFieldValidation`, `asyncValidation`, `pages`, `tabs`, `progress`, `persistence`, `analytics`, `defaultComponents`, `globalWrapper`, form labels, native form event hooks, `autoSubmitOnChange`, and disabled/loading state (`src/lib/formedible/types.ts:448`).
 
 ## Field types
 
@@ -168,10 +168,10 @@ pnpm run sync-components
 pnpm run check-types
 ```
 
-## Source-backed docs and tests
+## Docs and tests
 
 - Docs: `/docs/getting-started`, `/docs/api`, `/docs/fields`, `/docs/validation`, `/docs/persistence`, `/docs/analytics`, `/docs/examples`.
 - Live examples: `apps/web/src/components/docs/examples/index.tsx`.
 - Field/rendering tests: `tests/formedible/basic-fields.test.tsx`, `tests/formedible/advanced-fields.test.tsx`, `tests/formedible/nested-fields.test.tsx`, `tests/formedible/section-rendering.test.tsx`.
 - Validation tests: `tests/formedible/validation/validation-pipeline.test.tsx`.
-- Type surface tests: `tests/formedible/tsconfig.types.json` and root `pnpm run test:formedible:types`.
+- Type tests: `tests/formedible/tsconfig.types.json` and root `pnpm run test:formedible:types`.

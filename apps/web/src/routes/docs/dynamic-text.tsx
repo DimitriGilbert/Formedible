@@ -12,18 +12,18 @@ function sourceReference(title: string, path: string, description: string): Docs
   return { title, description, href: `${sourceBase}/${path}` };
 }
 
-const registrationExample = { title: 'Live example: registration', description: 'Page 2 description reads {{firstName}} from page 1.', href: '/docs/examples?example=registration' };
+const registrationExample = { title: 'Live example: registration', description: 'Page 2 copy reads {{firstName}} from page 1.', href: '/docs/examples?example=registration' };
 const flowExample = { title: 'Live example: flow', description: 'Eight-step rental flow with tokens in labels and page descriptions.', href: '/docs/examples?example=flow' };
 const rentalFlowExample = { title: 'Live example: rental flow', description: 'Nineteen-step rental flow with tokenized labels and conditional pages.', href: '/docs/examples?example=rental-flow' };
 
 const sections = [
   {
     title: 'Token syntax',
-    body: 'Dynamic text is handled by resolveDynamicText. The resolver only matches double-brace tokens made of word characters and dots, trims whitespace inside the braces, and reads values with getValueAtFieldPath.',
+    body: 'Dynamic text runs through resolveDynamicText. It matches double-brace tokens made of word characters and dots, trims spaces inside the braces, and reads values with getValueAtFieldPath.',
     bullets: [
-      'Use {{firstName}} for top-level fields and {{address.city}} for nested object paths.',
-      'Whitespace inside the token is accepted: {{ firstName }} resolves the same field as {{firstName}}.',
-      'The regex is /\{\{\s*([\w.]+)\s*\}\}/g, so hyphenated token names are not part of the supported syntax.',
+      'Use {{firstName}} for top-level fields and {{address.city}} for nested paths.',
+      '{{ firstName }} and {{firstName}} resolve the same field.',
+      'The regex is /\{\{\s*([\w.]+)\s*\}\}/g, so token names cannot contain hyphens.',
     ],
     snippet: {
       title: 'Supported token syntax',
@@ -35,19 +35,19 @@ const sections = [
 ];`,
     },
     references: [
-      sourceReference('Source: resolveDynamicText', 'packages/formedible/src/lib/formedible/dynamic-text.ts#L6-L15', 'Regex matching, field-path lookup, and nullish value behavior.'),
-      sourceReference('Source: field-path lookup', 'packages/formedible/src/lib/formedible/field-path.ts', 'Nested dot-path value lookup used by dynamic text and string conditions.'),
+      sourceReference('Source: resolveDynamicText', 'packages/formedible/src/lib/formedible/dynamic-text.ts#L6-L15', 'Regex matching, field-path lookup, and nullish value handling.'),
+      sourceReference('Source: field-path lookup', 'packages/formedible/src/lib/formedible/field-path.ts', 'Nested dot-path lookup used by dynamic text and string conditions.'),
       flowExample,
     ],
   },
   {
     title: 'Where tokens work',
-    body: 'Tokens work only where useFormedible calls resolveDynamicText. Current source covers field label, field description, string placeholder, field section strings and objects, page title, page description, tab label, and tab description.',
+    body: 'Tokens work only where useFormedible calls resolveDynamicText. That includes field labels, descriptions, input hints, sections, page copy, and tab copy.',
     bullets: [
-      'withDynamicText resolves field label, description, placeholder, and section before a field renders.',
-      'renderPageHeader resolves page title and page description before passing them to FormProgress.',
-      'FormTabs receives resolved label and description values for each visible tab.',
-      'dynamicPlaceholder is a typed field flag, but the current resolver does not require the flag before resolving string placeholders.',
+      'withDynamicText resolves field label, description, input hint, and section before render.',
+      'renderPageHeader resolves page title and page description before FormProgress receives them.',
+      'FormTabs receives resolved label and description values for every visible tab.',
+      'dynamicPlaceholder is typed, but string input hints resolve even when the flag is not set.',
     ],
     snippet: {
       title: 'Supported config locations',
@@ -71,14 +71,14 @@ const sections = [
 });`,
     },
     references: [
-      sourceReference('Source: withDynamicText', 'packages/formedible/src/hooks/use-formedible.tsx#L155-L174', 'Field label, description, placeholder, and section resolution.'),
-      sourceReference('Source: page and tab copy', 'packages/formedible/src/hooks/use-formedible.tsx#L309-L326', 'Page title and description resolution.'),
+      sourceReference('Source: withDynamicText', 'packages/formedible/src/hooks/use-formedible.tsx#L155-L174', 'Field label, description, input hint, and section resolution.'),
+      sourceReference('Source: page copy', 'packages/formedible/src/hooks/use-formedible.tsx#L309-L326', 'Page title and description resolution.'),
       sourceReference('Source: tab copy', 'packages/formedible/src/hooks/use-formedible.tsx#L384-L390', 'Tab label and description resolution.'),
     ],
   },
   {
     title: 'Resolution behavior',
-    body: 'The resolver is intentionally narrow. It returns non-string ReactNode values unchanged, replaces missing or null values with an empty string, and stringifies present values.',
+    body: 'The resolver is narrow on purpose. Non-string ReactNode values pass through unchanged, missing values become an empty string, and present values are stringified.',
     bullets: [
       'resolveDynamicText(text, values) returns text immediately when typeof text is not string.',
       'For a matched token, undefined and null become an empty string.',
@@ -101,13 +101,13 @@ resolveDynamicText(<strong>Fixed label</strong>, { firstName: 'Mina' });
     },
     references: [
       sourceReference('Source: resolveDynamicText', 'packages/formedible/src/lib/formedible/dynamic-text.ts#L6-L15', 'Non-string passthrough, token lookup, and stringification.'),
-      sourceReference('Test: rental dynamic text', 'tests/formedible/phase10-behavior.test.ts#L167-L186', 'Asserts token interpolation and conditional navigation for rental flow evidence.'),
-      sourceReference('Test: advanced flow dynamic text', 'tests/formedible/advanced-fields.test.tsx#L229-L242', 'Asserts interpolated page copy and conditional destination behavior.'),
+      sourceReference('Test: rental dynamic text', 'tests/formedible/phase10-behavior.test.ts#L167-L186', 'Checks token interpolation and conditional navigation in the rental flow.'),
+      sourceReference('Test: advanced flow dynamic text', 'tests/formedible/advanced-fields.test.tsx#L229-L242', 'Checks interpolated page copy and conditional destination behavior.'),
     ],
   },
   {
     title: 'Practical patterns',
-    body: 'The examples use tokens for short context: a name in the next page description, a destination in later labels, and a selected car type in the extras step. Keep tokenized copy close to the field that supplied the value.',
+    body: 'Use tokens for small bits of context: a name in the next page, a destination in later labels, or a car type in an extras step. Keep tokenized copy near the field that collects the value.',
     bullets: [
       'Registration page 2 uses description: "How can we reach you {{firstName}} ?" after firstName is collected on page 1.',
       'The flow example uses labels such as "Hi {{name}}! Where are you headed for vacation?" and "Any extras for your {{carType}}?".',
@@ -118,7 +118,7 @@ resolveDynamicText(<strong>Fixed label</strong>, { firstName: 'Mina' });
       language: 'tsx',
       code: `pages: [
   { page: 2, title: 'Contact Details', description: 'How can we reach you {{firstName}} ?' },
-  { page: 7, title: 'Extras', description: 'Add any extras to make your {{carType}} more comfortable' },
+  { page: 7, title: 'Extras', description: 'Choose extras to make your {{carType}} more comfortable' },
 ],
 fields: [
   { name: 'destination', type: 'radio', label: 'Hi {{name}}! Where are you headed for vacation?', page: 2 },
@@ -139,7 +139,7 @@ fields: [
 
 const relatedLinks = [
   { title: 'API', description: 'Hook options, field config types, and form-level copy entry points.', href: '/docs/api' },
-  { title: 'Fields', description: 'Field labels, descriptions, placeholders, sections, and dynamicPlaceholder.', href: '/docs/fields' },
+  { title: 'Fields', description: 'Field labels, descriptions, input hints, sections, and dynamicPlaceholder.', href: '/docs/fields' },
   { title: 'Examples', description: 'Browse all interactive examples and live Formedible demos.', href: '/docs/examples' },
   { title: 'Vacation Car Rental Flow', description: 'Open the compact dynamic-label rental flow in the examples browser.', href: '/docs/examples?example=flow' },
   { title: 'Rental Car Flow Form', description: 'Open the longer rental flow with dynamic text across conditional steps.', href: '/docs/examples?example=rental-flow' },
@@ -154,8 +154,8 @@ function DynamicTextRoute() {
   return (
     <DocsGuidePage
       eyebrow="Dynamic text"
-      title="Personalize labels and page copy with template interpolation."
-      description="Labels, descriptions, input hints, and page descriptions can include tokens such as {{firstName}} that resolve from current form values."
+      title="Personalize labels and page copy with template tokens."
+      description="Labels, descriptions, input hints, and page descriptions can include tokens such as {{firstName}} that read from current form values."
       sections={sections}
       related={relatedLinks}
     />

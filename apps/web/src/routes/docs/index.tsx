@@ -64,7 +64,7 @@ function DocsHero() {
         <div className="flex flex-col justify-center">
           <p className="text-sm font-semibold text-primary">Formedible Docs</p>
           <h1 className="mt-4 max-w-xl text-4xl font-bold leading-[1.1] tracking-tight text-foreground md:text-5xl">
-            A complete IA for source-owned forms.
+            A clear docs map for forms defined in your code.
           </h1>
           <p className="mt-5 max-w-lg text-base leading-relaxed text-muted-foreground">
             Start with the current app-local hook, choose a route by job-to-be-done, and move from field config to rendered examples, builders, parser workflows, and API details.

@@ -12,19 +12,19 @@ function sourceReference(title: string, path: string, description: string): Docs
   return { title, description, href: `${sourceBase}/${path}` };
 }
 
-const registrationExample = { title: 'Live example: registration', description: 'Three-page registration flow with progress and dynamic page copy.', href: '/docs/examples?example=registration' };
-const tabbedExample = { title: 'Live example: tabbed', description: 'Settings form grouped by personal, preferences, and settings tabs.', href: '/docs/examples?example=tabbed' };
-const conditionalPagesExample = { title: 'Live example: conditional pages', description: 'Application flow where pages 2, 3, and 5 depend on form values.', href: '/docs/examples?example=conditional-pages' };
-const surveyExample = { title: 'Live example: dynamic survey', description: 'Country-specific select options and conditional follow-up questions.', href: '/docs/examples?example=survey' };
+const registrationExample = { title: 'Live example: registration', description: 'Three-page registration form with progress and page copy that uses earlier answers.', href: '/docs/examples?example=registration' };
+const tabbedExample = { title: 'Live example: tabbed', description: 'Settings form split into personal, preferences, and settings tabs.', href: '/docs/examples?example=tabbed' };
+const conditionalPagesExample = { title: 'Live example: conditional pages', description: 'Application form where pages 2, 3, and 5 appear only for matching answers.', href: '/docs/examples?example=conditional-pages' };
+const surveyExample = { title: 'Live example: dynamic survey', description: 'Country-specific choices with follow-up questions that appear when needed.', href: '/docs/examples?example=survey' };
 
 const sections = [
   {
     title: 'Multi-page forms',
-    body: 'Pages are field-driven. The runtime collects page numbers from fields, applies optional page conditions, then keeps only pages with at least one visible field.',
+    body: 'Pages come from the fields. Formedible reads each field page, checks page conditions, and keeps pages that still have a visible field.',
     bullets: [
-      'Field configs use page?: number; fields without page are treated as page 1 by getVisiblePageNumbers.',
-      'FormediblePageConfig adds title, description, and conditional for the progress header and page filtering.',
-      'The hook returns currentPage, totalPages, visiblePages, navigation helpers, and progressValue from useMultiPage.',
+      'Set page?: number on a field; fields without page land on page 1.',
+      'Use FormediblePageConfig for the page title, description, and optional condition.',
+      'useFormedible returns currentPage, totalPages, visiblePages, navigation helpers, and progressValue.',
     ],
     snippet: {
       title: 'Page config backed by use-multi-page.ts',
@@ -45,18 +45,18 @@ const sections = [
 });`,
     },
     references: [
-      sourceReference('Source: use-multi-page.ts', 'packages/formedible/src/hooks/use-multi-page.ts#L41-L69', 'Visible page filtering, fallback page 1, and progressValue calculation.'),
-      sourceReference('Types: FormediblePageConfig', 'packages/formedible/src/lib/formedible/types.ts#L373-L379', 'The page, title, description, and conditional contract.'),
+      sourceReference('Source: use-multi-page.ts', 'packages/formedible/src/hooks/use-multi-page.ts#L41-L69', 'Visible page filtering, page 1 fallback, and progressValue calculation.'),
+      sourceReference('Types: FormediblePageConfig', 'packages/formedible/src/lib/formedible/types.ts#L373-L379', 'Page number, title, description, and conditional fields.'),
       registrationExample,
     ],
   },
   {
     title: 'Tabbed forms',
-    body: 'Tabs are another grouping layer over the same fields. A tab is visible only when its own condition passes and it has at least one visible field assigned to that tab id.',
+    body: 'Tabs group the same field list in a different way. A tab shows only when its condition passes and at least one visible field uses that tab id.',
     bullets: [
-      'normalizeTabs turns string entries into { id, label } objects, so tabs: [\'personal\'] is valid.',
-      'When tabs are not provided, ids are inferred from field.tab values.',
-      'FormedibleTabConfig supports id, label, description, and conditional; labels and descriptions also pass through dynamic text resolution during render.',
+      'tabs: [\'personal\'] works because normalizeTabs turns strings into { id, label } objects.',
+      'If tabs is missing, Formedible infers tab ids from field.tab.',
+      'Tab labels and descriptions can use dynamic text tokens.',
     ],
     snippet: {
       title: 'Tab ids match field.tab',
@@ -77,17 +77,17 @@ const sections = [
     },
     references: [
       sourceReference('Source: use-form-tabs.ts', 'packages/formedible/src/hooks/use-form-tabs.ts#L19-L44', 'Tab normalization, inferred tabs, visible tab filtering, and active tab repair.'),
-      sourceReference('Test: tabbed grouping', 'tests/formedible/phase10-behavior.test.ts#L151-L165', 'Asserts that the tabbed example groups fields by configured tab ids.'),
+      sourceReference('Test: tabbed grouping', 'tests/formedible/phase10-behavior.test.ts#L151-L165', 'Checks that the tabbed example groups fields by configured tab ids.'),
       tabbedExample,
     ],
   },
   {
     title: 'Progress indicators',
-    body: 'Progress display reads the page state. It does not change page order; useMultiPage calculates the visible index, and FormProgress receives showSteps, showPercentage, title, description, and value.',
+    body: 'Progress is read-only display state. useMultiPage calculates the current visible step, then FormProgress receives the title, description, value, and display flags.',
     bullets: [
       'progressValue is 100 when one visible page exists.',
-      'With several visible pages, progressValue is current visible-page index divided by last visible-page index, multiplied by 100.',
-      'Page titles and descriptions are resolved with dynamic text before they are passed to the progress component.',
+      'With multiple visible pages, progressValue is the current visible-page index divided by the last visible-page index, multiplied by 100.',
+      'Page titles and descriptions resolve dynamic text before FormProgress receives them.',
     ],
     snippet: {
       title: 'Progress receives current visible step',
@@ -105,18 +105,18 @@ const sections = [
 />;`,
     },
     references: [
-      sourceReference('Source: use-formedible.tsx', 'packages/formedible/src/hooks/use-formedible.tsx#L309-L326', 'The renderPageHeader path that passes progress props and resolved page copy.'),
+      sourceReference('Source: use-formedible.tsx', 'packages/formedible/src/hooks/use-formedible.tsx#L309-L326', 'renderPageHeader passing progress props and resolved page copy.'),
       sourceReference('Source: use-multi-page.ts', 'packages/formedible/src/hooks/use-multi-page.ts#L63-L69', 'Visible page count and progressValue formula.'),
       conditionalPagesExample,
     ],
   },
   {
     title: 'Conditional UI',
-    body: 'The same conditional type is used by fields, pages, and tabs. A string checks truthiness at a field path; a function receives current values and returns a boolean.',
+    body: 'Fields, pages, and tabs share the same conditional shape. A string checks whether a field path is truthy; a function gets current values and returns a boolean.',
     bullets: [
-      'conditionMatches handles page and tab conditions; shouldRenderField handles field conditions inside useFormedible.',
-      'String conditions call getValueAtFieldPath and coerce the result with Boolean.',
-      'Function conditions run against the current form values, which is how the conditional-pages example branches individual, business, and premium paths.',
+      'conditionMatches handles page and tab conditions; shouldRenderField handles field conditions.',
+      'String conditions call getValueAtFieldPath, then coerce the result with Boolean.',
+      'Function conditions are best for branches like individual, business, and premium paths.',
     ],
     snippet: {
       title: 'Field and page conditions',
@@ -134,18 +134,18 @@ pages: [
 ],`,
     },
     references: [
-      sourceReference('Source: conditionMatches', 'packages/formedible/src/hooks/use-multi-page.ts#L26-L39', 'String path and function conditional evaluation.'),
+      sourceReference('Source: conditionMatches', 'packages/formedible/src/hooks/use-multi-page.ts#L26-L39', 'String-path and function condition checks.'),
       sourceReference('Source: field render condition', 'packages/formedible/src/hooks/use-formedible.tsx#L141-L153', 'Field-level conditional checks before rendering.'),
       conditionalPagesExample,
     ],
   },
   {
     title: 'Dynamic options',
-    body: 'Option fields accept either a static list or a function. Built-in select, radio, combobox, autocomplete, and multi-select renderers resolve the function with current form values before normalizing options.',
+    body: 'Choice fields accept a static option list or an option function. Select, radio, combobox, autocomplete, and multi-select fields call the function with current values before rendering.',
     bullets: [
-      'The options type is readonly FormedibleFieldOption[] or (values) => readonly FormedibleFieldOption[].',
-      'resolveFieldOptions maps string options to { value, label } and returns an empty list when no option list is available.',
-      'The survey example uses country to choose the state/province list.',
+      'options can be readonly FormedibleFieldOption[] or (values) => readonly FormedibleFieldOption[].',
+      'resolveFieldOptions maps string options to { value, label } objects.',
+      'Use an option function for cases like country-based state or province lists.',
     ],
     snippet: {
       title: 'Country-dependent options',
@@ -168,16 +168,16 @@ fields: [
 ];`,
     },
     references: [
-      sourceReference('Source: resolveFieldOptions', 'packages/formedible/src/components/formedible/fields/advanced-field-utils.ts#L13-L20', 'Function options are called with form values and normalized for renderers.'),
+      sourceReference('Source: resolveFieldOptions', 'packages/formedible/src/components/formedible/fields/advanced-field-utils.ts#L13-L20', 'Function options called with form values and normalized for renderers.'),
       sourceReference('Types: field options', 'packages/formedible/src/lib/formedible/types.ts#L224-L240', 'The FormedibleFieldConfig options type.'),
       surveyExample,
     ],
   },
   {
     title: 'Auto-submit',
-    body: 'Auto-submit is implemented in useFormedible, not in individual fields. Every field onChange path updates TanStack Form, calls formOptions.onChange, then schedules a debounced form.handleSubmit when autoSubmitOnChange is true.',
+    body: 'Auto-submit lives in useFormedible, not in each field. On change, Formedible updates TanStack Form, calls formOptions.onChange, and schedules a debounced submit when autoSubmitOnChange is true.',
     bullets: [
-      'A new change clears the previous timeout before scheduling the next submit.',
+      'Each new change clears the previous timeout before scheduling the next submit.',
       'autoSubmitDebounceMs controls the delay; useFormedible defaults to 300 ms.',
       'The unmount effect clears a pending auto-submit timeout.',
     ],
@@ -199,7 +199,7 @@ fields: [
     },
     references: [
       sourceReference('Source: auto-submit scheduler', 'packages/formedible/src/hooks/use-formedible.tsx#L49-L80', 'Timeout cleanup, debounce, and form.handleSubmit scheduling.'),
-      sourceReference('Source: field onChange path', 'packages/formedible/src/hooks/use-formedible.tsx#L249-L255', 'The onChange path that calls scheduleAutoSubmit.'),
+      sourceReference('Source: field onChange path', 'packages/formedible/src/hooks/use-formedible.tsx#L249-L255', 'The field onChange path calling scheduleAutoSubmit.'),
       sourceReference('Test: autoSubmitOnChange', 'tests/formedible/basic-fields.test.tsx#L445-L483', 'Runtime test for debounced submission and unmount cleanup.'),
     ],
   },
@@ -207,7 +207,7 @@ fields: [
 
 const relatedLinks = [
   { title: 'API', description: 'Hook options and type contracts for pages, tabs, progress, conditions, dynamic options, and auto-submit.', href: '/docs/api' },
-  { title: 'Fields', description: 'Field config reference, including page, tab, conditional, and function-based options.', href: '/docs/fields' },
+  { title: 'Fields', description: 'Field config reference for page, tab, conditional, and function-based options.', href: '/docs/fields' },
   { title: 'Multi-Step Registration', description: 'Open the live multi-page registration flow in the examples browser.', href: '/docs/examples?example=registration' },
   { title: 'Tabbed Form Layout', description: 'Open the live tabbed settings-style form in the examples browser.', href: '/docs/examples?example=tabbed' },
   { title: 'Conditional Pages', description: 'Open the live conditional page flow in the examples browser.', href: '/docs/examples?example=conditional-pages' },
@@ -222,8 +222,8 @@ function AdvancedFeaturesRoute() {
   return (
     <DocsGuidePage
       eyebrow="Flows"
-      title="Build rich form flows from the same field config."
-      description="Pages, tabs, progress, conditional groups, dependent choices, and debounced submits all live in the Formedible config model. Add the behavior where the product needs it; leave the rest out."
+      title="Build richer form flows from one field config."
+      description="Pages, tabs, progress, conditional groups, dependent choices, and debounced submits all live in Formedible config. Add only the pieces your form needs."
       sections={sections}
       related={relatedLinks}
     />

@@ -1,6 +1,6 @@
 # @formedible/formedible-parser
 
-The parser package turns AI-safe Formedible config text into `UseFormedibleOptions<FormedibleFormValues>`-compatible data. It accepts JSON, object literals with single quotes/trailing commas, structured object output, and lowercase `formedible` fenced blocks. It rejects executable callbacks, constructors, imports, JSX/component markup, unsupported top-level keys, and unsupported field keys.
+This package parses Formedible config text into data compatible with `UseFormedibleOptions<FormedibleFormValues>`. It accepts JSON, object literals with single quotes or trailing commas, structured object output, and lowercase `formedible` fenced blocks. It rejects executable callbacks, constructors, imports, JSX/component markup, unsupported top-level keys, and unsupported field keys.
 
 Public install item:
 
@@ -14,7 +14,7 @@ The registry item is `formedible-parser` in `packages/formedible-parser/registry
 
 `packages/formedible-parser/src/index.ts` re-exports:
 
-### Parser runtime
+### Parser
 
 - `FormedibleParser`
 - `extractFormedibleCode`
@@ -73,7 +73,7 @@ export const parsed = FormedibleParser.parse(`{
 export const parsedFieldCount = parsed.fields.length;
 ```
 
-The parser strips inert Zod expressions from object-literal input instead of executing them. Safe JSON schema objects are preserved (`src/lib/formedible/formedible-parser.test.ts:47`).
+The parser strips inert Zod expressions from object-literal input instead of executing them. Safe JSON schema objects stay intact (`src/lib/formedible/formedible-parser.test.ts:47`).
 
 ## Parse AI output
 
@@ -151,7 +151,7 @@ export const parserRuntimeConfig = {
 
 `ParserConfig` includes `strictValidation`, `enableSchemaInference`, `mergeStrategy`, `fieldTypeValidation`, `customInstructions`, `maxCodeLength`, `maxNestingDepth`, `enableZodParsing`, `showDetailedErrors`, `selectFields`, `systemPromptFields`, `includeTabFormatting`, and `includePageFormatting` (`src/lib/formedible/parser-config-schema.ts:3`).
 
-## Safety rules from source
+## Safety rules
 
 - Maximum code length defaults to `1000000` (`src/lib/formedible/formedible-parser.ts:122`).
 - Executable syntax is rejected by `executableSyntaxPattern` (`src/lib/formedible/formedible-parser.ts:161`).
@@ -178,7 +178,7 @@ pnpm run check-types:parser
 pnpm run check-types
 ```
 
-## Source-backed docs and tests
+## Docs and tests
 
 - Docs route: `/docs/parser`.
 - Source entrypoint: `packages/formedible-parser/src/index.ts`.

@@ -85,6 +85,7 @@ export function SystemPromptGenerator() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [generatedPrompt, setGeneratedPrompt] = useState("");
   const [copied, setCopied] = useState(false);
+  const [, setCopyError] = useState<string | null>(null);
 
   const generateCustomSystemPrompt = (
     values: SystemPromptFormValues
@@ -93,7 +94,7 @@ export function SystemPromptGenerator() {
       "# Formedible AI Assistant Guide\n\n",
       "You are an AI assistant specialized in helping developers use the Formedible React form library.\n\n",
       "## About Formedible\n\n",
-      "Formedible is a powerful, declarative React hook that wraps TanStack Form and integrates with Zod for validation and shadcn/ui for components. It simplifies creating complex, type-safe, and beautiful forms with minimal boilerplate.\n\n",
+      "Formedible is a React hook that wraps TanStack Form and integrates with Zod for validation and shadcn/ui for components. It simplifies creating complex, type-safe, and beautiful forms with minimal boilerplate.\n\n",
     ];
 
     if (values.includeInstallation) {
@@ -123,6 +124,10 @@ export function SystemPromptGenerator() {
         '  email: z.string().email("Please enter a valid email"),\n',
         "});\n\n",
         "type FormValues = z.infer<typeof schema>;\n\n",
+        "const savedSubmissions: FormValues[] = [];\n",
+        "const saveSubmission = (value: FormValues): void => {\n",
+        "  savedSubmissions.push(value);\n",
+        "};\n\n",
         "const { Form } = useFormedible<FormValues>({\n",
         "  schema,\n",
         "  fields: [\n",
@@ -132,8 +137,7 @@ export function SystemPromptGenerator() {
         "  formOptions: {\n",
         '    defaultValues: { name: "", email: "" },\n',
         "    onSubmit: async ({ value }) => {\n",
-        '      console.log("Form submitted:", value);\n',
-        "      // Handle submission\n",
+        "      saveSubmission(value);\n",
         "    },\n",
         "  },\n",
         "});\n\n",
@@ -238,7 +242,6 @@ export function SystemPromptGenerator() {
         "  progress: { showSteps: true, showPercentage: true },\n",
         "  nextLabel: 'Continue →',\n",
         "  previousLabel: '← Back',\n",
-        "  // ... rest of config\n",
         "});\n",
         "```\n\n"
       );
@@ -312,13 +315,18 @@ export function SystemPromptGenerator() {
         "## Advanced Features\n\n",
         "**Analytics & Tracking:**\n",
         "```tsx\n",
+        "const analyticsEvents: string[] = [];\n\n",
         "const analytics = {\n",
-        "  onFormStart: (timestamp) => console.log('Form started'),\n",
-        "  onFieldFocus: (field, timestamp) => console.log(`Field ${field} focused`),\n",
-        "  onPageChange: (from, to, timeSpent) => console.log('Page changed'),\n",
-        "  onFormComplete: (timeSpent, data) => console.log('Form completed')\n",
+        "  onFormStart: (timestamp) => analyticsEvents.push(`form-start:${timestamp}`),\n",
+        "  onFieldFocus: (field, timestamp) => analyticsEvents.push(`field-focus:${field}:${timestamp}`),\n",
+        "  onPageChange: (from, to, timeSpent) => analyticsEvents.push(`page-change:${from}-${to}:${timeSpent}`),\n",
+        "  onFormComplete: (timeSpent, data) => analyticsEvents.push(`form-complete:${timeSpent}:${Object.keys(data).length}`)\n",
         "};\n\n",
-        "const { Form } = useFormedible({ analytics, ... });\n",
+        "const { Form } = useFormedible({\n",
+        "  schema: feedbackSchema,\n",
+        "  fields: feedbackFields,\n",
+        "  analytics\n",
+        "});\n",
         "```\n\n",
         "**Form Persistence:**\n",
         "```tsx\n",
@@ -327,7 +335,11 @@ export function SystemPromptGenerator() {
         "  storage: 'localStorage',\n",
         "  exclude: ['password', 'confirmPassword']\n",
         "};\n\n",
-        "const { Form } = useFormedible({ persistence, ... });\n",
+        "const { Form } = useFormedible({\n",
+        "  schema: accountSchema,\n",
+        "  fields: accountFields,\n",
+        "  persistence\n",
+        "});\n",
         "```\n\n",
         "**Cross-Field Validation:**\n",
         "```tsx\n",
@@ -359,7 +371,7 @@ export function SystemPromptGenerator() {
         "  fields: [\n",
         '    { name: "name", type: "text", label: "Full Name" },\n',
         '    { name: "email", type: "email", label: "Email" },\n',
-        '    { name: "subject", type: "select", label: "Subject", options: [...] },\n',
+        '    { name: "subject", type: "select", label: "Subject", options: ["general", "support", "sales"] },\n',
         '    { name: "message", type: "textarea", label: "Message" }\n',
         "  ]\n",
         "});\n",
@@ -375,7 +387,7 @@ export function SystemPromptGenerator() {
         "```tsx\n",
         "const { Form } = useFormedible({\n",
         "  schema: registrationSchema,\n",
-        "  fields: [...personalInfo, ...contactDetails, ...preferences],\n",
+        "  fields: registrationFields,\n",
         "  pages: [\n",
         '    { page: 1, title: "Personal", description: "Basic info" },\n',
         '    { page: 2, title: "Contact", description: "How to reach you" },\n',
@@ -441,7 +453,10 @@ export function SystemPromptGenerator() {
         "```tsx\n",
         "const schema = z.object({ name: z.string(), age: z.number() });\n",
         "type FormValues = z.infer<typeof schema>; // ✅ Type-safe\n\n",
-        "const { Form } = useFormedible<FormValues>({ schema, ... });\n",
+        "const { Form } = useFormedible<FormValues>({\n",
+        "  schema,\n",
+        "  fields: [{ name: 'name', type: 'text', label: 'Name' }]\n",
+        "});\n",
         "```\n\n",
         "**Extend BaseFieldProps for custom components:**\n",
         "```tsx\n",
@@ -470,8 +485,12 @@ export function SystemPromptGenerator() {
         "**Use callback memoization for analytics:**\n",
         "```tsx\n",
         "const analytics = useMemo(() => ({\n",
-        "  onFormStart: useCallback((timestamp) => { ... }, []),\n",
-        "  onFieldFocus: useCallback((field, timestamp) => { ... }, [])\n",
+        "  onFormStart: useCallback((timestamp) => {\n",
+        "    analyticsEvents.push(`form-start:${timestamp}`);\n",
+        "  }, []),\n",
+        "  onFieldFocus: useCallback((field, timestamp) => {\n",
+        "    analyticsEvents.push(`field-focus:${field}:${timestamp}`);\n",
+        "  }, [])\n",
         "}), []);\n",
         "```\n\n",
         "**Lazy load large option sets:**\n",
@@ -517,7 +536,7 @@ export function SystemPromptGenerator() {
         "## Common Mistakes to Avoid\n\n",
         "❌ **Don't:** Define schemas inside component render\n",
         "✅ **Do:** Define schemas outside component or use useMemo\n\n",
-        "❌ **Don't:** Use \"any\" type for form values\n",
+        "❌ **Don't:** Use loose types for form values\n",
         "✅ **Do:** Use proper TypeScript inference from Zod\n\n",
         "❌ **Don't:** Create new callback functions on every render\n",
         "✅ **Do:** Use useCallback or useMemo for stable references\n\n",
@@ -576,7 +595,7 @@ export function SystemPromptGenerator() {
         case 'enterprise':
           parts.push(
             "**Enterprise Considerations:**\n",
-            "- Implement comprehensive validation and error handling\n",
+            "- Implement thorough validation and error handling\n",
             "- Use form persistence for workflow interruptions\n",
             "- Add analytics for user behavior insights\n",
             "- Ensure accessibility compliance (WCAG 2.1)\n",
@@ -589,7 +608,7 @@ export function SystemPromptGenerator() {
             "**Rapid Prototyping Tips:**\n",
             "- Use shadcn CLI for quick component installation\n",
             "- Start with basic field types and add complexity later\n",
-            "- Leverage default styling and behaviors\n",
+            "- Use default styling and behaviors\n",
             "- Use mock data for testing different scenarios\n",
             "- Focus on core functionality before styling\n\n"
           );
@@ -601,7 +620,7 @@ export function SystemPromptGenerator() {
             "- Implement conditional logic to reduce cognitive load\n",
             "- Use array fields for dynamic data collection\n",
             "- Add progress indicators and save functionality\n",
-            "- Implement comprehensive validation with clear feedback\n",
+            "- Implement thorough validation with clear feedback\n",
             "- Use analytics to identify completion bottlenecks\n\n"
           );
           break;
@@ -636,9 +655,12 @@ export function SystemPromptGenerator() {
     try {
       await navigator.clipboard.writeText(generatedPrompt);
       setCopied(true);
+      setCopyError(null);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error("Failed to copy to clipboard:", error);
+      const message = error instanceof Error ? error.message : "Clipboard copy failed";
+      setCopyError(message);
+      setCopied(false);
     }
   };
 
@@ -723,7 +745,7 @@ export function SystemPromptGenerator() {
         label: "Field Types to Include",
         description: "Select which field types to document",
         page: 3,
-        conditional: (values: any) => values.selectFieldTypes === true,
+        conditional: (values) => values.selectFieldTypes === true,
         options: availableFieldTypes.map((type) => ({
           value: type,
           label: type.charAt(0).toUpperCase() + type.slice(1),
@@ -822,7 +844,7 @@ export function SystemPromptGenerator() {
         type: "textarea",
         label: "Custom Instructions",
         description: "Additional instructions or context for the AI assistant",
-        placeholder: "Add any specific guidance, constraints, or context...",
+        placeholder: "Add specific guidance, constraints, or context",
         page: 6,
         section: "Features",
         textareaConfig: {
