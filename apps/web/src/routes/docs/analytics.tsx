@@ -7,6 +7,14 @@ import { createRouteSeoHead } from '@/features/docs/seo';
 const routeHead = createRouteSeoHead('/docs/analytics');
 const propertyTableHeaders = ['Property', 'Type', 'Default', 'Description'] as const;
 
+const sourceBase = 'https://github.com/DimitriGilbert/Formedible/blob/re-codex';
+
+function sourceReference(title: string, path: string, description: string): DocsGuideLink {
+  return { title, description, href: `${sourceBase}/${path}` };
+}
+
+const analyticsExample = { title: 'Live example: analytics', description: 'Three-page lead form wired to start, field, page, completion, and abandon callbacks.', href: '/docs/examples?example=analytics' };
+
 function createPropertyRow(name: string, type: string, defaultValue: string, description: string) {
   return { cells: [name, type, defaultValue, description] };
 }
@@ -19,11 +27,11 @@ const relatedLinks = [
 const sections = [
   {
     title: 'Configuration',
-    body: 'Pass analytics to useFormedible as a FormedibleAnalyticsConfig<TFormValues>. Keep the object stable with useMemo when it lives in a component, and keep each handler small so telemetry work never blocks typing.',
+    body: 'Analytics is a callback object passed to useFormedible. The current source emits form start, field focus, field blur, field change, field complete, field error, page change, form complete, abandon, and reset events.',
     bullets: [
-      'Field names use keys from TFormValues, with string support for generated or nested field paths.',
-      'Timestamps are Date.now values in milliseconds.',
-      'Superseded page, tab, and performance callbacks are typed as never and are not emitted by the current runtime.',
+      'Field callback names are Extract<keyof TFormValues, string> | string, which covers generated and nested paths.',
+      'Runtime timestamps come from Date.now; field blur time is timestamp minus the stored focus timestamp.',
+      'Page completion, tab analytics, and performance callbacks are typed as never in FormedibleAnalyticsConfig and are not emitted.',
     ],
     table: {
       headers: propertyTableHeaders,
@@ -40,45 +48,133 @@ const sections = [
         createPropertyRow('onFormReset', '(timestamp: number, reason?: string) => void', 'undefined', 'Runs when reset tracking is called. The built-in reset path passes the reset reason when supplied.'),
       ],
     },
+    snippet: {
+      title: 'Callbacks from FormedibleAnalyticsConfig',
+      language: 'tsx',
+      code: `const analytics = {
+  onFormStart: (timestamp) => track('form-start', { timestamp }),
+  onFieldFocus: (fieldName, timestamp) => track('field-focus', { fieldName, timestamp }),
+  onFieldBlur: (fieldName, timeSpent) => track('field-blur', { fieldName, timeSpent }),
+  onFieldChange: (fieldName, value, timestamp) => track('field-change', { fieldName, value, timestamp }),
+  onPageChange: (fromPage, toPage, timeSpent, pageValidationState) => {
+    track('page-change', { fromPage, toPage, timeSpent, pageValidationState });
+  },
+  onFormComplete: (timeSpent, formData) => track('form-complete', { timeSpent, formData }),
+  onFormAbandon: (completionPercentage, context) => track('form-abandon', { completionPercentage, context }),
+} satisfies FormedibleAnalyticsConfig<LeadFormValues>;`,
+    },
+    references: [
+      sourceReference('Types: FormedibleAnalyticsConfig', 'packages/formedible/src/lib/formedible/types.ts#L404-L445', 'All supported callbacks and superseded never-typed callbacks.'),
+      sourceReference('Source: use-form-analytics.ts', 'packages/formedible/src/hooks/use-form-analytics.ts#L52-L136', 'Runtime callback emission.'),
+      analyticsExample,
+    ],
   },
   {
     title: 'Field events',
-    body: 'Field callbacks follow the input interaction: focus starts timing, change reports the latest value, and blur closes the field session. Completion and error callbacks are also tied to blur, so they describe the state after the user leaves the field.',
+    body: 'Field tracking is wired inside the FieldRenderer controller passed by useFormedible. Focus stores the timestamp, change reports the next value, and blur reports elapsed focus time plus validity.',
     bullets: [
-      'onFieldFocus receives fieldName and timestamp as soon as focus is tracked.',
-      'onFieldChange receives fieldName, value, and timestamp after the value changes.',
-      'onFieldBlur receives fieldName and timeSpent; onFieldComplete follows with isValid and the same elapsed time.',
-      'onFieldError receives a readonly string list only when the blur path has errors to report.',
+      'trackFieldFocus stores lastActiveField and focusedAt[fieldName], then calls onFieldFocus.',
+      'trackFieldChange calls onFieldChange with fieldName, value, and Date.now().',
+      'trackFieldBlur calls onFieldBlur, optional onFieldError, then onFieldComplete, and removes the stored focus timestamp.',
+      'getFieldBlurTime returns 0 when blur occurs without a stored focus timestamp.',
+    ],
+    snippet: {
+      title: 'Field controller analytics path',
+      language: 'tsx',
+      code: `field={{
+  name: fieldName,
+  onFocus: () => analytics.trackFieldFocus(fieldName),
+  onBlur: () => {
+    field.handleBlur();
+    const fieldErrors = field.state.meta.errors
+      .map(formatValidationError)
+      .filter((message): message is string => message !== undefined);
+
+    analytics.trackFieldBlur(fieldName, {
+      isValid: fieldErrors.length === 0,
+      errors: fieldErrors,
+    });
+  },
+  onChange: (nextValue) => analytics.trackFieldChange(fieldName, nextValue),
+}}`,
+    },
+    references: [
+      sourceReference('Source: field analytics methods', 'packages/formedible/src/hooks/use-form-analytics.ts#L91-L113', 'Focus, blur, change, error, and completion event emission.'),
+      sourceReference('Source: FieldRenderer wiring', 'packages/formedible/src/hooks/use-formedible.tsx#L239-L255', 'The field controller calls analytics from focus, blur, and change.'),
+      sourceReference('Test: blur timing', 'tests/formedible/phase10-behavior.test.ts#L217-L245', 'Asserts positional arguments and focus-derived blur time.'),
     ],
   },
   {
     title: 'Page and form events',
-    body: 'Page analytics measure the step the user is leaving, not just the step they land on. Form callbacks cover the full session: start on mount, complete on submit tracking, and reset on the explicit reset path.',
+    body: 'Page change starts in useMultiPage, then useFormedible passes the context to analytics.trackPageChange and the public onPageChange hook option. Form start, complete, and reset are emitted from the analytics hook and the form submit/reset paths.',
     bullets: [
-      'onPageChange receives fromPage, toPage, timeSpent, and optional validationState for fromPage.',
-      'validationState contains hasErrors and completionPercentage for the page being left.',
-      'onFormStart is emitted from mount with the saved start timestamp.',
-      'onFormComplete receives total timeSpent and the submitted TFormValues payload.',
-      'onFormReset receives a timestamp plus an optional reason string.',
+      'useMultiPage measures timeSpent as Date.now() minus pageStartedAt before setting the new page.',
+      'analytics.trackPageChange supplies getPageValidationState(fromPage), which includes hasErrors and completionPercentage.',
+      'trackFormComplete sets completedRef before calling onFormComplete, preventing abandon from firing on unmount after a completed submit.',
+      'The built-in reset path passes reason "reset" to trackFormReset.',
+    ],
+    snippet: {
+      title: 'Page and submit tracking',
+      language: 'ts',
+      code: `function handlePageChange(context: { readonly fromPage: number; readonly toPage: number; readonly timeSpent: number }) {
+  analytics.trackPageChange(context);
+  config.onPageChange?.(context.toPage, context.toPage > context.fromPage ? 'next' : 'previous');
+}
+
+const form = useForm({
+  defaultValues: config.formOptions.defaultValues,
+  onSubmit: async ({ value }) => {
+    analytics.trackFormComplete(value as TFormValues);
+    await config.formOptions.onSubmit?.({ value, formApi: getFormApiContext(value as TFormValues) });
+    clearStorage();
+  },
+});`,
+    },
+    references: [
+      sourceReference('Source: page change timing', 'packages/formedible/src/hooks/use-multi-page.ts#L77-L85', 'fromPage, toPage, and timeSpent are created before currentPage changes.'),
+      sourceReference('Source: page/form analytics', 'packages/formedible/src/hooks/use-form-analytics.ts#L115-L132', 'Form complete, page change, and reset tracking.'),
+      sourceReference('Source: validation state', 'packages/formedible/src/hooks/use-formedible.tsx#L109-L122', 'Page validation state shape passed into onPageChange.'),
     ],
   },
   {
     title: 'Abandonment tracking',
-    body: 'Abandonment is automatic. If the analytics hook cleans up before trackFormComplete runs, Formedible calls onFormAbandon with the latest progress and location context it can collect.',
+    body: 'Abandonment runs in the analytics hook cleanup. It is skipped only after trackFormComplete sets completedRef, so unmounting an incomplete form emits onFormAbandon when that callback exists.',
     bullets: [
-      'completionPercentage comes from getAbandonContext when the renderer supplies one; otherwise it falls back to 0.',
-      'context can include currentPage, currentTab, and lastActiveField.',
-      'lastActiveField is updated on focus and can be supplied directly by the runtime context.',
-      'A completed form does not emit abandon during cleanup.',
+      'useFormedible builds completionPercentage from completed field values divided by total field count.',
+      'currentPage is always included in the abandon context from useFormedible; currentTab is included when tab state is active.',
+      'lastActiveField comes from getAbandonContext or from the focus tracker fallback.',
+      'When no getAbandonContext is supplied, the analytics hook falls back to completionPercentage: 0.',
+    ],
+    snippet: {
+      title: 'Abandon context built by useFormedible',
+      language: 'ts',
+      code: `function getAbandonContext(): FormAnalyticsAbandonContext {
+  const completedFields = fields.filter((fieldConfig) =>
+    isCompletedValue(getValueAtFieldPath(form.state.values, fieldConfig.name)),
+  ).length;
+
+  const context: FormAnalyticsAbandonContext = {
+    completionPercentage: fields.length > 0 ? (completedFields / fields.length) * 100 : 0,
+    currentPage: multiPage.currentPage,
+  };
+
+  return tabs.activeTab !== undefined ? { ...context, currentTab: tabs.activeTab } : context;
+}`,
+    },
+    references: [
+      sourceReference('Source: analytics cleanup', 'packages/formedible/src/hooks/use-form-analytics.ts#L66-L89', 'Cleanup path and context assembly for onFormAbandon.'),
+      sourceReference('Source: abandon context', 'packages/formedible/src/hooks/use-formedible.tsx#L124-L139', 'Completion percentage, currentPage, and currentTab context.'),
+      analyticsExample,
     ],
   },
   {
     title: 'Standalone factory',
-    body: 'Use createFormAnalyticsTracker outside React when a parser, builder, or server-adjacent workflow needs the same callback contract. It accepts the analytics config and an optional clock, then returns small track* methods.',
+    body: 'createFormAnalyticsTracker is exported from use-form-analytics.ts for non-React paths. It accepts the same analytics config and an optional clock, then returns small methods for field change, field complete, field error, and form reset.',
     bullets: [
-      'Signature: createFormAnalyticsTracker<TFormValues extends FormedibleFormValues>(analytics, options).',
-      'options.now lets tests or offline tools provide a deterministic timestamp source.',
-      'Returned methods cover field change, field completion, field error, and form reset tracking.',
+      'options.now defaults to Date.now.',
+      'trackFieldChange and trackFieldError include a current timestamp from the configured clock.',
+      'trackFieldComplete forwards isValid and timeSpent without creating React focus state.',
+      'trackFormReset forwards an optional reason string.',
     ],
     table: {
       headers: propertyTableHeaders,
@@ -89,6 +185,23 @@ const sections = [
         createPropertyRow('trackFormReset', '(reason?: string) => void', 'Returned', 'Calls onFormReset with the current clock value and optional reason.'),
       ],
     },
+    snippet: {
+      title: 'Deterministic tracker outside React',
+      language: 'ts',
+      code: `const tracker = createFormAnalyticsTracker<LeadFormValues>(analytics, {
+  now: () => 10_000,
+});
+
+tracker.trackFieldChange('email', 'ada@example.com');
+tracker.trackFieldComplete('email', true, 350);
+tracker.trackFieldError('email', ['Invalid email']);
+tracker.trackFormReset('clear-button');`,
+    },
+    references: [
+      sourceReference('Source: createFormAnalyticsTracker', 'packages/formedible/src/hooks/use-form-analytics.ts#L30-L50', 'Standalone factory and returned methods.'),
+      sourceReference('Test: compatibility tracker', 'tests/formedible/basic-fields.test.tsx#L295-L318', 'Asserts restored callbacks from the standalone tracker.'),
+      sourceReference('Test: analytics contract', 'tests/formedible/phase10-behavior.test.ts#L188-L215', 'Approved analytics options and useFormedible return contract.'),
+    ],
   },
 ] satisfies readonly DocsGuideSection[];
 

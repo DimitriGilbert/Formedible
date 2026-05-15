@@ -26,6 +26,14 @@ export const conditionalPagesSchema = z.object({
   preferredContact: z.enum(["email", "phone", "both"]),
 });
 
+type ConditionalPagesFormValues = z.infer<typeof conditionalPagesSchema>;
+
+const submittedApplications: ConditionalPagesFormValues[] = [];
+
+async function saveConditionalPagesApplication(application: ConditionalPagesFormValues) {
+  submittedApplications.push(application);
+}
+
 export const conditionalPagesFormCode = `const conditionalPagesSchema = z.object({
   applicationType: z.enum(["individual", "business"]),
   // Individual fields
@@ -48,6 +56,14 @@ export const conditionalPagesFormCode = `const conditionalPagesSchema = z.object
   preferredContact: z.enum(["email", "phone", "both"]),
 });
 
+type ConditionalPagesFormValues = z.infer<typeof conditionalPagesSchema>;
+
+const submittedApplications: ConditionalPagesFormValues[] = [];
+
+async function saveConditionalPagesApplication(application: ConditionalPagesFormValues) {
+  submittedApplications.push(application);
+}
+
 const conditionalPagesForm = useFormedible({
   schema: conditionalPagesSchema,
   fields: [
@@ -69,21 +85,21 @@ const conditionalPagesForm = useFormedible({
       type: "text",
       label: "First Name",
       page: 2,
-      conditional: (values: any) => values.applicationType === "individual",
+      conditional: (values: ConditionalPagesFormValues) => values.applicationType === "individual",
     },
     {
       name: "lastName",
       type: "text",
       label: "Last Name",
       page: 2,
-      conditional: (values: any) => values.applicationType === "individual",
+      conditional: (values: ConditionalPagesFormValues) => values.applicationType === "individual",
     },
     {
       name: "dateOfBirth",
       type: "date",
       label: "Date of Birth",
       page: 2,
-      conditional: (values: any) => values.applicationType === "individual",
+      conditional: (values: ConditionalPagesFormValues) => values.applicationType === "individual",
     },
     {
       name: "personalId",
@@ -91,7 +107,7 @@ const conditionalPagesForm = useFormedible({
       label: "Personal ID / SSN",
       page: 2,
       placeholder: "XXX-XX-XXXX",
-      conditional: (values: any) => values.applicationType === "individual",
+      conditional: (values: ConditionalPagesFormValues) => values.applicationType === "individual",
     },
 
     // Page 3 - Business Info (only shown for business applications)
@@ -100,7 +116,7 @@ const conditionalPagesForm = useFormedible({
       type: "text",
       label: "Company Name",
       page: 3,
-      conditional: (values: any) => values.applicationType === "business",
+      conditional: (values: ConditionalPagesFormValues) => values.applicationType === "business",
     },
     {
       name: "businessType",
@@ -113,7 +129,7 @@ const conditionalPagesForm = useFormedible({
         { value: "partnership", label: "Partnership" },
         { value: "sole_proprietorship", label: "Sole Proprietorship" },
       ],
-      conditional: (values: any) => values.applicationType === "business",
+      conditional: (values: ConditionalPagesFormValues) => values.applicationType === "business",
     },
     {
       name: "taxId",
@@ -121,7 +137,7 @@ const conditionalPagesForm = useFormedible({
       label: "Tax ID / EIN",
       page: 3,
       placeholder: "XX-XXXXXXX",
-      conditional: (values: any) => values.applicationType === "business",
+      conditional: (values: ConditionalPagesFormValues) => values.applicationType === "business",
     },
     {
       name: "employeeCount",
@@ -129,7 +145,7 @@ const conditionalPagesForm = useFormedible({
       label: "Number of Employees",
       page: 3,
       min: 1,
-      conditional: (values: any) => values.applicationType === "business",
+      conditional: (values: ConditionalPagesFormValues) => values.applicationType === "business",
     },
 
     // Page 4 - Premium Features Check (always shown)
@@ -154,7 +170,7 @@ const conditionalPagesForm = useFormedible({
         { value: "whitelabel", label: "White-label Solution" },
         { value: "sla", label: "Enterprise SLA" },
       ],
-      conditional: (values: any) => values.needsPremium === true,
+      conditional: (values: ConditionalPagesFormValues) => values.needsPremium === true,
       multiSelectConfig: {
         searchable: true,
         maxSelections: 5,
@@ -170,7 +186,7 @@ const conditionalPagesForm = useFormedible({
         { value: "standard", label: "Standard ($299/month)" },
         { value: "premium", label: "Premium ($599/month)" },
       ],
-      conditional: (values: any) => values.needsPremium === true,
+      conditional: (values: ConditionalPagesFormValues) => values.needsPremium === true,
     },
 
     // Page 6 - Contact Information (always shown)
@@ -209,14 +225,14 @@ const conditionalPagesForm = useFormedible({
       title: "Personal Information",
       description: "Tell us about yourself",
       // This page is only shown for individual applications
-      conditional: (values: any) => values.applicationType === "individual",
+      conditional: (values: ConditionalPagesFormValues) => values.applicationType === "individual",
     },
     {
       page: 3,
       title: "Business Information",
       description: "Tell us about your business",
       // This page is only shown for business applications
-      conditional: (values: any) => values.applicationType === "business",
+      conditional: (values: ConditionalPagesFormValues) => values.applicationType === "business",
     },
     {
       page: 4,
@@ -228,7 +244,7 @@ const conditionalPagesForm = useFormedible({
       title: "Premium Options",
       description: "Customize your premium experience",
       // This page is only shown if premium is selected
-      conditional: (values: any) => values.needsPremium === true,
+      conditional: (values: ConditionalPagesFormValues) => values.needsPremium === true,
     },
     {
       page: 6,
@@ -256,7 +272,8 @@ const conditionalPagesForm = useFormedible({
       preferredContact: "email" as const,
     },
     onSubmit: async ({ value }) => {
-      console.log("Conditional pages form submitted:", value);
+      await saveConditionalPagesApplication(value);
+
       toast.success("Application submitted successfully!", {
         description: \`Your \${value.applicationType} application has been received and will be processed within 3-5 business days.\`,
       });
@@ -286,21 +303,21 @@ export function ConditionalPagesFormExample() {
         type: "text",
         label: "First Name",
         page: 2,
-        conditional: (values: any) => values.applicationType === "individual",
+        conditional: (values: ConditionalPagesFormValues) => values.applicationType === "individual",
       },
       {
         name: "lastName",
         type: "text",
         label: "Last Name",
         page: 2,
-        conditional: (values: any) => values.applicationType === "individual",
+        conditional: (values: ConditionalPagesFormValues) => values.applicationType === "individual",
       },
       {
         name: "dateOfBirth",
         type: "date",
         label: "Date of Birth",
         page: 2,
-        conditional: (values: any) => values.applicationType === "individual",
+        conditional: (values: ConditionalPagesFormValues) => values.applicationType === "individual",
       },
       {
         name: "personalId",
@@ -308,7 +325,7 @@ export function ConditionalPagesFormExample() {
         label: "Personal ID / SSN",
         page: 2,
         placeholder: "XXX-XX-XXXX",
-        conditional: (values: any) => values.applicationType === "individual",
+        conditional: (values: ConditionalPagesFormValues) => values.applicationType === "individual",
       },
 
       // Page 3 - Business Info (only shown for business applications)
@@ -317,7 +334,7 @@ export function ConditionalPagesFormExample() {
         type: "text",
         label: "Company Name",
         page: 3,
-        conditional: (values: any) => values.applicationType === "business",
+        conditional: (values: ConditionalPagesFormValues) => values.applicationType === "business",
       },
       {
         name: "businessType",
@@ -330,7 +347,7 @@ export function ConditionalPagesFormExample() {
           { value: "partnership", label: "Partnership" },
           { value: "sole_proprietorship", label: "Sole Proprietorship" },
         ],
-        conditional: (values: any) => values.applicationType === "business",
+        conditional: (values: ConditionalPagesFormValues) => values.applicationType === "business",
       },
       {
         name: "taxId",
@@ -338,7 +355,7 @@ export function ConditionalPagesFormExample() {
         label: "Tax ID / EIN",
         page: 3,
         placeholder: "XX-XXXXXXX",
-        conditional: (values: any) => values.applicationType === "business",
+        conditional: (values: ConditionalPagesFormValues) => values.applicationType === "business",
       },
       {
         name: "employeeCount",
@@ -346,7 +363,7 @@ export function ConditionalPagesFormExample() {
         label: "Number of Employees",
         page: 3,
         min: 1,
-        conditional: (values: any) => values.applicationType === "business",
+        conditional: (values: ConditionalPagesFormValues) => values.applicationType === "business",
       },
 
       // Page 4 - Premium Features Check (always shown)
@@ -371,7 +388,7 @@ export function ConditionalPagesFormExample() {
           { value: "whitelabel", label: "White-label Solution" },
           { value: "sla", label: "Enterprise SLA" },
         ],
-        conditional: (values: any) => values.needsPremium === true,
+        conditional: (values: ConditionalPagesFormValues) => values.needsPremium === true,
         multiSelectConfig: {
           searchable: true,
           maxSelections: 5,
@@ -387,7 +404,7 @@ export function ConditionalPagesFormExample() {
           { value: "standard", label: "Standard ($299/month)" },
           { value: "premium", label: "Premium ($599/month)" },
         ],
-        conditional: (values: any) => values.needsPremium === true,
+        conditional: (values: ConditionalPagesFormValues) => values.needsPremium === true,
       },
 
       // Page 6 - Contact Information (always shown)
@@ -426,14 +443,14 @@ export function ConditionalPagesFormExample() {
         title: "Personal Information",
         description: "Tell us about yourself",
         // This page is only shown for individual applications
-        conditional: (values: any) => values.applicationType === "individual",
+        conditional: (values: ConditionalPagesFormValues) => values.applicationType === "individual",
       },
       {
         page: 3,
         title: "Business Information",
         description: "Tell us about your business",
         // This page is only shown for business applications
-        conditional: (values: any) => values.applicationType === "business",
+        conditional: (values: ConditionalPagesFormValues) => values.applicationType === "business",
       },
       {
         page: 4,
@@ -445,7 +462,7 @@ export function ConditionalPagesFormExample() {
         title: "Premium Options",
         description: "Customize your premium experience",
         // This page is only shown if premium is selected
-        conditional: (values: any) => values.needsPremium === true,
+        conditional: (values: ConditionalPagesFormValues) => values.needsPremium === true,
       },
       {
         page: 6,
@@ -473,7 +490,8 @@ export function ConditionalPagesFormExample() {
         preferredContact: "email" as const,
       },
       onSubmit: async ({ value }) => {
-        console.log("Conditional pages form submitted:", value);
+        await saveConditionalPagesApplication(value);
+
         toast.success("Application submitted successfully!", {
           description: `Your ${value.applicationType} application has been received and will be processed within 3-5 business days.`,
         });

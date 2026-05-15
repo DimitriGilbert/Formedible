@@ -20,15 +20,16 @@ export const contactFormCode = `const contactForm = useFormedible({
       newsletter: false 
     },
     onSubmit: async ({ value }) => {
-      console.log("Contact form submitted:", value);
-      alert("Thank you for your message!");
+      toast.success("Thank you for your message!", {
+        description: "We'll reply to " + value.email + ".",
+      });
     },
   },
 });
 
 return <contactForm.Form className="space-y-6" />;`;
 
-export const profileFormCode = `const AnimatedFieldWrapper: React.FC<{ children: React.ReactNode; field: any }> = ({ children, field }) => (
+export const profileFormCode = `const AnimatedFieldWrapper: React.FC<{ children: React.ReactNode; field: unknown }> = ({ children }) => (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
@@ -82,8 +83,9 @@ const profileForm = useFormedible({
       newsletter: false,
     },
     onSubmit: async ({ value }) => {
-      console.log("Profile updated:", value);
-      alert("Profile updated successfully!");
+      toast.success("Profile updated successfully!", {
+        description: (value.firstName + " " + value.lastName).trim(),
+      });
     },
   },
 });
@@ -117,8 +119,9 @@ export const surveyFormCode = `const surveyForm = useFormedible({
       category: ""
     },
     onSubmit: async ({ value }) => {
-      console.log("Survey submitted:", value);
-      alert("Thank you for your feedback!");
+      toast.success("Thank you for your feedback!", {
+        description: "Satisfaction score: " + value.satisfaction + "/10",
+      });
     },
   },
 });
@@ -161,8 +164,9 @@ const contactForm = useFormedible({
       urgent: false,
     },
     onSubmit: async ({ value }) => {
-      console.log("Contact form submitted:", value);
-      toast.success("Message sent successfully!");
+      toast.success("Message sent successfully!", {
+        description: "We'll reply to " + value.email + ".",
+      });
     },
   },
 });`;
@@ -247,7 +251,7 @@ const surveyForm = useFormedible({
       name: "improvements",
       type: "textarea",
       label: "What could we improve?",
-      conditional: (values: any) => values.satisfaction < 4,
+      conditional: (values: z.infer<typeof surveySchema>) => values.satisfaction < 4,
     },
     {
       name: "features",
@@ -307,7 +311,7 @@ const checkoutForm = useFormedible({
       type: "text",
       label: "Card Number",
       page: 2,
-      conditional: (values: any) => values.paymentMethod === "card",
+      conditional: (values: z.infer<typeof checkoutSchema>) => values.paymentMethod === "card",
       placeholder: "1234 5678 9012 3456"
     },
     
@@ -482,21 +486,18 @@ const analyticsForm = useFormedible({
   progress: { showSteps: true, showPercentage: true },
   analytics: {
     onFormStart: (timestamp) => {
-      console.log('Form started at:', new Date(timestamp).toISOString());
       gtag('event', 'form_start', { timestamp });
     },
     onFieldFocus: (fieldName, timestamp) => {
-      console.log(\`Field \${fieldName} focused at:\`, new Date(timestamp).toISOString());
+      gtag('event', 'form_field_focus', { field_name: fieldName, timestamp });
     },
     onFieldBlur: (fieldName, timeSpent) => {
-      console.log(\`Field \${fieldName} completed in \${timeSpent}ms\`);
+      gtag('event', 'form_field_blur', { field_name: fieldName, time_spent: timeSpent });
     },
     onPageChange: (fromPage, toPage, timeSpent) => {
-      console.log(\`Page \${fromPage} → \${toPage} (spent \${timeSpent}ms)\`);
-      gtag('event', 'form_page_change', { from_page: fromPage, to_page: toPage });
+      gtag('event', 'form_page_change', { from_page: fromPage, to_page: toPage, time_spent: timeSpent });
     },
     onFormComplete: (timeSpent, formData) => {
-      console.log(\`Form completed in \${timeSpent}ms with data:\`, formData);
       gtag('event', 'form_complete', { 
         time_spent: timeSpent,
         company_size: formData.companySize,
@@ -504,7 +505,6 @@ const analyticsForm = useFormedible({
       });
     },
     onFormAbandon: (completionPercentage) => {
-      console.log(\`Form abandoned at \${completionPercentage}% completion\`);
       gtag('event', 'form_abandon', { completion_percentage: completionPercentage });
     }
   },
@@ -606,8 +606,9 @@ const persistenceForm = useFormedible({
   },
   formOptions: {
     onSubmit: async ({ value }) => {
-      console.log("Form submitted:", value);
-      toast.success("Inquiry submitted! We'll be in touch within 24 hours.");
+      toast.success("Inquiry submitted! We'll be in touch within 24 hours.", {
+        description: "Project request from " + value.company,
+      });
     }
   }
 });`;
@@ -685,7 +686,7 @@ export const advancedFieldTypesCode = `const advancedFieldsSchema = z.object({
   skills: z.array(z.string()).min(1, "Select at least one skill"),
   experienceLevel: z.number().min(1).max(10),
   birthDate: z.date(),
-  resume: z.any().optional(),
+  resume: z.unknown().optional(),
 });
 
 const advancedFieldsForm = useFormedible({

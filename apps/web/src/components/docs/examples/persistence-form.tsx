@@ -19,6 +19,14 @@ export const persistenceFormSchema = z.object({
     .refine((val) => val === true, "You must agree to terms"),
 });
 
+type PersistenceFormValues = z.infer<typeof persistenceFormSchema>;
+
+const submittedProjectInquiries: PersistenceFormValues[] = [];
+
+async function submitProjectInquiry(inquiry: PersistenceFormValues) {
+  submittedProjectInquiries.push(inquiry);
+}
+
 export const persistenceFormCode = `const persistenceFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
   email: z.string().email("Valid email required"),
@@ -33,6 +41,14 @@ export const persistenceFormCode = `const persistenceFormSchema = z.object({
     .boolean()
     .refine((val) => val === true, "You must agree to terms"),
 });
+
+type PersistenceFormValues = z.infer<typeof persistenceFormSchema>;
+
+const submittedProjectInquiries: PersistenceFormValues[] = [];
+
+async function submitProjectInquiry(inquiry: PersistenceFormValues) {
+  submittedProjectInquiries.push(inquiry);
+}
 
 const persistenceForm = useFormedible({
   schema: persistenceFormSchema,
@@ -141,7 +157,7 @@ const persistenceForm = useFormedible({
       agreeToTerms: false,
     },
     onSubmit: async ({ value }) => {
-      console.log("Persistence form submitted:", value);
+      await submitProjectInquiry(value);
       toast.success("Inquiry submitted!", {
         description:
           "Form data auto-saved throughout - try refreshing the page!",
@@ -258,7 +274,7 @@ export function PersistenceFormExample() {
         agreeToTerms: false,
       },
       onSubmit: async ({ value }) => {
-        console.log("Persistence form submitted:", value);
+        await submitProjectInquiry(value);
         toast.success("Inquiry submitted!", {
           description:
             "Form data auto-saved throughout - try refreshing the page!",

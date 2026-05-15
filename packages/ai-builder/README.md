@@ -1,133 +1,225 @@
 # @formedible/ai-builder
 
-`@formedible/ai-builder` is the AI-assisted Formedible builder package. It gives users a chat panel for describing a form, sends that prompt to a configured AI provider, extracts a Formedible config from the response, and renders the result as a live form preview.
+The AI builder package wraps core Formedible, the parser package, and TanStack AI adapters into an interactive form-generation workspace. It handles provider settings, API-key storage preferences, chat messages, streamed output, lowercase `formedible` fence extraction, parser settings, generated form preview, and conversation export.
 
-The package is built as a client-side React component set. It ships the `AIBuilder` shell, provider controls, model settings, parser settings, conversation history, raw output inspection, and the parser/renderer boundary used to turn model output into Formedible form options.
+Public install item:
 
-## Getting started
-
-Import `AIBuilder` from the package entrypoint and render it in a client component.
-
-```tsx
-'use client';
-
-import { AIBuilder } from '@formedible/ai-builder';
-
-export function FormStudio() {
-  return (
-    <AIBuilder
-      onFormGenerated={(formCode) => {
-        // Save or inspect the generated Formedible block.
-      }}
-      onFormSubmit={async (formData) => {
-        // Handle submissions from the live preview.
-      }}
-    />
-  );
-}
+```bash
+pnpm dlx shadcn@latest add https://formedible.dev/r/ai-builder.json
 ```
 
-`AIBuilder` runs in `client` mode. Provider settings and credentials can be left uncontrolled, in which case the builder manages them in browser state and storage. They can also be controlled by the host app:
+The registry item is `ai-builder` in `packages/ai-builder/registry.json`. It depends on:
+
+- `https://formedible.dev/r/formedible-core.json`
+- `https://formedible.dev/r/formedible-parser.json`
+
+## Public exports
+
+`packages/ai-builder/src/index.ts` re-exports these names.
+
+### Components
+
+- `AIBuilder`
+- `AgentSettings`
+- `AiFormRenderer`
+- `ChatInterface`
+- `ConversationHistory`
+- `ParserSettings`
+- `ProviderSelection`
+- `SidebarContent`
+- `SidebarIcons`
+
+### Parser and generation helpers
+
+- `parseAiToFormedible`
+- `generateAiFormCode`
+- `extractFormCode`
+
+### Provider helpers
+
+- `createDefaultProviderSecrets`
+- `createDefaultProviderSettings`
+- `providerOptions`
+- `validateProviderAccess`
+- `createTanStackTextAdapter`
+- `DEFAULT_TANSTACK_AI_MODELS`
+- `SUPPORTED_TANSTACK_AI_PROVIDERS`
+
+### Message and storage helpers
+
+- `normalizePersistedAiMessage`
+- `normalizePersistedAiMessages`
+- `toPersistedAiMessage`
+- `toTanStackMessageInput`
+- `toTanStackMessageInputs`
+- `toTanStackSystemPrompts`
+- `canUseStorage`
+- `clearConversations`
+- `clearStoredProviderSecrets`
+- `createConversation`
+- `exportConversation`
+- `getLastFormCode`
+- `persistConversations`
+- `persistProviderSecrets`
+- `persistProviderSettings`
+- `persistUiState`
+- `readJson`
+- `readPersistedAIBuilderState`
+- `readStoredProviderSecrets`
+- `STORAGE_KEYS`
+- `upsertConversation`
+- `writeJson`
+
+### Types
+
+Exports include provider types (`ProviderSettings`, `ProviderSecrets`, adapter model types), message/conversation types (`AiMessage`, `AiConversation`, `AiConversationExport`), parser/result types (`AiFormParseResult`, `AiParserConfig`, `AiParseError`), and storage types (`PersistedAIBuilderState`, `ProviderSecretStorageMode`, `StorageArea`, `StoredProviderSecrets`). See `src/index.ts` and `src/lib/formedible/ai-types.ts`.
+
+## Use the full AI builder
 
 ```tsx
-'use client';
-
-import { AIBuilder, createDefaultProviderSecrets, createDefaultProviderSettings } from '@formedible/ai-builder';
 import { useState } from 'react';
 
-export function ControlledFormStudio() {
-  const [providerSettings, setProviderSettings] = useState(() => createDefaultProviderSettings('openrouter'));
-  const [providerSecrets, setProviderSecrets] = useState(() => createDefaultProviderSecrets('openrouter'));
+import { AIBuilder, createDefaultProviderSettings } from '@/components/ui/formedible/ai';
+import type { FormedibleFormValues } from '@/components/ui/formedible/lib/types';
+
+async function submitGeneratedForm(formData: FormedibleFormValues) {
+  await fetch('/api/generated-form-submissions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(formData),
+  });
+}
+
+export function AiBuilderPage() {
+  const [generatedCode, setGeneratedCode] = useState('');
 
   return (
-    <AIBuilder
-      providerSettings={providerSettings}
-      providerSecrets={providerSecrets}
-      onProviderSettingsChange={setProviderSettings}
-      onProviderSecretsChange={setProviderSecrets}
-    />
+    <section>
+      <AIBuilder
+        providerSettings={createDefaultProviderSettings('openrouter')}
+        onFormGenerated={(formCode) => {
+          setGeneratedCode(formCode);
+        }}
+        onFormSubmit={async (formData) => {
+          await submitGeneratedForm(formData);
+        }}
+      />
+      {generatedCode ? <textarea readOnly value={generatedCode} /> : null}
+    </section>
   );
 }
 ```
 
-The user still needs to provide a provider API key before generation works. The built-in provider panel validates that settings and secrets target the same provider and rejects empty keys.
+`AIBuilderProps` is defined in `src/components/formedible/ai/ai-builder.tsx:22`. The current `AIBuilderMode` is `'client'` (`src/lib/formedible/ai-types.ts:6`). Provider validation requires matching provider settings and secrets; unsupported custom endpoints are rejected by `createTanStackTextAdapter` (`src/lib/formedible/ai-adapters.ts:83`).
 
-## Providers and models
+## Render AI output without the full chat UI
 
-The adapter layer uses TanStack AI packages and supports three providers: OpenAI, Anthropic, and OpenRouter (`src/lib/formedible/ai-adapters.ts:15`). Custom `endpoint` and `baseURL` overrides are rejected by validation (`src/components/formedible/ai/provider-selection.tsx:68`).
+```tsx
+import { useState } from 'react';
 
-| Provider | Default model | Supported models in source | Extra model options |
-| --- | --- | --- | --- |
-| OpenAI | `gpt-4o-mini` | `gpt-4o-mini`, `gpt-4o`, `gpt-4.1`, `gpt-4.1-mini`, `gpt-4.1-nano`, `o3-mini` | `temperature`, `maxTokens` |
-| Anthropic | `claude-sonnet-4-5` | `claude-sonnet-4-5`, `claude-opus-4-6`, `claude-opus-4-5`, `claude-sonnet-4-6`, `claude-haiku-4-5`, `claude-opus-4-1`, `claude-sonnet-4`, `claude-3-7-sonnet`, `claude-opus-4`, `claude-3-5-haiku`, `claude-3-haiku`, `claude-opus-4.6-fast`, `claude-opus-4.7` | `temperature`, `maxTokens`, `thinkingBudgetTokens` |
-| OpenRouter | `openai/gpt-4o-mini` | `openai/gpt-4o-mini`, `anthropic/claude-sonnet-4`, `anthropic/claude-3.7-sonnet`, `meta-llama/llama-3.3-70b-instruct` | `temperature`, `maxTokens` |
+import { AiFormRenderer } from '@/components/ui/formedible/ai';
+import type { AiFormParseResult } from '@/components/ui/formedible/ai';
 
-If a caller passes a model outside the source allowlist, the adapter falls back to that provider's default model (`src/lib/formedible/ai-adapters.ts:129`). Anthropic is the only provider with thinking budget support (`src/lib/formedible/ai-adapters.ts:65`).
+const generatedCode = `{
+  fields: [
+    { name: 'email', type: 'email', label: 'Email' },
+    { name: 'subscribe', type: 'checkbox', label: 'Subscribe' }
+  ],
+  submitLabel: 'Join',
+  formOptions: { defaultValues: { email: '' } }
+}`;
 
-## Features
+export function GeneratedPreview() {
+  const [parseResult, setParseResult] = useState<AiFormParseResult | null>(null);
 
-### Streaming generation
-
-Generation uses `chat` from `@tanstack/ai`. Stream chunks are normalized into text, thinking, tool, error, finish, or raw events before the UI consumes them (`src/lib/formedible/ai-generation.ts:209`). The collected result keeps final text, chunk history, usage metadata, finish reason, provider, model, errors, and the extracted Formedible block (`src/lib/formedible/ai-generation.ts:344`).
-
-### Live preview
-
-The right side of `AIBuilder` renders the latest generated form code through `AiFormRenderer` (`src/components/formedible/ai/ai-builder.tsx:247`). The renderer parses AI output and passes the parsed options into `useFormedible`, so the preview behaves like a real Formedible form (`src/components/formedible/ai/ai-form-renderer.tsx:23`).
-
-### Parser integration
-
-The parser accepts model output, extracts a Formedible code block, validates it through `FormedibleParser`, and can infer default values for fields that do not have defaults (`src/lib/formedible/ai-parser.ts:59`). Parser settings feed both the system prompt and the parser runtime. That keeps the prompt contract and the validation contract in sync.
-
-### Conversation history
-
-Conversations are stored in browser storage under versioned keys. The package keeps provider settings, conversations, UI state, and optional provider secrets separately (`src/lib/formedible/ai-storage.ts:20`). Users can create, select, delete, and export conversations from the builder shell (`src/components/formedible/ai/ai-builder.tsx:156`).
-
-### Raw output panel
-
-Assistant messages keep raw content, thinking output, stream events, and generation metadata. The raw output panel shows parse status and sanitized event data, which helps debug bad model output without exporting stored API keys.
-
-## Architecture
-
-```text
-AIBuilder
-├─ SidebarIcons / SidebarContent
-│  ├─ ConversationHistory
-│  ├─ ProviderSelection
-│  ├─ AgentSettings
-│  ├─ ParserSettings
-│  └─ RawOutputPanel
-├─ ChatInterface
-│  └─ generateAiFormCode
-│     └─ collectAiGenerationResult
-│        └─ streamAiResponse
-│           └─ TanStack AI provider adapter
-└─ AiFormRenderer
-   └─ parseAiToFormedible
-      └─ FormedibleParser
+  return (
+    <section data-parse-state={parseResult?.success ? 'ready' : 'pending'}>
+      <AiFormRenderer
+        code={generatedCode}
+        onParseComplete={(result) => {
+          setParseResult(result);
+        }}
+        onSubmit={async (formData) => {
+          await submitGeneratedForm(formData);
+        }}
+      />
+    </section>
+  );
+}
 ```
 
-The boundary is intentionally narrow:
+`AiFormRenderer` parses code with `parseAiToFormedible`, builds `UseFormedibleOptions<FormedibleFormValues>`, and renders the core `useFormedible` form (`src/components/formedible/ai/ai-form-renderer.tsx:29`).
 
-- `AIBuilder` owns layout, selected conversation, provider access, parser config, and persistence hooks.
-- `ChatInterface` owns prompt submission, streaming state, abort handling, and message updates.
-- `ai-generation` owns the TanStack AI call and stream normalization.
-- `ai-adapters` maps provider settings plus secrets into a TanStack text adapter.
-- `ai-parser` owns extraction and validation of Formedible output.
-- `AiFormRenderer` owns the live preview and delegates form behavior to `useFormedible`.
+## Provider adapters
 
-This split keeps provider code out of the renderer and keeps parser rules out of the chat UI.
+```ts
+import {
+  DEFAULT_TANSTACK_AI_MODELS,
+  SUPPORTED_TANSTACK_AI_PROVIDERS,
+  createTanStackTextAdapter,
+} from '@/components/ui/formedible/ai';
 
-## Security
+const settings = {
+  provider: 'openrouter',
+  model: DEFAULT_TANSTACK_AI_MODELS.openrouter,
+  temperature: 0.2,
+  maxTokens: 1000,
+} as const;
 
-This package uses bring-your-own-key provider access. The API key is typed into the browser UI, not bundled into the package.
+export function createOpenRouterFormAdapter(apiKey: string) {
+  return createTanStackTextAdapter(settings, {
+    provider: 'openrouter',
+    apiKey,
+  });
+}
 
-Key handling rules in the source:
+export const supportedProviderNames = [...SUPPORTED_TANSTACK_AI_PROVIDERS];
+```
 
-- Memory-only storage is the default for provider secrets (`src/components/formedible/ai/provider-selection.tsx:26`).
-- Session and local storage are explicit choices. Local storage shows a warning because it survives tab close (`src/components/formedible/ai/provider-selection.tsx:151`).
-- Stored provider secrets can be wiped from the UI (`src/components/formedible/ai/provider-selection.tsx:168`).
-- Conversations export without stored provider secrets.
-- Provider settings and secrets must name the same provider before generation starts (`src/lib/formedible/ai-generation.ts:265`).
-- Custom provider endpoints are rejected, so the builder only talks to the supported provider adapters.
+Supported providers are `openai`, `anthropic`, and `openrouter` (`src/lib/formedible/ai-adapters.ts:15`). Default models are `gpt-4o-mini`, `claude-sonnet-4-5`, and `openai/gpt-4o-mini` (`src/lib/formedible/ai-adapters.ts:17`).
 
-Do not pass server-side secrets into `providerSecrets` for this client component. If a host app needs server-held keys, add a server-side proxy outside this package and keep that key off the client.
+## Parser contract
+
+AI form extraction requires a lowercase fenced block:
+
+````md
+```formedible
+{ fields: [{ name: 'email', type: 'email', label: 'Email' }] }
+```
+````
+
+`packages/ai-builder/src/components/formedible/ai/ai-builder.test.ts` checks that `json`, `ts`, and unfenced object output are not treated as generated form code. This package delegates the final parse contract to `@formedible/formedible-parser`.
+
+## Storage contract
+
+Storage helpers persist provider settings, optional provider secrets, UI state, and conversations. Conversation export sanitizes generated form configs by dropping executable callbacks and converting serializable values, as covered by `src/lib/formedible/ai-storage.test.ts`.
+
+## Package scripts
+
+Exact scripts from `packages/ai-builder/package.json`:
+
+```bash
+pnpm --filter @formedible/ai-builder run check-types
+pnpm --filter @formedible/ai-builder run test
+pnpm --filter @formedible/ai-builder run build
+pnpm --filter @formedible/ai-builder run build:registry
+pnpm --filter @formedible/ai-builder run sync
+```
+
+Root equivalents used most often:
+
+```bash
+pnpm run build:ai-builder
+pnpm run check-types:ai-builder
+pnpm run check-types
+```
+
+## Source-backed docs and tests
+
+- Docs route: `/docs/ai-builder`.
+- Interactive route: `/ai-builder`.
+- Source entrypoint: `packages/ai-builder/src/index.ts`.
+- Main component: `packages/ai-builder/src/components/formedible/ai/ai-builder.tsx`.
+- Parser renderer: `packages/ai-builder/src/components/formedible/ai/ai-form-renderer.tsx`.
+- Provider adapters: `packages/ai-builder/src/lib/formedible/ai-adapters.ts`.
+- Tests: `packages/ai-builder/src/components/formedible/ai/ai-builder.test.ts`, `packages/ai-builder/src/lib/formedible/ai-storage.test.ts`.

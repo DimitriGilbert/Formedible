@@ -1,9 +1,270 @@
 import { createFileRoute } from '@tanstack/react-router';
 
 import { DocsGuidePage } from '@/components/docs/guide-page';
+import type { DocsGuideLink, DocsGuideSection } from '@/components/docs/guide-page';
 import { createRouteSeoHead } from '@/features/docs/seo';
 
 const routeHead = createRouteSeoHead('/docs/ai-builder');
+
+const propertyTableHeaders = ['Property', 'Type', 'Default', 'Description'] as const;
+
+function createPropertyRow(name: string, type: string, defaultValue: string, description: string) {
+  return { cells: [name, type, defaultValue, description] };
+}
+
+const relatedLinks = [
+  { title: 'Builder', description: 'Use the visual builder when form authors prefer fields, tabs, and preview controls over chat.', href: '/docs/builder' },
+  { title: 'Parser', description: 'See how generated text becomes a checked Formedible form config.', href: '/docs/parser' },
+  { title: 'Getting started', description: 'Install shape, first form, and project conventions for the copied component path.', href: '/docs/getting-started' },
+] satisfies readonly DocsGuideLink[];
+
+const sections = [
+  {
+    title: 'Public exports',
+    body: 'The AI builder root exports the main AIBuilder component, parser integration pieces, provider setup helpers, TanStack AI adapter helpers, storage helpers, and public types.',
+    bullets: [
+      'AIBuilder, ProviderSelection, ParserSettings, ChatInterface, and AiFormRenderer are root exports.',
+      'createDefaultProviderSettings, createDefaultProviderSecrets, providerOptions, and validateProviderAccess are exported from provider-selection.',
+      'createTanStackTextAdapter, DEFAULT_TANSTACK_AI_MODELS, and SUPPORTED_TANSTACK_AI_PROVIDERS are exported from ai-adapters.',
+      'Storage exports include readPersistedAIBuilderState, persistProviderSettings, persistProviderSecrets, persistConversations, exportConversation, and STORAGE_KEYS.',
+    ],
+    snippet: {
+      title: 'packages/ai-builder/src/index.ts',
+      language: 'ts',
+      code: `export { AIBuilder } from '@/components/formedible/ai/ai-builder';
+export { AiFormRenderer, parseAiToFormedible } from '@/components/formedible/ai/ai-form-renderer';
+export { ChatInterface, generateAiFormCode } from '@/components/formedible/ai/chat-interface';
+export { ParserSettings } from '@/components/formedible/ai/parser-settings';
+export { createDefaultProviderSecrets, createDefaultProviderSettings, providerOptions, ProviderSelection, validateProviderAccess } from '@/components/formedible/ai/provider-selection';
+export { createTanStackTextAdapter, DEFAULT_TANSTACK_AI_MODELS, SUPPORTED_TANSTACK_AI_PROVIDERS } from '@/lib/formedible/ai-adapters';
+export { canUseStorage, exportConversation, persistConversations, persistProviderSecrets, persistProviderSettings, readPersistedAIBuilderState, STORAGE_KEYS } from '@/lib/formedible/ai-storage';`,
+    },
+  },
+  {
+    title: 'AIBuilder provider setup',
+    body: 'AIBuilder can run with internal provider state or caller-owned providerSettings and providerSecrets. The component always passes provider access, system prompt, parser config, messages, and form callbacks into ChatInterface.',
+    bullets: [
+      'mode defaults to client.',
+      'resolveInitialProviderAccess reads persisted settings, then chooses controlled secrets, stored secrets, or an empty key for the active provider.',
+      'Provider settings are persisted only when providerSettings is not controlled.',
+      'Provider secrets are persisted only when providerSecrets is not controlled.',
+      'The preview side renders AiFormRenderer only after formCode exists.',
+    ],
+    table: {
+      headers: propertyTableHeaders,
+      rows: [
+        createPropertyRow('mode', 'AIBuilderMode', "'client'", 'Only client mode is defined by AIBuilderMode.'),
+        createPropertyRow('providerSettings', 'ProviderSettings', 'Persisted/default', 'Optional controlled provider, model, temperature, maxTokens, and Anthropic thinking budget.'),
+        createPropertyRow('providerSecrets', 'ProviderSecrets', 'Stored/empty', 'Optional controlled provider key object paired with the selected provider.'),
+        createPropertyRow('onFormGenerated', '(formCode: string) => void', 'undefined', 'Called when AIBuilder stores the latest generated form code.'),
+        createPropertyRow('onFormSubmit', '(formData: FormedibleFormValues) => void | Promise<void>', 'undefined', 'Passed through to AiFormRenderer submit handling.'),
+      ],
+    },
+    snippet: {
+      title: 'packages/ai-builder/src/components/formedible/ai/ai-builder.tsx',
+      language: 'tsx',
+      code: `export interface AIBuilderProps {
+  readonly className?: string;
+  readonly mode?: AIBuilderMode;
+  readonly providerSettings?: ProviderSettings;
+  readonly providerSecrets?: ProviderSecrets;
+  readonly onProviderSettingsChange?: (providerSettings: ProviderSettings) => void;
+  readonly onProviderSecretsChange?: (providerSecrets: ProviderSecrets) => void;
+  readonly onFormGenerated?: (formCode: string) => void;
+  readonly onFormSubmit?: (formData: FormedibleFormValues) => void | Promise<void>;
+}
+
+<ChatInterface
+  providerSettings={providerSettings}
+  providerSecrets={providerSecrets}
+  mode={mode}
+  messages={messages}
+  onMessagesChange={updateMessages}
+  onFormGenerated={updateFormCode}
+  systemPrompt={systemPrompt}
+  parserConfig={aiParserConfig}
+/>
+
+{formCode ? <AiFormRenderer code={formCode} parserConfig={aiParserConfig} onSubmit={onFormSubmit} /> : null}`,
+    },
+  },
+  {
+    title: 'Provider and model lists',
+    body: 'Provider support is defined in two places: providerOptions for UI defaults, and ai-adapters for TanStack AI provider/model allowlists and fallback behavior.',
+    bullets: [
+      'providerOptions contains openai, anthropic, and openrouter, all requiring keys.',
+      'DEFAULT_TANSTACK_AI_MODELS sets openai to gpt-4o-mini, anthropic to claude-sonnet-4-5, and openrouter to openai/gpt-4o-mini.',
+      'createTanStackTextAdapter resolves unsupported model strings back to the provider default.',
+      'createTanStackModelOptions only returns Anthropic thinking options when thinkingBudgetTokens is positive.',
+    ],
+    table: {
+      headers: ['Provider', 'Default model', 'Additional models in source'],
+      rows: [
+        { cells: ['openai', 'gpt-4o-mini', 'gpt-4o, gpt-4.1, gpt-4.1-mini, gpt-4.1-nano, o3-mini'] },
+        { cells: ['anthropic', 'claude-sonnet-4-5', 'claude-opus-4-6, claude-opus-4-5, claude-sonnet-4-6, claude-haiku-4-5, claude-opus-4-1, claude-sonnet-4, claude-3-7-sonnet, claude-opus-4, claude-3-5-haiku, claude-3-haiku, claude-opus-4.6-fast, claude-opus-4.7'] },
+        { cells: ['openrouter', 'openai/gpt-4o-mini', 'anthropic/claude-sonnet-4, anthropic/claude-3.7-sonnet, meta-llama/llama-3.3-70b-instruct'] },
+      ],
+    },
+    snippet: {
+      title: 'packages/ai-builder/src/lib/formedible/ai-adapters.ts',
+      language: 'ts',
+      code: `export const SUPPORTED_TANSTACK_AI_PROVIDERS = ['openai', 'anthropic', 'openrouter'] as const satisfies readonly AIProvider[];
+
+export const DEFAULT_TANSTACK_AI_MODELS = {
+  openai: 'gpt-4o-mini',
+  anthropic: 'claude-sonnet-4-5',
+  openrouter: 'openai/gpt-4o-mini',
+} as const;
+
+export function createTanStackTextAdapter(settings: ProviderSettings, secrets: ProviderSecrets): AnyTextAdapter {
+  assertMatchingSecrets(settings, secrets);
+  assertNoUnsupportedRuntimeOptions(settings);
+
+  if (settings.provider === 'openai') {
+    return createOpenaiChat(resolveSupportedModel(settings.model, SUPPORTED_OPENAI_MODELS, DEFAULT_TANSTACK_AI_MODELS.openai), secrets.apiKey);
+  }
+
+  if (settings.provider === 'anthropic') {
+    return createAnthropicChat(resolveSupportedModel(settings.model, SUPPORTED_ANTHROPIC_MODELS, DEFAULT_TANSTACK_AI_MODELS.anthropic), secrets.apiKey);
+  }
+
+  return createOpenRouterText(resolveSupportedModel(settings.model, SUPPORTED_OPENROUTER_MODELS, DEFAULT_TANSTACK_AI_MODELS.openrouter), secrets.apiKey);
+}`,
+    },
+  },
+  {
+    title: 'Provider validation and model options',
+    body: 'The provider-selection component blocks mismatched secrets, unsupported providers, custom endpoints, non-Anthropic thinking budgets, and missing API keys.',
+    bullets: [
+      'createDefaultProviderSettings picks the selected provider option and copies its defaultModel.',
+      'validateProviderAccess requires settings and secrets to target the same provider.',
+      'endpoint and baseURL keys are rejected by both validateProviderAccess and assertNoUnsupportedRuntimeOptions.',
+      'thinkingBudgetTokens is accepted only for Anthropic provider settings.',
+    ],
+    snippet: {
+      title: 'packages/ai-builder/src/components/formedible/ai/provider-selection.tsx',
+      language: 'ts',
+      code: `export const providerOptions = [
+  { value: 'openai', label: 'OpenAI', defaultModel: 'gpt-4o-mini', requiresKey: true },
+  { value: 'anthropic', label: 'Anthropic', defaultModel: 'claude-sonnet-4-5', requiresKey: true },
+  { value: 'openrouter', label: 'OpenRouter', defaultModel: 'openai/gpt-4o-mini', requiresKey: true },
+] as const;
+
+export function validateProviderAccess(settings: ProviderSettings | null, secrets: ProviderSecrets | null): string | undefined {
+  if (!settings) return 'Provider settings are required.';
+  if (!secrets) return 'Provider secrets are required.';
+
+  const provider = providerOptions.find((entry) => entry.value === settings.provider);
+
+  if (!provider) return 'Unsupported AI provider.';
+  if (settings.provider !== secrets.provider) return 'Provider settings and secrets must target the same provider.';
+  if ('endpoint' in settings || 'baseURL' in settings) return 'Custom provider endpoints are not supported. Select OpenAI, Anthropic, or OpenRouter without endpoint/baseURL overrides.';
+  if (settings.provider !== 'anthropic' && 'thinkingBudgetTokens' in settings) return 'Thinking budget tokens are only supported for Anthropic.';
+  if (provider.requiresKey && secrets.apiKey.trim().length === 0) return \`API key is required for \${provider.label}.\`;
+  return undefined;
+}`,
+    },
+  },
+  {
+    title: 'Chat streaming and parser handoff',
+    body: 'ChatInterface streams events into one assistant message. On completion it extracts a Formedible fence, parses it, stores parse errors on the message, and calls onFormGenerated with the extracted code.',
+    bullets: [
+      'Enter submits the prompt and Shift+Enter keeps the newline because the handler only submits when event.key is Enter and shiftKey is false.',
+      'streamAiResponse events are scheduled through createAiStreamScheduler before the assistant message is updated.',
+      'extractFormCode runs only when the final status is completed.',
+      'parseAiToFormedible writes formConfig on success and parseErrors on failure.',
+    ],
+    snippet: {
+      title: 'packages/ai-builder/src/components/formedible/ai/chat-interface.tsx',
+      language: 'tsx',
+      code: `for await (const event of streamAiResponse(request, { abortController: nextAbortController })) {
+  if (event.type === 'finish') finishReason = event.finishReason;
+  if (event.type === 'error') finishReason = 'error';
+  streamScheduler.enqueue(event);
+}
+
+const finalStatus = resolveMessageStatus(finishReason, streamedEvents);
+const formCode = finalStatus === 'completed' ? extractFormCode(streamedContent) : undefined;
+const parseResult = formCode ? parseAiToFormedible(formCode, parserConfig) : undefined;
+
+const finalAssistantMessage: AiMessage = {
+  ...assistantMessage,
+  formCode,
+  formConfig: parseResult?.success ? parseResult.formOptions : undefined,
+  parseErrors: parseResult?.success === false ? parseResult.errors : undefined,
+  status: finalStatus,
+};`,
+    },
+  },
+  {
+    title: 'Parser integration and live rendering',
+    body: 'AI Builder does not render generated text directly. parseAiToFormedible calls FormedibleParser.parseAiOutput, can infer missing default values, and AiFormRenderer passes parsed options into useFormedible.',
+    bullets: [
+      'parseAiToFormedible forwards strictValidation and allowed key/type lists into FormedibleParser.parseAiOutput.',
+      'inferDefaultValues fills booleans with false, number-like fields with 0, multiSelect/array with [], object/location with {}, and other fields with an empty string.',
+      'AiFormRenderer calls onParseComplete after reparsing non-streaming code.',
+      'Preview submits through the parsed onSubmit handler first, then through AIBuilder onFormSubmit.',
+    ],
+    snippet: {
+      title: 'packages/ai-builder/src/lib/formedible/ai-parser.ts and ai-form-renderer.tsx',
+      language: 'tsx',
+      code: `export function parseAiToFormedible(code: string, parserConfig?: AiParserConfig): AiFormParseResult {
+  const result = FormedibleParser.parseAiOutput(code, {
+    strictValidation: parserConfig?.strictValidation ?? true,
+    allowedFieldTypes: parserConfig?.allowedFieldTypes,
+    allowedKeys: parserConfig?.allowedKeys,
+    allowedFieldKeys: parserConfig?.allowedFieldKeys,
+  });
+
+  if (!result.success || result.config === undefined) {
+    return { schema: undefined, formOptions: { fields: [], formOptions: { defaultValues: {} } }, success: false, errors: result.errors.map(toAiParseError) };
+  }
+
+  const formOptions = parserConfig?.inferDefaultValues === false ? result.config : inferDefaultValues(result.config);
+  return { schema: formOptions.schema, formOptions, success: true, errors: result.errors.map(toAiParseError) };
+}
+
+function ParsedForm({ options }: { readonly options: UseFormedibleOptions<FormedibleFormValues> }) {
+  const { Form } = useFormedible(options);
+  return <Form />;
+}`,
+    },
+  },
+  {
+    title: 'Storage and export',
+    body: 'AI Builder uses separate browser keys for provider settings, provider secrets, conversations, and UI state. Secret persistence can be memory, session, or local.',
+    bullets: [
+      'STORAGE_KEYS names four independent storage entries.',
+      'persistProviderSecrets clears both storage areas first; memory mode stores nothing.',
+      'rememberKey false stores the preference but not the secret value.',
+      'persistConversations writes sanitized conversations, and exportConversation returns a sanitized export envelope.',
+    ],
+    snippet: {
+      title: 'packages/ai-builder/src/lib/formedible/ai-storage.ts',
+      language: 'ts',
+      code: `export const STORAGE_KEYS = {
+  providerSettings: 'formedible-ai-builder-provider-settings',
+  providerSecrets: 'formedible-ai-builder-provider-secrets',
+  conversations: 'formedible-ai-builder-conversations',
+  uiState: 'formedible-ai-builder-ui-state',
+} as const;
+
+export function persistProviderSecrets(secrets: ProviderSecrets, preference: ProviderSecretPersistencePreference): void {
+  clearStoredProviderSecrets();
+
+  if (preference.mode === 'memory') {
+    return;
+  }
+
+  const storedSecrets: StoredProviderSecrets = preference.rememberKey
+    ? { version: AI_STORAGE_VERSION, preference, secrets }
+    : { version: AI_STORAGE_VERSION, preference };
+
+  writeJson(STORAGE_KEYS.providerSecrets, storedSecrets, preference.mode);
+}`,
+    },
+  },
+] satisfies readonly DocsGuideSection[];
 
 export const Route = createFileRoute('/docs/ai-builder')({
   head: () => routeHead,
@@ -17,86 +278,8 @@ function AiBuilderRoute() {
       title="Generate forms from chat, then review the live result."
       description="AI Builder turns an LLM prompt into Formedible code, parses that code through the local parser, and shows the form beside the chat so teams can edit before they ship."
       codeExampleIds={['ai-builder-imports']}
-      related={[
-        { title: 'Builder', description: 'Use the visual builder when form authors prefer fields, tabs, and preview controls over chat.', href: '/docs/builder' },
-        { title: 'Parser', description: 'See how generated text becomes a checked Formedible form config.', href: '/docs/parser' },
-        { title: 'Getting started', description: 'Install shape, first form, and project conventions for the copied component path.', href: '/docs/getting-started' },
-      ]}
-      sections={[
-        {
-          title: 'Overview',
-          body: 'AI Builder gives form authors a chat-driven drafting room. The left side handles provider access and conversation controls; the right side renders a live Formedible preview as soon as valid form code appears.',
-          bullets: [
-            'Chat with an LLM to create or revise fields, pages, labels, validation copy, and default values.',
-            'Preview the parsed form in the same renderer path used by hand-written Formedible config.',
-            'Keep provider settings, model choice, and browser-side key handling visible to the reviewer.',
-          ],
-        },
-        {
-          title: 'Setup',
-          body: 'Mount AIBuilder where product teams work on forms. You can let it own provider state, or pass providerSettings and providerSecrets with matching change handlers for controlled mode.',
-          bullets: [
-            'AIBuilderProps accepts className, mode, providerSettings, providerSecrets, onProviderSettingsChange, onProviderSecretsChange, onFormGenerated, and onFormSubmit.',
-            'Uncontrolled mode reads saved provider settings and conversations from browser storage, then keeps local component state in sync.',
-            'Controlled mode lets the host app own provider selection and keys while AIBuilder still manages chat, parser settings, and preview state.',
-          ],
-          table: {
-            headers: ['Property', 'Type', 'Default', 'Description'],
-            rows: [
-              { cells: ['mode', "'client'", "'client'", 'Runs generation in the browser with the selected TanStack AI adapter.'] },
-              { cells: ['providerSettings', 'ProviderSettings', 'Saved settings', 'Controls provider, model, temperature, token limit, and Anthropic thinking budget.'] },
-              { cells: ['providerSecrets', 'ProviderSecrets', 'Empty key or saved key', 'Keeps the API key paired with the selected provider.'] },
-              { cells: ['onFormGenerated', '(formCode: string) => void', 'undefined', 'Receives the latest extracted Formedible code block.'] },
-              { cells: ['onFormSubmit', '(formData: FormedibleFormValues) => void | Promise<void>', 'undefined', 'Receives values from the live preview form.'] },
-            ],
-          },
-        },
-        {
-          title: 'Provider support',
-          body: 'The adapter layer supports OpenAI, Anthropic, and OpenRouter through TanStack AI. Each provider has a default model, a guarded model list, and the same API-key check before a request starts.',
-          bullets: [
-            'OpenAI defaults to gpt-4o-mini and also accepts gpt-4o, gpt-4.1, gpt-4.1-mini, gpt-4.1-nano, and o3-mini.',
-            'Anthropic defaults to claude-sonnet-4-5 and supports Claude Opus, Sonnet, and Haiku variants, plus thinking budget tokens.',
-            'OpenRouter defaults to openai/gpt-4o-mini and also supports anthropic/claude-sonnet-4, anthropic/claude-3.7-sonnet, and meta-llama/llama-3.3-70b-instruct.',
-          ],
-          table: {
-            headers: ['Property', 'OpenAI', 'Anthropic', 'OpenRouter'],
-            rows: [
-              { cells: ['Temperature', 'Supported', 'Supported', 'Supported'] },
-              { cells: ['Max tokens', 'Supported', 'Supported', 'Supported'] },
-              { cells: ['Thinking budget', 'Not supported', 'Supported', 'Not supported'] },
-              { cells: ['Custom endpoint', 'Blocked', 'Blocked', 'Blocked'] },
-            ],
-          },
-        },
-        {
-          title: 'Chat interface',
-          body: 'ChatInterface appends the user message, streams assistant output, updates the visible message as text arrives, and marks the answer completed, errored, or aborted from the final stream events.',
-          bullets: [
-            'Enter submits the prompt, Shift+Enter adds a line break, and Stop aborts the active request.',
-            'Streaming text, thinking chunks, raw events, provider, model, finish reason, and timing data stay attached to the assistant message.',
-            'When the answer completes, extractFormCode pulls the fenced Formedible block and sends it to onFormGenerated.',
-          ],
-        },
-        {
-          title: 'Parser integration',
-          body: 'Generated code never jumps straight to rendering. It flows through FormedibleParser.parseAiOutput, then parseAiToFormedible fills safe defaults and returns formOptions for the live preview.',
-          bullets: [
-            'Parser settings can require strict validation, infer default values, and restrict accepted field types.',
-            'Parse errors stay on the assistant message and generated form snapshot so reviewers can fix the prompt or code.',
-            'AiFormRenderer receives the parsed options and submits values through the AIBuilder onFormSubmit prop.',
-          ],
-        },
-        {
-          title: 'Storage',
-          body: 'AI Builder stores provider settings, conversations, current UI state, and optional provider secrets in separate browser keys. Exports sanitize conversations before writing the JSON file.',
-          bullets: [
-            'Provider secrets can stay in memory, session storage, or local storage; local storage requires a clear opt-in.',
-            'Conversation history persists assistant messages, generated code, parser results, status, provider, model, and timestamps.',
-            'Secret redaction covers titles, message text, metadata, parser errors, persistence keys, tokens, credentials, passwords, and bearer strings.',
-          ],
-        },
-      ]}
+      related={relatedLinks}
+      sections={sections}
     />
   );
 }

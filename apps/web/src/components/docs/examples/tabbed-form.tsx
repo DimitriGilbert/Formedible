@@ -24,6 +24,14 @@ export const tabbedFormSchema = z.object({
   location: z.string().optional(),
 });
 
+type TabbedFormValues = z.infer<typeof tabbedFormSchema>;
+
+const savedProfiles: TabbedFormValues[] = [];
+
+async function saveProfileSettings(settings: TabbedFormValues) {
+  savedProfiles.push(settings);
+}
+
 export const tabbedFormCode = `const tabbedFormSchema = z.object({
   // Personal tab
   firstName: z.string().min(1, "First name is required"),
@@ -43,6 +51,14 @@ export const tabbedFormCode = `const tabbedFormSchema = z.object({
   analytics: z.boolean(),
   location: z.string().optional(),
 });
+
+type TabbedFormValues = z.infer<typeof tabbedFormSchema>;
+
+const savedProfiles: TabbedFormValues[] = [];
+
+async function saveProfileSettings(settings: TabbedFormValues) {
+  savedProfiles.push(settings);
+}
 
 const tabbedForm = useFormedible({
   schema: tabbedFormSchema,
@@ -154,7 +170,7 @@ const tabbedForm = useFormedible({
       location: "",
     },
     onSubmit: async ({ value }) => {
-      console.log("Tabbed form submitted:", value);
+      await saveProfileSettings(value);
       toast.success("Profile updated successfully!", {
         description: "Your settings have been saved.",
       });
@@ -273,7 +289,7 @@ export function TabbedFormExample() {
         location: "",
       },
       onSubmit: async ({ value }) => {
-        console.log("Tabbed form submitted:", value);
+        await saveProfileSettings(value);
         toast.success("Profile updated successfully!", {
           description: "Your settings have been saved.",
         });

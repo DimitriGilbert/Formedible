@@ -1,104 +1,165 @@
 # Formedible
 
-Source-owned React forms built on TanStack Form.
+Formedible is a React form kit shipped through shadcn registry JSON. The core install copies `useFormedible`, field components, layout pieces, validation helpers, persistence, analytics, and types into your app so you can own the code.
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![TanStack Form](https://img.shields.io/badge/TanStack%20Form-1.27-FF4154?logo=react&logoColor=white)](https://tanstack.com/form)
-[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=0B1220)](https://react.dev/)
+## Install and render a form
 
-## What it does
-
-Formedible is a source-owned React form library: install it into your app, keep the files in your repo, and edit the fields like the rest of your UI. It uses TanStack Form for state and validation while giving you rendered fields, layout, navigation, and submit handling out of the box. The core surface includes 22+ field types, multi-page flows, tabs, analytics, persistence, dynamic text, and typed configuration. The monorepo also ships a visual builder, AI-assisted form generation, and a parser that turns text or structured config into the same field model.
-
-## Quick start
-
-Install the core Formedible surface with shadcn:
+Run this from the app package that owns `components.json` and the `@/` alias:
 
 ```bash
 pnpm dlx shadcn@latest add https://formedible.dev/r/formedible-core.json
 ```
 
-Use the copied hook in your app:
+Then import the copied hook from your UI path:
 
 ```tsx
 import { useFormedible } from '@/components/ui/formedible/hooks/use-formedible';
 
 type ContactValues = {
+  name: string;
   email: string;
-  topic: 'sales' | 'support';
+  message: string;
 };
 
+async function saveContact(values: ContactValues): Promise<void> {
+  await fetch('/api/contact', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(values),
+  });
+}
+
 export function ContactForm() {
-  const { Form } = useFormedible<ContactValues>({
+  const contactForm = useFormedible<ContactValues>({
     fields: [
-      { name: 'email', type: 'email', label: 'Email', required: true },
-      { name: 'topic', type: 'radio', label: 'Topic', options: ['sales', 'support'] },
+      { name: 'name', type: 'text', label: 'Name' },
+      { name: 'email', type: 'email', label: 'Email' },
+      { name: 'message', type: 'textarea', label: 'Message' },
     ],
     formOptions: {
-      defaultValues: { email: '', topic: 'sales' },
-      onSubmit: ({ value }) => {
-        void value;
+      defaultValues: { name: '', email: '', message: '' },
+      onSubmit: async ({ value }) => {
+        await saveContact(value);
       },
     },
-    submitLabel: 'Send',
   });
 
-  return <Form aria-label="Contact" />;
+  return <contactForm.Form className="space-y-4" />;
 }
 ```
 
-## Features
+Core facts from source:
 
-- 22+ field types, including text, email, number, select, checkbox, switch, radio, date, slider, rating, combobox, multi-select, file upload, arrays, and objects.
-- TanStack Form state with typed values, schema validation, field rules, async validation, and cross-field checks.
-- Multi-page forms with progress, navigation, page callbacks, and validation state.
-- Tabbed forms with visible tab filtering and per-tab field grouping.
-- Draft persistence through localStorage or sessionStorage.
-- Analytics callbacks for field changes, page changes, completion, abandonment, validation errors, and submit errors.
-- Dynamic labels, descriptions, input hints, sections, pages, and tabs from current form values.
-- Visual builder, AI builder, and parser packages that share the same field configuration model.
+- `formedible-core` is declared in `packages/formedible/registry.json` and generated at `packages/formedible/public/r/formedible-core.json`.
+- The public item depends on `@tanstack/react-form`, `clsx`, `lucide-react`, and `tailwind-merge`.
+- It also installs shadcn primitives used by the fields: `badge`, `button`, `checkbox`, `field`, `input`, `radio-group`, `select`, `slider`, `switch`, and `textarea`.
+- The hook returns `Form`, the TanStack form instance, page navigation state, and persistence helpers from `packages/formedible/src/hooks/use-formedible.tsx`.
+
+## Docs and live examples
+
+Public docs are hosted at `https://formedible.dev`.
+
+| What | URL | Source |
+| --- | --- | --- |
+| Getting started | <https://formedible.dev/docs/getting-started> | `apps/web/src/routes/docs/getting-started.tsx` |
+| API | <https://formedible.dev/docs/api> | `apps/web/src/routes/docs/api.tsx` |
+| Fields | <https://formedible.dev/docs/fields> | `apps/web/src/routes/docs/fields.tsx` |
+| Validation | <https://formedible.dev/docs/validation> | `apps/web/src/routes/docs/validation.tsx` |
+| Examples browser | <https://formedible.dev/docs/examples> | `apps/web/src/routes/docs/examples.tsx` |
+| Contact example | <https://formedible.dev/docs/examples?example=contact> | `apps/web/src/components/docs/examples/contact-form.tsx` |
+| Registration example | <https://formedible.dev/docs/examples?example=registration> | `apps/web/src/components/docs/examples/registration-form.tsx` |
+| Arrays example | <https://formedible.dev/docs/examples?example=arrays> | `apps/web/src/components/docs/examples/array-fields-form.tsx` |
+| Persistence example | <https://formedible.dev/docs/examples?example=persistence> | `apps/web/src/components/docs/examples/persistence-form.tsx` |
+| Analytics example | <https://formedible.dev/docs/examples?example=analytics> | `apps/web/src/components/docs/examples/analytics-tracking-form.tsx` |
+
+Example IDs are registered in `apps/web/src/components/docs/examples/index.tsx`: `contact`, `registration`, `survey`, `checkout`, `job`, `tabbed`, `flow`, `rental-flow`, `analytics`, `persistence`, `arrays`, `conditional-object-array`, `conditional-pages`, and `advanced-fields`.
 
 ## Packages
 
-| Package | Role |
-| --- | --- |
-| `@formedible/formedible` | Core shadcn registry surface: hook, field components, layouts, persistence, analytics, validation helpers, and shared types. |
-| `@formedible/builder` | Visual form builder with field configuration, live preview, default tabs, field store, and code generation. |
-| `@formedible/ai-builder` | AI-assisted builder with provider selection, chat UI, parser integration, safe persistence, and live rendering. |
-| `@formedible/formedible-parser` | Parser for Formedible definitions from JSON, object literals, and Zod-style expressions. |
+| Package | Role | Useful source |
+| --- | --- | --- |
+| `@formedible/formedible` | Core hook, field components, layout, validation, persistence, analytics, public registry item. | `packages/formedible/src/`, `packages/formedible/registry.json` |
+| `@formedible/formedible-parser` | Parser package for Formedible config input; syncs core pieces into its source. | `packages/formedible-parser/src/`, `packages/formedible-parser/registry.json` |
+| `@formedible/builder` | Visual builder package with preview/code-generation surface. | `packages/builder/src/`, `packages/builder/registry.json` |
+| `@formedible/ai-builder` | AI builder package using TanStack AI providers, parser integration, chat, and live rendering. | `packages/ai-builder/src/`, `packages/ai-builder/registry.json` |
+| `@formedible/ui` | Internal synced UI package consumed by the docs app. Not a user install target. | `packages/ui/src/components/formedible/` |
+| `@formedible/env` | Shared environment helpers for the web app. | `packages/env/src/` |
+| `@formedible/config` | Shared TypeScript config package. | `packages/config/` |
+| `web` | TanStack Start docs app, live examples, builder routes, and registry host. | `apps/web/src/` |
 
-## Documentation
+## Maintainer workflow for core changes
 
-Read the docs at [formedible.dev/docs](https://formedible.dev/docs). In this repo, the docs routes live under `apps/web/src/routes/docs`.
-
-## Monorepo structure
-
-```text
-formedible/
-├── apps/
-│   └── web/                    # TanStack Start docs, demos, builder routes, and registry host
-├── packages/
-│   ├── formedible/             # Core Formedible source copied by the registry
-│   ├── builder/                # Visual builder source and registry block
-│   ├── ai-builder/             # AI builder source and registry block
-│   ├── formedible-parser/      # Parser source and registry block
-│   ├── ui/                     # Shared web app UI package
-│   ├── env/                    # Environment helpers
-│   └── config/                 # Shared TypeScript and tooling config
-├── scripts/                    # Sync and maintenance scripts
-└── tests/                      # Type, architecture, sync, smoke, and behavior tests
-```
-
-## Development commands
+Do core work in the owner package first. Do not patch synced Formedible files directly in the web app, builder packages, parser package, or UI mirror.
 
 ```bash
-pnpm install
-pnpm run dev
-pnpm run build
+# 1. Edit core source
+$EDITOR packages/formedible/src/
+
+# 2. Build the core package; sync reads from the package source and registry shape
+pnpm run build:pkg
+
+# 3. Sync registry-listed source into mirrors and dependent packages
+node scripts/quick-sync.js
+# or
+pnpm run sync-components
+
+# 4. Verify all packages and type test projects
 pnpm run check-types
+
+# 5. Build the workspace before release-style changes
+pnpm run build
 ```
 
-- `pnpm install` installs workspace dependencies.
-- `pnpm run dev` runs Turbo development tasks for the workspace.
-- `pnpm run build` builds the workspace through Turbo.
-- `pnpm run check-types` checks package, app, compatibility, architecture, sync, and consumer smoke types.
+`scripts/quick-sync.js` copies files listed in each package `registry.json`. Its default routes are:
+
+- `packages/formedible` → `packages/ui/src/components` using registry targets.
+- `packages/formedible` → `packages/formedible-parser/src`, `packages/builder/src`, `packages/ai-builder/src`.
+- `packages/formedible-parser` → `packages/ui/src/components`, `packages/builder/src`, `packages/ai-builder/src`.
+- `packages/builder` → `packages/ui/src/components`, `packages/ai-builder/src`.
+- `packages/ai-builder` → `packages/ui/src/components`.
+
+`scripts/build-registries.js` removes generated JSON under each public registry package, runs `pnpm --dir <package> build:registry`, then validates the generated files.
+
+## Common commands
+
+| Command | What it runs |
+| --- | --- |
+| `pnpm run build` | Turbo build for the workspace. |
+| `pnpm run build:pkg` | `@formedible/formedible` build. |
+| `pnpm run build:parser` | Parser package build. |
+| `pnpm run build:builder` | Builder package build. |
+| `pnpm run build:ai-builder` | AI builder package build. |
+| `pnpm run build:web` | Docs app build. |
+| `pnpm run build:registries` | Generate and validate public registry JSON. |
+| `pnpm run sync-components` | Run `scripts/quick-sync.js`. |
+| `pnpm run check-types` | Turbo type checks plus compatibility, architecture, sync, consumer-smoke, and Formedible type projects. |
+| `pnpm run test:sync` | Sync tests and boundary validator. |
+| `pnpm run test:consumer-smoke` | Consumer install smoke tests for generated registry output. |
+| `pnpm run test:e2e` | Build docs app, compile e2e tests, then run them. |
+
+The root also has `dev` and `dev:web`, but they are not needed for README or source checks.
+
+## Monorepo map
+
+```text
+apps/web/                    Docs site, examples, builder routes, registry hosting
+packages/formedible/          Core Formedible source and formedible-core registry item
+packages/formedible-parser/   Parser package and registry item
+packages/builder/             Visual builder package and registry item
+packages/ai-builder/          AI builder package and registry item
+packages/ui/                  Internal synced UI mirror for the docs app
+packages/env/                 Shared env helpers
+packages/config/              Shared config
+scripts/                      Sync, registry, validation, and release scripts
+tests/                        Type, sync, architecture, consumer, and e2e checks
+```
+
+## Registry and source links
+
+- Core registry manifest: `packages/formedible/registry.json`
+- Generated core registry item: `packages/formedible/public/r/formedible-core.json`
+- Hook source: `packages/formedible/src/hooks/use-formedible.tsx`
+- Public types: `packages/formedible/src/lib/formedible/types.ts`
+- Examples index: `apps/web/src/components/docs/examples/index.tsx`
+- Sync script: `scripts/quick-sync.js`
+- Registry build script: `scripts/build-registries.js`

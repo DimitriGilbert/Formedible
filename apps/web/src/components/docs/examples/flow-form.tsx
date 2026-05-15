@@ -76,7 +76,7 @@ export function VacationCarRentalFormExample() {
       {
         name: "extras",
         type: "multiSelect",
-        label: "Any extras for your {{carType}}?",
+        label: "Choose extras for your {{carType}}",
         options: [
           { value: "gps", label: "GPS Navigation" },
           { value: "child_seat", label: "Child Seat" },
@@ -124,7 +124,7 @@ export function VacationCarRentalFormExample() {
       {
         page: 7,
         title: "Extras",
-        description: "Add any extras to make your {{carType}} more comfortable",
+        description: "Add extras to make your {{carType}} more comfortable",
       },
       {
         page: 8,
@@ -217,7 +217,7 @@ export function VacationCarRentalFormExample() {
       {
         name: "extras",
         type: "multiSelect",
-        label: "Any extras for your {{carType}}?",
+        label: "Choose extras for your {{carType}}",
         options: [
           { value: "gps", label: "GPS Navigation" },
           { value: "child_seat", label: "Child Seat" },
@@ -265,7 +265,7 @@ export function VacationCarRentalFormExample() {
       {
         page: 7,
         title: "Extras",
-        description: "Add any extras to make your {{carType}} more comfortable",
+        description: "Add extras to make your {{carType}} more comfortable",
       },
       {
         page: 8,

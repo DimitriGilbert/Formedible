@@ -1,189 +1,133 @@
-# Formedible Parser
+# @formedible/formedible-parser
 
-## What it is
+The parser package turns AI-safe Formedible config text into `UseFormedibleOptions<FormedibleFormValues>`-compatible data. It accepts JSON, object literals with single quotes/trailing commas, structured object output, and lowercase `formedible` fenced blocks. It rejects executable callbacks, constructors, imports, JSX/component markup, unsupported top-level keys, and unsupported field keys.
 
-`@formedible/formedible-parser` turns AI-generated form definitions into safe `UseFormedibleOptions` config.
+Public install item:
 
-The parser accepts three input shapes:
+```bash
+pnpm dlx shadcn@latest add https://formedible.dev/r/formedible-parser.json
+```
 
-- a lowercase `formedible` fenced block from chat output
-- a direct JSON or JavaScript object literal string
-- structured model output with `formedible`, `formConfig`, `config`, `output`, or `formOptions`
+The registry item is `formedible-parser` in `packages/formedible-parser/registry.json`. It depends on `https://formedible.dev/r/formedible-core.json` and copies parser libs to `@ui/formedible/lib/*`.
 
-It is intentionally narrow. It keeps form config data and rejects executable code, JSX, imports, constructors, callbacks, unsupported field types, and unknown keys in strict mode.
+## Public exports
 
-## Quick start: `parseAiOutput`
+`packages/formedible-parser/src/index.ts` re-exports:
 
-Use `FormedibleParser.parseAiOutput` for model responses. It handles fenced blocks, direct object strings, and structured output.
+### Parser runtime
+
+- `FormedibleParser`
+- `extractFormedibleCode`
+- `supportedFieldTypes`
+- `supportedFieldTypeInfo`
+
+### Parser config helpers
+
+- `defaultParserConfig`
+- `generateSystemPrompt`
+- `mergeParserConfig`
+- `parserConfigFields`
+- `parserConfigFormDefinition`
+- `parserConfigSchemaDefinition`
+- `validateParserConfig`
+
+### Types
+
+- `SupportedFieldType`
+- `SupportedFieldTypeInfo`
+- `EnhancedParserError`
+- `EnhancedParserOptions`
+- `FieldConfig`
+- `FieldOption`
+- `FieldOptions`
+- `FormedibleExtractionResult`
+- `FormedibleParseResult`
+- `FormedibleStructuredOutput`
+- `ObjectConfig`
+- `PageConfig`
+- `ParsedFieldConfig`
+- `ParsedFormConfig`
+- `ParserError`
+- `ParserOptions`
+- `ProgressConfig`
+- `SchemaInferenceOptions`
+- `SchemaInferenceResult`
+- `UseFormedibleOptions`
+- `ValidationWithSuggestionsResult`
+- `ParserConfig`
+
+## Parse direct config text
 
 ```ts
-import { FormedibleParser } from '@formedible/formedible-parser';
+import { FormedibleParser } from '@/components/ui/formedible/lib/formedible-parser';
+
+export const parsed = FormedibleParser.parse(`{
+  fields: [
+    { name: 'email', type: 'email', label: 'Email Address', required: true },
+    { name: 'age', type: 'number', min: 18, max: 99 }
+  ],
+  submitLabel: 'Create',
+  formOptions: { defaultValues: { email: '', age: 18 } }
+}`);
+
+export const parsedFieldCount = parsed.fields.length;
+```
+
+The parser strips inert Zod expressions from object-literal input instead of executing them. Safe JSON schema objects are preserved (`src/lib/formedible/formedible-parser.test.ts:47`).
+
+## Parse AI output
+
+```ts
+import { FormedibleParser, extractFormedibleCode } from '@/components/ui/formedible/lib/formedible-parser';
 
 const aiOutput = `Here is the form:
 
 \`\`\`formedible
-{
-  title: 'Contact',
-  fields: [
-    { name: 'email', type: 'email', label: 'Email', required: true },
-    { name: 'message', type: 'textarea', label: 'Message', rows: 4 }
-  ],
-  formOptions: {
-    defaultValues: {
-      email: '',
-      message: ''
-    }
-  }
-}
-\`\`\`
-`;
+{ fields: [{ name: 'email', type: 'email', label: 'Email' }] }
+\`\`\``;
 
+const extraction = extractFormedibleCode(aiOutput);
 const result = FormedibleParser.parseAiOutput(aiOutput);
 
-if (result.success) {
-  const config = result.config;
-  // Pass config to useFormedible.
-} else {
-  const messages = result.errors.map((error) => error.message);
-}
+export const extractedEmailField = {
+  source: extraction.source,
+  success: result.success,
+  firstFieldName: result.config?.fields[0]?.name,
+};
 ```
 
-For structured output, pass the object directly:
+Only lowercase `formedible` fences are accepted. The tests reject `json`, `ts`, and unfenced object strings for AI extraction (`src/lib/formedible/formedible-parser.test.ts:113`, `packages/ai-builder/src/components/formedible/ai/ai-builder.test.ts:194`).
+
+## Schema inference
 
 ```ts
-const result = FormedibleParser.parseAiOutput({
-  formedible: {
-    title: 'Signup',
-    fields: [{ name: 'email', type: 'email', label: 'Email', required: true }],
-    formOptions: { defaultValues: { email: '' } },
-  },
-});
+import { FormedibleParser } from '@/components/ui/formedible/lib/formedible-parser';
+
+const result = FormedibleParser.parseWithSchemaInference(`{
+  fields: [
+    { name: 'email', type: 'email', required: true },
+    { name: 'age', type: 'number', min: 18, max: 99 },
+    { name: 'tags', type: 'multiSelect', required: false }
+  ]
+}`, { enabled: true });
+
+export const inferredSchemaSummary = {
+  schema: result.inferredSchema,
+  confidence: result.confidence,
+};
 ```
 
-`parseAiOutput` returns a `FormedibleParseResult`:
+The expected inference shape is locked in `src/lib/formedible/formedible-parser.test.ts:146`.
 
-| Property | Meaning |
-| --- | --- |
-| `success` | `true` if a safe config was parsed. |
-| `config` | Parsed `UseFormedibleOptions`, present on success. |
-| `code` | Extracted source text when the input was text. |
-| `source` | `structured`, `fenced`, `direct`, or `none`. |
-| `errors` | Parser errors with type, message, suggestion, and optional location. |
+## Supported field types
 
-## Main API methods
-
-Import from the package root:
-
-```ts
-import { FormedibleParser, extractFormedibleCode } from '@formedible/formedible-parser';
-```
-
-### `FormedibleParser.parse(code, options?)`
-
-Parses a non-empty string containing JSON or a JavaScript object literal. Throws a `ParserError` if parsing or validation fails.
-
-```ts
-const config = FormedibleParser.parse(`{
-  fields: [{ name: 'age', type: 'number', label: 'Age', min: 18 }],
-  formOptions: { defaultValues: { age: 18 } }
-}`);
-```
-
-### `FormedibleParser.parseStructured(output, options?)`
-
-Parses structured model output. The parser first checks wrapper keys in this order: `formedible`, `formConfig`, `config`, `output`, `formOptions`. If none of those keys exist, it treats the object itself as the form config.
-
-### `FormedibleParser.parseAiOutput(output, options?)`
-
-Best default for AI integrations. Returns a result object instead of throwing.
-
-Input behavior:
-
-- object input uses `parseStructured`
-- text with a lowercase `formedible` fenced block uses the fenced block
-- text starting with `{` is parsed as a direct config
-- text with `json`, `ts`, `tsx`, `typescript`, `javascript`, or `js` fenced blocks is rejected with a suggestion to use `formedible`
-
-### `FormedibleParser.isValidFieldType(type)`
-
-Checks whether a string is one of the supported field types.
-
-### `FormedibleParser.getSupportedFieldTypes()`
-
-Returns the supported field type list:
+`supportedFieldTypes` is defined in `src/lib/formedible/formedible-parser.ts:24`:
 
 `text`, `email`, `password`, `url`, `tel`, `textarea`, `select`, `checkbox`, `switch`, `number`, `date`, `slider`, `file`, `rating`, `phone`, `colorPicker`, `location`, `duration`, `multiSelect`, `autocomplete`, `masked`, `object`, `array`, `radio`.
 
-### `FormedibleParser.getSupportedFieldTypeInfo()`
+`supportedFieldTypeInfo` pairs each field type with an inferred schema string and description (`src/lib/formedible/formedible-parser.ts:59`).
 
-Returns field type metadata with `type`, inferred schema text, and a short description.
-
-### `FormedibleParser.validateConfig(config)`
-
-Validates an object and returns `{ isValid, errors }`. This method uses strict validation.
-
-### `FormedibleParser.parseWithSchemaInference(code, options?)`
-
-Parses string config, then builds a lightweight inferred schema when `options.enabled` is true.
-
-```ts
-const result = FormedibleParser.parseWithSchemaInference(code, { enabled: true });
-
-const config = result.config;
-const inferredSchema = result.inferredSchema;
-const confidence = result.confidence;
-```
-
-### `FormedibleParser.mergeSchemas(parsedConfig, baseSchema, strategy?)`
-
-Merges a parsed config with a base schema-like object. Supported strategies:
-
-| Strategy | Behavior |
-| --- | --- |
-| `extend` | Adds missing fields from `baseSchema.properties` and attaches `schema`. |
-| `override` | Keeps parsed fields and replaces `schema` with the base schema. |
-| `intersect` | Keeps fields whose names exist in `baseSchema.properties` and attaches `schema`. |
-
-### `FormedibleParser.validateWithSuggestions(code)`
-
-Parses string config and returns `{ isValid, errors, suggestions }`. Use this for editor feedback.
-
-### `extractFormedibleCode(content)`
-
-Extracts a lowercase `formedible` fenced block without parsing it.
-
-```ts
-const extraction = extractFormedibleCode(markdown);
-
-if (extraction.code !== undefined) {
-  const config = FormedibleParser.parse(extraction.code);
-}
-```
-
-## Security model
-
-The parser treats AI output as untrusted text.
-
-It blocks executable syntax before parsing, including:
-
-- arrow functions and `function` declarations
-- classes and constructors
-- `eval`, `Function`, timers, `require`, and dynamic imports
-- JSX and component markup
-
-During sanitization it removes or rejects risky values and keys:
-
-- browser and runtime globals such as `window`, `document`, `process`, and `globalThis`
-- prototype-related names such as `__proto__`, `constructor`, and `prototype`
-- executable config keys such as `component`, `render`, `children`, event handlers, and `conditional`
-- unsupported top-level keys when `strictValidation` is enabled
-- unsupported field keys and unsupported field types
-
-Zod expressions are parsed as inert marker values, not executed. The output is plain config data suitable for Formedible.
-
-## Parser config
-
-Parser configuration helpers live in `parser-config-schema.ts` and are exported from the package root.
+## Parser configuration
 
 ```ts
 import {
@@ -191,66 +135,53 @@ import {
   generateSystemPrompt,
   mergeParserConfig,
   validateParserConfig,
-} from '@formedible/formedible-parser';
+} from '@/components/ui/formedible/lib/parser-config-schema';
 
-const parserConfig = mergeParserConfig({
+const config = mergeParserConfig({
   enableSchemaInference: true,
-  mergeStrategy: 'extend',
   selectFields: true,
+  systemPromptFields: ['text', 'email', 'textarea'],
 });
 
-if (validateParserConfig(parserConfig)) {
-  const prompt = generateSystemPrompt(parserConfig);
-}
+export const parserRuntimeConfig = {
+  systemPrompt: validateParserConfig(config) ? generateSystemPrompt(config) : '',
+  strictValidation: defaultParserConfig.strictValidation,
+};
 ```
 
-Exported parser config items:
+`ParserConfig` includes `strictValidation`, `enableSchemaInference`, `mergeStrategy`, `fieldTypeValidation`, `customInstructions`, `maxCodeLength`, `maxNestingDepth`, `enableZodParsing`, `showDetailedErrors`, `selectFields`, `systemPromptFields`, `includeTabFormatting`, and `includePageFormatting` (`src/lib/formedible/parser-config-schema.ts:3`).
 
-| Export | Purpose |
-| --- | --- |
-| `defaultParserConfig` | Default config values. |
-| `parserConfigSchemaDefinition` | Field-level metadata for config settings. |
-| `parserConfigFields` | Formedible fields for editing parser settings. |
-| `parserConfigFormDefinition` | Ready-to-render parser settings form definition. |
-| `validateParserConfig(config)` | Runtime guard for `ParserConfig`. |
-| `mergeParserConfig(config)` | Merges partial config over defaults. |
-| `generateSystemPrompt(config)` | Builds prompt instructions for model output. |
+## Safety rules from source
 
-`ParserConfig` settings include:
+- Maximum code length defaults to `1000000` (`src/lib/formedible/formedible-parser.ts:122`).
+- Executable syntax is rejected by `executableSyntaxPattern` (`src/lib/formedible/formedible-parser.ts:161`).
+- Allowed top-level keys and allowed field keys are explicit sets (`src/lib/formedible/formedible-parser.ts:86`, `src/lib/formedible/formedible-parser.ts:124`).
+- Parser errors use `ParserError` with a `code` property (`src/lib/formedible/formedible-parser.ts:167`).
 
-| Setting | Default | Notes |
-| --- | --- | --- |
-| `strictValidation` | `true` | Rejects unsupported top-level keys. |
-| `enableSchemaInference` | `false` | Asks helper flows to infer schema data. |
-| `mergeStrategy` | `extend` | One of `extend`, `override`, or `intersect`. |
-| `fieldTypeValidation` | `true` | Keeps model output within supported fields. |
-| `customInstructions` | `undefined` | Extra prompt constraints. |
-| `maxCodeLength` | `1000000` | Prompt-facing limit in parser config. |
-| `maxNestingDepth` | `50` | Prompt-facing nesting limit. |
-| `enableZodParsing` | `true` | Allows inert Zod expression parsing. |
-| `showDetailedErrors` | `true` | Keeps detailed error output enabled. |
-| `selectFields` | `false` | Enables field selection in config UIs. |
-| `systemPromptFields` | built-in list | Field types included in generated prompts. |
-| `includeTabFormatting` | `true` | Adds tab guidance to generated prompts. |
-| `includePageFormatting` | `true` | Adds page guidance to generated prompts. |
+## Package scripts
 
-## Extraction rules
+Exact scripts from `packages/formedible-parser/package.json`:
 
-AI-generated forms should use a lowercase `formedible` fence:
-
-````md
-```formedible
-{
-  fields: [
-    { name: 'name', type: 'text', label: 'Name' }
-  ],
-  formOptions: {
-    defaultValues: { name: '' }
-  }
-}
+```bash
+pnpm --filter @formedible/formedible-parser run check-types
+pnpm --filter @formedible/formedible-parser run test
+pnpm --filter @formedible/formedible-parser run build
+pnpm --filter @formedible/formedible-parser run build:registry
+pnpm --filter @formedible/formedible-parser run sync
 ```
-````
 
-`extractFormedibleCode` only extracts that fence. Other code fences are rejected by `parseAiOutput` because they often invite code instead of data.
+Root equivalents used most often:
 
-For direct input, the text must start with `{`. Plain chat text without a form returns `success: false`, `source: 'none'`, and no errors.
+```bash
+pnpm run build:parser
+pnpm run check-types:parser
+pnpm run check-types
+```
+
+## Source-backed docs and tests
+
+- Docs route: `/docs/parser`.
+- Source entrypoint: `packages/formedible-parser/src/index.ts`.
+- Parser source: `packages/formedible-parser/src/lib/formedible/formedible-parser.ts`.
+- Parser config source: `packages/formedible-parser/src/lib/formedible/parser-config-schema.ts`.
+- Tests: `packages/formedible-parser/src/lib/formedible/formedible-parser.test.ts`.

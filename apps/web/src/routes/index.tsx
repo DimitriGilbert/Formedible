@@ -128,7 +128,7 @@ const { Form } = useFormedible({
               Zod schemas, inline validators, async checks, cross-field rules. Errors surface next to the field that caused them.
             </p>
             <span className={bentoLinkClassName}>
-              Read validation docs
+              Read API validation options
               <ArrowRight size={14} strokeWidth={1.5} className="transition-transform group-hover:translate-x-1" />
             </span>
           </Link>

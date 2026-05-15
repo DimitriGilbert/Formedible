@@ -16,52 +16,10 @@ export type DocsCodeExample = {
 export const docsCodeExamples: Record<DocsCodeExampleId, DocsCodeExample> = {
   'shadcn-install-surface': {
     id: 'shadcn-install-surface',
-    title: 'Clean-room app surface',
-    description: 'Use the generated hook and copied components inside your app. No package runtime import is required.',
-    language: 'tsx',
-    code: `import { useFormedible } from '@formedible/ui/components/formedible/hooks/use-formedible';
-
-type LeadFormValues = {
-  email: string;
-  companySize: '1-10' | '11-50' | '51-200' | '200+';
-  interests: string[];
-};
-
-const savedLeadRequests: LeadFormValues[] = [];
-
-function saveLead(values: LeadFormValues) {
-  savedLeadRequests.push(values);
-}
-
-export function LeadCaptureForm() {
-  const { Form } = useFormedible<LeadFormValues>({
-    fields: [
-      { name: 'email', type: 'email', label: 'Work email', required: true },
-      {
-        name: 'companySize',
-        type: 'select',
-        label: 'Company size',
-        options: ['1-10', '11-50', '51-200', '200+'],
-        required: true,
-      },
-      {
-        name: 'interests',
-        type: 'multiSelect',
-        label: 'What should the form handle?',
-        options: ['validation', 'multi-step', 'builder', 'AI generation'],
-      },
-    ],
-    formOptions: {
-      defaultValues: { email: '', companySize: '1-10', interests: [] },
-      onSubmit: ({ value }) => {
-        saveLead(value);
-      },
-    },
-    submitLabel: 'Request a walkthrough',
-  });
-
-  return <Form aria-label="Lead capture" />;
-}`,
+    title: 'Install the registry item',
+    description: 'Add the built registry item to your app, then import the copied hook from your local UI package.',
+    language: 'bash',
+    code: `pnpm dlx shadcn@latest add https://formedible.dev/r/formedible-core.json`,
   },
   'typed-hook-usage': {
     id: 'typed-hook-usage',
@@ -70,7 +28,7 @@ export function LeadCaptureForm() {
     language: 'tsx',
     code: `import { z } from 'zod';
 
-import { useFormedible } from '@formedible/ui/components/formedible/hooks/use-formedible';
+import { useFormedible } from '@/components/ui/formedible/hooks/use-formedible';
 
 const onboardingSchema = z.object({
   name: z.string().min(2),
@@ -120,7 +78,7 @@ export function OnboardingForm() {
     title: 'Builder shell path',
     description: 'The builder installs into the shadcn UI package, so consumers can compose it beside their own navigation and persistence layer.',
     language: 'tsx',
-    code: `import { FormBuilder } from '@formedible/ui/components/formedible/builder/form-builder';
+    code: `import { FormBuilder } from '@/components/ui/formedible/builder/form-builder';
 
 export function BuilderWorkspace() {
   return (
@@ -143,8 +101,8 @@ export function BuilderWorkspace() {
     language: 'tsx',
     code: `import { useState } from 'react';
 
-import { AIBuilder } from '@formedible/ui/components/formedible/ai/ai-builder';
-import { createDefaultProviderSecrets, createDefaultProviderSettings, ProviderSelection } from '@formedible/ui/components/formedible/ai/provider-selection';
+import { AIBuilder } from '@/components/ui/formedible/ai/ai-builder';
+import { createDefaultProviderSecrets, createDefaultProviderSettings, ProviderSelection } from '@/components/ui/formedible/ai/provider-selection';
 
 export function AiBuilderWorkspace() {
   const [providerSettings, setProviderSettings] = useState(() => createDefaultProviderSettings('openrouter'));
@@ -173,9 +131,9 @@ export function AiBuilderWorkspace() {
     language: 'tsx',
     code: `import type { ReactNode } from 'react';
 
-import { NumberField } from '@formedible/ui/components/formedible/fields/number-field';
-import { TextField } from '@formedible/ui/components/formedible/fields/text-field';
-import type { FormedibleFieldRenderProps, FormedibleFormValues, NormalizedFieldType } from '@formedible/ui/components/formedible/lib/types';
+import { NumberField } from '@/components/ui/formedible/fields/number-field';
+import { TextField } from '@/components/ui/formedible/fields/text-field';
+import type { FormedibleFieldRenderProps, FormedibleFormValues, NormalizedFieldType } from '@/components/ui/formedible/lib/types';
 
 type FieldComponent = <TFormValues extends FormedibleFormValues>(props: FormedibleFieldRenderProps<TFormValues>) => ReactNode;
 

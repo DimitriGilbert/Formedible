@@ -5,7 +5,41 @@ import { useFormedible } from "@formedible/ui/components/formedible/hooks/use-fo
 import { z } from "zod";
 import { toast } from "sonner";
 import { EnergyRatingComponent } from "@/components/examples/energy-rating-component";
-import type { FormedibleSliderVisualizationProps } from "@formedible/ui/components/formedible/lib/types";
+import type {
+  FormedibleLocationSearchOptions,
+  FormedibleLocationValue,
+  FormedibleSliderVisualizationProps,
+} from "@formedible/ui/components/formedible/lib/types";
+
+interface NominatimSearchResult {
+  readonly place_id?: number | string;
+  readonly lat: number | string;
+  readonly lon: number | string;
+  readonly display_name?: string;
+  readonly importance?: number | string;
+  readonly address?: {
+    readonly city?: string;
+    readonly town?: string;
+    readonly village?: string;
+    readonly state?: string;
+    readonly country?: string;
+    readonly postcode?: string;
+  };
+}
+
+const isNominatimSearchResult = (
+  item: unknown
+): item is NominatimSearchResult => {
+  if (!item || typeof item !== "object") return false;
+
+  const candidate = item as Record<string, unknown>;
+  const hasLatitude =
+    typeof candidate.lat === "string" || typeof candidate.lat === "number";
+  const hasLongitude =
+    typeof candidate.lon === "string" || typeof candidate.lon === "number";
+
+  return hasLatitude && hasLongitude;
+};
 
 export const advancedFieldTypesSchema = z.object({
   satisfaction: z.number().min(1).max(5),
@@ -32,7 +66,7 @@ export const advancedFieldTypesSchema = z.object({
   performanceLevel: z.number().min(0).max(100),
   speedometer: z.number().min(0).max(200),
   birthDate: z.date(),
-  resume: z.any().optional(),
+  resume: z.unknown().optional().nullable(),
   aboutMe: z
     .string()
     .min(50, "Please write at least 50 characters about yourself"),
@@ -40,6 +74,14 @@ export const advancedFieldTypesSchema = z.object({
   workEmail: z.string().email("Valid work email required"),
   overallRating: z.number().min(1).max(5),
 });
+
+type AdvancedFieldTypesFormValues = z.infer<typeof advancedFieldTypesSchema>;
+
+const saveAdvancedProfile = async (
+  _value: AdvancedFieldTypesFormValues
+): Promise<void> => {
+  await new Promise((resolve) => setTimeout(resolve, 300));
+};
 
 // Beautiful Speedometer Visualization Component
 function SpeedometerComponent({ value, displayValue, isActive }: FormedibleSliderVisualizationProps) {
@@ -156,7 +198,7 @@ export const advancedFieldTypesFormCode = `const advancedFieldTypesSchema = z.ob
   energyRating: z.number().min(1).max(5),
   performanceLevel: z.number().min(0).max(100),
   birthDate: z.date(),
-  resume: z.any().optional(),
+  resume: z.unknown().optional().nullable(),
   aboutMe: z
     .string()
     .min(50, "Please write at least 50 characters about yourself"),
@@ -165,9 +207,65 @@ export const advancedFieldTypesFormCode = `const advancedFieldTypesSchema = z.ob
   overallRating: z.number().min(1).max(5),
 });
 
+type AdvancedFieldTypesFormValues = z.infer<typeof advancedFieldTypesSchema>;
+
+const saveAdvancedProfile = async (
+  _value: AdvancedFieldTypesFormValues
+): Promise<void> => {
+  await new Promise((resolve) => setTimeout(resolve, 300));
+};
+
+interface LocationSearchOptions {
+  readonly limit?: number;
+}
+
+interface LocationValue {
+  readonly lat: number;
+  readonly lng: number;
+  readonly address?: string;
+  readonly city?: string;
+  readonly state?: string;
+  readonly country?: string;
+  readonly postalCode?: string;
+  readonly relevance?: number;
+}
+
+interface NominatimSearchResult {
+  readonly place_id?: number | string;
+  readonly lat: number | string;
+  readonly lon: number | string;
+  readonly display_name?: string;
+  readonly importance?: number | string;
+  readonly address?: {
+    readonly city?: string;
+    readonly town?: string;
+    readonly village?: string;
+    readonly state?: string;
+    readonly country?: string;
+    readonly postcode?: string;
+  };
+}
+
+const isNominatimSearchResult = (
+  item: unknown
+): item is NominatimSearchResult => {
+  if (!item || typeof item !== "object") return false;
+
+  const candidate = item as Record<string, unknown>;
+  const hasLatitude =
+    typeof candidate.lat === "string" || typeof candidate.lat === "number";
+  const hasLongitude =
+    typeof candidate.lon === "string" || typeof candidate.lon === "number";
+
+  return hasLatitude && hasLongitude;
+};
+
 // Memoized search callback for location
 const locationSearchCallback = React.useCallback(
-  async (query: string, options: any = {}) => {
+  async (
+    query: string,
+    options: LocationSearchOptions = {}
+  ): Promise<readonly LocationValue[]> => {
     const params = new URLSearchParams({
       q: query,
       format: "json",
@@ -179,22 +277,21 @@ const locationSearchCallback = React.useCallback(
       const response = await fetch(
         \`https://nominatim.openstreetmap.org/search?\${params}\`
       );
-      const data = await response.json();
+      const data: unknown = await response.json();
 
-      return data.map((item: any, index: number) => ({
+      return (Array.isArray(data) ? data : []).filter(isNominatimSearchResult).map((item, index) => ({
         id: item.place_id || index,
-        lat: parseFloat(item.lat),
-        lng: parseFloat(item.lon),
+        lat: Number(item.lat),
+        lng: Number(item.lon),
         address: item.display_name,
         city:
           item.address?.city || item.address?.town || item.address?.village,
         state: item.address?.state,
         country: item.address?.country,
         postalCode: item.address?.postcode,
-        relevance: parseFloat(item.importance || 0),
+        relevance: parseFloat(String(item.importance || 0)),
       }));
-    } catch (error) {
-      console.error("Location search error:", error);
+    } catch {
       return [];
     }
   },
@@ -504,7 +601,7 @@ const advancedFieldTypesForm = useFormedible({
       overallRating: 4,
     },
     onSubmit: async ({ value }) => {
-      console.log("Advanced field types form submitted:", value);
+      await saveAdvancedProfile(value);
       toast.success("Profile completed!", {
         description: "All advanced field types captured!",
       });
@@ -515,7 +612,10 @@ const advancedFieldTypesForm = useFormedible({
 export function AdvancedFieldTypesFormExample() {
   // Memoized search callback to prevent re-renders
   const locationSearchCallback = React.useCallback(
-    async (query: string, options: any = {}) => {
+    async (
+      query: string,
+      options: FormedibleLocationSearchOptions = {}
+    ): Promise<readonly FormedibleLocationValue[]> => {
       const params = new URLSearchParams({
         q: query,
         format: "json",
@@ -527,22 +627,23 @@ export function AdvancedFieldTypesFormExample() {
         const response = await fetch(
           `https://nominatim.openstreetmap.org/search?${params}`
         );
-        const data = await response.json();
+        const data: unknown = await response.json();
 
-        return data.map((item: any, index: number) => ({
+        return (Array.isArray(data) ? data : [])
+          .filter(isNominatimSearchResult)
+          .map((item, index) => ({
           id: item.place_id || index,
-          lat: parseFloat(item.lat),
-          lng: parseFloat(item.lon),
+          lat: Number(item.lat),
+          lng: Number(item.lon),
           address: item.display_name,
           city:
             item.address?.city || item.address?.town || item.address?.village,
           state: item.address?.state,
           country: item.address?.country,
           postalCode: item.address?.postcode,
-          relevance: parseFloat(item.importance || 0),
+          relevance: parseFloat(String(item.importance || 0)),
         }));
-      } catch (error) {
-        console.error("Location search error:", error);
+      } catch {
         return [];
       }
     },
@@ -852,7 +953,7 @@ export function AdvancedFieldTypesFormExample() {
         overallRating: 4,
       },
       onSubmit: async ({ value }) => {
-        console.log("Advanced field types form submitted:", value);
+        await saveAdvancedProfile(value);
         toast.success("Profile completed!", {
           description: "All advanced field types captured!",
         });

@@ -14,6 +14,12 @@ export type DocsGuideLink = {
   readonly href: string;
 };
 
+export type DocsGuideSnippet = {
+  readonly title?: string;
+  readonly language: 'tsx' | 'ts' | 'bash';
+  readonly code: string;
+};
+
 export type DocsGuideSection = {
   readonly title: string;
   readonly body: string;
@@ -22,6 +28,8 @@ export type DocsGuideSection = {
     readonly headers: readonly string[];
     readonly rows: readonly { readonly cells: readonly string[] }[];
   };
+  readonly snippet?: DocsGuideSnippet;
+  readonly references?: readonly DocsGuideLink[];
 };
 
 function createApiPropertyTableRows(table: NonNullable<DocsGuideSection['table']>): readonly ApiPropertyTableRow[] {
@@ -79,6 +87,57 @@ function DocsGuideTable({ table }: { readonly table: NonNullable<DocsGuideSectio
   );
 }
 
+function DocsGuideSnippetBlock({ snippet }: { readonly snippet: DocsGuideSnippet }) {
+  return (
+    <figure className="overflow-hidden rounded-2xl border border-border bg-background p-4">
+      <figcaption className="mb-3 flex items-center justify-between gap-4">
+        <p className="text-sm font-semibold text-foreground">{snippet.title ?? 'Code evidence'}</p>
+        <span className="rounded-full border border-border bg-background px-2.5 py-1 text-[0.7rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          {snippet.language}
+        </span>
+      </figcaption>
+      <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded-xl bg-muted p-5 text-sm leading-6 text-foreground [tab-size:2]">
+        <code className="break-words">{snippet.code}</code>
+      </pre>
+    </figure>
+  );
+}
+
+function DocsGuideReferences({ references }: { readonly references: readonly DocsGuideLink[] }) {
+  return (
+    <nav aria-label="Section evidence references" className="rounded-2xl border border-border bg-background p-4">
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Evidence references</p>
+      <div className="mt-3 grid gap-2">
+        {references.map((reference) => (
+          <a
+            key={reference.href}
+            href={reference.href}
+            className="group rounded-xl bg-muted p-3 outline-none transition hover:bg-primary/5 focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <p className="text-sm font-semibold text-foreground group-hover:text-primary">{reference.title}</p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{reference.description}</p>
+          </a>
+        ))}
+      </div>
+    </nav>
+  );
+}
+
+function DocsGuideEvidence({ section }: { readonly section: DocsGuideSection }) {
+  const hasReferences = section.references && section.references.length > 0;
+
+  if (!section.snippet && !hasReferences) {
+    return null;
+  }
+
+  return (
+    <aside className="grid content-start gap-5 bg-muted p-6 md:p-8" aria-label={`${section.title} evidence`}>
+      {section.snippet ? <DocsGuideSnippetBlock snippet={section.snippet} /> : null}
+      {hasReferences ? <DocsGuideReferences references={section.references} /> : null}
+    </aside>
+  );
+}
+
 type DocsGuidePageProps = {
   readonly eyebrow: string;
   readonly title: string;
@@ -116,11 +175,15 @@ export function DocsGuidePage({ eyebrow, title, description, sections, codeExamp
 
       <section className="px-6 py-20 lg:px-12">
         <div className="mx-auto w-full">
-          <div className="overflow-hidden rounded-2xl">
-            <div className="grid gap-px bg-border lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
-              <div className="grid content-start">
-                {sections.map((section) => (
-                  <div key={section.title} className="bg-background p-6 md:p-8">
+          <div className="grid gap-10">
+            <div className="overflow-hidden rounded-2xl">
+              <div className="grid gap-px bg-border">
+                {sections.map((section) => {
+                  const evidence = <DocsGuideEvidence section={section} />;
+
+                  return (
+                    <section key={section.title} className="grid gap-px bg-border lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+                      <div className="bg-background p-6 md:p-8">
                     <p className="text-sm font-semibold text-foreground">{section.title}</p>
                     <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{section.body}</p>
                     {section.bullets.length > 0 ? (
@@ -134,36 +197,43 @@ export function DocsGuidePage({ eyebrow, title, description, sections, codeExamp
                       </ul>
                     ) : null}
                     {section.table ? <DocsGuideTable table={section.table} /> : null}
-                  </div>
-                ))}
-              </div>
-
-              <div className="grid content-start">
-                {codeExampleIds?.map((exampleId) => (
-                  <div key={exampleId} className="bg-muted p-6 md:p-8">
-                    <CodeBlock example={docsCodeExamples[exampleId]} />
-                  </div>
-                ))}
-
-                <nav aria-label="Related documentation" className="bg-background p-6 md:p-8">
-                  <p className="text-sm font-semibold text-foreground">Related routes</p>
-                  <div className="mt-4 overflow-hidden rounded-2xl">
-                    <div className="grid gap-px bg-border">
-                      {(related ?? defaultRelatedLinks).map((link) => (
-                        <a
-                          key={link.href}
-                          href={link.href}
-                          className="group bg-muted p-4 outline-none transition hover:bg-primary/5 focus-visible:ring-2 focus-visible:ring-ring"
-                        >
-                          <p className="text-sm font-semibold text-foreground group-hover:text-primary">{link.title}</p>
-                          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{link.description}</p>
-                        </a>
-                      ))}
-                    </div>
-                  </div>
-                </nav>
+                      </div>
+                      {evidence ?? <div className="hidden bg-muted lg:block" />}
+                    </section>
+                  );
+                })}
               </div>
             </div>
+
+            {codeExampleIds && codeExampleIds.length > 0 ? (
+              <div className="overflow-hidden rounded-2xl">
+                <div className="grid gap-px bg-border lg:grid-cols-2">
+                  {codeExampleIds.map((exampleId) => (
+                    <div key={exampleId} className="bg-muted p-6 md:p-8">
+                      <CodeBlock example={docsCodeExamples[exampleId]} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            <nav aria-label="Related documentation" className="bg-background p-6 md:p-8">
+              <p className="text-sm font-semibold text-foreground">Related routes</p>
+              <div className="mt-4 overflow-hidden rounded-2xl">
+                <div className="grid gap-px bg-border md:grid-cols-2 lg:grid-cols-4">
+                  {(related ?? defaultRelatedLinks).map((link) => (
+                    <a
+                      key={link.href}
+                      href={link.href}
+                      className="group bg-muted p-4 outline-none transition hover:bg-primary/5 focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <p className="text-sm font-semibold text-foreground group-hover:text-primary">{link.title}</p>
+                      <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{link.description}</p>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            </nav>
           </div>
         </div>
       </section>

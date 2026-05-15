@@ -14,6 +14,14 @@ export const contactSchema = z.object({
   urgent: z.boolean().default(false),
 });
 
+type ContactFormValues = z.infer<typeof contactSchema>;
+
+const submittedMessages: ContactFormValues[] = [];
+
+async function saveContactMessage(message: ContactFormValues) {
+  submittedMessages.push(message);
+}
+
 export const contactFormCode = `const contactSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email"),
@@ -22,6 +30,14 @@ export const contactFormCode = `const contactSchema = z.object({
   categories: z.array(z.string()).optional(),
   urgent: z.boolean().default(false),
 });
+
+type ContactFormValues = z.infer<typeof contactSchema>;
+
+const submittedMessages: ContactFormValues[] = [];
+
+async function saveContactMessage(message: ContactFormValues) {
+  submittedMessages.push(message);
+}
 
 const contactForm = useFormedible({
   schema: contactSchema,
@@ -97,7 +113,7 @@ const contactForm = useFormedible({
       urgent: false,
     },
     onSubmit: async ({ value }) => {
-      console.log("Contact form submitted:", value);
+      await saveContactMessage(value);
       toast.success("Message sent successfully!", {
         description: "We'll get back to you soon.",
       });
@@ -180,7 +196,7 @@ export function ContactFormExample() {
         urgent: false,
       },
       onSubmit: async ({ value }) => {
-        console.log("Contact form submitted:", value);
+        await saveContactMessage(value);
         toast.success("Message sent successfully!", {
           description: "We'll get back to you soon.",
         });

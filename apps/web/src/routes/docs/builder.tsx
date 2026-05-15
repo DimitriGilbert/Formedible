@@ -14,55 +14,172 @@ const relatedLinks = [
 
 const sections = [
   {
-    title: 'Overview',
-    body: 'FormBuilder is the visual authoring surface for Formedible. It gives product teams a field palette, a live preview, and generated code from the same field config used by hand-written forms.',
+    title: 'Public exports',
+    body: 'The builder package root exports the visual builder, the tab helpers, the external field store, and the code-generation functions. Treat that file as the import contract.',
     bullets: [
-      'Use visual field authoring when a team needs to add labels, options, validation flags, pages, and tabs without editing source first.',
-      'Keep the live preview close to the builder so reviewers see the renderer output before saving config.',
-      'Copy generated code into product-owned files, then type-check it with the rest of the app.',
+      'FormBuilder, FieldConfigurator, FormPreview, and CodeGenerator are root exports.',
+      'FieldStore and globalFieldStore are also root exports, so store behavior is not only an internal detail.',
+      'generateFormCode and generateCodeFromParsedConfig are exported from the same root file.',
     ],
+    snippet: {
+      title: 'packages/builder/src/index.ts',
+      language: 'ts',
+      code: `export { FormBuilder } from '@/components/formedible/builder/form-builder';
+export { FieldStore, globalFieldStore } from '@/components/formedible/builder/field-store';
+export {
+  createTabsWithDisabled,
+  createTabsWithOrder,
+  defaultTabs,
+  getBuilderAndCodeTabs,
+  getBuilderAndPreviewTabs,
+  getBuilderOnlyTabs,
+} from '@/components/formedible/builder/default-tabs';
+export { generateCodeFromParsedConfig, generateFormCode } from '@/lib/formedible/code-generation';`,
+    },
   },
   {
-    title: 'Getting started',
-    body: 'Import FormBuilder from the installed shadcn UI package path and mount it where your app owns navigation, persistence, review state, and save actions. The default view ships with Builder, Preview, and Code tabs.',
+    title: 'FormBuilder props and rendering path',
+    body: 'FormBuilder sorts enabled tabs, imports provided initial fields into the global field store, calls onChange after metadata or field updates, and calls onSubmit from the Save Form button.',
     bullets: [
-      'Import FormBuilder from @formedible/ui/components/formedible/builder/form-builder.',
-      'Render it inside an app route, modal, or admin workspace with a clear aria label or nearby heading.',
-      'Use the default tabs first: Builder for editing fields, Preview for rendered output, and Code for generated source.',
+      'tabs defaults to defaultTabs and defaultTab defaults to builder.',
+      'initialMetadata is merged over defaultFormMetadata, including nested settings.',
+      'initialFields is passed to globalFieldStore.importFields in an effect.',
+      'The active tab component receives metadata, fields, selectedFieldId, and handlers for add/select/delete/duplicate.',
     ],
+    snippet: {
+      title: 'packages/builder/src/components/formedible/builder/form-builder.tsx',
+      language: 'tsx',
+      code: `export function FormBuilder({
+  tabs = defaultTabs,
+  defaultTab = 'builder',
+  initialMetadata,
+  initialFields,
+  onChange,
+  onTabChange,
+  onSubmit,
+  className,
+}: FormBuilderProps) {
+  const fields = useSyncExternalStore(
+    (listener) => globalFieldStore.subscribe(listener),
+    () => globalFieldStore.getAllFields(),
+    () => importedInitialFields,
+  );
+
+  useEffect(() => {
+    globalFieldStore.importFields(importedInitialFields);
+  }, [importedInitialFields]);
+
+  useEffect(() => {
+    onChange?.(metadata, fields);
+  }, [fields, metadata, onChange]);
+
+  return <Button type="button" variant="outline" onClick={() => onSubmit?.(metadata, fields)}>Save Form</Button>;
+}`,
+    },
   },
   {
     title: 'Tab system',
-    body: 'Builder tabs are plain TabConfig objects, so you can swap the default set for a narrower workflow. The exported helpers cover the usual product shapes without hand-editing tab order.',
+    body: 'The default tab module defines three TabConfig objects and helper functions that return slices or ordered copies of those objects.',
     bullets: [
-      'getBuilderOnlyTabs returns the field editor alone for embedded admin panels.',
-      'getBuilderAndPreviewTabs keeps editing and preview together when code export belongs somewhere else.',
-      'getBuilderAndCodeTabs skips preview for review flows that only need editing plus source output.',
-      'createTabsWithOrder accepts tab ids such as code, builder, preview and returns enabled tabs in that order.',
-      'createTabsWithDisabled keeps the default order while disabling ids you do not want visible.',
+      'defaultTabs is [builderTab, previewTab, codeTab].',
+      'getBuilderOnlyTabs, getBuilderAndPreviewTabs, and getBuilderAndCodeTabs return fixed arrays.',
+      'createTabsWithOrder maps caller-provided ids to default tabs and rewrites order from the array index.',
+      'createTabsWithDisabled preserves default order and sets enabled to false for matching ids.',
     ],
+    snippet: {
+      title: 'packages/builder/src/components/formedible/builder/default-tabs.tsx',
+      language: 'ts',
+      code: `export const defaultTabs: readonly TabConfig[] = [builderTab, previewTab, codeTab];
+
+export function getBuilderOnlyTabs(): readonly TabConfig[] {
+  return [builderTab];
+}
+
+export function createTabsWithOrder(tabIds: readonly string[]): readonly TabConfig[] {
+  const tabsById = new Map(defaultTabs.map((tab) => [tab.id, tab]));
+
+  return tabIds
+    .map((tabId) => tabsById.get(tabId))
+    .filter((tab): tab is TabConfig => tab !== undefined)
+    .map((tab, index) => ({ ...tab, order: index + 1 }));
+}
+
+export function createTabsWithDisabled(disabledTabIds: readonly string[]): readonly TabConfig[] {
+  return defaultTabs.map((tab) => ({ ...tab, enabled: !disabledTabIds.includes(tab.id) }));
+}`,
+    },
   },
   {
     title: 'Field store',
-    body: 'FieldStore is the small external store behind the builder. FormBuilder subscribes with useSyncExternalStore, so field edits stay outside React component state while still rendering stable snapshots.',
+    body: 'FieldStore owns fields by id, keeps a separate order array, rebuilds a readonly snapshot, and notifies structure or field-level listeners after changes.',
     bullets: [
-      'addField creates a typed FormField with a generated id, default name, label, page, and required flag.',
-      'updateField patches one field, notifies structure listeners, and notifies subscribers watching that field id.',
-      'deleteField removes the field, clears its field-level listeners, and rebuilds the ordered snapshot.',
-      'duplicateField copies an existing field with a new id, name suffix, and copy label.',
-      'Field order lives in the store snapshot; reorder controls should change that order before listeners are notified.',
-      'importFields replaces the store contents and advances generated ids past imported field ids.',
+      'addField generates ids like field_1 and creates a default name, label, required flag, and page.',
+      'updateField patches a field, rebuilds the snapshot, notifies structure listeners, and notifies listeners for that field id.',
+      'deleteField removes the field id from fieldOrder and clears fieldListeners for that id.',
+      'importFields resets the store and advances nextId from imported ids such as field_12.',
     ],
+    snippet: {
+      title: 'packages/builder/src/components/formedible/builder/field-store.ts',
+      language: 'ts',
+      code: `export class FieldStore {
+  private fields: Record<string, FormField> = {};
+  private fieldOrder: string[] = [];
+  private fieldSnapshot: readonly FormField[] = [];
+  private structureListeners = new Set<StructureListener>();
+  private fieldListeners = new Map<string, Set<FieldListener>>();
+
+  updateField(fieldId: string, fieldUpdate: Partial<FormField>): FormField | undefined {
+    const currentField = this.fields[fieldId];
+    if (currentField === undefined) return undefined;
+
+    const updatedField: FormField = { ...currentField, ...fieldUpdate, id: fieldId };
+    this.fields[fieldId] = updatedField;
+    this.rebuildFieldSnapshot();
+    this.notifyStructureListeners();
+    this.notifyFieldListeners(fieldId, updatedField);
+    return updatedField;
+  }
+
+  subscribe(listener: StructureListener): () => void {
+    this.structureListeners.add(listener);
+    return () => { this.structureListeners.delete(listener); };
+  }
+}`,
+    },
   },
   {
     title: 'Code generation',
-    body: 'generateFormCode turns builder metadata and fields into reviewable source strings. It does not hide the result behind a runtime export; the output is meant to be copied, checked, and owned by the app.',
+    body: 'generateFormCode returns three strings: a complete component, the serialized config object, and the schema expression. The submit handler in the generated config dispatches a formedible-submit event.',
     bullets: [
-      'fullCode is the complete React component with zod import, useFormedible call, schema, config, and rendered Form.',
-      'formConfig is the serialized Formedible config object, including fields, defaults, pages, tabs, labels, and progress settings when present.',
-      'schemaCode is the z.object snippet inferred from field types and required flags.',
-      'Use generated output as a draft, then add product submit behavior and stronger validation where needed.',
+      'GeneratedCodeResult has fullCode, formConfig, and schemaCode properties.',
+      'Field schema mapping covers strings, number-like fields, boolean fields, arrays, and object fields.',
+      'Pages and tabs are omitted when their arrays are missing or have only one entry.',
+      'showProgress true writes progress: { showSteps: true, showPercentage: true } into formConfig.',
     ],
+    snippet: {
+      title: 'Copyable generateFormCode usage',
+      language: 'ts',
+      code: `import { generateFormCode } from '@/components/ui/formedible/builder';
+
+const generated = generateFormCode({
+  title: 'Account intake',
+  fields: [
+    { name: 'email', type: 'email', label: 'Email', required: true },
+    { name: 'age', type: 'number', label: 'Age' },
+    { name: 'newsletter', type: 'checkbox', label: 'Subscribe' },
+  ],
+  settings: {
+    submitLabel: 'Create account',
+    showProgress: true,
+  },
+});
+
+const fullCode = generated.fullCode;
+const formConfig = generated.formConfig;
+const schemaCode = generated.schemaCode;
+
+export { fullCode, formConfig, schemaCode };`,
+    },
   },
 ] satisfies readonly DocsGuideSection[];
 

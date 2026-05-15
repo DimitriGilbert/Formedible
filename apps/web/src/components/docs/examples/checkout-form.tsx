@@ -21,6 +21,12 @@ export const checkoutSchema = z.object({
 
 type CheckoutFormValues = z.infer<typeof checkoutSchema>;
 
+const submittedOrders: CheckoutFormValues[] = [];
+
+async function submitCheckoutOrder(order: CheckoutFormValues) {
+  submittedOrders.push(order);
+}
+
 export const checkoutFormCode = `const checkoutSchema = z.object({
   firstName: z.string().min(1),
   lastName: z.string().min(1),
@@ -34,6 +40,14 @@ export const checkoutFormCode = `const checkoutSchema = z.object({
   shippingMethod: z.enum(["standard", "express", "overnight"]),
   giftMessage: z.string().optional(),
 });
+
+type CheckoutFormValues = z.infer<typeof checkoutSchema>;
+
+const submittedOrders: CheckoutFormValues[] = [];
+
+async function submitCheckoutOrder(order: CheckoutFormValues) {
+  submittedOrders.push(order);
+}
 
 const checkoutForm = useFormedible({
   schema: checkoutSchema,
@@ -119,7 +133,7 @@ const checkoutForm = useFormedible({
       giftMessage: "",
     },
     onSubmit: async ({ value }) => {
-      console.log("Order submitted:", value);
+      await submitCheckoutOrder(value);
       toast.success("Order placed successfully!", {
         description: "You'll receive a confirmation email shortly.",
       });
@@ -212,7 +226,7 @@ export function CheckoutFormExample() {
         giftMessage: "",
       },
       onSubmit: async ({ value }) => {
-        console.log("Order submitted:", value);
+        await submitCheckoutOrder(value);
         toast.success("Order placed successfully!", {
           description: "You'll receive a confirmation email shortly.",
         });

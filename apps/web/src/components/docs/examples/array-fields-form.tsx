@@ -35,6 +35,12 @@ export const arrayFieldsSchema = z.object({
 
 type ArrayFieldsFormValues = z.infer<typeof arrayFieldsSchema>;
 
+const savedTeamProfiles: ArrayFieldsFormValues[] = [];
+
+async function saveTeamProfile(profile: ArrayFieldsFormValues) {
+  savedTeamProfiles.push(profile);
+}
+
 export const arrayFieldsFormCode = `const arrayFieldsSchema = z.object({
   teamMembers: z
     .array(
@@ -61,6 +67,14 @@ export const arrayFieldsFormCode = `const arrayFieldsSchema = z.object({
     )
     .max(3, "Maximum 3 emergency contacts"),
 });
+
+type ArrayFieldsFormValues = z.infer<typeof arrayFieldsSchema>;
+
+const savedTeamProfiles: ArrayFieldsFormValues[] = [];
+
+async function saveTeamProfile(profile: ArrayFieldsFormValues) {
+  savedTeamProfiles.push(profile);
+}
 
 const [formattedSubmission, setFormattedSubmission] = useState<string | null>(null);
 
@@ -217,7 +231,7 @@ const arrayFieldsForm = useFormedible({
       emergencyContacts: [],
     },
     onSubmit: async ({ value }) => {
-      console.log("Array fields form submitted:", value);
+      await saveTeamProfile(value);
 
       const formatValue = (val: unknown): string => {
         if (val === null || val === undefined) return "null";
@@ -244,7 +258,7 @@ const arrayFieldsForm = useFormedible({
         .join("\\n\\n");
 
       toast.success("Team information saved!", {
-        description: "Check console for detailed data",
+        description: "Use the action to review the saved team details.",
         action: {
           label: "View Data",
           onClick: () => setFormattedSubmission(\`Form Data:\\n\\n\${formattedData}\`),
@@ -410,7 +424,7 @@ export function ArrayFieldsFormExample() {
         emergencyContacts: [],
       },
       onSubmit: async ({ value }) => {
-        console.log("Array fields form submitted:", value);
+        await saveTeamProfile(value);
 
         // Format the array data for display
         const formatValue = (val: unknown): string => {
@@ -438,7 +452,7 @@ export function ArrayFieldsFormExample() {
           .join("\n\n");
 
         toast.success("Team information saved!", {
-          description: "Check console for detailed data",
+          description: "Use the action to review the saved team details.",
           action: {
             label: "View Data",
             onClick: () => setFormattedSubmission(`Form Data:\n\n${formattedData}`),

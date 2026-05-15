@@ -1,143 +1,177 @@
-# Formedible
+# @formedible/formedible
 
-Formedible is the core shadcn registry surface for building React forms with TanStack Form. It gives you one hook, `useFormedible`, plus the field renderer and built-in field components that turn a typed field config into a working form.
+Core Formedible source lives here. This package owns the `useFormedible` hook, field renderers, layout components, validation helpers, persistence, analytics, and TypeScript contracts copied into user apps by the `formedible-core` registry item.
 
-This package is source for a shadcn install, not a published runtime npm package. Consumers copy the files into their app and own the result.
-
-## Installation
-
-Install the core registry item with shadcn:
+This package is private. The public install path is the registry item built from `packages/formedible/registry.json`.
 
 ```bash
 pnpm dlx shadcn@latest add https://formedible.dev/r/formedible-core.json
 ```
 
-For local testing from this repo, build the registry first and install the generated file:
+## What gets installed
 
-```bash
-pnpm --dir packages/formedible build:registry
-pnpm dlx shadcn@latest add "$(pwd)/packages/formedible/public/r/formedible-core.json" --yes --overwrite
-```
+`packages/formedible/registry.json` defines one item: `formedible-core`. It copies source files to `@ui/formedible/...` targets and declares npm dependencies `@tanstack/react-form`, `clsx`, `lucide-react`, and `tailwind-merge`.
 
-The registry copies the hook, form layout, field renderer, built-in field components, Formedible types, validation helpers, and small utility files into the consumer app under the `@ui/formedible/...` target paths declared in `registry.json`.
+Main copied areas:
 
-## What you use
+- `src/hooks/use-formedible.tsx` -> `@ui/formedible/hooks/use-formedible.tsx`
+- `src/hooks/use-multi-page.ts` -> `@ui/formedible/hooks/use-multi-page.ts`
+- `src/hooks/use-form-tabs.ts` -> `@ui/formedible/hooks/use-form-tabs.ts`
+- `src/hooks/use-form-persistence.ts` -> `@ui/formedible/hooks/use-form-persistence.ts`
+- `src/hooks/use-form-analytics.ts` -> `@ui/formedible/hooks/use-form-analytics.ts`
+- `src/components/formedible/**` -> `@ui/formedible/**`
+- `src/lib/formedible/**` -> `@ui/formedible/lib/**`
 
-`useFormedible` is the entry point:
+Generated public files live in `packages/formedible/public/r/registry.json` and `packages/formedible/public/r/formedible-core.json`.
 
-```ts
-function useFormedible<TFormValues extends FormedibleFormValues = FormedibleFormValues>(
-  config: UseFormedibleOptions<TFormValues>,
-): {
-  Form: (props: FormProps) => ReactNode;
-  form: ReturnType<typeof useForm>;
-  currentPage: number;
-  totalPages: number;
-  visiblePages: readonly number[];
-  goToNextPage: () => void;
-  goToPreviousPage: () => void;
-  setCurrentPage: (page: number) => void;
-  isFirstPage: boolean;
-  isLastPage: boolean;
-  progressValue: number;
-  saveToStorage: () => void;
-  loadFromStorage: () => void;
-  clearStorage: () => void;
-}
-```
+## Public API names
 
-Typical usage:
+There is no package root `src/index.ts` in this package. Users import the copied files directly. The stable names come from source exports:
+
+| Name | Import after registry install | Source |
+| --- | --- | --- |
+| `useFormedible` | `@/components/ui/formedible/hooks/use-formedible` | `src/hooks/use-formedible.tsx` |
+| `Form` / `FormProps` | `@/components/ui/formedible/form` | `src/components/formedible/form.tsx` |
+| `FieldRenderer` | `@/components/ui/formedible/field-renderer` | `src/components/formedible/field-renderer.tsx` |
+| `getFieldComponent` | `@/components/ui/formedible/fields/field-registry` | `src/components/formedible/fields/field-registry.tsx` |
+| `useMultiPage`, `getVisiblePageNumbers`, `conditionMatches` | `@/components/ui/formedible/hooks/use-multi-page` | `src/hooks/use-multi-page.ts` |
+| `useFormTabs`, `normalizeTabs` | `@/components/ui/formedible/hooks/use-form-tabs` | `src/hooks/use-form-tabs.ts` |
+| `useFormPersistence`, `savePersistedFormPayload`, `loadPersistedFormPayload`, `clearPersistedFormPayload`, helpers | `@/components/ui/formedible/hooks/use-form-persistence` | `src/hooks/use-form-persistence.ts` |
+| `useFormAnalytics`, `createFormAnalyticsTracker` | `@/components/ui/formedible/hooks/use-form-analytics` | `src/hooks/use-form-analytics.ts` |
+| `UseFormedibleOptions`, `FormedibleFieldConfig`, `FormedibleFieldType`, `FormedibleFormValues`, `FormedibleFieldRenderProps` | `@/components/ui/formedible/lib/types` | `src/lib/formedible/types.ts` |
+
+## Basic use
 
 ```tsx
-import { useFormedible } from '@ui/formedible/hooks/use-formedible';
+import { z } from 'zod';
 
-interface ContactFormValues extends Record<string, unknown> {
-  name: string;
-  email: string;
-  message: string;
+import { useFormedible } from '@/components/ui/formedible/hooks/use-formedible';
+
+const schema = z.object({
+  email: z.string().email(),
+  subscribe: z.boolean(),
+});
+
+type Values = z.infer<typeof schema>;
+
+async function submitNewsletterSignup(value: Values) {
+  await fetch('/api/newsletter', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(value),
+  });
 }
 
-interface ContactFormProps {
-  readonly onSubmitContact: (value: ContactFormValues) => Promise<void>;
-}
-
-export function ContactForm({ onSubmitContact }: ContactFormProps) {
-  const { Form } = useFormedible<ContactFormValues>({
+export function NewsletterForm() {
+  const newsletter = useFormedible<Values>({
+    schema,
     fields: [
-      { name: 'name', type: 'text', label: 'Name', required: true },
       { name: 'email', type: 'email', label: 'Email', required: true },
-      { name: 'message', type: 'textarea', label: 'Message', textareaConfig: { rows: 5 } },
+      { name: 'subscribe', type: 'checkbox', label: 'Subscribe to updates' },
     ],
     formOptions: {
-      defaultValues: { name: '', email: '', message: '' },
+      defaultValues: { email: '', subscribe: false },
       onSubmit: async ({ value }) => {
-        await onSubmitContact(value);
+        await submitNewsletterSignup(value);
       },
     },
   });
 
-  return <Form />;
+  return <newsletter.Form className="space-y-4" />;
 }
 ```
 
-`UseFormedibleOptions<TFormValues>` requires `fields` and `formOptions`. Optional config adds schema validation, cross-field validation, async validation, pages, tabs, progress, persistence, analytics, component overrides, wrappers, form labels, form DOM event handlers, auto-submit, disabled/loading state, and submit-button control.
+`useFormedible<TFormValues>()` takes `UseFormedibleOptions<TFormValues>`. `fields` and `formOptions.defaultValues` are required by the type. Optional features include `schema`, `crossFieldValidation`, `asyncValidation`, `pages`, `tabs`, `progress`, `persistence`, `analytics`, `defaultComponents`, `globalWrapper`, form labels, native form event hooks, `autoSubmitOnChange`, and disabled/loading state (`src/lib/formedible/types.ts:448`).
 
 ## Field types
 
-Field type names are the public string literals from `FormedibleFieldType`. A few legacy aliases normalize to the current renderer name.
+`FormedibleFieldType` is defined in `src/lib/formedible/types.ts:6`. The renderer registry maps normalized types in `src/components/formedible/fields/field-registry.tsx:30`.
 
-### Text input
+Supported inputs include:
 
-- `text`
-- `email`
-- `password`
-- `url`
-- `tel`
-- `textarea`
-- `number`
-- `masked`
-- `maskedInput` alias for `masked`
+`text`, `email`, `password`, `url`, `tel`, `textarea`, `number`, `select`, `radio`, `checkbox`, `switch`, `date`, `slider`, `rating`, `phone`, `file`, `array`, `object`, `multiSelect`, `combobox`, `autocomplete`, `multiCombobox`, `color`, `duration`, `location`, `masked`.
 
-### Choice and boolean
+Compatibility aliases are typed too: `multiselect`, `multicombobox`, `colorPicker`, and `maskedInput`.
 
-- `select`
-- `radio`
-- `checkbox`
-- `switch`
-- `multiSelect`
-- `multiselect` alias for `multiSelect`
-- `combobox`
-- `autocomplete`
-- `multiCombobox`
-- `multicombobox` alias for `multiCombobox`
+```ts
+import type { FormedibleFieldConfig } from '@/components/ui/formedible/lib/types';
 
-### Date, numeric scale, and visual value
+type ProfileValues = {
+  fullName: string;
+  skills: string[];
+  notifications: boolean;
+};
 
-- `date`
-- `slider`
-- `rating`
-- `color`
-- `colorPicker` alias for `color`
-- `duration`
+export const profileFields = [
+  { name: 'fullName', type: 'text', label: 'Full name' },
+  {
+    name: 'skills',
+    type: 'multiSelect',
+    label: 'Skills',
+    options: ['React', 'TypeScript', 'Design systems'],
+    multiSelectConfig: { searchable: true, creatable: true },
+  },
+  { name: 'notifications', type: 'switch', label: 'Enable notifications' },
+] satisfies readonly FormedibleFieldConfig<ProfileValues>[];
+```
 
-### Rich data
+## Pages, tabs, persistence, and analytics
 
-- `phone`
-- `file`
-- `array`
-- `object`
-- `location`
+```tsx
+const fieldChanges: Array<{ fieldName: string; value: unknown; timestamp: number }> = [];
 
-## Key features
+const onboarding = useFormedible({
+  fields: [
+    { name: 'name', type: 'text', label: 'Name', page: 1, tab: 'profile' },
+    { name: 'company', type: 'text', label: 'Company', page: 2, conditional: 'name' },
+  ],
+  pages: [
+    { page: 1, title: 'Profile' },
+    { page: 2, title: 'Company', conditional: 'name' },
+  ],
+  tabs: [{ id: 'profile', label: 'Profile' }],
+  progress: { showSteps: true, showPercentage: true },
+  persistence: { key: 'onboarding-draft', storage: 'localStorage', restoreOnMount: true },
+  analytics: {
+    onFieldChange: (fieldName, value, timestamp) => {
+      fieldChanges.push({ fieldName, value, timestamp });
+    },
+  },
+  formOptions: {
+    defaultValues: { name: '', company: '' },
+  },
+});
+```
 
-- Typed config: `fields`, `defaultValues`, validation callbacks, and submit handlers can share the same `TFormValues` shape.
-- Built-in renderer: the field registry maps normalized field types to the included React components, with `component`, `wrapper`, `defaultComponents`, and `globalWrapper` escape hatches.
-- Validation pipeline: field-level validators, Standard Schema or Zod-style schemas, cross-field validation, and async field validation.
-- Form structure: single-page forms, page-based flows, tabs, progress UI, sections, and conditional fields.
-- Persistence: local storage or session storage with debouncing, field exclusions, restore-on-mount, and manual save/load/clear helpers.
-- Analytics hooks: form start, field focus/blur/change/complete/error, page change, form complete, form abandon, and reset callbacks.
-- Advanced field config: masks, password toggle and strength meter, textarea word count, async autocomplete, multi-select limits, color presets, duration formats, location callbacks, and file constraints.
+Source links:
 
-## API docs
+- Pages: `src/hooks/use-multi-page.ts`
+- Tabs: `src/hooks/use-form-tabs.ts`
+- Persistence: `src/hooks/use-form-persistence.ts`
+- Analytics: `src/hooks/use-form-analytics.ts`
 
-See [`/docs/api`](../../apps/web/src/routes/docs/api.tsx) for the full option tables and callback contracts.
+## Package scripts
+
+Exact scripts from `packages/formedible/package.json`:
+
+```bash
+pnpm --filter @formedible/formedible run check-types
+pnpm --filter @formedible/formedible run build
+pnpm --filter @formedible/formedible run build:registry
+```
+
+From the repo root, the common maintainer commands are:
+
+```bash
+pnpm run build:pkg
+pnpm run sync-components
+pnpm run check-types
+```
+
+## Source-backed docs and tests
+
+- Docs: `/docs/getting-started`, `/docs/api`, `/docs/fields`, `/docs/validation`, `/docs/persistence`, `/docs/analytics`, `/docs/examples`.
+- Live examples: `apps/web/src/components/docs/examples/index.tsx`.
+- Field/rendering tests: `tests/formedible/basic-fields.test.tsx`, `tests/formedible/advanced-fields.test.tsx`, `tests/formedible/nested-fields.test.tsx`, `tests/formedible/section-rendering.test.tsx`.
+- Validation tests: `tests/formedible/validation/validation-pipeline.test.tsx`.
+- Type surface tests: `tests/formedible/tsconfig.types.json` and root `pnpm run test:formedible:types`.

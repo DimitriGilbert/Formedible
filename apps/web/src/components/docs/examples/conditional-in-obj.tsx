@@ -19,6 +19,15 @@ const MySchema = z.object({
 });
 
 type MyFormValues = z.infer<typeof MySchema>;
+type RoomDetailsItem = NonNullable<MyFormValues["roomDetails"]>[number];
+
+function hasRoomEquipment(values: MyFormValues | RoomDetailsItem): boolean {
+  return "equipementRoom" in values && values.equipementRoom === true;
+}
+
+const saveRoomDetails = async (_value: MyFormValues): Promise<void> => {
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+};
 
 export default function MyForm() {
   const { Form } = useFormedible<MyFormValues>({
@@ -73,10 +82,8 @@ export default function MyForm() {
                 placeholder: "Ex: Meubles, électroménager, rangements.",
                 description:
                   "Décrivez les équipements spécifiques de cette pièce",
-                conditional: (values: any): any =>
-                  values &&
-                  values.equipementRoom &&
-                  values.equipementRoom === true,
+                conditional: (values: MyFormValues | RoomDetailsItem): boolean =>
+                  hasRoomEquipment(values),
                 validation: (value) =>
                   typeof value === "string" && value.length > 1000
                     ? "Les descriptions ne peuvent pas dépasser 1000 caractères"
@@ -99,11 +106,8 @@ export default function MyForm() {
       },
 
       onSubmit: async ({ value }) => {
-        console.log("Données du formulaire soumises:", value);
-
         try {
-          // Simulate API call
-          await new Promise((resolve) => setTimeout(resolve, 1000));
+          await saveRoomDetails(value);
 
           toast.success("Formulaire soumis avec succès !", {
             description: "Vos informations ont été enregistrées.",
@@ -111,8 +115,7 @@ export default function MyForm() {
 
           // Clear stored form data on success
           localStorage.removeItem("real-estate-form-draft");
-        } catch (error) {
-          console.error("Erreur lors de la soumission:", error);
+        } catch {
           toast.error("Une erreur s'est produite. Veuillez réessayer.");
         }
       },

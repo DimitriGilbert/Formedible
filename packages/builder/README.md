@@ -1,161 +1,175 @@
-# Formedible Builder
+# @formedible/builder
 
-Formedible Builder is a React visual builder for creating Formedible form configs. It lets users add fields, edit field settings, preview the form, and copy generated code without leaving the page.
+The builder package owns the visual Formedible builder: field configuration, preview, generated code, field store, and tab composition. It depends on the core Formedible source and exports a package-root API from `src/index.ts`.
 
-The package exports the builder shell plus the smaller pieces used by that shell: `FieldConfigurator`, `FormPreview`, `CodeGenerator`, `FieldStore`, tab helpers, and code generation helpers.
+Public install item:
 
-## Getting started
+```bash
+pnpm dlx shadcn@latest add https://formedible.dev/r/form-builder.json
+```
 
-Mount `FormBuilder` in a client-rendered React component.
+The registry item is `form-builder` in `packages/builder/registry.json`. It depends on `https://formedible.dev/r/formedible-core.json` and copies builder files to `@ui/formedible/builder/*` plus shared builder libs under `@ui/formedible/lib/*`.
+
+## Public exports
+
+`packages/builder/src/index.ts` re-exports these names:
+
+### Components and state
+
+- `FormBuilder`
+- `FieldConfigurator`
+- `FormPreview`
+- `CodeGenerator`
+- `FieldStore`
+- `globalFieldStore`
+
+### Tabs
+
+- `builderTab`
+- `previewTab`
+- `codeTab`
+- `defaultTabs`
+- `createTabsWithDisabled`
+- `createTabsWithOrder`
+- `getBuilderAndCodeTabs`
+- `getBuilderAndPreviewTabs`
+- `getBuilderOnlyTabs`
+
+### Code generation and metadata
+
+- `defaultFormMetadata`
+- `builderFieldTypes`
+- `generateFormCode`
+- `generateCodeFromParsedConfig`
+
+### Types
+
+- `BuilderFieldTypeDefinition`
+- `FormBuilderProps`
+- `FormField`
+- `FormMetadata`
+- `FormPage`
+- `FormSettings`
+- `FormTab`
+- `TabConfig`
+- `TabContentProps`
+- `CodeGenerationOptions`
+- `GeneratedCodeResult`
+
+## Use after registry install
 
 ```tsx
-'use client';
+import { FormBuilder } from '@/components/ui/formedible/builder';
+import type { FormField, FormMetadata } from '@/components/ui/formedible/builder';
 
-import { FormBuilder } from '@formedible/builder';
-import type { FormField, FormMetadata } from '@formedible/builder';
+const builderDrafts: Array<{ metadata: FormMetadata; fields: FormField[] }> = [];
 
-export function BuilderPage() {
-  function handleSubmit(metadata: FormMetadata, fields: readonly FormField[]): void {
-    window.localStorage.setItem('formedible-builder-draft', JSON.stringify({ metadata, fields }));
-  }
+async function saveBuilderSubmission(metadata: FormMetadata, fields: FormField[]) {
+  await fetch('/api/forms', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ metadata, fields }),
+  });
+}
 
+export function BuilderWorkspace() {
   return (
     <FormBuilder
       initialMetadata={{
-        title: 'Contact form',
-        description: 'Collect a name, email address, and message.',
+        title: 'Signup form',
+        description: 'Collect account details',
       }}
-      onSubmit={handleSubmit}
+      onChange={(metadata, fields) => {
+        builderDrafts.push({ metadata, fields });
+      }}
+      onSubmit={async (metadata, fields) => {
+        await saveBuilderSubmission(metadata, fields);
+      }}
     />
   );
 }
 ```
 
-`FormBuilder` owns the active tab, selected field, form metadata, and field list. Field data is stored in `globalFieldStore`, so the builder tabs and the field configurator stay in sync.
+`FormBuilderProps` is defined in `src/lib/formedible/builder-types.ts:86`. It accepts `tabs`, `defaultTab`, `initialMetadata`, `initialFields`, `onChange`, `onTabChange`, `onSubmit`, and `className`.
 
-## Features
-
-- **18 field types** through `builderFieldTypes`: `text`, `email`, `password`, `textarea`, `number`, `select`, `radio`, `multiSelect`, `checkbox`, `switch`, `date`, `slider`, `rating`, `colorPicker`, `phone`, `file`, `array`, and `object`.
-- **Live preview** through `FormPreview`, which renders the current fields with `useFormedible`.
-- **Code generation** through `CodeGenerator`, `generateFormCode`, and `generateCodeFromParsedConfig`.
-- **Tabs** through `defaultTabs`: Builder, Preview, and Code.
-- **Field editing** through `FieldConfigurator`: label, name, placeholder, description, required state, page assignment, options, and numeric bounds.
-
-## API
-
-### `FormBuilderProps`
-
-```ts
-interface FormBuilderProps {
-  readonly tabs?: readonly TabConfig[];
-  readonly defaultTab?: string;
-  readonly initialMetadata?: Partial<FormMetadata>;
-  readonly initialFields?: readonly FormField[];
-  readonly onChange?: (metadata: FormMetadata, fields: readonly FormField[]) => void;
-  readonly onTabChange?: (tabId: string) => void;
-  readonly onSubmit?: (metadata: FormMetadata, fields: readonly FormField[]) => void;
-  readonly className?: string;
-}
-```
-
-| Prop | Use |
-| --- | --- |
-| `tabs` | Replaces the default Builder, Preview, and Code tabs. Disabled tabs are filtered out and enabled tabs are sorted by `order`. |
-| `defaultTab` | Initial tab id. If the id is not enabled, the first enabled tab is used. |
-| `initialMetadata` | Partial metadata merged with `defaultFormMetadata`. Nested `settings` are merged too. |
-| `initialFields` | Field list imported into `globalFieldStore` on mount or when the value changes. |
-| `onChange` | Runs when metadata or fields change. |
-| `onTabChange` | Runs after the user changes tabs. |
-| `onSubmit` | Runs when the Save Form button is clicked. |
-| `className` | Added to the root builder element. |
-
-### `TabConfig`
-
-```ts
-interface TabConfig {
-  readonly id: string;
-  readonly label: string;
-  readonly icon?: ComponentType<{ readonly className?: string }>;
-  readonly component: ComponentType<TabContentProps>;
-  readonly enabled?: boolean;
-  readonly order?: number;
-}
-```
-
-Each tab component receives `TabContentProps`: `metadata`, `fields`, `selectedFieldId`, `onMetadataChange`, `onAddField`, `onSelectField`, `onDeleteField`, and `onDuplicateField`.
+## Custom tab composition
 
 ```tsx
-import { FormBuilder, defaultTabs } from '@formedible/builder';
-import type { TabConfig, TabContentProps } from '@formedible/builder';
+import {
+  FormBuilder,
+  getBuilderAndPreviewTabs,
+  createTabsWithDisabled,
+} from '@/components/ui/formedible/builder';
 
-function NotesTab({ fields }: TabContentProps) {
-  return <p>{fields.length} fields in this form.</p>;
-}
+const tabs = createTabsWithDisabled(getBuilderAndPreviewTabs(), ['preview']);
 
-const tabs: readonly TabConfig[] = [
-  ...defaultTabs,
-  {
-    id: 'notes',
-    label: 'Notes',
-    component: NotesTab,
-    enabled: true,
-    order: 4,
-  },
-];
-
-export function BuilderWithNotes() {
+export function LockedPreviewBuilder() {
   return <FormBuilder tabs={tabs} defaultTab="builder" />;
 }
 ```
 
-## Tab helpers
+The tab contract is `TabConfig` in `src/lib/formedible/builder-types.ts:77`. Each tab has an `id`, `label`, optional `icon`, React `component`, optional `enabled`, and optional `order`.
 
-The package exports ready-made tab configs and helper functions from `default-tabs.tsx`.
-
-| Export | Result |
-| --- | --- |
-| `builderTab` | Builder tab with field add/select/duplicate/delete actions. |
-| `previewTab` | Preview tab that renders `FormPreview`. |
-| `codeTab` | Code tab that renders `CodeGenerator`. |
-| `defaultTabs` | `[builderTab, previewTab, codeTab]`. |
-| `getBuilderOnlyTabs()` | Builder tab only. |
-| `getBuilderAndPreviewTabs()` | Builder and Preview tabs. |
-| `getBuilderAndCodeTabs()` | Builder and Code tabs. |
-| `createTabsWithOrder(tabIds)` | Returns default tabs in the requested id order. Unknown ids are ignored. |
-| `createTabsWithDisabled(disabledTabIds)` | Returns default tabs with matching ids marked `enabled: false`. |
-
-```tsx
-import { FormBuilder, createTabsWithDisabled, createTabsWithOrder } from '@formedible/builder';
-
-export function PreviewFirstBuilder() {
-  return <FormBuilder tabs={createTabsWithOrder(['preview', 'builder', 'code'])} defaultTab="preview" />;
-}
-
-export function BuilderWithoutCode() {
-  return <FormBuilder tabs={createTabsWithDisabled(['code'])} />;
-}
-```
-
-## Code generation
-
-Use `generateFormCode` when you already have builder metadata and fields. It returns `fullCode`, `formConfig`, and `schemaCode`.
+## Generate code without rendering the builder
 
 ```ts
-import { generateFormCode } from '@formedible/builder';
-import type { FormField, FormMetadata, GeneratedCodeResult } from '@formedible/builder';
+import { generateFormCode } from '@/components/ui/formedible/builder';
 
-export function buildSource(metadata: FormMetadata, fields: readonly FormField[]): GeneratedCodeResult {
-  return generateFormCode({
-    title: metadata.title,
-    description: metadata.description,
-    fields,
-    pages: metadata.pages,
-    tabs: metadata.tabs,
-    settings: metadata.settings,
-  });
-}
+const result = generateFormCode({
+  title: 'Contact',
+  description: 'Contact the team',
+  fields: [
+    { name: 'email', type: 'email', label: 'Email', required: true },
+    { name: 'message', type: 'textarea', label: 'Message', required: true },
+  ],
+  settings: {
+    submitLabel: 'Send',
+    nextLabel: 'Next',
+    previousLabel: 'Back',
+    showProgress: true,
+  },
+});
+
+export const generatedContactForm = {
+  schemaCode: result.schemaCode,
+  formConfig: result.formConfig,
+  fullCode: result.fullCode,
+};
 ```
 
-Use `generateCodeFromParsedConfig` when the input is a `UseFormedibleOptions` config. The generated form code imports `z` from `zod` and `useFormedible` from `@/hooks/use-formedible`, then renders `<Form />`.
+`generateFormCode` returns `GeneratedCodeResult` with `fullCode`, `formConfig`, and `schemaCode` (`src/lib/formedible/code-generation.ts:21`). `generateCodeFromParsedConfig` adapts a parsed `UseFormedibleOptions<FormedibleFormValues>` into the same output (`src/lib/formedible/code-generation.ts:200`).
 
-`CodeGenerator` is the UI wrapper around `generateFormCode`. It displays the generated `fullCode` for the current builder state.
+## Builder field model
+
+The builder's editable field type list is `builderFieldTypes` (`src/lib/formedible/builder-types.ts:10`). It currently exposes text, email, password, textarea, number, select, radio, multiSelect, checkbox, switch, date, slider, rating, colorPicker, phone, file, array, and object.
+
+`FormField` extends core `FormedibleFieldConfig<FormedibleFormValues>` and adds required `id`, `name`, `label`, and `type` (`src/lib/formedible/builder-types.ts:31`).
+
+## Package scripts
+
+Exact scripts from `packages/builder/package.json`:
+
+```bash
+pnpm --filter @formedible/builder run check-types
+pnpm --filter @formedible/builder run test
+pnpm --filter @formedible/builder run build
+pnpm --filter @formedible/builder run build:registry
+pnpm --filter @formedible/builder run sync
+```
+
+Root equivalents used most often:
+
+```bash
+pnpm run build:builder
+pnpm run check-types:builder
+pnpm run check-types
+```
+
+## Source-backed docs and tests
+
+- Docs route: `/docs/builder`.
+- Interactive route: `/builder`.
+- Source entrypoint: `packages/builder/src/index.ts`.
+- Main types: `packages/builder/src/lib/formedible/builder-types.ts`.
+- Code generation: `packages/builder/src/lib/formedible/code-generation.ts`.
+- Tests: `packages/builder/src/builder.test.tsx`.

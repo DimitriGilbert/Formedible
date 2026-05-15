@@ -16,6 +16,14 @@ export const jobApplicationSchema = z.object({
   additionalInfo: z.string().optional(),
 });
 
+type JobApplicationFormValues = z.infer<typeof jobApplicationSchema>;
+
+const submittedApplications: JobApplicationFormValues[] = [];
+
+async function submitJobApplication(application: JobApplicationFormValues) {
+  submittedApplications.push(application);
+}
+
 export const jobApplicationFormCode = `const jobApplicationSchema = z.object({
   firstName: z.string().min(1),
   lastName: z.string().min(1),
@@ -27,6 +35,14 @@ export const jobApplicationFormCode = `const jobApplicationSchema = z.object({
   whyInterested: z.string().min(10),
   additionalInfo: z.string().optional(),
 });
+
+type JobApplicationFormValues = z.infer<typeof jobApplicationSchema>;
+
+const submittedApplications: JobApplicationFormValues[] = [];
+
+async function submitJobApplication(application: JobApplicationFormValues) {
+  submittedApplications.push(application);
+}
 
 const jobApplicationForm = useFormedible({
   schema: jobApplicationSchema,
@@ -107,7 +123,7 @@ const jobApplicationForm = useFormedible({
       additionalInfo: "",
     },
     onSubmit: async ({ value }) => {
-      console.log("Application submitted:", value);
+      await submitJobApplication(value);
       toast.success("Application submitted!", {
         description: "We'll review your application and get back to you soon.",
       });
@@ -195,7 +211,7 @@ export function JobApplicationFormExample() {
         additionalInfo: "",
       },
       onSubmit: async ({ value }) => {
-        console.log("Application submitted:", value);
+        await submitJobApplication(value);
         toast.success("Application submitted!", {
           description:
             "We'll review your application and get back to you soon.",
