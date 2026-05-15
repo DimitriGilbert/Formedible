@@ -103,9 +103,9 @@ export function OnboardingForm() {
       { name: 'plan', type: 'radio', label: 'Plan', options: ['starter', 'team', 'enterprise'] },
       { name: 'needsMigration', type: 'switch', label: 'Import an existing form system?' },
     ],
+    schema: onboardingSchema,
     formOptions: {
       defaultValues: { name: '', plan: 'team', needsMigration: false },
-      validators: { onSubmit: onboardingSchema },
       onSubmit: ({ value }) => {
         createWorkspace(value);
       },

@@ -1,28 +1,44 @@
-import { useMemo, useState } from 'react';
-import { createFileRoute, Link } from '@tanstack/react-router';
+import { useEffect, useMemo, useState } from 'react';
+import { createFileRoute, Link, useLocation } from '@tanstack/react-router';
 import { ArrowLeft } from 'lucide-react';
 import { ScrollArea } from '@formedible/ui/components/scroll-area';
 
 import { DemoCard } from '@/components/demo/demo-card';
+import { migratedDocsExamples } from '@/components/docs/examples';
+import type { MigratedDocsExample } from '@/components/docs/examples';
 import { PageContainer } from '@/components/layout/page-container';
 import { SectionDivider } from '@/components/layout/section-divider';
 import { SiteFooter } from '@/components/layout/site-footer';
-import { migratedDocsExamples, type MigratedDocsExample } from '@/components/docs/examples';
 import { createRouteSeoHead } from '@/features/docs/seo';
 
 const routeHead = createRouteSeoHead('/docs/examples');
 const allCategory = 'All';
 const categories = [allCategory, ...Array.from(new Set(migratedDocsExamples.map((example) => example.category)))];
 const totalLineCount = migratedDocsExamples.reduce((total, example) => total + countLines(example.code), 0);
+const exampleIds = new Set(migratedDocsExamples.map((example) => example.id));
+
+type ExamplesSearch = {
+  readonly example?: string;
+};
 
 export const Route = createFileRoute('/docs/examples')({
   head: () => routeHead,
+  validateSearch: (search: Record<string, unknown>): ExamplesSearch => {
+    const example = search.example;
+
+    return typeof example === 'string' && exampleIds.has(example) ? { example } : {};
+  },
   component: ExamplesRoute,
 });
 
 function ExamplesRoute() {
-  const [activeCategory, setActiveCategory] = useState<string>(allCategory);
-  const [activeExampleId, setActiveExampleId] = useState<string>(migratedDocsExamples[0]?.id ?? '');
+  const { example } = Route.useSearch();
+  const navigationKey = useLocation({
+    select: (location) => location.state.__TSR_key ?? location.state.key ?? location.href,
+  });
+  const initialExample = findExampleOrDefault(example);
+  const [activeCategory, setActiveCategory] = useState<string>(initialExample?.category ?? allCategory);
+  const [activeExampleId, setActiveExampleId] = useState<string>(initialExample?.id ?? '');
 
   const visibleExamples = useMemo(
     () => migratedDocsExamples.filter((example) => activeCategory === allCategory || example.category === activeCategory),
@@ -30,6 +46,15 @@ function ExamplesRoute() {
   );
 
   const activeExample = visibleExamples.find((example) => example.id === activeExampleId) ?? visibleExamples[0] ?? migratedDocsExamples[0];
+
+  useEffect(() => {
+    const nextExample = findExampleOrDefault(example);
+
+    if (nextExample) {
+      setActiveCategory(nextExample.category);
+      setActiveExampleId(nextExample.id);
+    }
+  }, [example, navigationKey]);
 
   if (!activeExample) {
     return null;
@@ -204,4 +229,8 @@ function countPattern(value: string, pattern: RegExp): number {
 
 function countPages(value: string): number {
   return new Set([...value.matchAll(/page:\s*(\d+)/g)].map((match) => match[1])).size || 1;
+}
+
+function findExampleOrDefault(exampleId: string | undefined): MigratedDocsExample | undefined {
+  return migratedDocsExamples.find((candidate) => candidate.id === exampleId) ?? migratedDocsExamples[0];
 }

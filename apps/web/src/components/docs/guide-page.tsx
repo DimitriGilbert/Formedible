@@ -38,6 +38,47 @@ function createApiPropertyTableRows(table: NonNullable<DocsGuideSection['table']
   }));
 }
 
+function isApiPropertyTable(table: NonNullable<DocsGuideSection['table']>): boolean {
+  const normalizedHeaders = table.headers.map((header) => header.toLowerCase());
+
+  return ['property', 'type', 'default', 'description'].every((header) => normalizedHeaders.includes(header));
+}
+
+function DocsGuideTable({ table }: { readonly table: NonNullable<DocsGuideSection['table']> }) {
+  if (isApiPropertyTable(table)) {
+    return <ApiPropertyTable rows={createApiPropertyTableRows(table)} />;
+  }
+
+  return (
+    <div className="mt-6 overflow-hidden rounded-2xl bg-border">
+      <div className="overflow-x-auto">
+        <table className="min-w-full border-separate border-spacing-0 text-left text-sm">
+          <thead>
+            <tr className="bg-background">
+              {table.headers.map((header) => (
+                <th key={header} scope="col" className="px-4 py-3 font-semibold text-foreground">
+                  {header}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {table.rows.map((row) => (
+              <tr key={row.cells.join('|')} className="bg-background align-top">
+                {table.headers.map((header, index) => (
+                  <td key={`${header}-${index}`} className="border-t border-border px-4 py-3 leading-relaxed text-muted-foreground">
+                    {index === 0 ? <span className="font-medium text-foreground">{row.cells[index] ?? '—'}</span> : (row.cells[index] ?? '—')}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 type DocsGuidePageProps = {
   readonly eyebrow: string;
   readonly title: string;
@@ -92,7 +133,7 @@ export function DocsGuidePage({ eyebrow, title, description, sections, codeExamp
                         ))}
                       </ul>
                     ) : null}
-                    {section.table ? <ApiPropertyTable rows={createApiPropertyTableRows(section.table)} /> : null}
+                    {section.table ? <DocsGuideTable table={section.table} /> : null}
                   </div>
                 ))}
               </div>
