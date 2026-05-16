@@ -138,7 +138,7 @@ test('code generation produces local shadcn install imports and schema behavior'
     },
   });
 
-  assert.match(result.fullCode, /import \{ useFormedible \} from '@\/hooks\/use-formedible';/);
+  assert.match(result.fullCode, /import \{ useFormedible \} from '@\/components\/formedible\/hooks\/use-formedible';/);
   assert.match(result.schemaCode, /email: z\.string\(\)\.min\(1, "Email is required"\)/);
   assert.match(result.schemaCode, /age: z\.number\(\)\.optional\(\)/);
   assert.match(result.formConfig, /"submitLabel": "Send"/);
@@ -161,6 +161,6 @@ test('builder authored source uses local installed core and parser aliases', () 
   }
 
   const previewContent = readFileSync(join(builderRoot, 'src/components/formedible/builder/form-preview.tsx'), 'utf8');
-  assert.match(previewContent, /@\/hooks\/use-formedible/);
-  assert.match(previewContent, /@\/lib\/formedible\/types/);
+  assert.match(previewContent, /@\/components\/formedible\/hooks\/use-formedible/);
+  assert.match(previewContent, /@\/components\/formedible\/lib\/types/);
 });

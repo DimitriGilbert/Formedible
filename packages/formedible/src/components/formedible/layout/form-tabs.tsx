@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -7,6 +8,7 @@ export interface FormTabItem {
   readonly id: string;
   readonly label: ReactNode;
   readonly description?: ReactNode;
+  readonly errorCount?: number;
 }
 
 export interface FormTabsProps {
@@ -31,7 +33,12 @@ export function FormTabs({ tabs, activeTab, onTabChange, children }: FormTabsPro
             data-tabs-trigger="true"
             onClick={() => onTabChange(tab.id)}
           >
-            {tab.label}
+            <span className="truncate">{tab.label}</span>
+            {tab.errorCount && tab.errorCount > 0 ? (
+              <Badge variant="secondary" className="ml-2" aria-label={`${tab.errorCount} invalid ${tab.errorCount === 1 ? 'field' : 'fields'}`}>
+                {tab.errorCount}
+              </Badge>
+            ) : undefined}
           </Button>
         ))}
       </div>

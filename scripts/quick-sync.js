@@ -9,26 +9,14 @@ const defaultRoutes = [
     useRegistryTargets: true,
   },
   {
-    ownerRoot: 'packages/formedible',
-    destinationRoots: ['packages/formedible-parser/src', 'packages/builder/src', 'packages/ai-builder/src'],
-  },
-  {
     ownerRoot: 'packages/formedible-parser',
     destinationRoots: ['packages/ui/src/components'],
     useRegistryTargets: true,
   },
   {
-    ownerRoot: 'packages/formedible-parser',
-    destinationRoots: ['packages/builder/src', 'packages/ai-builder/src'],
-  },
-  {
     ownerRoot: 'packages/builder',
     destinationRoots: ['packages/ui/src/components'],
     useRegistryTargets: true,
-  },
-  {
-    ownerRoot: 'packages/builder',
-    destinationRoots: ['packages/ai-builder/src'],
   },
   {
     ownerRoot: 'packages/ai-builder',
@@ -214,14 +202,14 @@ function rewriteWebSpecifier(specifier) {
   return specifier;
 }
 
-function rewriteModuleSpecifiers(content, aliases) {
-  return content.replace(/(from\s+['"]|import\s*\(\s*['"]|export\s+[^;]*?from\s+['"])(@\/[^'"]+)(['"])/g, (match, prefix, specifier, suffix) => {
+function rewriteModuleSpecifiers(sourceText, aliases) {
+  return sourceText.replace(/(from\s+['"]|import\s*\(\s*['"]|export\s+[^;]*?from\s+['"])(@\/[^'"]+)(['"])/g, (match, prefix, specifier, suffix) => {
     return `${prefix}${rewriteAliasSpecifier(specifier, aliases)}${suffix}`;
   });
 }
 
-function rewriteWebCoreSpecifiers(content) {
-  return content.replace(/(from\s+['"]|import\s*\(\s*['"]|export\s+[^;]*?from\s+['"])(@\/[^'"]+)(['"])/g, (match, prefix, specifier, suffix) => {
+function rewriteWebCoreSpecifiers(sourceText) {
+  return sourceText.replace(/(from\s+['"]|import\s*\(\s*['"]|export\s+[^;]*?from\s+['"])(@\/[^'"]+)(['"])/g, (match, prefix, specifier, suffix) => {
     return `${prefix}${rewriteWebSpecifier(specifier)}${suffix}`;
   });
 }
@@ -246,7 +234,7 @@ async function readDestinationAliases(rootDirectory, destinationRoot) {
   return { ui, utils };
 }
 
-async function syncContentForDestination(content, rootDirectory, destinationRoot) {
+async function syncContentForDestination(sourceText, rootDirectory, destinationRoot) {
   if (destinationRoot === 'packages/ui/src/components') {
     const aliases = await readDestinationAliases(rootDirectory, destinationRoot);
 
@@ -254,14 +242,14 @@ async function syncContentForDestination(content, rootDirectory, destinationRoot
       throw new Error(`Unable to resolve shadcn aliases for ${destinationRoot}`);
     }
 
-    return rewriteModuleSpecifiers(content, aliases);
+    return rewriteModuleSpecifiers(sourceText, aliases);
   }
 
   if (destinationRoot === 'apps/web/src') {
-    return rewriteWebCoreSpecifiers(content);
+    return rewriteWebCoreSpecifiers(sourceText);
   }
 
-  return content;
+  return sourceText;
 }
 
 async function copyRegistryFiles(route, rootDirectory) {

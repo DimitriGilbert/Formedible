@@ -392,6 +392,11 @@ export interface FormedibleProgressConfig {
   readonly [customProp: string]: unknown;
 }
 
+export interface FormedibleValidationSummaryConfig {
+  readonly autoNavigate?: boolean;
+  readonly showBadges?: boolean;
+}
+
 export interface FormediblePersistenceConfig<TFormValues extends FormedibleFormValues = FormedibleFormValues> {
   readonly key: string;
   readonly storage?: 'localStorage' | 'sessionStorage';
@@ -454,6 +459,7 @@ export interface UseFormedibleOptions<TFormValues extends FormedibleFormValues =
   readonly pages?: readonly FormediblePageConfig<TFormValues>[];
   readonly tabs?: readonly (string | FormedibleTabConfig<TFormValues>)[];
   readonly progress?: FormedibleProgressConfig;
+  readonly validationSummary?: boolean | FormedibleValidationSummaryConfig;
   readonly persistence?: FormediblePersistenceConfig<TFormValues>;
   readonly analytics?: FormedibleAnalyticsConfig<TFormValues>;
   readonly defaultComponents?: Partial<Record<NormalizedFieldType, FormedibleFieldComponent<TFormValues>>>;

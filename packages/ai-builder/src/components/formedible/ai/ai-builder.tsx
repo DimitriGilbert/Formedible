@@ -13,9 +13,9 @@ import { fetchProviderModels } from '@/lib/formedible/ai-model-catalog';
 import { clearStoredProviderSecrets, exportConversation, getLastFormCode, persistConversations, persistProviderModelCatalog, persistProviderSecrets, persistProviderSettings, persistUiState, readPersistedAIBuilderState, readProviderModelCatalogs, readStoredProviderSecrets, upsertConversation } from '@/lib/formedible/ai-storage';
 import type { ProviderSecretPersistencePreference } from '@/lib/formedible/ai-storage';
 import type { AIProvider, AiConversation, AiMessage, AiParserConfig, AIBuilderMode, ProviderModelCatalog, ProviderModelCatalogs, ProviderSecrets, ProviderSettings } from '@/lib/formedible/ai-types';
-import { defaultParserConfig, generateSystemPrompt, mergeParserConfig } from '@/lib/formedible/parser-config-schema';
-import type { ParserConfig } from '@/lib/formedible/parser-config-schema';
-import type { FormedibleFormValues } from '@/lib/formedible/types';
+import { defaultParserConfig, generateSystemPrompt, mergeParserConfig } from '@/components/formedible/lib/parser-config-schema';
+import type { ParserConfig } from '@/components/formedible/lib/parser-config-schema';
+import type { FormedibleFormValues } from '@/components/formedible/lib/types';
 import { cn } from '@/lib/utils';
 
 export const AI_BUILDER_DEFAULT_MODE: AIBuilderMode = 'client';
@@ -46,6 +46,14 @@ function toAiParserConfig(config: ParserConfig): AiParserConfig {
     inferDefaultValues: config.enableSchemaInference,
     ...(config.selectFields ? { allowedFieldTypes: config.systemPromptFields } : {}),
   };
+}
+
+function hasStreamingMessage(conversations: readonly AiConversation[]): boolean {
+  return conversations.some((conversation) => conversation.messages.some((message) => message.status === 'streaming'));
+}
+
+function shouldPersistMessages(messages: readonly AiMessage[]): boolean {
+  return messages.length > 0 && messages.every((message) => message.status !== 'streaming');
 }
 
 export function resolveInitialProviderAccess(
@@ -125,6 +133,10 @@ export function AIBuilder({
   }, [modelCatalogs, providerSecrets.apiKey, providerSettings.provider, providerValidationError, refreshingProvider]);
 
   useEffect(() => {
+    if (hasStreamingMessage(conversations)) {
+      return;
+    }
+
     persistConversations(conversations);
   }, [conversations]);
 
@@ -170,6 +182,10 @@ export function AIBuilder({
       const result = upsertConversation(previousConversations, currentConversationIdRef.current, nextMessages);
       currentConversationIdRef.current = result.conversationId;
       setCurrentConversationId(result.conversationId);
+
+      if (shouldPersistMessages(nextMessages)) {
+        persistConversations(result.conversations);
+      }
 
       return result.conversations;
     });

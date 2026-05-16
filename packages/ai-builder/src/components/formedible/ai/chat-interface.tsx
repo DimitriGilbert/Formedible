@@ -135,9 +135,7 @@ export function ChatInterface({
       updateAssistantMessage({
         ...assistantMessage,
         content: streamedContent,
-        rawContent: streamedContent,
         thinking: streamedThinking.length > 0 ? streamedThinking : undefined,
-        events: streamedEvents,
         status: 'streaming',
       });
     });

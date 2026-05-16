@@ -9,7 +9,7 @@ import { ProviderSelection } from '@/components/formedible/ai/provider-selection
 import type { AIBuilderProviderAccess } from '@/components/formedible/ai/ai-builder';
 import type { ProviderSecretPersistencePreference } from '@/lib/formedible/ai-storage';
 import type { AiConversation, ProviderModelCatalogs, ProviderSecrets, ProviderSettings } from '@/lib/formedible/ai-types';
-import type { ParserConfig } from '@/lib/formedible/parser-config-schema';
+import type { ParserConfig } from '@/components/formedible/lib/parser-config-schema';
 import { cn } from '@/lib/utils';
 
 export interface SidebarContentProps {

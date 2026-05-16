@@ -1,6 +1,6 @@
-import { Fragment, useEffect, useId, useRef } from 'react';
-import { useForm } from '@tanstack/react-form';
-import type { DeepKeys } from '@tanstack/react-form';
+import { Fragment, useEffect, useId, useRef, useState } from 'react';
+import { defaultValidationLogic, useForm } from '@tanstack/react-form';
+import type { DeepKeys, ValidationLogicFn } from '@tanstack/react-form';
 import type { ReactNode } from 'react';
 
 import { FieldRenderer } from '@/components/formedible/field-renderer';
@@ -20,10 +20,53 @@ import { getValueAtFieldPath } from '@/lib/formedible/field-path';
 import { resolveDynamicText } from '@/lib/formedible/dynamic-text';
 import { normalizeFieldConfig } from '@/lib/formedible/normalize-field-config';
 import { normalizeOptions } from '@/lib/formedible/normalize-options';
-import type { FormedibleFieldSection, FormedibleFormApiContext, FormedibleFormValues, UseFormedibleOptions } from '@/lib/formedible/types';
+import type { FormedibleFieldSection, FormedibleFormApiContext, FormedibleFormValues, FormedibleValidationSummaryConfig, UseFormedibleOptions } from '@/lib/formedible/types';
 import type { NormalizedFieldConfig } from '@/lib/formedible/types';
 import { buildFieldValidators, buildFormValidators } from '@/lib/formedible/validation';
+import type { FormedibleValidatorContext } from '@/lib/formedible/validation';
 import { formatValidationError } from '@/lib/formedible/zod-errors';
+
+interface InvalidFieldEntry<TFormValues extends FormedibleFormValues> {
+  readonly field: NormalizedFieldConfig<TFormValues>;
+  readonly message: string;
+  readonly page?: number;
+  readonly tab?: string;
+}
+
+interface FormedibleFieldMetaErrorState {
+  readonly errors?: readonly unknown[];
+}
+
+interface FormedibleValidationFormState<TFormValues extends FormedibleFormValues> {
+  readonly values: TFormValues;
+  readonly fieldMeta?: Record<string, FormedibleFieldMetaErrorState | undefined>;
+}
+
+type RuntimeFieldValidator<TFormValues extends FormedibleFormValues> = {
+  readonly onSubmit?: (context: FormedibleValidatorContext<TFormValues>) => string | undefined;
+};
+
+const formedibleValidationLogic: ValidationLogicFn = (props) => {
+  if (props.event.type !== 'change') {
+    return defaultValidationLogic(props);
+  }
+
+  const validators: Parameters<typeof props.runValidation>[0]['validators'] = [];
+
+  defaultValidationLogic({
+    ...props,
+    runValidation: (validationProps) => {
+      validators.push(...validationProps.validators);
+    },
+  });
+
+  validators.push({
+    fn: props.event.async ? props.validators?.onBlurAsync : props.validators?.onBlur,
+    cause: 'blur',
+  });
+
+  return props.runValidation({ validators, form: props.form });
+};
 
 export function useFormedible<TFormValues extends FormedibleFormValues = FormedibleFormValues>(config: UseFormedibleOptions<TFormValues>) {
   const formId = useId();
@@ -32,6 +75,8 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
   const pageValidationStateRef = useRef<(pageNumber: number) => FormAnalyticsPageValidationState>(() => ({ hasErrors: false, completionPercentage: 0 }));
   const abandonContextRef = useRef<FormAnalyticsAbandonContext>({ completionPercentage: 0 });
   const autoSubmitTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const focusInvalidFieldTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const [hasInvalidSubmitAttempt, setHasInvalidSubmitAttempt] = useState(false);
   const analytics = useFormAnalytics(config.analytics, {
     getPageValidationState: (pageNumber) => pageValidationStateRef.current(pageNumber),
     getAbandonContext: () => abandonContextRef.current,
@@ -39,6 +84,11 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
   const form = useForm({
     defaultValues: config.formOptions.defaultValues,
     validators: buildFormValidators(config.schema, config.crossFieldValidation),
+    validationLogic: formedibleValidationLogic,
+    onSubmitInvalid: ({ formApi }) => {
+      setHasInvalidSubmitAttempt(true);
+      handleInvalidSubmitEntries(getInvalidFieldEntries(formApi.state as FormedibleValidationFormState<TFormValues>));
+    },
     onSubmit: async ({ value }) => {
       analytics.trackFormComplete(value as TFormValues);
       await config.formOptions.onSubmit?.({ value, formApi: getFormApiContext(value as TFormValues) });
@@ -51,8 +101,28 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
       if (autoSubmitTimeoutRef.current !== undefined) {
         clearTimeout(autoSubmitTimeoutRef.current);
       }
+
+      if (focusInvalidFieldTimeoutRef.current !== undefined) {
+        clearTimeout(focusInvalidFieldTimeoutRef.current);
+      }
     };
   }, []);
+
+  function getValidationSummaryConfig(): Required<FormedibleValidationSummaryConfig> & { readonly enabled: boolean } {
+    if (config.validationSummary === false) {
+      return { enabled: false, autoNavigate: false, showBadges: false };
+    }
+
+    if (typeof config.validationSummary === 'object' && config.validationSummary !== null) {
+      return {
+        enabled: true,
+        autoNavigate: config.validationSummary.autoNavigate ?? true,
+        showBadges: config.validationSummary.showBadges ?? true,
+      };
+    }
+
+    return { enabled: true, autoNavigate: true, showBadges: true };
+  }
 
   function getFormApiContext(values: TFormValues = form.state.values): FormedibleFormApiContext<TFormValues> {
     return {
@@ -63,6 +133,10 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
 
   function getValuesWithFieldUpdate(fieldName: string, nextValue: unknown): TFormValues {
     return { ...form.state.values, [fieldName]: nextValue } as TFormValues;
+  }
+
+  function getFieldId(fieldName: string) {
+    return `${formId}-${fieldName}`;
   }
 
   function scheduleAutoSubmit() {
@@ -97,6 +171,7 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
   });
   const hasConfiguredPages = fields.some((fieldConfig) => fieldConfig.page !== undefined) || Boolean(config.pages?.length);
   const hasConfiguredTabs = tabs.visibleTabs.length > 0;
+  const validationSummaryConfig = getValidationSummaryConfig();
 
   function isCompletedValue(value: unknown) {
     if (Array.isArray(value)) {
@@ -150,6 +225,99 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
     }
 
     return fieldConfig.conditional(conditionalValues as TFormValues);
+  }
+
+  function getFieldErrorFromMeta(fieldName: string, fieldMeta: FormedibleValidationFormState<TFormValues>['fieldMeta']) {
+    return fieldMeta?.[fieldName]?.errors?.map(formatValidationError).find((message) => message !== undefined);
+  }
+
+  function getFieldErrorFromConfiguredValidation(fieldConfig: NormalizedFieldConfig<TFormValues>, values: TFormValues) {
+    const validators = buildFieldValidators<TFormValues, DeepKeys<TFormValues>>(
+      fieldConfig,
+      config.schema,
+      config.crossFieldValidation,
+      config.asyncValidation,
+    ) as unknown as RuntimeFieldValidator<TFormValues>;
+
+    return validators.onSubmit?.({
+      value: getValueAtFieldPath(values, fieldConfig.name),
+      fieldApi: { form },
+    });
+  }
+
+  function getInvalidFieldEntries(state: FormedibleValidationFormState<TFormValues>): readonly InvalidFieldEntry<TFormValues>[] {
+    const entries: InvalidFieldEntry<TFormValues>[] = [];
+
+    for (const fieldConfig of fields) {
+      if (!shouldRenderField(fieldConfig, state.values)) {
+        continue;
+      }
+
+      const message = getFieldErrorFromMeta(fieldConfig.name, state.fieldMeta) ?? getFieldErrorFromConfiguredValidation(fieldConfig, state.values);
+
+      if (message) {
+        entries.push({ field: fieldConfig, message, page: fieldConfig.page ?? 1, tab: fieldConfig.tab });
+      }
+    }
+
+    return entries;
+  }
+
+  function countInvalidFieldsByPage(entries: readonly InvalidFieldEntry<TFormValues>[]) {
+    const counts: Record<number, number> = {};
+
+    for (const entry of entries) {
+      counts[entry.page ?? 1] = (counts[entry.page ?? 1] ?? 0) + 1;
+    }
+
+    return counts;
+  }
+
+  function countInvalidFieldsByTab(entries: readonly InvalidFieldEntry<TFormValues>[]) {
+    const counts: Record<string, number> = {};
+
+    for (const entry of entries) {
+      if (entry.tab !== undefined) {
+        counts[entry.tab] = (counts[entry.tab] ?? 0) + 1;
+      }
+    }
+
+    return counts;
+  }
+
+  function focusInvalidField(fieldName: string) {
+    if (focusInvalidFieldTimeoutRef.current !== undefined) {
+      clearTimeout(focusInvalidFieldTimeoutRef.current);
+    }
+
+    focusInvalidFieldTimeoutRef.current = setTimeout(() => {
+      const element = document.getElementById(getFieldId(fieldName));
+
+      element?.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+      element?.focus({ preventScroll: true });
+    }, 0);
+  }
+
+  function navigateToInvalidField(entry: InvalidFieldEntry<TFormValues>) {
+    if (hasConfiguredTabs && entry.tab !== undefined && tabs.visibleTabs.some((tab) => tab.id === entry.tab)) {
+      tabs.setActiveTab(entry.tab);
+    } else if (hasConfiguredPages && entry.page !== undefined && multiPage.visiblePages.includes(entry.page)) {
+      multiPage.setCurrentPage(entry.page);
+    }
+
+    focusInvalidField(entry.field.name);
+  }
+
+  function handleInvalidSubmitEntries(entries: readonly InvalidFieldEntry<TFormValues>[]) {
+    if (!validationSummaryConfig.autoNavigate) {
+      return;
+    }
+
+    const firstInvalidEntry = entries.at(0);
+
+    if (firstInvalidEntry) {
+      navigateToInvalidField(firstInvalidEntry);
+    }
   }
 
   function withDynamicText(fieldConfig: NormalizedFieldConfig<TFormValues>, values: FormedibleFormValues) {
@@ -231,7 +399,7 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
             <FieldRenderer
               fieldConfig={renderConfig}
               field={{
-                id: `${formId}-${fieldName}`,
+                id: getFieldId(fieldName),
                 name: fieldName,
                 value: field.state.value,
                 formValues: localValues ?? form.state.values,
@@ -247,6 +415,10 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
                   config.formOptions.onBlur?.({ value: form.state.values, formApi: getFormApiContext() });
                 },
                 onChange: (nextValue) => {
+                  if (!field.state.meta.isTouched) {
+                    field.setMeta((previous) => ({ ...previous, isTouched: true }));
+                  }
+
                   field.handleChange(nextValue as FieldValueUpdate);
                   analytics.trackFieldChange(fieldName, nextValue);
                   const nextValues = getValuesWithFieldUpdate(fieldName, nextValue);
@@ -306,7 +478,56 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
     return renderedFields;
   }
 
-  function renderPageHeader(values: FormedibleFormValues) {
+  function getPageLabel(pageNumber: number, values: FormedibleFormValues): ReactNode {
+    return resolveDynamicText(config.pages?.find((page) => page.page === pageNumber)?.title, values) ?? `Step ${pageNumber}`;
+  }
+
+  function getTabLabel(tabId: string, values: FormedibleFormValues): ReactNode {
+    const tabConfig = tabs.visibleTabs.find((tab) => tab.id === tabId);
+
+    return tabConfig ? resolveDynamicText(tabConfig.label, values) : tabId;
+  }
+
+  function getInvalidFieldLocation(entry: InvalidFieldEntry<TFormValues>, values: FormedibleFormValues): ReactNode {
+    if (hasConfiguredTabs && entry.tab !== undefined) {
+      return getTabLabel(entry.tab, values);
+    }
+
+    if (hasConfiguredPages && entry.page !== undefined) {
+      return getPageLabel(entry.page, values);
+    }
+
+    return undefined;
+  }
+
+  function renderValidationSummary(entries: readonly InvalidFieldEntry<TFormValues>[], values: FormedibleFormValues) {
+    if (!validationSummaryConfig.enabled || !hasInvalidSubmitAttempt || entries.length === 0) {
+      return undefined;
+    }
+
+    return (
+      <div className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm" role="alert" aria-live="polite" data-formedible-validation-summary="true">
+        <p className="font-medium text-destructive">Please fix {entries.length} invalid {entries.length === 1 ? 'field' : 'fields'}.</p>
+        <ul className="mt-2 space-y-1">
+          {entries.map((entry) => {
+            const location = getInvalidFieldLocation(entry, values);
+
+            return (
+              <li key={entry.field.name}>
+                <button type="button" className="text-left text-destructive underline-offset-4 hover:underline" onClick={() => navigateToInvalidField(entry)}>
+                  <span>{entry.field.label ?? entry.field.name}</span>
+                  {location ? <span> on {location}</span> : undefined}
+                  <span>: {entry.message}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    );
+  }
+
+  function renderPageHeader(values: FormedibleFormValues, errorCount: number) {
     if (!hasConfiguredPages) {
       return undefined;
     }
@@ -323,6 +544,7 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
         showPercentage={config.progress?.showPercentage}
         title={resolveDynamicText(pageConfig?.title, values)}
         description={resolveDynamicText(pageConfig?.description, values)}
+        errorCount={validationSummaryConfig.showBadges && hasInvalidSubmitAttempt ? errorCount : 0}
       />
     );
   }
@@ -336,6 +558,7 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
       <FormRoot
         {...props}
         className={className}
+        noValidate={props.noValidate ?? true}
         aria-busy={config.loading ? true : undefined}
         onBlur={(event) => {
           onBlur?.(event);
@@ -370,23 +593,36 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
         onSubmit={(event) => {
           event.preventDefault();
           event.stopPropagation();
+          const invalidEntries = getInvalidFieldEntries(form.state as FormedibleValidationFormState<TFormValues>);
+
+          if (invalidEntries.length > 0) {
+            setHasInvalidSubmitAttempt(true);
+            handleInvalidSubmitEntries(invalidEntries);
+            return;
+          }
+
           form.handleSubmit();
         }}
       >
         <fieldset disabled={controlsDisabled} className="contents">
-        <form.Subscribe selector={(state) => state.values}>
-          {(values) => {
-            const formValues = values as FormedibleFormValues;
+        <form.Subscribe selector={(state) => ({ values: state.values, fieldMeta: state.fieldMeta })}>
+          {(state) => {
+            const formValues = state.values as TFormValues;
+            const invalidEntries = getInvalidFieldEntries({ values: formValues, fieldMeta: state.fieldMeta });
+            const pageErrorCounts = countInvalidFieldsByPage(invalidEntries);
+            const tabErrorCounts = countInvalidFieldsByTab(invalidEntries);
             const fieldsContent = renderFields(formValues);
 
             return (
               <FormLayout className={config.formClassName}>
+                {renderValidationSummary(invalidEntries, formValues)}
                 {hasConfiguredTabs ? (
                   <FormTabs
                     tabs={tabs.visibleTabs.map((tab) => ({
                       id: tab.id,
                       label: resolveDynamicText(tab.label, formValues),
                       description: resolveDynamicText(tab.description, formValues),
+                      errorCount: validationSummaryConfig.showBadges && hasInvalidSubmitAttempt ? tabErrorCounts[tab.id] ?? 0 : 0,
                     }))}
                     activeTab={tabs.activeTab}
                     onTabChange={tabs.setActiveTab}
@@ -395,7 +631,7 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
                   </FormTabs>
                 ) : (
                   <>
-                    {renderPageHeader(formValues)}
+                    {renderPageHeader(formValues, pageErrorCounts[multiPage.currentPage] ?? 0)}
                     {fieldsContent}
                   </>
                 )}

@@ -8,7 +8,7 @@ import { defaultTabs } from '@/components/formedible/builder/default-tabs';
 import { cn } from '@/lib/utils';
 import { defaultFormMetadata } from '@/lib/formedible/builder-types';
 import type { FormBuilderProps, FormMetadata, TabConfig } from '@/lib/formedible/builder-types';
-import type { FormedibleFieldType } from '@/lib/formedible/types';
+import type { FormedibleFieldType } from '@/components/formedible/lib/types';
 
 const emptyInitialFields: NonNullable<FormBuilderProps['initialFields']> = [];
 

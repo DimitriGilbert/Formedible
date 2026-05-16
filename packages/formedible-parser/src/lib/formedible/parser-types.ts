@@ -6,7 +6,7 @@ import type {
   FormediblePageConfig,
   FormedibleProgressConfig,
   UseFormedibleOptions,
-} from '@/lib/formedible/types';
+} from '@/components/formedible/lib/types';
 
 export type ParsedFieldConfig = FormedibleFieldConfig<FormedibleFormValues>;
 

@@ -159,12 +159,18 @@ function renderClient(element: ReactElement) {
   const previousEvent = globalThis.Event;
   const actGlobal = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean };
   const previousActEnvironment = actGlobal.IS_REACT_ACT_ENVIRONMENT;
+  const elementPrototype = dom.window.HTMLElement.prototype as HTMLElement & {
+    attachEvent?: () => void;
+    detachEvent?: () => void;
+  };
 
   globalThis.window = dom.window as unknown as Window & typeof globalThis;
   globalThis.document = dom.window.document;
   globalThis.HTMLElement = dom.window.HTMLElement;
   globalThis.Event = dom.window.Event;
   actGlobal.IS_REACT_ACT_ENVIRONMENT = true;
+  elementPrototype.attachEvent = () => undefined;
+  elementPrototype.detachEvent = () => undefined;
 
   const root = createRoot(rootElement);
   act(() => {
@@ -292,6 +298,103 @@ test('multipage navigation respects disabled, loading, and hidden submit states'
   assert.doesNotMatch(hiddenSubmitLastPageMarkup, />Submit<\/button>/);
 });
 
+test('multipage invalid submit shows hidden errors and navigates to the first invalid page', async () => {
+  function ExampleForm() {
+    const { Form } = useFormedible<FormedibleFormValues>({
+      fields: [
+        { name: 'firstName', type: 'text', label: 'First name', required: true, page: 1 },
+        { name: 'email', type: 'email', label: 'Email', required: true, page: 2 },
+      ],
+      pages: [
+        { page: 1, title: 'Personal' },
+        { page: 2, title: 'Contact' },
+      ],
+      progress: { showSteps: true },
+      formOptions: {
+        defaultValues: { firstName: '', email: '' },
+        onSubmit: () => undefined,
+      },
+    });
+
+    return <Form />;
+  }
+
+  const rendered = renderClient(<ExampleForm />);
+  await act(async () => {
+    await wait(0);
+  });
+
+  const nextButton = [...rendered.document.querySelectorAll('button')].find((button) => button.textContent === 'Next');
+  assert.ok(nextButton);
+  act(() => {
+    nextButton.click();
+  });
+  await act(async () => {
+    await wait(0);
+  });
+  assert.match(rendered.document.body.textContent ?? '', /Contact/);
+
+  act(() => {
+    rendered.document.querySelector('form')?.requestSubmit();
+  });
+  await act(async () => {
+    await wait(0);
+  });
+
+  const bodyText = rendered.document.body.textContent ?? '';
+
+  assert.match(bodyText, /Please fix 2 invalid fields/);
+  assert.match(bodyText, /First name on Personal: First name is required/);
+  assert.match(bodyText, /Email on Contact: Email is required/);
+  assert.match(bodyText, /Personal/);
+  assert.ok(rendered.document.querySelector('input[name="firstName"]'));
+  rendered.unmount();
+});
+
+test('tabbed invalid submit shows tab badges and navigates to the invalid tab', async () => {
+  function ExampleForm() {
+    const { Form } = useFormedible<FormedibleFormValues>({
+      fields: [
+        { name: 'firstName', type: 'text', label: 'First name', required: true, tab: 'personal' },
+        { name: 'email', type: 'email', label: 'Email', required: true, tab: 'contact' },
+      ],
+      tabs: [
+        { id: 'personal', label: 'Personal' },
+        { id: 'contact', label: 'Contact' },
+      ],
+      formOptions: {
+        defaultValues: { firstName: 'Ada', email: '' },
+        onSubmit: () => undefined,
+      },
+    });
+
+    return <Form />;
+  }
+
+  const rendered = renderClient(<ExampleForm />);
+  await act(async () => {
+    await wait(0);
+  });
+
+  act(() => {
+    rendered.document.querySelector('form')?.requestSubmit();
+  });
+  await act(async () => {
+    await wait(0);
+  });
+
+  const contactTab = [...rendered.document.querySelectorAll('[role="tab"]')].find((tab) => tab.textContent?.includes('Contact'));
+  const bodyText = rendered.document.body.textContent ?? '';
+
+  assert.match(bodyText, /Please fix 1 invalid field/);
+  assert.match(bodyText, /Email on Contact: Email is required/);
+  assert.ok(contactTab);
+  assert.equal(contactTab.getAttribute('aria-selected'), 'true');
+  assert.match(contactTab.textContent ?? '', /1/);
+  assert.ok(rendered.document.querySelector('input[name="email"]'));
+  rendered.unmount();
+});
+
 test('analytics compatibility tracker fires restored callbacks with expected arguments', () => {
   const calls: string[] = [];
   const tracker = createFormAnalyticsTracker<FormedibleFormValues>(
@@ -393,6 +496,104 @@ test('useFormedible fires restored analytics callbacks through field and form ru
   assert.ok(calls.includes('field-complete:email:true'));
   assert.ok(calls.includes('form-complete:ada@example.com'));
   assert.ok(calls.includes('form-reset:reset'));
+});
+
+test('useFormedible validates required fields when their value changes before blur', async () => {
+  let capturedField: FormedibleFieldController | undefined;
+
+  function ExampleForm() {
+    const { Form } = useFormedible<FormedibleFormValues>({
+      fields: [
+        {
+          name: 'email',
+          type: 'text',
+          label: 'Email',
+          required: true,
+          component: ({ field }) => {
+            capturedField = field;
+            return <input name={field.name} value={String(field.value ?? '')} onChange={(event) => field.onChange(event.target.value)} readOnly />;
+          },
+        },
+      ],
+      formOptions: {
+        defaultValues: { email: 'ada@example.com' },
+        onSubmit: () => undefined,
+      },
+    });
+
+    return <Form />;
+  }
+
+  const rendered = renderClient(<ExampleForm />);
+  await act(async () => {
+    await wait(0);
+  });
+
+  const field = capturedField;
+  assert.ok(field);
+
+  act(() => {
+    field.onChange('');
+  });
+  await act(async () => {
+    await wait(0);
+  });
+
+  assert.equal(capturedField?.error, 'Email is required');
+  rendered.unmount();
+});
+
+test('useFormedible clears blur-created required errors when value changes', async () => {
+  let capturedField: FormedibleFieldController | undefined;
+
+  function ExampleForm() {
+    const { Form } = useFormedible<FormedibleFormValues>({
+      fields: [
+        {
+          name: 'email',
+          type: 'text',
+          label: 'Email',
+          required: true,
+          component: ({ field }) => {
+            capturedField = field;
+            return <input name={field.name} value={String(field.value ?? '')} onChange={(event) => field.onChange(event.target.value)} onBlur={field.onBlur} readOnly />;
+          },
+        },
+      ],
+      formOptions: {
+        defaultValues: { email: '' },
+        onSubmit: () => undefined,
+      },
+    });
+
+    return <Form />;
+  }
+
+  const rendered = renderClient(<ExampleForm />);
+  await act(async () => {
+    await wait(0);
+  });
+
+  const field = capturedField;
+  assert.ok(field);
+
+  act(() => {
+    field.onBlur();
+  });
+  await act(async () => {
+    await wait(0);
+  });
+  assert.equal(capturedField?.error, 'Email is required');
+
+  act(() => {
+    field.onChange('ada@example.com');
+  });
+  await act(async () => {
+    await wait(0);
+  });
+
+  assert.equal(capturedField?.error, undefined);
+  rendered.unmount();
 });
 
 test('useFormedible wires restored form event callbacks through the rendered form', () => {

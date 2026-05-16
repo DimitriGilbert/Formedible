@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { defaultParserConfig, generateSystemPrompt, mergeParserConfig, parserConfigFields, validateParserConfig } from '@/lib/formedible/parser-config-schema';
-import type { ParserConfig } from '@/lib/formedible/parser-config-schema';
+import { defaultParserConfig, generateSystemPrompt, mergeParserConfig, parserConfigFields, validateParserConfig } from '@/components/formedible/lib/parser-config-schema';
+import type { ParserConfig } from '@/components/formedible/lib/parser-config-schema';
 import { cn } from '@/lib/utils';
 
 export interface ParserSettingsProps {

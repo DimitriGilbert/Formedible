@@ -159,6 +159,43 @@ describe('FormedibleParser', () => {
     assert.equal(result.config?.fields[2]?.type, 'colorPicker');
   });
 
+  it('preserves supported field config objects such as numberConfig', () => {
+    const parsed = FormedibleParser.parse(`{
+      fields: [
+        { name: 'partySize', type: 'number', label: 'Party size', min: 1, max: 12, numberConfig: { min: 1, max: 12, step: 1 } },
+        { name: 'comments', type: 'textarea', label: 'Comments', textareaConfig: { showWordCount: true } }
+      ],
+      formOptions: { defaultValues: { partySize: 2, comments: '' } }
+    }`);
+
+    assert.deepEqual(parsed.fields[0]?.numberConfig, { min: 1, max: 12, step: 1 });
+    assert.deepEqual(parsed.fields[1]?.textareaConfig, { showWordCount: true });
+  });
+
+  it('preserves serializable canonical field metadata keys', () => {
+    const parsed = FormedibleParser.parse(`{
+      fields: [
+        {
+          name: 'phone',
+          type: 'masked',
+          label: 'Phone',
+          mask: '(999) 999-9999',
+          help: { text: 'Use your best contact number.' },
+          datalist: [{ value: 'home', label: 'Home' }],
+          optionSets: {
+            country: [{ value: 'us', label: 'United States' }]
+          }
+        }
+      ],
+      formOptions: { defaultValues: { phone: '' } }
+    }`);
+
+    assert.equal(parsed.fields[0]?.mask, '(999) 999-9999');
+    assert.deepEqual(parsed.fields[0]?.help, { text: 'Use your best contact number.' });
+    assert.deepEqual(parsed.fields[0]?.datalist, [{ value: 'home', label: 'Home' }]);
+    assert.deepEqual(parsed.fields[0]?.optionSets, { country: [{ value: 'us', label: 'United States' }] });
+  });
+
   it('infers schema information from field definitions', () => {
     const result = FormedibleParser.parseWithSchemaInference(`{
       fields: [

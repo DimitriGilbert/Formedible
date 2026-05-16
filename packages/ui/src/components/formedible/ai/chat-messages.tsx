@@ -63,7 +63,7 @@ export function ChatMessages({ messages, className }: ChatMessagesProps) {
                 <p className="mt-2 whitespace-pre-wrap text-xs text-muted-foreground">{message.thinking}</p>
               </details>
             ) : null}
-            {isAssistant && !isStreaming ? <MarkdownMessage content={message.content} /> : <p className="whitespace-pre-wrap">{message.content}</p>}
+            {isAssistant ? <MarkdownMessage content={message.content} /> : <p className="whitespace-pre-wrap">{message.content}</p>}
             {isAssistant && !isStreaming ? <RawOutputPanel message={message} className="mt-3" /> : null}
           </article>
         );

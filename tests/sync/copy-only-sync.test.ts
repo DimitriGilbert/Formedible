@@ -168,4 +168,15 @@ describe('quick sync', () => {
       await rm(fixtureRoot, { recursive: true, force: true });
     }
   });
+
+  it('does not vendor Formedible core into registry extension packages', async () => {
+    const syncScript = await readFile(syncScriptPath, 'utf8');
+
+    assert.doesNotMatch(syncScript, /ownerRoot:\s*['"]packages\/formedible['"][\s\S]*packages\/builder\/src/);
+    assert.doesNotMatch(syncScript, /ownerRoot:\s*['"]packages\/formedible['"][\s\S]*packages\/ai-builder\/src/);
+    assert.doesNotMatch(syncScript, /ownerRoot:\s*['"]packages\/formedible['"][\s\S]*packages\/formedible-parser\/src/);
+    assert.doesNotMatch(syncScript, /ownerRoot:\s*['"]packages\/builder['"][\s\S]*packages\/ai-builder\/src/);
+    assert.doesNotMatch(syncScript, /ownerRoot:\s*['"]packages\/formedible-parser['"][\s\S]*packages\/builder\/src/);
+    assert.doesNotMatch(syncScript, /ownerRoot:\s*['"]packages\/formedible-parser['"][\s\S]*packages\/ai-builder\/src/);
+  });
 });

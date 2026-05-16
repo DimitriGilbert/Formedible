@@ -177,7 +177,7 @@ async function verifyArrayFieldInteractions(session: string): Promise<void> {
 
 async function waitForRequiredExamplesRouteText(session: string): Promise<void> {
   const requiredTexts = [
-    'Interactive Examples',
+    'Examples you can run',
     'All (14)',
     'Basic examples (6)',
     'Advanced examples (8)',

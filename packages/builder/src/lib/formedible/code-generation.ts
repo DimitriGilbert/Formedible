@@ -6,7 +6,7 @@ import type {
   FormediblePageConfig,
   FormedibleTabConfig,
   UseFormedibleOptions,
-} from '@/lib/formedible/types';
+} from '@/components/formedible/lib/types';
 import type { FormPage, FormSettings, FormTab } from '@/lib/formedible/builder-types';
 
 export interface CodeGenerationOptions {
@@ -188,7 +188,7 @@ export function generateFormCode(options: CodeGenerationOptions): GeneratedCodeR
 
   const formConfig = JSON.stringify(configObject, null, 2)
     .replace('"FORMEDIBLE_SUBMIT_HANDLER"', 'async ({ value }) => {\n      window.dispatchEvent(new CustomEvent(\'formedible-submit\', { detail: value }));\n    }');
-  const fullCode = `import { z } from 'zod';\n\nimport { useFormedible } from '@/hooks/use-formedible';\n\nexport function MyForm() {\n  const schema = ${schemaCode};\n  const { Form } = useFormedible({\n    ...${formConfig},\n    schema,\n  });\n\n  return <Form />;\n}\n`;
+  const fullCode = `import { z } from 'zod';\n\nimport { useFormedible } from '@/components/formedible/hooks/use-formedible';\n\nexport function MyForm() {\n  const schema = ${schemaCode};\n  const { Form } = useFormedible({\n    ...${formConfig},\n    schema,\n  });\n\n  return <Form />;\n}\n`;
 
   return {
     fullCode,

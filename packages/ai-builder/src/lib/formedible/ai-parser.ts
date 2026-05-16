@@ -1,7 +1,7 @@
-import { extractFormedibleCode, FormedibleParser } from '@/lib/formedible/formedible-parser';
+import { extractFormedibleCode, FormedibleParser } from '@/components/formedible/lib/formedible-parser';
 import type { AiFormParseResult, AiParseError, AiParserConfig } from '@/lib/formedible/ai-types';
-import type { EnhancedParserError } from '@/lib/formedible/parser-types';
-import type { FormedibleFieldConfig, FormedibleFormValues, UseFormedibleOptions } from '@/lib/formedible/types';
+import type { EnhancedParserError } from '@/components/formedible/lib/parser-types';
+import type { FormedibleFieldConfig, FormedibleFormValues, UseFormedibleOptions } from '@/components/formedible/lib/types';
 
 function defaultValueForField(field: FormedibleFieldConfig<FormedibleFormValues>): unknown {
   if (field.type === 'checkbox' || field.type === 'switch') {

@@ -22,7 +22,7 @@ import { extractFormCode, parseAiToFormedible as parseAiCode } from '@/lib/forme
 import { createAiStreamScheduler } from '@/lib/formedible/ai-stream-scheduler';
 import { canUseStorage, clearConversations, clearStoredProviderSecrets, exportConversation, persistConversations, persistProviderSecrets, persistProviderSettings, persistUiState, readPersistedAIBuilderState, readStoredProviderSecrets, STORAGE_KEYS, upsertConversation, writeJson } from '@/lib/formedible/ai-storage';
 import type { AiConversation, AiMessage, AiStreamEvent, ProviderSecrets, ProviderSettings } from '@/lib/formedible/ai-types';
-import { defaultParserConfig, generateSystemPrompt } from '@/lib/formedible/parser-config-schema';
+import { defaultParserConfig, generateSystemPrompt } from '@/components/formedible/lib/parser-config-schema';
 
 const sampleFormCode = `{
   fields: [
@@ -860,6 +860,25 @@ test('chat streaming loop is scheduler-buffered instead of using per-chunk state
   assert.ok(streamLoopMatch);
   assert.match(streamLoopMatch[0], /streamScheduler\.enqueue\(event\)/);
   assert.doesNotMatch(streamLoopMatch[0], /setIsGenerating|setAbortController|onMessagesChange|updateAssistantMessage/);
+});
+
+test('chat streaming renders do not attach debug events or duplicate raw content', () => {
+  const chatSource = readFileSync(resolve(process.cwd(), 'src/components/formedible/ai/chat-interface.tsx'), 'utf8');
+  const schedulerCallbackMatch = /createAiStreamScheduler\(\(flush\) => \{[\s\S]*?\n    \}\);/.exec(chatSource);
+
+  assert.ok(schedulerCallbackMatch);
+  assert.doesNotMatch(schedulerCallbackMatch[0], /events:\s*streamedEvents/);
+  assert.doesNotMatch(schedulerCallbackMatch[0], /rawContent:\s*streamedContent/);
+});
+
+test('AI builder skips streaming persistence but writes terminal message updates immediately', () => {
+  const builderSource = readFileSync(resolve(process.cwd(), 'src/components/formedible/ai/ai-builder.tsx'), 'utf8');
+  const updateMessagesMatch = /function updateMessages[\s\S]*?\n  }/.exec(builderSource);
+
+  assert.match(builderSource, /hasStreamingMessage\(conversations\)/);
+  assert.ok(updateMessagesMatch);
+  assert.match(updateMessagesMatch[0], /shouldPersistMessages\(nextMessages\)/);
+  assert.match(updateMessagesMatch[0], /persistConversations\(result\.conversations\)/);
 });
 
 test('generation layer normalizes errors while retaining raw debug metadata', async () => {

@@ -11,16 +11,18 @@ const allowedFormedibleDocImports = new Set([
     '@/lib/formedible/types',
     '@/lib/formedible/normalize-field-config',
 ]);
+function isAllowedLocalShadcnDocImport(specifier) {
+    return specifier === '@/components/ui/formedible' || specifier.startsWith('@/components/ui/formedible/');
+}
 function referencesFormedible(specifier) {
-    const referencesFormedibleUiInstall = specifier.startsWith('@formedible/ui/components/formedible/');
     if (specifier.startsWith('@formedible/ui/')) {
-        return referencesFormedibleUiInstall;
+        return false;
     }
     const referencesFormediblePackage = specifier === '@formedible/formedible' || specifier.startsWith('@formedible/formedible/');
     return referencesFormediblePackage || /formedible|registry\/default/i.test(specifier);
 }
 function isForbiddenDocImport(specifier) {
-    return referencesFormedible(specifier) && !allowedFormedibleDocImports.has(specifier);
+    return referencesFormedible(specifier) && !allowedFormedibleDocImports.has(specifier) && !isAllowedLocalShadcnDocImport(specifier);
 }
 export function findPublicDocImportViolations(files) {
     return files
@@ -46,11 +48,11 @@ describe('public docs imports', () => {
             },
         ]));
     });
-    it('rejects sample docs importing Formedible through broad package UI paths', () => {
+    it('rejects sample docs importing Formedible through non-shadcn package paths', () => {
         assertHasViolations(findPublicDocImportViolations([
             {
                 relativePath: 'docs/getting-started.mdx',
-                content: "import { Formedible } from '@formedible/ui/components/formedible/form';",
+                content: "import { Formedible } from '@formedible/formedible/components/formedible/form';",
             },
         ]));
     });

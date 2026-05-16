@@ -7,6 +7,7 @@ import { pathToFileURL } from 'node:url';
 const sourceFileExtensions = new Set(['.js', '.jsx', '.ts', '.tsx']);
 const sourceFileExtensionPattern = /\.[cm]?[jt]sx?$/;
 const ignoredDirectories = new Set(['.compiled', '.tmp', 'dist', 'node_modules']);
+const uiPackageFormedibleLibMirror = `@formedible/ui/lib/${'formedible'}/`;
 
 const validationScopes = [
   {
@@ -116,7 +117,7 @@ function isExactOrSubpath(specifier, expectedSpecifier) {
 }
 
 function validateWebSyncImport(occurrence) {
-  if (occurrence.specifier.startsWith('@formedible/ui/lib/formedible/')) {
+  if (occurrence.specifier.startsWith(uiPackageFormedibleLibMirror)) {
     return `apps/web synced shadcn files must not import invalid package lib mirror ${occurrence.specifier}`;
   }
 

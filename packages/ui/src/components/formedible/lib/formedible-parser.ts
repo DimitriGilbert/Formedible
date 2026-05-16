@@ -158,14 +158,23 @@ const allowedFieldKeys = new Set([
   'dynamicPlaceholder',
   'defaultValue',
   'options',
+  'optionSets',
+  'datalist',
+  'help',
+  'mask',
   'nestedFields',
   'objectConfig',
   'arrayConfig',
+  'textareaConfig',
+  'passwordConfig',
+  'numberConfig',
   'dateConfig',
   'sliderConfig',
   'ratingConfig',
   'multiSelectConfig',
   'comboboxConfig',
+  'autocompleteConfig',
+  'maskedInputConfig',
   'multiComboboxConfig',
   'colorConfig',
   'phoneConfig',
@@ -406,6 +415,32 @@ function sanitizeOptions(value: unknown): readonly FormedibleFieldOption[] | und
   });
 }
 
+function sanitizeOptionSets(value: unknown): Readonly<Record<string, readonly FormedibleFieldOption[]>> | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const output: Record<string, readonly FormedibleFieldOption[]> = {};
+
+  for (const [key, options] of Object.entries(value)) {
+    const sanitizedOptions = sanitizeOptions(options);
+
+    if (sanitizedOptions !== undefined) {
+      output[key] = sanitizedOptions;
+    }
+  }
+
+  return Object.keys(output).length > 0 ? output : undefined;
+}
+
+function sanitizeHelpConfig(value: unknown): string | Record<string, unknown> | undefined {
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  return sanitizePlainConfig(value);
+}
+
 function copyString(source: Readonly<Record<string, unknown>>, target: Record<string, unknown>, key: string): void {
   if (typeof source[key] === 'string') {
     target[key] = source[key];
@@ -529,9 +564,26 @@ function sanitizeField(field: unknown, index: number): FormedibleFieldConfig<For
     output.defaultValue = field.defaultValue;
   }
 
+  copyString(field, output, 'mask');
+
   const options = sanitizeOptions(field.options);
   if (options !== undefined) {
     output.options = options;
+  }
+
+  const optionSets = sanitizeOptionSets(field.optionSets);
+  if (optionSets !== undefined) {
+    output.optionSets = optionSets;
+  }
+
+  const datalist = sanitizeOptions(field.datalist);
+  if (datalist !== undefined) {
+    output.datalist = datalist;
+  }
+
+  const help = sanitizeHelpConfig(field.help);
+  if (help !== undefined) {
+    output.help = help;
   }
 
   if (Array.isArray(field.nestedFields)) {
@@ -549,11 +601,16 @@ function sanitizeField(field: unknown, index: number): FormedibleFieldConfig<For
   }
 
   for (const key of [
+    'textareaConfig',
+    'passwordConfig',
+    'numberConfig',
     'dateConfig',
     'sliderConfig',
     'ratingConfig',
     'multiSelectConfig',
     'comboboxConfig',
+    'autocompleteConfig',
+    'maskedInputConfig',
     'multiComboboxConfig',
     'colorConfig',
     'phoneConfig',

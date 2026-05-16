@@ -1,4 +1,4 @@
-import type { FormedibleFieldType } from '@/lib/formedible/types';
+import type { FormedibleFieldType } from '@/components/formedible/lib/types';
 import { builderFieldTypes } from '@/lib/formedible/builder-types';
 import type { FormField } from '@/lib/formedible/builder-types';
 

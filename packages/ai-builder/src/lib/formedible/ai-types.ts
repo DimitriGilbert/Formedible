@@ -1,5 +1,5 @@
-import type { ParsedFormConfig } from '@/lib/formedible/parser-types';
-import type { FormedibleFormValues, UseFormedibleOptions } from '@/lib/formedible/types';
+import type { ParsedFormConfig } from '@/components/formedible/lib/parser-types';
+import type { FormedibleFormValues, UseFormedibleOptions } from '@/components/formedible/lib/types';
 
 export type AIProvider = 'openai' | 'anthropic' | 'openrouter';
 

@@ -48,6 +48,14 @@ function toAiParserConfig(config: ParserConfig): AiParserConfig {
   };
 }
 
+function hasStreamingMessage(conversations: readonly AiConversation[]): boolean {
+  return conversations.some((conversation) => conversation.messages.some((message) => message.status === 'streaming'));
+}
+
+function shouldPersistMessages(messages: readonly AiMessage[]): boolean {
+  return messages.length > 0 && messages.every((message) => message.status !== 'streaming');
+}
+
 export function resolveInitialProviderAccess(
   controlledProviderSettings?: ProviderSettings,
   controlledProviderSecrets?: ProviderSecrets,
@@ -125,6 +133,10 @@ export function AIBuilder({
   }, [modelCatalogs, providerSecrets.apiKey, providerSettings.provider, providerValidationError, refreshingProvider]);
 
   useEffect(() => {
+    if (hasStreamingMessage(conversations)) {
+      return;
+    }
+
     persistConversations(conversations);
   }, [conversations]);
 
@@ -170,6 +182,10 @@ export function AIBuilder({
       const result = upsertConversation(previousConversations, currentConversationIdRef.current, nextMessages);
       currentConversationIdRef.current = result.conversationId;
       setCurrentConversationId(result.conversationId);
+
+      if (shouldPersistMessages(nextMessages)) {
+        persistConversations(result.conversations);
+      }
 
       return result.conversations;
     });
