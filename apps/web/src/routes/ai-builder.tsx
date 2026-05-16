@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { Link, createFileRoute } from '@tanstack/react-router';
 
 import { AIBuilder } from '@formedible/ui/components/formedible/ai/ai-builder';
 import { createRouteSeoHead } from '@/features/docs/seo';
@@ -23,24 +23,24 @@ function AiBuilderRoute() {
           </p>
         </div>
         <div className="flex items-center gap-4">
-          <a
+          <Link
             className="text-sm font-medium text-primary underline underline-offset-4 decoration-primary/30"
-            href="/docs/ai-builder"
+            to="/docs/ai-builder"
           >
             Docs
-          </a>
-          <a
+          </Link>
+          <Link
             className="text-sm font-medium text-muted-foreground underline underline-offset-4 decoration-muted-foreground/30"
-            href="/docs/builder"
+            to="/docs/builder"
           >
             Builder
-          </a>
-          <a
+          </Link>
+          <Link
             className="text-sm font-medium text-muted-foreground underline underline-offset-4 decoration-muted-foreground/30"
-            href="/docs/validation"
+            to="/docs/validation"
           >
             Validation
-          </a>
+          </Link>
         </div>
       </header>
       <div className="min-h-0 flex-1 overflow-hidden">

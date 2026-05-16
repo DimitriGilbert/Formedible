@@ -169,15 +169,15 @@ export function AutocompleteField<TFormValues extends FormedibleFormValues>({ fi
           className={cn(fieldConfig.inputClassName, isOpen && 'rounded-b-none')}
           onBlur={() => {
             field.onBlur();
+            if (shouldCommitCustomAutocompleteValue(allowCustom)) {
+              field.onChange(inputValue);
+            }
             setTimeout(() => setIsOpen(false), 150);
           }}
           onChange={(event) => {
             const value = event.target.value;
             setInputValue(value);
             setIsOpen(true);
-            if (shouldCommitCustomAutocompleteValue(allowCustom)) {
-              field.onChange(value);
-            }
           }}
           onFocus={() => {
             if (inputValue.length >= minChars) {

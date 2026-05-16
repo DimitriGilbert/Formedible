@@ -1,5 +1,5 @@
 import { Check, ChevronDown, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { getStringArray, labelToText, resolveFieldOptions } from '@formedible/ui/components/formedible/fields/advanced-field-utils';
 import { FieldWrapper } from '@formedible/ui/components/formedible/fields/field-wrapper';
@@ -15,11 +15,33 @@ export function MultiSelectField<TFormValues extends FormedibleFormValues>({ fie
   const options = resolveFieldOptions(fieldConfig, field.formValues);
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const containerRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const maxSelections = config?.maxSelections ?? Number.POSITIVE_INFINITY;
   const searchable = config?.searchable ?? true;
   const filteredOptions = options.filter((option) => `${option.value} ${labelToText(option.label)}`.toLowerCase().includes(searchQuery.toLowerCase()));
   const canCreate = config?.creatable === true && searchQuery.trim() !== '' && !options.some((option) => option.value.toLowerCase() === searchQuery.trim().toLowerCase());
   const displayOptions = canCreate ? [{ value: searchQuery.trim(), label: `Create "${searchQuery.trim()}"` }, ...filteredOptions] : filteredOptions;
+
+  useEffect(() => {
+    function handlePointerDown(event: MouseEvent) {
+      const target = event.target;
+
+      if (target instanceof Node && !containerRef.current?.contains(target)) {
+        setIsOpen(false);
+        setSearchQuery('');
+      }
+    }
+
+    document.addEventListener('mousedown', handlePointerDown);
+    return () => document.removeEventListener('mousedown', handlePointerDown);
+  }, []);
+
+  useEffect(() => {
+    if (isOpen && searchable) {
+      window.requestAnimationFrame(() => searchInputRef.current?.focus());
+    }
+  }, [isOpen, searchable]);
 
   function toggleValue(value: string) {
     if (selectedValues.includes(value)) {
@@ -29,11 +51,16 @@ export function MultiSelectField<TFormValues extends FormedibleFormValues>({ fie
     }
 
     setSearchQuery('');
+    if (searchable) {
+      window.requestAnimationFrame(() => searchInputRef.current?.focus());
+    } else {
+      setIsOpen(false);
+    }
   }
 
   return (
     <FieldWrapper fieldConfig={fieldConfig} field={field}>
-      <div className="relative space-y-2">
+      <div ref={containerRef} className="relative space-y-2">
         {maxSelections < Number.POSITIVE_INFINITY && <div className="text-sm text-muted-foreground">({selectedValues.length}/{maxSelections})</div>}
         <Button
           type="button"
@@ -73,7 +100,7 @@ export function MultiSelectField<TFormValues extends FormedibleFormValues>({ fie
         </Button>
         {isOpen && (
           <div className="absolute z-50 w-full rounded-md border bg-popover p-1 text-popover-foreground shadow-md">
-            {searchable && <Input value={searchQuery} placeholder={fieldConfig.placeholder ?? 'Search options...'} className="mb-1" onChange={(event) => setSearchQuery(event.target.value)} />}
+            {searchable && <Input ref={searchInputRef} value={searchQuery} placeholder={fieldConfig.placeholder ?? 'Search options...'} className="mb-1" onChange={(event) => setSearchQuery(event.target.value)} />}
             <div className="max-h-60 overflow-y-auto">
               {displayOptions.length === 0 && <div className="p-2 text-center text-sm text-muted-foreground">{config?.noOptionsText ?? 'No options found'}</div>}
               {displayOptions.map((option) => {

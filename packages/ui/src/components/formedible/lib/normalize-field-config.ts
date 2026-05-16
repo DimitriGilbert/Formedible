@@ -1,27 +1,22 @@
 import type { FormedibleFieldConfig, FormedibleFieldType, FormedibleFormValues, NormalizedFieldConfig, NormalizedFieldType } from '@formedible/ui/components/formedible/lib/types';
 
-const fieldTypeAliases: Partial<Record<FormedibleFieldType, NormalizedFieldType>> = {
-  multiselect: 'multiSelect',
-  multicombobox: 'multiCombobox',
-  colorPicker: 'color',
-  maskedInput: 'masked',
-};
-
 export function normalizeFieldType(type: FormedibleFieldType | undefined): NormalizedFieldType {
   if (!type) {
     return 'text';
   }
 
-  const alias = fieldTypeAliases[type];
-  if (alias) {
-    return alias;
+  switch (type) {
+    case 'multiselect':
+      return 'multiSelect';
+    case 'multicombobox':
+      return 'multiCombobox';
+    case 'colorPicker':
+      return 'color';
+    case 'maskedInput':
+      return 'masked';
+    default:
+      return type;
   }
-
-  if (type === 'multiselect' || type === 'multicombobox' || type === 'colorPicker' || type === 'maskedInput') {
-    return 'text';
-  }
-
-  return type;
 }
 
 export function normalizeFieldConfig<TFormValues extends FormedibleFormValues>(

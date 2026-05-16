@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { Link, createFileRoute } from '@tanstack/react-router';
 
 import { FormBuilder } from '@formedible/ui/components/formedible/builder/form-builder';
 import { createRouteSeoHead } from '@/features/docs/seo';
@@ -23,24 +23,24 @@ function BuilderRoute() {
           </p>
         </div>
         <div className="flex items-center gap-4">
-          <a
+          <Link
             className="text-sm font-medium text-primary underline underline-offset-4 decoration-primary/30"
-            href="/docs/builder"
+            to="/docs/builder"
           >
             Docs
-          </a>
-          <a
+          </Link>
+          <Link
             className="text-sm font-medium text-muted-foreground underline underline-offset-4 decoration-muted-foreground/30"
-            href="/docs/fields"
+            to="/docs/fields"
           >
             Fields
-          </a>
-          <a
+          </Link>
+          <Link
             className="text-sm font-medium text-muted-foreground underline underline-offset-4 decoration-muted-foreground/30"
-            href="/docs/api"
+            to="/docs/api"
           >
             API
-          </a>
+          </Link>
         </div>
       </header>
       <div className="flex-1 overflow-y-auto p-4">

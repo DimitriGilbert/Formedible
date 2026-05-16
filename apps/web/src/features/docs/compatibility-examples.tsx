@@ -14,7 +14,11 @@ function rememberDocsInteraction(record: DocsInteractionRecord) {
   latestDocsInteraction = record;
 
   if (typeof window !== 'undefined') {
-    window.sessionStorage.setItem('formedible-docs-last-interaction', JSON.stringify(record));
+    try {
+      window.sessionStorage.setItem('formedible-docs-last-interaction', JSON.stringify(record));
+    } catch {
+      latestDocsInteraction = record;
+    }
   }
 }
 

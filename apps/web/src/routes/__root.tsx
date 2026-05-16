@@ -13,6 +13,7 @@ import appCss from '../index.css?url';
 export interface RouterAppContext {}
 
 const rootHead = createRouteSeoHead('/');
+const shouldRenderRouterDevtools = import.meta.env.DEV;
 
 export const Route = createRootRouteWithContext<RouterAppContext>()({
   head: () => ({
@@ -51,7 +52,7 @@ function RootDocument() {
             </div>
           </div>
           <Toaster richColors />
-          <TanStackRouterDevtools position="bottom-left" />
+          {shouldRenderRouterDevtools ? <TanStackRouterDevtools position="bottom-left" /> : null}
           <ThemeSwitcher />
           <Scripts />
         </body>

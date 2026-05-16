@@ -22,10 +22,19 @@ export function InstallCommand() {
   const [copied, setCopied] = useState(false);
 
   function handleCopy() {
-    navigator.clipboard.writeText(pkgCommands[activePkg]).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
+    if (!navigator.clipboard) {
+      return;
+    }
+
+    navigator.clipboard
+      .writeText(pkgCommands[activePkg])
+      .then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      })
+      .catch(() => {
+        setCopied(false);
+      });
   }
 
   return (

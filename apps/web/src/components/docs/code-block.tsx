@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import type { DocsCodeExample } from '@/features/docs/code-examples';
 
@@ -10,10 +10,31 @@ type CodeBlockProps = {
 
 export function CodeBlock({ example }: CodeBlockProps) {
   const [copyState, setCopyState] = useState<CopyState>('idle');
+  const resetTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  function scheduleCopyStateReset() {
+    if (resetTimeoutRef.current !== undefined) {
+      clearTimeout(resetTimeoutRef.current);
+    }
+
+    resetTimeoutRef.current = setTimeout(() => {
+      setCopyState('idle');
+      resetTimeoutRef.current = undefined;
+    }, 2000);
+  }
+
+  useEffect(() => {
+    return () => {
+      if (resetTimeoutRef.current !== undefined) {
+        clearTimeout(resetTimeoutRef.current);
+      }
+    };
+  }, []);
 
   function handleCopy() {
     if (!navigator.clipboard) {
       setCopyState('failed');
+      scheduleCopyStateReset();
       return;
     }
 
@@ -21,9 +42,11 @@ export function CodeBlock({ example }: CodeBlockProps) {
       .writeText(example.code)
       .then(() => {
         setCopyState('copied');
+        scheduleCopyStateReset();
       })
       .catch(() => {
         setCopyState('failed');
+        scheduleCopyStateReset();
       });
   }
 

@@ -106,14 +106,14 @@ function DocsHubLinks() {
         <div className="mt-8 overflow-hidden rounded-2xl">
           <nav aria-label="Documentation routes" className="grid gap-px bg-border md:grid-cols-4">
             {hubLinks.map((link, i) => (
-              <a
+              <Link
                 key={link.href}
-                href={link.href}
+                to={link.href}
                 className={`group bg-background p-6 outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring ${hubColClasses[i]}`}
               >
                 <p className="text-sm font-semibold text-foreground group-hover:text-primary">{link.title}</p>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{link.description}</p>
-              </a>
+              </Link>
             ))}
           </nav>
         </div>
@@ -133,9 +133,10 @@ function DocsCardGrid() {
         <div className="mt-8 overflow-hidden rounded-2xl">
           <div className="grid gap-px bg-border md:grid-cols-12">
             {docsCards.map((card, i) => (
-              <a
+              <Link
                 key={card.href}
-                href={card.href}
+                to={card.href === '/docs/examples' ? '/docs/examples' : '/docs'}
+                hash={card.href === '/docs/examples' ? undefined : card.href.slice(1)}
                 className={`group bg-background p-6 md:p-8 outline-none transition hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring ${cardColClasses[i]}`}
               >
                 <p className="text-sm font-semibold text-muted-foreground">{card.eyebrow}</p>
@@ -149,7 +150,7 @@ function DocsCardGrid() {
                     </li>
                   ))}
                 </ul>
-              </a>
+              </Link>
             ))}
           </div>
         </div>

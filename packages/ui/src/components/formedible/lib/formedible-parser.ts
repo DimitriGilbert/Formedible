@@ -362,6 +362,46 @@ function cloneJsonValue(value: unknown): unknown {
   throw createParserError('Structured Formedible output contains non-serializable values.', 'UNSUPPORTED_STRUCTURED_VALUE');
 }
 
+function sanitizeDefaultValue(value: unknown): unknown {
+  if (typeof value === 'string' || typeof value === 'boolean' || value === null) {
+    return value;
+  }
+
+  if (typeof value === 'number') {
+    if (Number.isFinite(value)) {
+      return value;
+    }
+
+    throw createParserError('Field defaultValue contains a non-serializable number.', 'UNSUPPORTED_CONFIG_VALUE');
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((entry) => sanitizeDefaultValue(entry));
+  }
+
+  if (isRecord(value)) {
+    const prototype = Object.getPrototypeOf(value) as object | null;
+
+    if (prototype !== Object.prototype && prototype !== null) {
+      throw createParserError('Field defaultValue must be a JSON-serializable plain object.', 'UNSUPPORTED_CONFIG_VALUE');
+    }
+
+    const output: Record<string, unknown> = {};
+
+    for (const [key, entry] of Object.entries(value)) {
+      if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+        throw createParserError(`Field defaultValue contains unsupported key '${key}'.`, 'UNSUPPORTED_CONFIG_KEY');
+      }
+
+      output[key] = sanitizeDefaultValue(entry);
+    }
+
+    return output;
+  }
+
+  throw createParserError('Field defaultValue contains non-serializable values.', 'UNSUPPORTED_CONFIG_VALUE');
+}
+
 function parseStructuredObject(value: unknown): Record<string, unknown> {
   const cloned = cloneJsonValue(value);
 
@@ -561,7 +601,7 @@ function sanitizeField(field: unknown, index: number): FormedibleFieldConfig<For
   }
 
   if (field.defaultValue !== undefined) {
-    output.defaultValue = field.defaultValue;
+    output.defaultValue = sanitizeDefaultValue(field.defaultValue);
   }
 
   copyString(field, output, 'mask');

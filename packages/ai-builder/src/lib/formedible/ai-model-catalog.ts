@@ -4,6 +4,8 @@ import type { AIProvider, ProviderModelCatalog, ProviderModelCatalogEntry } from
 
 export const MODEL_CATALOG_MAX_AGE_MONTHS = 6;
 
+const anthropicModelMaxPages = 20;
+
 interface FetchProviderModelsInput {
   readonly provider: AIProvider;
   readonly apiKey: string;
@@ -149,8 +151,10 @@ async function fetchOpenAIModels(apiKey: string, now: number, fetcher: typeof fe
 async function fetchAnthropicModels(apiKey: string, now: number, fetcher: typeof fetch): Promise<readonly ProviderModelCatalogEntry[]> {
   const models: AnthropicModel[] = [];
   let afterId: string | undefined;
+  let pageCount = 0;
 
   do {
+    pageCount += 1;
     const url = new URL('https://api.anthropic.com/v1/models');
     url.searchParams.set('limit', '1000');
 
@@ -167,7 +171,13 @@ async function fetchAnthropicModels(apiKey: string, now: number, fetcher: typeof
     const data = await readJsonResponse<AnthropicModelResponse>(response);
 
     models.push(...data.data);
-    afterId = data.has_more ? data.last_id : undefined;
+    const nextAfterId = data.has_more ? data.last_id : undefined;
+
+    if (nextAfterId === undefined || nextAfterId === afterId || pageCount >= anthropicModelMaxPages) {
+      afterId = undefined;
+    } else {
+      afterId = nextAfterId;
+    }
   } while (afterId);
 
   return models

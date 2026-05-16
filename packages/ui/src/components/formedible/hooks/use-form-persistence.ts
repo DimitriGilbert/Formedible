@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import type { DeepKeys, DeepValue, Updater } from '@tanstack/react-form';
 
 import type { FormedibleFormValues, FormediblePersistenceConfig } from '@formedible/ui/components/formedible/lib/types';
@@ -97,6 +97,11 @@ export function useFormPersistence<TFormValues extends FormedibleFormValues>(
   config: FormediblePersistenceConfig<TFormValues> | undefined,
   options: FormPersistenceRuntimeOptions = {},
 ) {
+  const latestValuesRef = useRef(form.state.values);
+  latestValuesRef.current = form.state.values;
+  const persistedValuesSignature = config ? JSON.stringify(withoutPersistedFields(latestValuesRef.current, config.exclude)) : '';
+  const { currentPage, setCurrentPage, totalPages } = options;
+
   const saveToStorage = useCallback(() => {
     const storage = getConfiguredStorage(config);
 
@@ -104,8 +109,8 @@ export function useFormPersistence<TFormValues extends FormedibleFormValues>(
       return;
     }
 
-    savePersistedFormPayload(storage, config.key, createPersistedFormPayload(form.state.values, options.currentPage, config.exclude));
-  }, [config, form, options.currentPage]);
+    savePersistedFormPayload(storage, config.key, createPersistedFormPayload(latestValuesRef.current, currentPage, config.exclude));
+  }, [config, currentPage]);
 
   const loadFromStorage = useCallback(() => {
     const storage = getConfiguredStorage(config);
@@ -126,12 +131,12 @@ export function useFormPersistence<TFormValues extends FormedibleFormValues>(
       form.setFieldValue(typedFieldName, fieldValue as Updater<DeepValue<TFormValues, typeof typedFieldName>>);
     }
 
-    if (parsedValue.currentPage !== undefined && parsedValue.currentPage <= (options.totalPages ?? parsedValue.currentPage)) {
-      options.setCurrentPage?.(parsedValue.currentPage);
+    if (parsedValue.currentPage !== undefined && parsedValue.currentPage <= (totalPages ?? parsedValue.currentPage)) {
+      setCurrentPage?.(parsedValue.currentPage);
     }
 
     return parsedValue;
-  }, [config, form, options]);
+  }, [config, form, setCurrentPage, totalPages]);
 
   const clearStorage = useCallback(() => {
     const storage = getConfiguredStorage(config);
@@ -159,7 +164,7 @@ export function useFormPersistence<TFormValues extends FormedibleFormValues>(
     const timeout = window.setTimeout(saveToStorage, config.debounceMs ?? 500);
 
     return () => window.clearTimeout(timeout);
-  }, [config, form.state.values, saveToStorage]);
+  }, [config, persistedValuesSignature, saveToStorage]);
 
   return { saveToStorage, loadFromStorage, clearStorage };
 }

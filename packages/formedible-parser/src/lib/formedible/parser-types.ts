@@ -10,6 +10,8 @@ import type {
 
 export type ParsedFieldConfig = FormedibleFieldConfig<FormedibleFormValues>;
 
+export type FieldOptions = readonly FormedibleFieldOption[];
+
 export type ParsedFormConfig = UseFormedibleOptions<FormedibleFormValues> & {
   readonly title?: string;
   readonly description?: string;
@@ -100,7 +102,6 @@ export type FormedibleStructuredOutput =
 export type {
   FormedibleFieldConfig as FieldConfig,
   FormedibleFieldOption as FieldOption,
-  FormedibleFieldOption as FieldOptions,
   FormedibleFormValues,
   FormedibleObjectConfig as ObjectConfig,
   FormediblePageConfig as PageConfig,

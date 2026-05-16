@@ -32,10 +32,12 @@ export function FieldConfigurator({
   );
 
   function updateField(fieldUpdate: Partial<FormField>): void {
-    const updatedField = globalFieldStore.updateField(fieldId, fieldUpdate) ?? globalFieldStore.replaceField(fieldId, {
-      ...field,
-      ...fieldUpdate,
-    });
+    const updatedField = globalFieldStore.updateField(fieldId, fieldUpdate);
+
+    if (updatedField === undefined) {
+      return;
+    }
+
     onFieldChange?.(updatedField);
   }
 

@@ -51,6 +51,15 @@ function stringLiteral(value: string): string {
   return JSON.stringify(value);
 }
 
+function isValidRegexPattern(pattern: string): boolean {
+  try {
+    new RegExp(pattern);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function fieldSchemaCode(field: FormedibleFieldConfig<FormedibleFormValues>): string {
   const label = reactNodeToCode(field.label) || field.name;
   const builderValidation = getBuilderValidation(field);
@@ -88,7 +97,7 @@ function fieldSchemaCode(field: FormedibleFieldConfig<FormedibleFormValues>): st
     schema = `${schema}.max(${builderValidation.maxLength})`;
   }
 
-  if (builderValidation?.pattern !== undefined && schema.startsWith('z.string()')) {
+  if (builderValidation?.pattern !== undefined && schema.startsWith('z.string()') && isValidRegexPattern(builderValidation.pattern)) {
     schema = `${schema}.regex(new RegExp(${stringLiteral(builderValidation.pattern)}))`;
   }
 
