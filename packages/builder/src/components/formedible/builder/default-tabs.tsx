@@ -56,7 +56,7 @@ function BuilderTabContent({ fields, selectedFieldId, metadata, onAddField, onSe
         </div>
       </div>
       {selectedField !== undefined ? (
-        <FieldConfigurator fieldId={selectedField.id} initialField={selectedField} availablePages={availablePages} />
+        <FieldConfigurator fieldId={selectedField.id} initialField={selectedField} availablePages={availablePages} metadata={metadata} />
       ) : (
         <div className="rounded-lg border border-dashed p-6 text-sm text-muted-foreground">Select a field to configure it.</div>
       )}
@@ -80,11 +80,39 @@ function PreviewTabContent({ metadata, fields }: TabContentProps) {
         previousLabel: metadata.settings.previousLabel,
         progress: metadata.settings.showProgress ? { showSteps: true, showPercentage: true } : undefined,
         formOptions: {
-          defaultValues: {},
+          defaultValues: Object.fromEntries(fields.map((field) => [field.name, previewDefaultValue(field)])),
         },
       }}
     />
   );
+}
+
+function previewDefaultValue(field: TabContentProps['fields'][number]): unknown {
+  if (field.defaultValue !== undefined) {
+    return field.defaultValue;
+  }
+
+  if (field.type === 'checkbox' || field.type === 'switch') {
+    return false;
+  }
+
+  if (field.type === 'number' || field.type === 'slider' || field.type === 'rating') {
+    return field.min ?? 0;
+  }
+
+  if (field.type === 'multiSelect' || field.type === 'multiCombobox' || field.type === 'array') {
+    return [];
+  }
+
+  if (field.type === 'object') {
+    return {};
+  }
+
+  if (field.type === 'file' || field.type === 'location') {
+    return null;
+  }
+
+  return '';
 }
 
 function CodeTabContent({ metadata, fields }: TabContentProps) {

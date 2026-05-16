@@ -4,10 +4,6 @@
       "ownerRoot": "packages/builder",
       "destinationRoots": ["packages/ui/src/components"],
       "useRegistryTargets": true
-    },
-    {
-      "ownerRoot": "packages/builder",
-      "destinationRoots": ["packages/ai-builder/src"]
     }
   ]
 }

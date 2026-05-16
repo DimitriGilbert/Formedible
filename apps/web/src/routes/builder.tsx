@@ -12,7 +12,7 @@ export const Route = createFileRoute('/builder')({
 
 function BuilderRoute() {
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex min-h-full flex-col">
       <header className="flex items-center justify-between border-b px-6 py-4">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-foreground">
@@ -43,8 +43,8 @@ function BuilderRoute() {
           </a>
         </div>
       </header>
-      <div className="flex-1 overflow-hidden">
-        <FormBuilder className="h-full" />
+      <div className="flex-1 overflow-y-auto p-4">
+        <FormBuilder />
       </div>
     </div>
   );

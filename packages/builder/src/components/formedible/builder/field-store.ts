@@ -24,6 +24,7 @@ export class FieldStore {
       label: `${label} Field`,
       required: false,
       page: selectedPage,
+      ...this.defaultConfigForType(type),
     };
 
     this.fields[id] = field;
@@ -211,6 +212,38 @@ export class FieldStore {
     for (const listener of listeners) {
       listener(field);
     }
+  }
+
+  private defaultConfigForType(type: FormedibleFieldType): Partial<FormField> {
+    if (type === 'select' || type === 'radio' || type === 'multiSelect' || type === 'combobox' || type === 'multiCombobox') {
+      return {
+        options: [
+          { label: 'Option 1', value: 'option_1' },
+          { label: 'Option 2', value: 'option_2' },
+        ],
+      };
+    }
+
+    if (type === 'autocomplete') {
+      return {
+        autocompleteConfig: {
+          options: [
+            { label: 'Suggestion 1', value: 'suggestion_1' },
+            { label: 'Suggestion 2', value: 'suggestion_2' },
+          ],
+        },
+      };
+    }
+
+    if (type === 'array') {
+      return { arrayConfig: { itemType: 'string', itemLabel: 'Item', sortable: true } };
+    }
+
+    if (type === 'object') {
+      return { objectConfig: { layout: 'stack', columns: 1, fields: [] } };
+    }
+
+    return {};
   }
 }
 

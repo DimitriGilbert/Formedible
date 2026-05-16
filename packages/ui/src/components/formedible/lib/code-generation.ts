@@ -3,10 +3,9 @@ import type { ReactNode } from 'react';
 import type {
   FormedibleFieldConfig,
   FormedibleFormValues,
-  FormediblePageConfig,
-  FormedibleTabConfig,
   UseFormedibleOptions,
 } from '@formedible/ui/components/formedible/lib/types';
+import type { BuilderFieldValidationConfig } from '@formedible/ui/components/formedible/lib/builder-config-types';
 import type { FormPage, FormSettings, FormTab } from '@formedible/ui/components/formedible/lib/builder-types';
 
 export interface CodeGenerationOptions {
@@ -22,6 +21,18 @@ export interface GeneratedCodeResult {
   readonly fullCode: string;
   readonly formConfig: string;
   readonly schemaCode: string;
+}
+
+interface SerializedPageConfig {
+  readonly page: number;
+  readonly title: string;
+  readonly description?: string;
+}
+
+interface SerializedTabConfig {
+  readonly id: string;
+  readonly label: string;
+  readonly description?: string;
 }
 
 function reactNodeToCode(value: ReactNode): string {
@@ -42,7 +53,16 @@ function stringLiteral(value: string): string {
 
 function fieldSchemaCode(field: FormedibleFieldConfig<FormedibleFormValues>): string {
   const label = reactNodeToCode(field.label) || field.name;
+  const builderValidation = getBuilderValidation(field);
   let schema = 'z.string()';
+
+  if (field.type === 'email') {
+    schema = 'z.string().email()';
+  }
+
+  if (field.type === 'url') {
+    schema = 'z.string().url()';
+  }
 
   if (field.type === 'number' || field.type === 'slider' || field.type === 'rating') {
     schema = 'z.number()';
@@ -60,15 +80,48 @@ function fieldSchemaCode(field: FormedibleFieldConfig<FormedibleFormValues>): st
     schema = 'z.object({}).passthrough()';
   }
 
-  if (field.required === true && schema === 'z.string()') {
-    return `${schema}.min(1, ${stringLiteral(`${label} is required`)})`;
+  if (builderValidation?.minLength !== undefined && schema.startsWith('z.string()')) {
+    schema = `${schema}.min(${builderValidation.minLength})`;
+  }
+
+  if (builderValidation?.maxLength !== undefined && schema.startsWith('z.string()')) {
+    schema = `${schema}.max(${builderValidation.maxLength})`;
+  }
+
+  if (builderValidation?.pattern !== undefined && schema.startsWith('z.string()')) {
+    schema = `${schema}.regex(new RegExp(${stringLiteral(builderValidation.pattern)}))`;
+  }
+
+  if (builderValidation?.min !== undefined && schema.startsWith('z.number()')) {
+    schema = `${schema}.min(${builderValidation.min})`;
+  }
+
+  if (builderValidation?.max !== undefined && schema.startsWith('z.number()')) {
+    schema = `${schema}.max(${builderValidation.max})`;
+  }
+
+  if (builderValidation?.minItems !== undefined && schema.startsWith('z.array(')) {
+    schema = `${schema}.min(${builderValidation.minItems})`;
+  }
+
+  if (builderValidation?.maxItems !== undefined && schema.startsWith('z.array(')) {
+    schema = `${schema}.max(${builderValidation.maxItems})`;
+  }
+
+  if (field.required === true && schema.startsWith('z.string()')) {
+    return `${schema}.min(1, ${stringLiteral(builderValidation?.requiredMessage ?? `${label} is required`)})`;
   }
 
   if (field.required === true && schema === 'z.boolean()') {
-    return `${schema}.refine((value) => value === true, { message: ${stringLiteral(`${label} is required`)} })`;
+    return `${schema}.refine((value) => value === true, { message: ${stringLiteral(builderValidation?.requiredMessage ?? `${label} is required`)} })`;
   }
 
   return field.required === true ? schema : `${schema}.optional()`;
+}
+
+function getBuilderValidation(field: FormedibleFieldConfig<FormedibleFormValues>): BuilderFieldValidationConfig | undefined {
+  const validation = field.builderValidation;
+  return typeof validation === 'object' && validation !== null && !Array.isArray(validation) ? validation as BuilderFieldValidationConfig : undefined;
 }
 
 function serializeField(field: FormedibleFieldConfig<FormedibleFormValues>): Record<string, unknown> {
@@ -81,27 +134,39 @@ function serializeField(field: FormedibleFieldConfig<FormedibleFormValues>): Rec
   const optionalKeys = [
     'description',
     'placeholder',
+    'defaultValue',
     'required',
+    'disabled',
     'page',
     'tab',
     'section',
+    'help',
     'options',
+    'datalist',
     'min',
     'max',
     'step',
     'rows',
     'maxLength',
+    'mask',
+    'textareaConfig',
+    'passwordConfig',
+    'numberConfig',
     'dateConfig',
     'sliderConfig',
     'ratingConfig',
     'multiSelectConfig',
     'comboboxConfig',
+    'autocompleteConfig',
+    'maskedInputConfig',
     'multiComboboxConfig',
     'colorConfig',
     'phoneConfig',
     'durationConfig',
     'locationConfig',
     'fileConfig',
+    'arrayConfig',
+    'objectConfig',
   ] as const;
 
   for (const key of optionalKeys) {
@@ -115,7 +180,7 @@ function serializeField(field: FormedibleFieldConfig<FormedibleFormValues>): Rec
   return serialized;
 }
 
-function serializePages(pages: readonly FormPage[] | undefined): readonly FormediblePageConfig<FormedibleFormValues>[] | undefined {
+function serializePages(pages: readonly FormPage[] | undefined): readonly SerializedPageConfig[] | undefined {
   if (pages === undefined || pages.length <= 1) {
     return undefined;
   }
@@ -127,7 +192,7 @@ function serializePages(pages: readonly FormPage[] | undefined): readonly Formed
   }));
 }
 
-function serializeTabs(tabs: readonly FormTab[] | undefined): readonly FormedibleTabConfig<FormedibleFormValues>[] | undefined {
+function serializeTabs(tabs: readonly FormTab[] | undefined): readonly SerializedTabConfig[] | undefined {
   if (tabs === undefined || tabs.length <= 1) {
     return undefined;
   }
@@ -207,11 +272,17 @@ export function generateCodeFromParsedConfig(config: UseFormedibleOptions<Formed
       title: reactNodeToCode(page.title) || `Page ${page.page}`,
       description: reactNodeToCode(page.description),
     })),
-    tabs: config.tabs?.filter((tab): tab is FormedibleTabConfig<FormedibleFormValues> => typeof tab !== 'string').map((tab) => ({
-      id: tab.id,
-      label: reactNodeToCode(tab.label) || tab.id,
-      description: reactNodeToCode(tab.description),
-    })),
+    tabs: config.tabs?.flatMap((tab) => {
+      if (typeof tab === 'string') {
+        return [];
+      }
+
+      return [{
+        id: tab.id,
+        label: reactNodeToCode(tab.label) || tab.id,
+        description: reactNodeToCode(tab.description),
+      }];
+    }),
     settings: {
       submitLabel: reactNodeToCode(config.submitLabel),
       nextLabel: reactNodeToCode(config.nextLabel),

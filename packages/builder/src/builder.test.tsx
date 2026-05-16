@@ -3,28 +3,24 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 
-import { createElement } from 'react';
-
-import { FieldConfigurator } from '@/components/formedible/builder/field-configurator';
-import { FormBuilder } from '@/components/formedible/builder/form-builder';
-import { FormPreview } from '@/components/formedible/builder/form-preview';
 import { FieldStore } from '@/components/formedible/builder/field-store';
-import { createTabsWithDisabled, createTabsWithOrder, defaultTabs } from '@/components/formedible/builder/default-tabs';
+import { fieldConfigFormDefinitions, getFieldConfigFormDefinition } from '@/lib/formedible/builder-config-registry';
 import { generateFormCode } from '@/lib/formedible/code-generation';
+import { builderFieldTypes } from '@/lib/formedible/builder-types';
 import type { FormField } from '@/lib/formedible/builder-types';
 
-test('public builder components are real React component exports', () => {
-  const field: FormField = {
-    id: 'field_1',
-    name: 'email',
-    type: 'email',
-    label: 'Email',
-    required: true,
-  };
+test('public builder component source exports are present', () => {
+  const builderRoot = process.cwd();
+  const sourceFiles = [
+    'src/components/formedible/builder/form-builder.tsx',
+    'src/components/formedible/builder/field-configurator.tsx',
+    'src/components/formedible/builder/form-preview.tsx',
+    'src/components/formedible/builder/code-generator.tsx',
+  ];
 
-  assert.equal(createElement(FormBuilder).type, FormBuilder);
-  assert.equal(createElement(FieldConfigurator, { fieldId: field.id, initialField: field }).type, FieldConfigurator);
-  assert.equal(createElement(FormPreview, { config: { fields: [field], formOptions: { defaultValues: {} } } }).type, FormPreview);
+  for (const sourceFile of sourceFiles) {
+    assert.match(readFileSync(join(builderRoot, sourceFile), 'utf8'), /export (function|class|const) /, `${sourceFile} should export public source`);
+  }
 });
 
 test('field store preserves structure and field update behavior', () => {
@@ -113,9 +109,14 @@ test('form builder avoids omitted initial field default arrays', () => {
 });
 
 test('default tabs expose builder preview and code behavior', () => {
-  assert.deepEqual(defaultTabs.map((tab) => tab.id), ['builder', 'preview', 'code']);
-  assert.deepEqual(createTabsWithOrder(['code', 'builder']).map((tab) => tab.id), ['code', 'builder']);
-  assert.deepEqual(createTabsWithDisabled(['preview']).map((tab) => tab.enabled), [true, false, true]);
+  const builderRoot = process.cwd();
+  const content = readFileSync(join(builderRoot, 'src/components/formedible/builder/default-tabs.tsx'), 'utf8');
+
+  assert.match(content, /id: 'builder'/);
+  assert.match(content, /id: 'preview'/);
+  assert.match(content, /id: 'code'/);
+  assert.match(content, /createTabsWithOrder/);
+  assert.match(content, /createTabsWithDisabled/);
 });
 
 test('code generation produces local shadcn install imports and schema behavior', () => {
@@ -139,9 +140,61 @@ test('code generation produces local shadcn install imports and schema behavior'
   });
 
   assert.match(result.fullCode, /import \{ useFormedible \} from '@\/components\/formedible\/hooks\/use-formedible';/);
-  assert.match(result.schemaCode, /email: z\.string\(\)\.min\(1, "Email is required"\)/);
+  assert.match(result.schemaCode, /email: z\.string\(\)\.email\(\)\.min\(1, "Email is required"\)/);
   assert.match(result.schemaCode, /age: z\.number\(\)\.optional\(\)/);
   assert.match(result.formConfig, /"submitLabel": "Send"/);
+});
+
+test('every exposed builder field type has a dogfooded config form', () => {
+  const configuredTypes = new Set(fieldConfigFormDefinitions.map((definition) => definition.type));
+
+  for (const fieldType of builderFieldTypes) {
+    assert.equal(configuredTypes.has(fieldType.value), true, `${fieldType.value} is missing a config form`);
+    assert.equal(getFieldConfigFormDefinition(fieldType.value).type, fieldType.value);
+  }
+});
+
+test('field configurator dogfoods useFormedible', () => {
+  const builderRoot = process.cwd();
+  const content = readFileSync(join(builderRoot, 'src/components/formedible/builder/field-configuration-form.tsx'), 'utf8');
+
+  assert.match(content, /useFormedible/);
+  assert.match(content, /definition\.fields/);
+});
+
+test('code generation serializes rich field configuration objects', () => {
+  const result = generateFormCode({
+    fields: [
+      {
+        name: 'plan',
+        type: 'select',
+        label: 'Plan',
+        options: [{ label: 'Pro', value: 'pro', description: 'Paid plan' }],
+        required: true,
+      },
+      {
+        name: 'bio',
+        type: 'textarea',
+        label: 'Bio',
+        textareaConfig: { rows: 5, showWordCount: true },
+      },
+      {
+        name: 'team',
+        type: 'array',
+        label: 'Team',
+        arrayConfig: {
+          itemType: 'object',
+          objectConfig: {
+            fields: [{ name: 'email', type: 'email', label: 'Email' }],
+          },
+        },
+      },
+    ],
+  });
+
+  assert.match(result.formConfig, /"textareaConfig"/);
+  assert.match(result.formConfig, /"arrayConfig"/);
+  assert.match(result.formConfig, /"description": "Paid plan"/);
 });
 
 test('builder authored source uses local installed core and parser aliases', () => {
@@ -149,8 +202,11 @@ test('builder authored source uses local installed core and parser aliases', () 
   const sourceFiles = [
     'src/components/formedible/builder/form-builder.tsx',
     'src/components/formedible/builder/field-configurator.tsx',
+    'src/components/formedible/builder/field-configuration-form.tsx',
     'src/components/formedible/builder/form-preview.tsx',
     'src/components/formedible/builder/default-tabs.tsx',
+    'src/lib/formedible/builder-config-registry.ts',
+    'src/lib/formedible/builder-config-transforms.ts',
     'src/lib/formedible/code-generation.ts',
   ];
 

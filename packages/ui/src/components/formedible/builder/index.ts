@@ -15,6 +15,7 @@ export {
   previewTab,
 } from '@formedible/ui/components/formedible/builder/default-tabs';
 export { defaultFormMetadata, builderFieldTypes } from '@formedible/ui/components/formedible/lib/builder-types';
+export { fieldConfigFormDefinitions, getFieldConfigFormDefinition } from '@formedible/ui/components/formedible/lib/builder-config-registry';
 export { generateCodeFromParsedConfig, generateFormCode } from '@formedible/ui/components/formedible/lib/code-generation';
 export type {
   BuilderFieldTypeDefinition,
@@ -27,4 +28,5 @@ export type {
   TabConfig,
   TabContentProps,
 } from '@formedible/ui/components/formedible/lib/builder-types';
+export type { BuilderConfigContext, BuilderFieldValidationConfig, FieldConfigFormDefinition } from '@formedible/ui/components/formedible/lib/builder-config-types';
 export type { CodeGenerationOptions, GeneratedCodeResult } from '@formedible/ui/components/formedible/lib/code-generation';

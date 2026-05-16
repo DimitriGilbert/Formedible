@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "check-types": "sh -c 'if find src -type f \\( -name \"*.ts\" -o -name \"*.tsx\" \\) | read; then tsc --noEmit; fi'",
-    "test": "tsx --test src/**/*.test.tsx src/**/*.test.ts",
+    "test": "node --import ../../scripts/register-package-alias-loader.mjs --import tsx --test src/**/*.test.tsx src/**/*.test.ts",
     "build": "pnpm run check-types",
     "build:registry": "shadcn build",
     "sync": "node ../../scripts/quick-sync.js --root ../.. --config packages/ai-builder/sync.config.json"
