@@ -23,6 +23,11 @@ const defaultRoutes = [
     destinationRoots: ['packages/ui/src/components'],
     useRegistryTargets: true,
   },
+  {
+    ownerRoot: 'packages/ai-picker',
+    destinationRoots: ['packages/ui/src/components'],
+    useRegistryTargets: true,
+  },
 ];
 
 async function pathExists(path) {
@@ -153,6 +158,14 @@ function rewriteAliasSpecifier(specifier, aliases) {
 
   if (specifier.startsWith('@/hooks/')) {
     return `${uiAlias}/formedible/hooks/${specifier.slice('@/hooks/'.length)}`;
+  }
+
+  if (specifier.startsWith('@/components/ai-picker/')) {
+    return `${uiAlias}/formedible/ai-picker/components/${specifier.slice('@/components/ai-picker/'.length)}`;
+  }
+
+  if (specifier.startsWith('@/lib/ai-picker-') || specifier === '@/lib/default-picker-schema') {
+    return `${uiAlias}/formedible/ai-picker/lib/${specifier.slice('@/lib/'.length)}`;
   }
 
   return specifier;

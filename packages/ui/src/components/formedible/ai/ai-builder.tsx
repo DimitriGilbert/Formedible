@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+import { AiPicker } from '@formedible/ui/components/formedible/ai-picker';
+
 import { AiFormRenderer } from '@formedible/ui/components/formedible/ai/ai-form-renderer';
-import { AgentSettings } from '@formedible/ui/components/formedible/ai/agent-settings';
 import { ChatInterface } from '@formedible/ui/components/formedible/ai/chat-interface';
-import { createDefaultProviderSecrets, createDefaultProviderSettings, ProviderSelection, validateProviderAccess } from '@formedible/ui/components/formedible/ai/provider-selection';
+import { createDefaultProviderSecrets, createDefaultProviderSettings, validateProviderAccess } from '@formedible/ui/components/formedible/ai/provider-selection';
 import { SidebarContent } from '@formedible/ui/components/formedible/ai/sidebar-content';
 import { SidebarIcons, type SidebarView } from '@formedible/ui/components/formedible/ai/sidebar-icons';
 import { Button } from '@formedible/ui/components/button';
@@ -272,7 +273,7 @@ export function AIBuilder({
       />
       <div className="grid min-h-0 min-w-0 flex-1 gap-4 p-4 lg:grid-cols-[minmax(0,0.95fr)_minmax(360px,1.05fr)]">
         <div className="flex min-h-0 min-w-0 flex-col gap-4 overflow-hidden">
-          {isSidebarCollapsed ? <div className="grid gap-3"><ProviderSelection settings={providerSettings} secrets={providerSecrets} persistencePreference={providerSecretPersistence} onChange={updateProviderAccess} onPersistencePreferenceChange={updateProviderSecretPersistence} onClearStoredSecrets={clearProviderSecrets} /><AgentSettings settings={providerSettings} secrets={providerSecrets} modelCatalog={modelCatalogs[providerSettings.provider]} isRefreshingModels={refreshingProvider === providerSettings.provider} onRefreshModels={refreshProviderModels} onChange={updateProviderAccess} /></div> : null}
+          {isSidebarCollapsed ? <AiPicker variant="panel" settings={providerSettings} secrets={providerSecrets} modelCatalog={modelCatalogs[providerSettings.provider]} isRefreshingModels={refreshingProvider === providerSettings.provider} onRefreshModels={refreshProviderModels} persistencePreference={providerSecretPersistence} onPersistencePreferenceChange={updateProviderSecretPersistence} onClearStoredSecrets={clearProviderSecrets} onChange={updateProviderAccess} /> : null}
           {providerValidationError ? <p className="rounded-md border border-destructive/40 p-2 text-sm text-destructive">{providerValidationError}</p> : null}
           <div className="flex items-center justify-between gap-2 rounded-lg border p-2">
             <p className="truncate text-sm text-muted-foreground">{currentConversation ? currentConversation.title : 'New conversation'}</p>
