@@ -28,13 +28,25 @@ type PropertyMeta = {
 type LinkDescriptor = {
   readonly rel: string;
   readonly href: string;
+  readonly type?: string;
+  readonly crossOrigin?: 'anonymous';
 };
+
+type ScriptDescriptor = {
+  readonly type: 'application/ld+json';
+  readonly children: string;
+};
+
+type JsonPrimitive = string | number | boolean | null;
+
+type JsonValue = JsonPrimitive | readonly JsonValue[] | { readonly [key: string]: JsonValue };
 
 export type SeoMeta = TitleMeta | CharsetMeta | NamedMeta | PropertyMeta;
 
 export type SeoHead = {
   readonly meta: SeoMeta[];
   readonly links: LinkDescriptor[];
+  readonly scripts: ScriptDescriptor[];
 };
 
 function normalizePath(path: string): string {
@@ -49,10 +61,94 @@ function absoluteUrl(path: string): string {
   return `${siteMeta.siteUrl}${normalizePath(path)}`;
 }
 
+function createBreadcrumbJsonLd(routePath: string, pageTitle: string): JsonValue {
+  const normalizedPath = normalizePath(routePath);
+  const segments = normalizedPath === '/' ? [] : normalizedPath.slice(1).split('/');
+  const items: JsonValue[] = [
+    {
+      '@type': 'ListItem',
+      position: 1,
+      name: siteMeta.name,
+      item: siteMeta.siteUrl,
+    },
+  ];
+
+  let currentPath = '';
+
+  for (const [index, segment] of segments.entries()) {
+    currentPath = `${currentPath}/${segment}`;
+    const isCurrentPage = index === segments.length - 1;
+    const name = isCurrentPage
+      ? pageTitle.replace(` · ${siteMeta.name}`, '')
+      : segment.replaceAll('-', ' ').replace(/^\w/, (letter) => letter.toUpperCase());
+
+    items.push({
+      '@type': 'ListItem',
+      position: index + 2,
+      name,
+      item: absoluteUrl(currentPath),
+    });
+  }
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: items,
+  };
+}
+
+function createPageJsonLd(routePath: string, pageTitle: string, description: string, imageUrl: string): JsonValue {
+  const canonicalUrl = absoluteUrl(routePath);
+
+  if (routePath === '/builder' || routePath === '/ai-builder') {
+    return {
+      '@context': 'https://schema.org',
+      '@type': 'WebApplication',
+      name: pageTitle,
+      url: canonicalUrl,
+      description,
+      image: imageUrl,
+      applicationCategory: 'DeveloperApplication',
+      operatingSystem: 'Web',
+      offers: {
+        '@type': 'Offer',
+        price: '0',
+        priceCurrency: 'USD',
+      },
+    };
+  }
+
+  return {
+    '@context': 'https://schema.org',
+    '@type': routePath === '/' ? 'SoftwareSourceCode' : 'TechArticle',
+    headline: pageTitle,
+    name: pageTitle,
+    url: canonicalUrl,
+    description,
+    image: imageUrl,
+    inLanguage: 'en',
+    mainEntityOfPage: canonicalUrl,
+    publisher: {
+      '@type': 'Organization',
+      name: siteMeta.name,
+      url: siteMeta.siteUrl,
+      sameAs: [siteMeta.repositoryUrl],
+    },
+    ...(routePath === '/'
+      ? {
+          codeRepository: siteMeta.repositoryUrl,
+          programmingLanguage: ['TypeScript', 'React'],
+          runtimePlatform: 'Web',
+        }
+      : {}),
+  };
+}
+
 export function createSeoHead(options: SeoOptions = {}): SeoHead {
   const pageTitle = formatPageTitle(options.title);
   const description = options.description ?? siteMeta.description;
-  const canonicalUrl = absoluteUrl(options.path ?? '/');
+  const routePath = options.path ?? '/';
+  const canonicalUrl = absoluteUrl(routePath);
   const imageUrl = absoluteUrl(options.imagePath ?? siteMeta.ogImagePath);
 
   return {
@@ -60,6 +156,10 @@ export function createSeoHead(options: SeoOptions = {}): SeoHead {
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
       { name: 'theme-color', content: siteMeta.themeColor },
+      { name: 'application-name', content: siteMeta.name },
+      { name: 'apple-mobile-web-app-title', content: siteMeta.name },
+      { name: 'robots', content: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1' },
+      { name: 'keywords', content: siteMeta.keywords.join(', ') },
       { title: pageTitle },
       { name: 'description', content: description },
       { property: 'og:site_name', content: siteMeta.name },
@@ -70,13 +170,32 @@ export function createSeoHead(options: SeoOptions = {}): SeoHead {
       { property: 'og:url', content: canonicalUrl },
       { property: 'og:image', content: imageUrl },
       { property: 'og:image:alt', content: `${siteMeta.name} documentation preview` },
+      { property: 'og:image:width', content: '1200' },
+      { property: 'og:image:height', content: '630' },
       { name: 'twitter:card', content: 'summary_large_image' },
       { name: 'twitter:site', content: siteMeta.twitterSite },
       { name: 'twitter:title', content: pageTitle },
       { name: 'twitter:description', content: description },
       { name: 'twitter:image', content: imageUrl },
     ],
-    links: [{ rel: 'canonical', href: canonicalUrl }],
+    links: [
+      { rel: 'canonical', href: canonicalUrl },
+      { rel: 'sitemap', type: 'application/xml', href: '/sitemap.xml' },
+      { rel: 'manifest', href: '/site.webmanifest' },
+      { rel: 'icon', type: 'image/svg+xml', href: '/icon.svg' },
+      { rel: 'preconnect', href: 'https://chemin.dbuild.dev', crossOrigin: 'anonymous' },
+      { rel: 'dns-prefetch', href: 'https://chemin.dbuild.dev' },
+    ],
+    scripts: [
+      {
+        type: 'application/ld+json',
+        children: JSON.stringify(createPageJsonLd(routePath, pageTitle, description, imageUrl)),
+      },
+      {
+        type: 'application/ld+json',
+        children: JSON.stringify(createBreadcrumbJsonLd(routePath, pageTitle)),
+      },
+    ],
   };
 }
 

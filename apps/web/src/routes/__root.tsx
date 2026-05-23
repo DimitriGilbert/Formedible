@@ -25,6 +25,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
         href: appCss,
       },
     ],
+    scripts: rootHead.scripts,
   }),
 
   component: RootDocument,

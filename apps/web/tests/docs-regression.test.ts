@@ -171,6 +171,16 @@ function getMetaContent(head: ReturnType<typeof createRouteSeoHead>, key: 'name'
   return undefined;
 }
 
+function parseJsonLdScripts(head: ReturnType<typeof createRouteSeoHead>): readonly unknown[] {
+  return head.scripts
+    .filter((script) => script.type === 'application/ld+json')
+    .map((script) => JSON.parse(script.children) as unknown);
+}
+
+function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+  return typeof value === 'object' && value !== null;
+}
+
 describe('docs compatibility examples', () => {
   it('covers every required compatibility example exactly once', () => {
     const actualIds = docsCompatibilityExamples.map((example) => example.id).sort();
@@ -299,18 +309,29 @@ describe('docs compatibility examples', () => {
       const canonicalUrl = `${siteMeta.siteUrl}${route.path === '/' ? '/' : route.path}`;
 
       assert.equal(getMetaContent(head, 'name', 'description'), route.description);
+      assert.equal(getMetaContent(head, 'name', 'robots'), 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1');
+      assert.equal(getMetaContent(head, 'name', 'keywords'), siteMeta.keywords.join(', '));
       assert.equal(getMetaContent(head, 'property', 'og:type'), 'website');
       assert.equal(getMetaContent(head, 'property', 'og:site_name'), siteMeta.name);
       assert.equal(getMetaContent(head, 'property', 'og:title'), head.meta.find((meta) => 'title' in meta)?.title);
       assert.equal(getMetaContent(head, 'property', 'og:description'), route.description);
       assert.equal(getMetaContent(head, 'property', 'og:url'), canonicalUrl);
       assert.equal(getMetaContent(head, 'property', 'og:image'), `${siteMeta.siteUrl}${siteMeta.ogImagePath}`);
+      assert.equal(getMetaContent(head, 'property', 'og:image:width'), '1200');
+      assert.equal(getMetaContent(head, 'property', 'og:image:height'), '630');
       assert.equal(getMetaContent(head, 'name', 'twitter:card'), 'summary_large_image');
       assert.equal(getMetaContent(head, 'name', 'twitter:site'), siteMeta.twitterSite);
       assert.equal(getMetaContent(head, 'name', 'twitter:title'), head.meta.find((meta) => 'title' in meta)?.title);
       assert.equal(getMetaContent(head, 'name', 'twitter:description'), route.description);
       assert.equal(getMetaContent(head, 'name', 'twitter:image'), `${siteMeta.siteUrl}${siteMeta.ogImagePath}`);
       assert.ok(head.links.some((link) => link.rel === 'canonical' && link.href === canonicalUrl));
+      assert.ok(head.links.some((link) => link.rel === 'sitemap' && link.href === '/sitemap.xml'));
+      assert.ok(head.links.some((link) => link.rel === 'manifest' && link.href === '/site.webmanifest'));
+
+      const jsonLdScripts = parseJsonLdScripts(head);
+      assert.equal(jsonLdScripts.length, 2);
+      assert.ok(jsonLdScripts.some((script) => isRecord(script) && script['@type'] === 'BreadcrumbList'));
+      assert.ok(jsonLdScripts.some((script) => isRecord(script) && script.url === canonicalUrl));
     }
   });
 

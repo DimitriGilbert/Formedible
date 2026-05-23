@@ -5,10 +5,20 @@ export const siteMeta = {
   description:
     'Production-ready Formedible documentation with real shadcn-compatible form examples, builder guidance, and AI Builder workflows.',
   siteUrl: 'https://formedible.dev',
+  repositoryUrl: 'https://github.com/DimitriGilbert/Formedible',
   ogImagePath: '/og.svg',
   locale: 'en_US',
   themeColor: '#09090b',
   twitterSite: '@formedible',
+  keywords: [
+    'Formedible',
+    'React forms',
+    'TanStack Form',
+    'shadcn/ui forms',
+    'form builder',
+    'AI form builder',
+    'Zod validation',
+  ],
 } as const;
 
 export type PublicRoutePath =
