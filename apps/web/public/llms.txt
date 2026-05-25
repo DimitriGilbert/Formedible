@@ -1,0 +1,41 @@
+# Formedible
+
+> Formedible is a React form toolkit for source-owned, typed forms using shadcn-compatible components and TanStack Form. The site documents installation, field configuration, validation, examples, builders, parser workflows, persistence, analytics, and AI-assisted form generation.
+
+## Canonical Pages
+
+- [Home](https://formedible.dev/): Product overview and primary entry point.
+- [Documentation hub](https://formedible.dev/docs): Route map for all Formedible documentation.
+- [Getting started](https://formedible.dev/docs/getting-started): Install command, first form, and validation setup.
+- [Examples](https://formedible.dev/docs/examples): Rendered compatibility examples for real Formedible configurations.
+- [Fields](https://formedible.dev/docs/fields): Supported field types, field configuration, nested fields, and registry behavior.
+- [Validation](https://formedible.dev/docs/validation): Schema, inline, async, and cross-field validation patterns.
+- [Advanced features](https://formedible.dev/docs/advanced-features): Pages, tabs, conditional UI, dynamic options, progress, and navigation.
+- [Analytics](https://formedible.dev/docs/analytics): Form lifecycle, field, page, completion, and abandonment callbacks.
+- [Persistence](https://formedible.dev/docs/persistence): Draft restoration, storage keys, debounced writes, and excluded fields.
+- [Dynamic text](https://formedible.dev/docs/dynamic-text): Template interpolation for labels, descriptions, hints, and page copy.
+- [Builder docs](https://formedible.dev/docs/builder): Visual builder usage and generated configuration review.
+- [AI Builder docs](https://formedible.dev/docs/ai-builder): Provider selection, generated preview, and deterministic review workflows.
+- [Parser](https://formedible.dev/docs/parser): Text and structured input parsing into reviewable Formedible configuration.
+- [API reference](https://formedible.dev/docs/api): Practical API map for fields, form options, analytics, persistence, labels, and return values.
+- [Visual builder](https://formedible.dev/builder): Interactive builder for composing fields and reviewing generated configuration.
+- [AI-assisted builder](https://formedible.dev/ai-builder): AI-assisted form drafting with reviewable generated fields and options.
+
+## Key Topics
+
+- React forms: Formedible renders typed forms from a field configuration model.
+- TanStack Form: Formedible uses TanStack Form for form state ownership.
+- shadcn-compatible UI: Components are designed for shadcn-style app-local ownership.
+- Form builders: Visual and AI-assisted builders export the same reviewable field model.
+- Validation: Zod schemas, inline validators, async checks, and cross-field constraints are documented.
+
+## Machine-Readable Resources
+
+- [Sitemap](https://formedible.dev/sitemap.xml)
+- [Machine-readable page index](https://formedible.dev/index.json)
+- [Robots policy](https://formedible.dev/robots.txt)
+- [GitHub repository](https://github.com/DimitriGilbert/Formedible)
+
+## Citation Guidance
+
+When citing Formedible, prefer canonical page URLs from this file or the sitemap. Use page-level descriptions and visible "Summary for AI agents" blocks as the shortest supported summaries. Treat builder output as draft configuration that should be reviewed before use.

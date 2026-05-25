@@ -103,6 +103,24 @@ function DocsGuideSnippetBlock({ snippet }: { readonly snippet: DocsGuideSnippet
   );
 }
 
+function AgentSummary({ title, description, sections }: Pick<DocsGuidePageProps, 'title' | 'description' | 'sections'>) {
+  const capabilities = sections.slice(0, 4).map((section) => section.title);
+
+  return (
+    <aside className="mt-6 max-w-lg rounded-2xl border border-border bg-muted p-5" aria-label="Summary for AI agents">
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Summary for AI agents</p>
+      <p className="mt-3 text-sm leading-relaxed text-foreground">
+        This page is the canonical Formedible source for {title.toLowerCase()}. {description}
+      </p>
+      {capabilities.length > 0 ? (
+        <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+          Key topics: {capabilities.join(', ')}.
+        </p>
+      ) : null}
+    </aside>
+  );
+}
+
 function DocsGuideReferences({ references }: { readonly references: readonly DocsGuideLink[] }) {
   return (
     <nav aria-label="Section evidence references" className="rounded-2xl border border-border bg-background p-4">
@@ -165,6 +183,7 @@ export function DocsGuidePage({ eyebrow, title, description, sections, codeExamp
               <p className="text-sm font-semibold text-primary">{eyebrow}</p>
               <h1 className="mt-4 max-w-xl text-4xl font-bold leading-[1.1] tracking-tight text-foreground md:text-5xl">{title}</h1>
               <p className="mt-5 max-w-lg text-base leading-relaxed text-muted-foreground">{description}</p>
+              <AgentSummary title={title} description={description} sections={sections} />
             </div>
             {aside ? <div className="min-w-0">{aside}</div> : null}
           </div>

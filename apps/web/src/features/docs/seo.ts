@@ -92,6 +92,7 @@ function createBreadcrumbJsonLd(routePath: string, pageTitle: string): JsonValue
 
   return {
     '@context': 'https://schema.org',
+    '@id': `${absoluteUrl(routePath)}#breadcrumb`,
     '@type': 'BreadcrumbList',
     itemListElement: items,
   };
@@ -99,15 +100,38 @@ function createBreadcrumbJsonLd(routePath: string, pageTitle: string): JsonValue
 
 function createPageJsonLd(routePath: string, pageTitle: string, description: string, imageUrl: string): JsonValue {
   const canonicalUrl = absoluteUrl(routePath);
+  const pageId = `${canonicalUrl}#page`;
+  const organization = {
+    '@type': 'Organization',
+    '@id': siteMeta.organizationId,
+    name: siteMeta.name,
+    url: siteMeta.siteUrl,
+    sameAs: [siteMeta.repositoryUrl],
+  };
+  const website = {
+    '@type': 'WebSite',
+    '@id': siteMeta.websiteId,
+    name: siteMeta.name,
+    url: siteMeta.siteUrl,
+    inLanguage: 'en',
+    publisher: { '@id': siteMeta.organizationId },
+  };
 
   if (routePath === '/builder' || routePath === '/ai-builder') {
     return {
       '@context': 'https://schema.org',
+      '@id': pageId,
       '@type': 'WebApplication',
       name: pageTitle,
       url: canonicalUrl,
       description,
       image: imageUrl,
+      inLanguage: 'en',
+      dateModified: siteMeta.lastModified,
+      keywords: siteMeta.keywords,
+      isPartOf: website,
+      publisher: organization,
+      about: { '@id': siteMeta.softwareId },
       applicationCategory: 'DeveloperApplication',
       operatingSystem: 'Web',
       offers: {
@@ -120,6 +144,7 @@ function createPageJsonLd(routePath: string, pageTitle: string, description: str
 
   return {
     '@context': 'https://schema.org',
+    '@id': routePath === '/' ? siteMeta.softwareId : pageId,
     '@type': routePath === '/' ? 'SoftwareSourceCode' : 'TechArticle',
     headline: pageTitle,
     name: pageTitle,
@@ -127,13 +152,12 @@ function createPageJsonLd(routePath: string, pageTitle: string, description: str
     description,
     image: imageUrl,
     inLanguage: 'en',
+    dateModified: siteMeta.lastModified,
+    keywords: siteMeta.keywords,
     mainEntityOfPage: canonicalUrl,
-    publisher: {
-      '@type': 'Organization',
-      name: siteMeta.name,
-      url: siteMeta.siteUrl,
-      sameAs: [siteMeta.repositoryUrl],
-    },
+    isPartOf: website,
+    publisher: organization,
+    about: { '@id': siteMeta.softwareId },
     ...(routePath === '/'
       ? {
           codeRepository: siteMeta.repositoryUrl,

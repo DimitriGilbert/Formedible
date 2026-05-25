@@ -12,14 +12,17 @@
         "@tanstack/react-form",
         "clsx",
         "lucide-react",
-        "tailwind-merge"
+        "tailwind-merge",
+        "zod"
       ],
       "registryDependencies": [
         "badge",
         "button",
         "checkbox",
+        "command",
         "field",
         "input",
+        "popover",
         "radio-group",
         "select",
         "slider",

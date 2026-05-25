@@ -181,6 +181,14 @@ function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
   return typeof value === 'object' && value !== null;
 }
 
+function getRecordArray(value: unknown, key: string): readonly Readonly<Record<string, unknown>>[] {
+  if (!isRecord(value) || !Array.isArray(value[key])) {
+    return [];
+  }
+
+  return value[key].filter(isRecord);
+}
+
 describe('docs compatibility examples', () => {
   it('covers every required compatibility example exactly once', () => {
     const actualIds = docsCompatibilityExamples.map((example) => example.id).sort();
@@ -303,6 +311,50 @@ describe('docs compatibility examples', () => {
     }
   });
 
+  it('keeps sitemap lastmod values aligned with site metadata', async () => {
+    const sitemap = await readFile(join(appRoot, 'public/sitemap.xml'), 'utf8');
+
+    for (const route of publicRouteMeta) {
+      assert.match(sitemap, new RegExp(`<loc>${siteMeta.siteUrl}${route.path === '/' ? '/' : route.path}<\/loc>\n    <lastmod>${siteMeta.lastModified}<\/lastmod>`));
+    }
+  });
+
+  it('keeps llms.txt oriented around canonical agent discovery resources', async () => {
+    const llms = await readFile(join(appRoot, 'public/llms.txt'), 'utf8');
+    const escapedSiteUrl = siteMeta.siteUrl.replaceAll('.', '\\.');
+
+    assert.match(llms, /^# Formedible/m);
+    assert.match(llms, new RegExp(`${escapedSiteUrl}\/sitemap\.xml`));
+    assert.match(llms, new RegExp(`${escapedSiteUrl}\/index\.json`));
+    assert.match(llms, new RegExp(siteMeta.repositoryUrl.replaceAll('.', '\\.')));
+
+    for (const route of publicRouteMeta) {
+      assert.match(llms, new RegExp(`${escapedSiteUrl}${route.path === '/' ? '/' : route.path}`));
+    }
+  });
+
+  it('keeps machine-readable page index aligned with public route metadata', async () => {
+    const indexJson = JSON.parse(await readFile(join(appRoot, 'public/index.json'), 'utf8')) as unknown;
+    const items = getRecordArray(indexJson, 'items');
+    const actualUrls = items.map((item) => item.url).sort();
+    const expectedUrls = publicRouteMeta.map((route) => `${siteMeta.siteUrl}${route.path === '/' ? '/' : route.path}`).sort();
+
+    assert.deepEqual(actualUrls, expectedUrls);
+    assert.ok(isRecord(indexJson) && isRecord(indexJson.site));
+    assert.equal(indexJson.site.name, siteMeta.name);
+    assert.equal(indexJson.site.url, siteMeta.siteUrl);
+    assert.equal(indexJson.updatedAt, siteMeta.lastModified);
+
+    for (const route of publicRouteMeta) {
+      const item = items.find((entry) => entry.url === `${siteMeta.siteUrl}${route.path === '/' ? '/' : route.path}`);
+
+      assert.ok(item, `${route.path} must be present in index.json`);
+      assert.equal(item.title, route.title);
+      assert.equal(item.summary, route.description);
+      assert.equal(item.updatedAt, siteMeta.lastModified);
+    }
+  });
+
   it('keeps metadata helpers emitting canonical, Open Graph, and Twitter essentials', () => {
     for (const route of publicRouteMeta) {
       const head = createRouteSeoHead(route.path);
@@ -331,7 +383,7 @@ describe('docs compatibility examples', () => {
       const jsonLdScripts = parseJsonLdScripts(head);
       assert.equal(jsonLdScripts.length, 2);
       assert.ok(jsonLdScripts.some((script) => isRecord(script) && script['@type'] === 'BreadcrumbList'));
-      assert.ok(jsonLdScripts.some((script) => isRecord(script) && script.url === canonicalUrl));
+      assert.ok(jsonLdScripts.some((script) => isRecord(script) && script.url === canonicalUrl && script.dateModified === siteMeta.lastModified && Array.isArray(script.keywords)));
     }
   });
 
