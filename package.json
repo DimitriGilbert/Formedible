@@ -36,6 +36,7 @@
     "test:formedible:phase10": "tsc -p tests/formedible/tsconfig.phase10.json && tsx --tsconfig tests/formedible/tsconfig.phase10.json --test tests/formedible/phase10-behavior.test.ts",
     "test:sync": "tsc -p tests/sync/tsconfig.json && node --test tests/sync/.compiled/*.test.js && node scripts/validate-sync-boundaries.js",
     "test:consumer-smoke": "tsc -p tests/consumer-smoke/tsconfig.json && node --test tests/consumer-smoke/.compiled/*.test.js",
+    "test:consumer-smoke:vite-base": "tsc -p tests/consumer-smoke/tsconfig.json && node --test tests/consumer-smoke/.compiled/vite-base-shadcn.test.js",
     "test:e2e": "pnpm --dir apps/web build && tsc -p tests/e2e/tsconfig.json && node --test tests/e2e/.compiled/*.test.js",
     "test:e2e:existing": "tsc -p tests/e2e/tsconfig.json && node --test tests/e2e/.compiled/*.test.js",
     "dev:web": "turbo -F web dev"

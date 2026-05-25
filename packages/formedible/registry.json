@@ -12,7 +12,8 @@
         "@tanstack/react-form",
         "clsx",
         "lucide-react",
-        "tailwind-merge"
+        "tailwind-merge",
+        "zod"
       ],
       "registryDependencies": [
         "badge",

@@ -53,7 +53,7 @@ export function ContactForm() {
 Notes from source:
 
 - `formedible-core` is declared in `packages/formedible/registry.json` and generated at `packages/formedible/public/r/formedible-core.json`.
-- The public item depends on `@tanstack/react-form`, `clsx`, `lucide-react`, and `tailwind-merge`.
+- The public item depends on `@tanstack/react-form`, `clsx`, `lucide-react`, `tailwind-merge`, and `zod`.
 - It also installs shadcn primitives used by the fields: `badge`, `button`, `checkbox`, `field`, `input`, `radio-group`, `select`, `slider`, `switch`, and `textarea`.
 - The hook returns `Form`, the TanStack form instance, page navigation state, and persistence helpers from `packages/formedible/src/hooks/use-formedible.tsx`.
 
@@ -137,6 +137,7 @@ pnpm run build
 | `pnpm run check-types` | Turbo type checks plus compatibility, architecture, sync, consumer-smoke, and Formedible type projects. |
 | `pnpm run test:sync` | Sync tests and boundary validator. |
 | `pnpm run test:consumer-smoke` | Consumer install smoke tests for generated registry output. |
+| `pnpm run test:consumer-smoke:vite-base` | Scaffolds a fresh shadcn Vite base app, installs the built local `formedible-core` registry JSON, copies the tracked old Array fields example, then typechecks and builds. |
 | `pnpm run test:e2e` | Build docs app, compile e2e tests, then run them. |
 
 The root also has `dev` and `dev:web`, but they are not needed for README or source checks.
@@ -155,6 +156,16 @@ packages/config/              Shared config
 scripts/                      Sync, registry, validation, and release scripts
 tests/                        Type, sync, architecture, consumer, and e2e checks
 ```
+
+## Migration Notes
+
+Legacy examples that imported `useFormedible` from `@/hooks/use-formedible` need only update that import after installing the shadcn registry item:
+
+```tsx
+import { useFormedible } from '@/components/ui/formedible/hooks/use-formedible';
+```
+
+The form schema and field configuration do not need to change for the old Array fields example covered by `pnpm run test:consumer-smoke:vite-base`.
 
 ## Registry and source links
 

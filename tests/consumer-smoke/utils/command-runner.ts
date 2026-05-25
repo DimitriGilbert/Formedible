@@ -12,6 +12,7 @@ export interface CommandResult {
 
 export interface RunCommandOptions {
   readonly environment?: NodeJS.ProcessEnv;
+  readonly input?: string;
 }
 
 /**
@@ -24,11 +25,13 @@ export async function runCommand(spec: CommandSpec, options: RunCommandOptions =
     const child = spawn(spec.command, spec.args, {
       cwd: spec.cwd,
       env: options.environment ?? process.env,
-      stdio: ['ignore', 'pipe', 'pipe'],
+      stdio: ['pipe', 'pipe', 'pipe'],
     });
 
     const stdoutChunks: Buffer[] = [];
     const stderrChunks: Buffer[] = [];
+
+    child.stdin.end(options.input ?? '');
 
     child.stdout.on('data', (chunk: Buffer) => {
       stdoutChunks.push(chunk);
