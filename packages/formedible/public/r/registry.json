@@ -246,6 +246,11 @@
           "target": "@ui/formedible/lib/field-path.ts"
         },
         {
+          "path": "src/lib/formedible/field-visibility.ts",
+          "type": "registry:lib",
+          "target": "@ui/formedible/lib/field-visibility.ts"
+        },
+        {
           "path": "src/lib/formedible/dynamic-text.ts",
           "type": "registry:lib",
           "target": "@ui/formedible/lib/dynamic-text.ts"

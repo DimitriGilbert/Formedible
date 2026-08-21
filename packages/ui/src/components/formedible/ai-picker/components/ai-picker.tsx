@@ -2,11 +2,10 @@
 
 import { useCallback, useMemo, useRef, useState } from 'react';
 
-import { cn } from '@formedible/ui/lib/utils';
-
 import { AiPickerPanel } from '@formedible/ui/components/formedible/ai-picker/components/ai-picker-panel';
 import { AiPickerPopover } from '@formedible/ui/components/formedible/ai-picker/components/ai-picker-popover';
 import type {
+  AIProvider,
   AiPickerProps,
   AiPickerValues,
   ProviderModelCatalog,
@@ -14,8 +13,16 @@ import type {
   ProviderSecrets,
   ProviderSettings,
 } from '@formedible/ui/components/formedible/ai-picker/lib/ai-picker-types';
-import { createDefaultProviderSecrets, createDefaultProviderSettings, mergePickerSchema } from '@formedible/ui/components/formedible/ai-picker/lib/ai-picker-utils';
+import {
+  createDefaultProviderSecrets,
+  createDefaultProviderSettings,
+  createErrorCatalog,
+  mergePickerSchema,
+  resolveEffectiveCatalog,
+  splitPickerValues,
+} from '@formedible/ui/components/formedible/ai-picker/lib/ai-picker-utils';
 import { defaultPickerSchema } from '@formedible/ui/components/formedible/ai-picker/lib/default-picker-schema';
+import { cn } from '@formedible/ui/lib/utils';
 
 export function valuesToSettings(values: AiPickerValues): ProviderSettings {
   const base = {
@@ -81,25 +88,36 @@ export function AiPicker({
   isRefreshingModels: isRefreshingModelsProp,
   onRefreshModels: onRefreshModelsProp,
   onFetchModels,
+  providerConfigs,
   persistencePreference: persistencePreferenceProp,
   onPersistencePreferenceChange,
+  onClearStoredSecrets,
   className,
 }: AiPickerProps) {
-  const isControlled = useRef(settingsProp !== undefined && secretsProp !== undefined);
+  // Controlled state is re-derived per render so partially-controlled usage
+  // works: settings follow `settingsProp` when provided, secrets follow
+  // `secretsProp` when provided, and late-arriving props take effect at once.
+  const isSettingsControlled = settingsProp !== undefined;
+  const isSecretsControlled = secretsProp !== undefined;
 
   const [internalSettings, setInternalSettings] = useState<ProviderSettings>(createDefaultProviderSettings());
   const [internalSecrets, setInternalSecrets] = useState<ProviderSecrets>(createDefaultProviderSecrets());
   const [internalPersistence, setInternalPersistence] = useState<ProviderSecretPersistencePreference>(defaultPersistence);
-  const [fetchedCatalog, setFetchedCatalog] = useState<ProviderModelCatalog | undefined>(undefined);
+  // Custom schema fields have no typed prop, so their values always live here
+  // and ride along the values round-trip instead of being dropped.
+  const [customValues, setCustomValues] = useState<Record<string, unknown>>({});
+  // Fetched catalogs are keyed by provider so switching providers can never
+  // surface the previous provider's models, fetchedAt, or error text.
+  const [fetchedCatalogs, setFetchedCatalogs] = useState<Readonly<Partial<Record<AIProvider, ProviderModelCatalog>>>>({});
   const [isFetching, setIsFetching] = useState(false);
 
-  const currentSettings = isControlled.current ? settingsProp! : internalSettings;
-  const currentSecrets = isControlled.current ? secretsProp! : internalSecrets;
+  const currentSettings = settingsProp ?? internalSettings;
+  const currentSecrets = secretsProp ?? internalSecrets;
   const currentPersistence = persistencePreferenceProp ?? internalPersistence;
 
-  const values = useMemo(
-    () => settingsToValues(currentSettings, currentSecrets, currentPersistence),
-    [currentSettings, currentSecrets, currentPersistence],
+  const values = useMemo<AiPickerValues>(
+    () => ({ ...settingsToValues(currentSettings, currentSecrets, currentPersistence), ...customValues }),
+    [currentSettings, currentSecrets, currentPersistence, customValues],
   );
 
   const valuesRef = useRef(values);
@@ -111,26 +129,35 @@ export function AiPicker({
   );
 
   const effectiveCatalog = useMemo(
-    () => modelCatalogProp ?? modelCatalogs?.[currentSettings.provider] ?? fetchedCatalog,
-    [modelCatalogProp, modelCatalogs, currentSettings.provider, fetchedCatalog],
+    () => resolveEffectiveCatalog(currentSettings.provider, modelCatalogProp, modelCatalogs, fetchedCatalogs),
+    [modelCatalogProp, modelCatalogs, currentSettings.provider, fetchedCatalogs],
   );
 
   const effectiveIsRefreshing = isRefreshingModelsProp ?? isFetching;
 
   const handleValuesChange = useCallback((newValues: AiPickerValues) => {
-    const newSettings = valuesToSettings(newValues);
-    const newSecrets = valuesToSecrets(newValues);
-    const newPreference = valuesToPreference(newValues);
+    const { typed, customValues: nextCustomValues } = splitPickerValues(newValues);
+    const newSettings = valuesToSettings(typed);
+    const newSecrets = valuesToSecrets(typed);
+    const newPreference = valuesToPreference(typed);
 
-    if (!isControlled.current) {
+    setCustomValues(nextCustomValues);
+
+    if (!isSettingsControlled) {
       setInternalSettings(newSettings);
+    }
+
+    if (!isSecretsControlled) {
       setInternalSecrets(newSecrets);
+    }
+
+    if (persistencePreferenceProp === undefined) {
       setInternalPersistence(newPreference);
     }
 
     onChange?.(newSettings, newSecrets);
     onPersistencePreferenceChange?.(newPreference);
-  }, [onChange, onPersistencePreferenceChange]);
+  }, [isSettingsControlled, isSecretsControlled, persistencePreferenceProp, onChange, onPersistencePreferenceChange]);
 
   const handleRefreshModels = useCallback(() => {
     if (!onFetchModels) {
@@ -139,10 +166,19 @@ export function AiPicker({
     }
 
     const current = valuesRef.current;
+    const provider = current.provider;
     setIsFetching(true);
-    onFetchModels(current.provider, current.apiKey)
-      .then((catalog) => setFetchedCatalog(catalog))
-      .catch(() => setFetchedCatalog(undefined))
+    onFetchModels(provider, current.apiKey)
+      .then((catalog) => {
+        setFetchedCatalogs((previous) => ({ ...previous, [catalog.provider]: catalog }));
+      })
+      .catch((error: unknown) => {
+        console.error(`Failed to refresh ${provider} models:`, error);
+        setFetchedCatalogs((previous) => ({
+          ...previous,
+          [provider]: createErrorCatalog(provider, previous[provider], error),
+        }));
+      })
       .finally(() => setIsFetching(false));
   }, [onFetchModels, onRefreshModelsProp]);
 
@@ -153,8 +189,10 @@ export function AiPicker({
     modelCatalog: effectiveCatalog,
     isRefreshingModels: effectiveIsRefreshing,
     onRefreshModels: onFetchModels ? handleRefreshModels : onRefreshModelsProp,
+    providerConfigs,
+    onClearStoredSecrets,
     className: cn(className),
-  }), [mergedSchema, values, handleValuesChange, effectiveCatalog, effectiveIsRefreshing, onFetchModels, handleRefreshModels, onRefreshModelsProp, className]);
+  }), [mergedSchema, values, handleValuesChange, effectiveCatalog, effectiveIsRefreshing, onFetchModels, handleRefreshModels, onRefreshModelsProp, providerConfigs, onClearStoredSecrets, className]);
 
   if (variant === 'popover') {
     return <AiPickerPopover {...panelProps} />;

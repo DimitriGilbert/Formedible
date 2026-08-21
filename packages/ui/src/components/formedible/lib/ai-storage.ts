@@ -17,7 +17,7 @@ import type {
   ProviderSecrets,
   ProviderSettings,
 } from '@formedible/ui/components/formedible/lib/ai-types';
-import { parseSafeGenerationMetadata, parseSafeJsonRecord, parseSafeJsonRecordAllowEmpty, parseSafeJsonValue, parseSafeMessageParts, parseSafeStreamEvents, redactSecretString, redactUnknown } from '@formedible/ui/components/formedible/lib/ai-safe-persistence';
+import { createStreamEventSummary, parseSafeGenerationMetadata, parseSafeJsonRecord, parseSafeJsonRecordAllowEmpty, parseSafeJsonValue, parseSafeMessageParts, parseSafeStreamEvents, parseStreamEventSummary, redactSecretString, redactUnknown } from '@formedible/ui/components/formedible/lib/ai-safe-persistence';
 import type { ParsedFieldConfig, ParsedFormConfig } from '@formedible/ui/components/formedible/lib/parser-types';
 import type { FormedibleFieldOption, FormedibleFieldType } from '@formedible/ui/components/formedible/lib/types';
 
@@ -32,6 +32,14 @@ export const STORAGE_KEYS = {
 } as const;
 
 export type StorageArea = 'local' | 'session';
+
+/**
+ * Conversation redaction split: the persistence path writes to this origin's own
+ * localStorage, so formConfig must round-trip verbatim for restored forms to keep
+ * working (only message text secrets stay redacted). The export path leaves the
+ * origin entirely, so it keeps full redaction including formConfig.
+ */
+export type ConversationSanitizeMode = 'persistence' | 'export';
 
 export type ProviderSecretStorageMode = 'memory' | 'session' | 'local';
 
@@ -133,16 +141,44 @@ export function readJson<TValue>(key: string, fallback: TValue, parseValue: (val
   }
 }
 
-export function writeJson<TValue>(key: string, value: TValue, area: StorageArea = 'local'): void {
+export function writeJson<TValue>(key: string, value: TValue, area: StorageArea = 'local'): boolean {
   if (!canUseStorage(area)) {
-    return;
+    return false;
   }
 
   try {
     getStorage(area).setItem(key, JSON.stringify(value));
-  } catch {
+    return true;
+  } catch (error) {
+    reportStorageWriteFailure(key, area, error);
+    return false;
+  }
+}
+
+const reportedStorageWriteFailures = new Set<string>();
+
+function reportStorageWriteFailure(key: string, area: StorageArea, error: unknown): void {
+  const failureId = `${area}:${key}`;
+
+  if (reportedStorageWriteFailures.has(failureId)) {
     return;
   }
+
+  reportedStorageWriteFailures.add(failureId);
+
+  const detail = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+  const quotaHint = isQuotaExceededError(error)
+    ? ' The browser storage quota was exceeded; clear old conversations to free space.'
+    : '';
+  console.error(`[formedible] Failed to write storage key "${key}" (${area} storage): ${detail}.${quotaHint} The latest state was not persisted and will be lost on reload.`);
+}
+
+function isQuotaExceededError(error: unknown): boolean {
+  if (!(error instanceof DOMException)) {
+    return false;
+  }
+
+  return error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED' || error.code === 22;
 }
 
 export function persistProviderSettings(providerSettings: ProviderSettings): void {
@@ -213,10 +249,14 @@ export function exportConversation(conversation: AiConversation): AiConversation
   };
 }
 
-export function createConversation(messages: readonly AiMessage[], formCode?: string, existingConversation?: AiConversation): AiConversation {
+export function createConversationId(): string {
+  return `conversation_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+}
+
+export function createConversation(messages: readonly AiMessage[], formCode?: string, existingConversation?: AiConversation, reservedConversationId?: string): AiConversation {
   const firstUserMessage = messages.find((message) => message.role === 'user');
   const now = Date.now();
-  const conversationId = existingConversation?.id ?? `conversation_${now}_${Math.random().toString(36).slice(2)}`;
+  const conversationId = existingConversation?.id ?? reservedConversationId ?? createConversationId();
   const nextFormCode = formCode || existingConversation?.formCode;
   const generatedForms = createGeneratedFormSnapshots(conversationId, messages);
   const nextConversation = {
@@ -240,14 +280,17 @@ export function upsertConversation(
   const firstMessageId = nextMessages[0]?.id;
   const existingConversation = previousConversations.find((conversationEntry) => conversationEntry.id === activeConversationId)
     ?? previousConversations.find((conversationEntry) => firstMessageId !== undefined && conversationEntry.messages[0]?.id === firstMessageId);
-  const nextConversation = createConversation(nextMessages, getLastFormCode(nextMessages) || existingConversation?.formCode, existingConversation);
 
   if (existingConversation) {
+    const nextConversation = createConversation(nextMessages, getLastFormCode(nextMessages) || existingConversation.formCode, existingConversation);
+
     return {
       conversationId: nextConversation.id,
       conversations: previousConversations.map((conversationEntry) => (conversationEntry.id === nextConversation.id ? nextConversation : conversationEntry)),
     };
   }
+
+  const nextConversation = createConversation(nextMessages, getLastFormCode(nextMessages), undefined, activeConversationId);
 
   return {
     conversationId: nextConversation.id,
@@ -289,7 +332,7 @@ function readProviderSettings(defaultProviderSettings: ProviderSettings): Provid
 }
 
 function readConversations(): readonly AiConversation[] {
-  return readJson(STORAGE_KEYS.conversations, [], (value) => parseConversationsEnvelope(value) ?? parseConversations(value));
+  return readJson(STORAGE_KEYS.conversations, [], (value) => parseConversationsEnvelope(value, 'persistence') ?? parseConversations(value, 'persistence'));
 }
 
 function readUiState(): PersistedUiState {
@@ -307,8 +350,8 @@ function parseProviderSettingsEnvelope(value: unknown): ProviderSettings | undef
   return parseEnvelope(value, parseProviderSettings);
 }
 
-function parseConversationsEnvelope(value: unknown): readonly AiConversation[] | undefined {
-  return parseEnvelope(value, parseConversations);
+function parseConversationsEnvelope(value: unknown, mode: ConversationSanitizeMode): readonly AiConversation[] | undefined {
+  return parseEnvelope(value, (data) => parseConversations(data, mode));
 }
 
 function parseUiStateEnvelope(value: unknown): PersistedUiState | undefined {
@@ -475,26 +518,26 @@ function parseProviderSecretPersistencePreference(value: unknown): ProviderSecre
   };
 }
 
-function parseConversations(value: unknown): readonly AiConversation[] {
+function parseConversations(value: unknown, mode: ConversationSanitizeMode): readonly AiConversation[] {
   if (!Array.isArray(value)) {
     return [];
   }
 
   return value.flatMap((entry) => {
-    const conversation = parseConversation(entry);
+    const conversation = parseConversation(entry, mode);
     return conversation ? [conversation] : [];
   });
 }
 
-function parseConversation(value: unknown): AiConversation | undefined {
+function parseConversation(value: unknown, mode: ConversationSanitizeMode): AiConversation | undefined {
   if (!isRecord(value) || typeof value.id !== 'string' || typeof value.title !== 'string') {
     return undefined;
   }
 
-  const messages = parseMessages(value.messages);
+  const messages = parseMessages(value.messages, mode);
   const createdAt = parseNumber(value.createdAt) ?? Date.now();
   const updatedAt = parseNumber(value.updatedAt) ?? createdAt;
-  const generatedForms = parseGeneratedForms(value.generatedForms);
+  const generatedForms = parseGeneratedForms(value.generatedForms, mode);
   const metadata = parseConversationMetadata(value.metadata);
   const baseConversation = {
     id: value.id,
@@ -513,26 +556,26 @@ function parseConversation(value: unknown): AiConversation | undefined {
   };
 }
 
-function parseMessages(value: unknown): readonly AiMessage[] {
+function parseMessages(value: unknown, mode: ConversationSanitizeMode): readonly AiMessage[] {
   if (!Array.isArray(value)) {
     return [];
   }
 
   return value.flatMap((entry) => {
-    const message = parseMessage(entry);
+    const message = parseMessage(entry, mode);
     return message ? [message] : [];
   });
 }
 
-function parseMessage(value: unknown): AiMessage | undefined {
+function parseMessage(value: unknown, mode: ConversationSanitizeMode): AiMessage | undefined {
   if (!isRecord(value) || typeof value.id !== 'string' || !isAiMessageRole(value.role) || typeof value.content !== 'string') {
     return undefined;
   }
 
   const parts = parseSafeMessageParts(value.parts);
-  const events = parseSafeStreamEvents(value.events);
+  const eventSummary = parseStreamEventSummary(value.eventSummary) ?? createStreamEventSummary(parseSafeStreamEvents(value.events));
   const parseErrors = parseParseErrors(value.parseErrors);
-  const formConfig = parseParsedFormConfig(value.formConfig);
+  const formConfig = parseParsedFormConfig(value.formConfig, mode);
   const generation = parseSafeGenerationMetadata(value.generation);
 
   return {
@@ -542,7 +585,7 @@ function parseMessage(value: unknown): AiMessage | undefined {
     ...(typeof value.rawContent === 'string' ? { rawContent: redactSecretString(value.rawContent) } : {}),
     ...(typeof value.thinking === 'string' ? { thinking: redactSecretString(value.thinking) } : {}),
     ...(parts.length === 0 ? {} : { parts }),
-    ...(events.length === 0 ? {} : { events }),
+    ...(eventSummary ? { eventSummary } : {}),
     ...(typeof value.formCode === 'string' ? { formCode: value.formCode } : {}),
     ...(formConfig ? { formConfig } : {}),
     ...(parseErrors.length === 0 ? {} : { parseErrors }),
@@ -556,18 +599,18 @@ function parseMessage(value: unknown): AiMessage | undefined {
   };
 }
 
-function parseGeneratedForms(value: unknown): readonly GeneratedFormSnapshot[] {
+function parseGeneratedForms(value: unknown, mode: ConversationSanitizeMode): readonly GeneratedFormSnapshot[] {
   if (!Array.isArray(value)) {
     return [];
   }
 
   return value.flatMap((entry) => {
-    const generatedForm = parseGeneratedForm(entry);
+    const generatedForm = parseGeneratedForm(entry, mode);
     return generatedForm ? [generatedForm] : [];
   });
 }
 
-function parseGeneratedForm(value: unknown): GeneratedFormSnapshot | undefined {
+function parseGeneratedForm(value: unknown, mode: ConversationSanitizeMode): GeneratedFormSnapshot | undefined {
   if (!isRecord(value) || typeof value.id !== 'string' || typeof value.conversationId !== 'string' || typeof value.messageId !== 'string' || typeof value.formCode !== 'string') {
     return undefined;
   }
@@ -577,7 +620,7 @@ function parseGeneratedForm(value: unknown): GeneratedFormSnapshot | undefined {
   }
 
   const createdAt = parseNumber(value.createdAt) ?? Date.now();
-  const formConfig = parseParsedFormConfig(value.formConfig);
+  const formConfig = parseParsedFormConfig(value.formConfig, mode);
   const parseErrors = parseParseErrors(value.parseErrors);
   const metadata = parseSafeJsonRecord(value.metadata);
 
@@ -596,24 +639,24 @@ function parseGeneratedForm(value: unknown): GeneratedFormSnapshot | undefined {
   };
 }
 
-function parseParsedFormConfig(value: unknown): ParsedFormConfig | undefined {
+function parseParsedFormConfig(value: unknown, mode: ConversationSanitizeMode): ParsedFormConfig | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
 
-  const fields = parseFieldConfigs(value.fields);
+  const fields = parseFieldConfigs(value.fields, mode);
 
   if (fields.length === 0) {
     return undefined;
   }
 
-  const parsedFormOptions = parseFormOptions(value.formOptions);
+  const parsedFormOptions = parseFormOptions(value.formOptions, mode);
   const formOptions = parsedFormOptions ?? { defaultValues: {} };
   const pages = parsePages(value.pages);
   const tabs = parseTabs(value.tabs);
   const progress = parseProgress(value.progress);
-  const persistence = parsePersistence(value.persistence);
-  const schema = parseStrictSafeJsonValue(value.schema);
+  const persistence = parsePersistence(value.persistence, mode);
+  const schema = parseStrictJsonValue(value.schema, mode);
   const config = {
     fields,
     formOptions,
@@ -640,27 +683,27 @@ function parseParsedFormConfig(value: unknown): ParsedFormConfig | undefined {
   return config;
 }
 
-function parseFieldConfigs(value: unknown): readonly ParsedFieldConfig[] {
+function parseFieldConfigs(value: unknown, mode: ConversationSanitizeMode): readonly ParsedFieldConfig[] {
   if (!Array.isArray(value)) {
     return [];
   }
 
   return value.flatMap((entry) => {
-    const field = parseFieldConfig(entry);
+    const field = parseFieldConfig(entry, mode);
     return field ? [field] : [];
   });
 }
 
-function parseFieldConfig(value: unknown): ParsedFieldConfig | undefined {
+function parseFieldConfig(value: unknown, mode: ConversationSanitizeMode): ParsedFieldConfig | undefined {
   if (!isRecord(value) || typeof value.name !== 'string') {
     return undefined;
   }
 
   const options = parseFieldOptions(value.options);
   const optionSets = parseOptionSets(value.optionSets);
-  const nestedFields = parseFieldConfigs(value.nestedFields);
-  const arrayConfig = parseArrayConfig(value.arrayConfig);
-  const objectConfig = parseObjectConfig(value.objectConfig);
+  const nestedFields = parseFieldConfigs(value.nestedFields, mode);
+  const arrayConfig = parseArrayConfig(value.arrayConfig, mode);
+  const objectConfig = parseObjectConfig(value.objectConfig, mode);
   const section = parseFieldSection(value.section);
   const textareaConfig = parseTextareaConfig(value.textareaConfig);
   const passwordConfig = parsePasswordConfig(value.passwordConfig);
@@ -1163,12 +1206,12 @@ function parseOptionSets(value: unknown): Readonly<Record<string, readonly Forme
   return entries.length === 0 ? undefined : Object.fromEntries(entries);
 }
 
-function parseObjectConfig(value: unknown): ParsedFieldConfig['objectConfig'] | undefined {
+function parseObjectConfig(value: unknown, mode: ConversationSanitizeMode): ParsedFieldConfig['objectConfig'] | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
 
-  const fields = parseFieldConfigs(value.fields);
+  const fields = parseFieldConfigs(value.fields, mode);
   const config = {
     ...(fields.length === 0 ? {} : { fields }),
     ...(value.layout === 'stack' || value.layout === 'grid' ? { layout: value.layout } : {}),
@@ -1178,13 +1221,13 @@ function parseObjectConfig(value: unknown): ParsedFieldConfig['objectConfig'] | 
   return Object.keys(config).length === 0 ? undefined : config;
 }
 
-function parseArrayConfig(value: unknown): ParsedFieldConfig['arrayConfig'] | undefined {
+function parseArrayConfig(value: unknown, mode: ConversationSanitizeMode): ParsedFieldConfig['arrayConfig'] | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
 
-  const objectConfig = parseObjectConfig(value.objectConfig);
-  const defaultValue = parseSafeJsonValue(value.defaultValue);
+  const objectConfig = parseObjectConfig(value.objectConfig, mode);
+  const defaultValue = mode === 'persistence' ? parsePlainJsonValue(value.defaultValue) : parseSafeJsonValue(value.defaultValue);
   const config = {
     ...(isArrayItemType(value.itemType) ? { itemType: value.itemType } : {}),
     ...(parseNumber(value.minItems) === undefined ? {} : { minItems: parseNumber(value.minItems) }),
@@ -1197,12 +1240,14 @@ function parseArrayConfig(value: unknown): ParsedFieldConfig['arrayConfig'] | un
   return Object.keys(config).length === 0 ? undefined : config;
 }
 
-function parseFormOptions(value: unknown): ParsedFormConfig['formOptions'] | undefined {
+function parseFormOptions(value: unknown, mode: ConversationSanitizeMode): ParsedFormConfig['formOptions'] | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
 
-  const defaultValues = parseSafeJsonRecordAllowEmpty(value.defaultValues);
+  const defaultValues = mode === 'persistence'
+    ? parsePlainJsonRecordAllowEmpty(value.defaultValues)
+    : parseSafeJsonRecordAllowEmpty(value.defaultValues);
   const formOptions = {
     defaultValues: defaultValues ?? {},
   } satisfies ParsedFormConfig['formOptions'];
@@ -1280,14 +1325,14 @@ function parseProgress(value: unknown): ParsedFormConfig['progress'] | undefined
   return Object.keys(progress).length === 0 ? undefined : progress;
 }
 
-function parsePersistence(value: unknown): ParsedFormConfig['persistence'] | undefined {
+function parsePersistence(value: unknown, mode: ConversationSanitizeMode): ParsedFormConfig['persistence'] | undefined {
   if (!isRecord(value) || typeof value.key !== 'string') {
     return undefined;
   }
 
   const exclude = parseStringArray(value.exclude);
   const persistence = {
-    key: '[REDACTED]',
+    ...(mode === 'persistence' ? { key: value.key } : { key: '[REDACTED]' }),
     ...(value.storage === 'localStorage' || value.storage === 'sessionStorage' ? { storage: value.storage } : {}),
     ...(parseNumber(value.debounceMs) === undefined ? {} : { debounceMs: parseNumber(value.debounceMs) }),
     ...(exclude.length === 0 ? {} : { exclude }),
@@ -1343,15 +1388,15 @@ function parseUiState(value: unknown): PersistedUiState {
 }
 
 function sanitizeConversationForPersistence(conversation: AiConversation): AiConversation {
-  return sanitizeConversation(conversation);
+  return sanitizeConversation(conversation, 'persistence');
 }
 
 function sanitizeConversationForExport(conversation: AiConversation): AiConversation {
-  return sanitizeConversation(conversation);
+  return sanitizeConversation(conversation, 'export');
 }
 
-function sanitizeConversation(conversation: AiConversation): AiConversation {
-  const parsedConversation = parseConversation(conversation);
+function sanitizeConversation(conversation: AiConversation, mode: ConversationSanitizeMode): AiConversation {
+  const parsedConversation = parseConversation(conversation, mode);
   return parsedConversation ?? {
     id: conversation.id,
     title: conversation.title,
@@ -1385,13 +1430,13 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function parseStrictSafeJsonValue(value: unknown): AiJsonValue | undefined {
+function parseStrictJsonValue(value: unknown, mode: ConversationSanitizeMode): AiJsonValue | undefined {
   if (value === null || typeof value === 'boolean') {
     return value;
   }
 
   if (typeof value === 'string') {
-    return redactSecretString(value);
+    return mode === 'persistence' ? value : redactSecretString(value);
   }
 
   if (typeof value === 'number') {
@@ -1402,7 +1447,7 @@ function parseStrictSafeJsonValue(value: unknown): AiJsonValue | undefined {
     const entries: AiJsonValue[] = [];
 
     for (const entry of value) {
-      const parsedEntry = parseStrictSafeJsonValue(entry);
+      const parsedEntry = parseStrictJsonValue(entry, mode);
 
       if (parsedEntry === undefined) {
         return undefined;
@@ -1421,18 +1466,80 @@ function parseStrictSafeJsonValue(value: unknown): AiJsonValue | undefined {
   const entries: [string, AiJsonValue][] = [];
 
   for (const [key, entryValue] of Object.entries(value)) {
-    if (isSecretJsonKey(key)) {
+    if (mode === 'export' && isSecretJsonKey(key)) {
       entries.push([key, '[REDACTED]']);
       continue;
     }
 
-    const parsedEntry = parseStrictSafeJsonValue(entryValue);
+    const parsedEntry = parseStrictJsonValue(entryValue, mode);
 
     if (parsedEntry === undefined) {
       return undefined;
     }
 
     entries.push([key, parsedEntry]);
+  }
+
+  return Object.fromEntries(entries);
+}
+
+function parsePlainJsonValue(value: unknown): AiJsonValue | undefined {
+  if (value === null || typeof value === 'boolean') {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : undefined;
+  }
+
+  if (Array.isArray(value)) {
+    const entries: AiJsonValue[] = [];
+
+    for (const entry of value) {
+      const parsedEntry = parsePlainJsonValue(entry);
+
+      if (parsedEntry !== undefined) {
+        entries.push(parsedEntry);
+      }
+    }
+
+    return entries;
+  }
+
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const entries: [string, AiJsonValue][] = [];
+
+  for (const [key, entryValue] of Object.entries(value)) {
+    const parsedEntry = parsePlainJsonValue(entryValue);
+
+    if (parsedEntry !== undefined) {
+      entries.push([key, parsedEntry]);
+    }
+  }
+
+  return Object.fromEntries(entries);
+}
+
+function parsePlainJsonRecordAllowEmpty(value: unknown): Readonly<Record<string, AiJsonValue>> | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const entries: [string, AiJsonValue][] = [];
+
+  for (const [key, entryValue] of Object.entries(value)) {
+    const parsedEntry = parsePlainJsonValue(entryValue);
+
+    if (parsedEntry !== undefined) {
+      entries.push([key, parsedEntry]);
+    }
   }
 
   return Object.fromEntries(entries);

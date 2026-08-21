@@ -1,6 +1,10 @@
 import type { FormedibleFieldConfig, FormedibleFieldType, FormedibleFormValues, NormalizedFieldConfig, NormalizedFieldType } from '@/lib/formedible/types';
 
-export function normalizeFieldType(type: FormedibleFieldType | undefined): NormalizedFieldType {
+/**
+ * Normalizes legacy type aliases to their canonical field type. Custom type
+ * strings (used with `defaultComponents` registrations) pass through verbatim.
+ */
+export function normalizeFieldType(type: FormedibleFieldType | (string & {}) | undefined): NormalizedFieldType | (string & {}) {
   if (!type) {
     return 'text';
   }

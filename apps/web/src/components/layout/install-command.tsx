@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Check, Copy, Terminal } from 'lucide-react';
 
 export type PkgManager = 'pnpm' | 'npm' | 'yarn' | 'bun';
@@ -20,6 +20,26 @@ export const pkgLabels: Record<PkgManager, string> = {
 export function InstallCommand() {
   const [activePkg, setActivePkg] = useState<PkgManager>('pnpm');
   const [copied, setCopied] = useState(false);
+  const resetTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  function scheduleCopyReset() {
+    if (resetTimeoutRef.current !== undefined) {
+      clearTimeout(resetTimeoutRef.current);
+    }
+
+    resetTimeoutRef.current = setTimeout(() => {
+      setCopied(false);
+      resetTimeoutRef.current = undefined;
+    }, 2000);
+  }
+
+  useEffect(() => {
+    return () => {
+      if (resetTimeoutRef.current !== undefined) {
+        clearTimeout(resetTimeoutRef.current);
+      }
+    };
+  }, []);
 
   function handleCopy() {
     if (!navigator.clipboard) {
@@ -30,11 +50,16 @@ export function InstallCommand() {
       .writeText(pkgCommands[activePkg])
       .then(() => {
         setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        scheduleCopyReset();
       })
       .catch(() => {
         setCopied(false);
       });
+  }
+
+  function handlePkgChange(pm: PkgManager) {
+    setActivePkg(pm);
+    setCopied(false);
   }
 
   return (
@@ -45,7 +70,7 @@ export function InstallCommand() {
             <button
               key={pm}
               type="button"
-              onClick={() => setActivePkg(pm)}
+              onClick={() => handlePkgChange(pm)}
               className={`rounded-md px-2.5 py-1 text-xs font-medium transition ${activePkg === pm ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground'}`}
             >
               {pkgLabels[pm]}

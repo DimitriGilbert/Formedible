@@ -1,23 +1,23 @@
 'use client';
 
-import { Button } from '@formedible/ui/components/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@formedible/ui/components/popover';
-import { cn } from '@formedible/ui/lib/utils';
-
 import { AiPickerPanel } from '@formedible/ui/components/formedible/ai-picker/components/ai-picker-panel';
 import type { AiPickerPanelProps } from '@formedible/ui/components/formedible/ai-picker/components/ai-picker-panel';
+import { Button } from '@formedible/ui/components/button';
+import { Popover, PopoverContent, PopoverTrigger } from '@formedible/ui/components/popover';
+import type { AiPickerProviderConfig } from '@formedible/ui/components/formedible/ai-picker/lib/ai-picker-types';
 import { defaultProviderConfigs } from '@formedible/ui/components/formedible/ai-picker/lib/default-picker-schema';
+import { cn } from '@formedible/ui/lib/utils';
 
 export type AiPickerPopoverProps = AiPickerPanelProps;
 
-function resolveProviderLabel(provider: string): string {
-  const config = defaultProviderConfigs.find((c) => c.value === provider);
+function resolveProviderLabel(provider: string, providerConfigs: readonly AiPickerProviderConfig[]): string {
+  const config = providerConfigs.find((c) => c.value === provider);
   return config?.label ?? provider;
 }
 
 export function AiPickerPopover(props: AiPickerPopoverProps) {
-  const { values, className } = props;
-  const label = resolveProviderLabel(values.provider);
+  const { values, providerConfigs, className } = props;
+  const label = resolveProviderLabel(values.provider, providerConfigs ?? defaultProviderConfigs);
 
   return (
     <Popover>

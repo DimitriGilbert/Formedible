@@ -24,13 +24,69 @@ interface ModelAutocompleteProps {
   readonly onChange: (model: string) => void;
 }
 
-function parseOptionalNumber(value: string): number | undefined {
-  if (value.trim() === '') {
-    return undefined;
+export type NumberDraftEvaluation =
+  | { readonly kind: 'clear' }
+  | { readonly kind: 'commit'; readonly value: number }
+  | { readonly kind: 'keep' };
+
+export interface NumberDraftOptions {
+  readonly min: number;
+  readonly max?: number;
+  readonly allowClear: boolean;
+}
+
+export function evaluateNumberDraft(raw: string, { allowClear, max, min }: NumberDraftOptions): NumberDraftEvaluation {
+  const trimmedValue = raw.trim();
+
+  if (trimmedValue.length === 0) {
+    return allowClear ? { kind: 'clear' } : { kind: 'keep' };
   }
 
-  const parsedValue = Number(value);
-  return Number.isFinite(parsedValue) ? parsedValue : undefined;
+  const parsedValue = Number(trimmedValue);
+
+  if (!Number.isFinite(parsedValue)) {
+    return { kind: 'keep' };
+  }
+
+  return { kind: 'commit', value: Math.min(Math.max(parsedValue, min), max ?? Number.POSITIVE_INFINITY) };
+}
+
+export interface NumberSettingInputProps {
+  readonly value: number | undefined;
+  readonly min: number;
+  readonly max?: number;
+  readonly onCommit: (value: number) => void;
+  readonly onClear?: () => void;
+}
+
+export function NumberSettingInput({ value, min, max, onCommit, onClear }: NumberSettingInputProps) {
+  const [draft, setDraft] = useState<string | null>(null);
+  const displayValue = draft ?? (value === undefined ? '' : String(value));
+
+  return (
+    <Input
+      type="text"
+      inputMode="decimal"
+      autoComplete="off"
+      value={displayValue}
+      onBlur={() => setDraft(null)}
+      onChange={(event) => {
+        const rawValue = event.target.value;
+        const evaluation = evaluateNumberDraft(rawValue, { allowClear: onClear !== undefined, max, min });
+
+        setDraft(rawValue);
+
+        if (evaluation.kind === 'clear') {
+          onClear?.();
+          return;
+        }
+
+        if (evaluation.kind === 'commit') {
+          onCommit(evaluation.value);
+        }
+      }}
+    />
+  );
 }
 
 function updateThinkingBudget(settings: ProviderSettings, thinkingBudgetTokens: number | undefined): ProviderSettings {
@@ -146,17 +202,33 @@ export function AgentSettings({ settings, secrets, modelCatalog, isRefreshingMod
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="grid gap-1 text-sm font-medium">
           Temperature
-          <Input value={settings.temperature ?? ''} type="number" min="0" max="2" step="0.1" onChange={(event) => onChange(updateTemperature(settings, parseOptionalNumber(event.target.value)), secrets)} />
+          <NumberSettingInput
+            value={settings.temperature}
+            min={0}
+            max={2}
+            onCommit={(temperature) => onChange(updateTemperature(settings, temperature), secrets)}
+            onClear={() => onChange(updateTemperature(settings, undefined), secrets)}
+          />
         </label>
         <label className="grid gap-1 text-sm font-medium">
           Max tokens
-          <Input value={settings.maxTokens ?? ''} type="number" min="1" step="1" onChange={(event) => onChange(updateMaxTokens(settings, parseOptionalNumber(event.target.value)), secrets)} />
+          <NumberSettingInput
+            value={settings.maxTokens}
+            min={1}
+            onCommit={(maxTokens) => onChange(updateMaxTokens(settings, maxTokens), secrets)}
+            onClear={() => onChange(updateMaxTokens(settings, undefined), secrets)}
+          />
         </label>
       </div>
       {settings.provider === 'anthropic' ? (
         <label className="grid gap-1 text-sm font-medium">
           Thinking budget tokens
-          <Input value={settings.thinkingBudgetTokens ?? ''} type="number" min="1" step="1" onChange={(event) => onChange(updateThinkingBudget(settings, parseOptionalNumber(event.target.value)), secrets)} />
+          <NumberSettingInput
+            value={settings.thinkingBudgetTokens}
+            min={1}
+            onCommit={(thinkingBudgetTokens) => onChange(updateThinkingBudget(settings, thinkingBudgetTokens), secrets)}
+            onClear={() => onChange(updateThinkingBudget(settings, undefined), secrets)}
+          />
           <span className="text-xs font-normal text-muted-foreground">Anthropic-only reasoning budget. Leave empty to omit the option.</span>
         </label>
       ) : (

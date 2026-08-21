@@ -172,11 +172,17 @@ export function RentalCarFlowForm() {
           disableDate: (date, formValues) => {
             if (!formValues?.pickupDate) return false;
 
-            const pickupDate = new Date(formValues.pickupDate);
-            const returnDate = new Date(date);
+            // Date fields store local-midnight Date values; normalize
+            // 'YYYY-MM-DD' strings to local midnight too so both sides of
+            // the comparison share the same timezone basis.
+            const pickupValue = formValues.pickupDate as string | Date;
+            const pickupDate =
+              pickupValue instanceof Date
+                ? pickupValue
+                : new Date(`${pickupValue}T00:00:00`);
 
             // Disable return dates that are before or same as pickup date
-            return returnDate <= pickupDate;
+            return date.getTime() <= pickupDate.getTime();
           },
         },
       },
@@ -782,12 +788,18 @@ export function RentalCarFlowForm() {
           // Disable dates before the pickup date
           disableDate: (date, formValues) => {
             if (!formValues?.pickupDate) return false;
-            
-            const pickupDate = new Date(formValues.pickupDate);
-            const returnDate = new Date(date);
-            
+
+            // Date fields store local-midnight Date values; normalize
+            // 'YYYY-MM-DD' strings to local midnight too so both sides of
+            // the comparison share the same timezone basis.
+            const pickupValue = formValues.pickupDate as string | Date;
+            const pickupDate =
+              pickupValue instanceof Date
+                ? pickupValue
+                : new Date(\`\${pickupValue}T00:00:00\`);
+
             // Disable return dates that are before or same as pickup date
-            return returnDate <= pickupDate;
+            return date.getTime() <= pickupDate.getTime();
           }
         }
       },

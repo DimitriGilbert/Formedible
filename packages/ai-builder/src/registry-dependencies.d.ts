@@ -48,3 +48,53 @@ declare module '@/components/ui/scroll-area' {
   export const ScrollArea: import('react').ComponentType<{ readonly className?: string; readonly children?: import('react').ReactNode }>;
   export const ScrollBar: import('react').ComponentType<{ readonly className?: string }>;
 }
+
+declare module '@/components/formedible/builder/field-store' {
+  export type FieldStore = import('../../builder/src/components/formedible/builder/field-store').FieldStore;
+  export type FormField = import('../../builder/src/lib/formedible/builder-types').FormField;
+  export const globalFieldStore: typeof import('../../builder/src/components/formedible/builder/field-store').globalFieldStore;
+  export const FieldStoreContext: typeof import('../../builder/src/components/formedible/builder/field-store').FieldStoreContext;
+  export function useFieldStore(): import('../../builder/src/components/formedible/builder/field-store').FieldStore;
+}
+
+declare module '@/lib/formedible/builder-types' {
+  export type BuilderFieldTypeDefinition = import('../../builder/src/lib/formedible/builder-types').BuilderFieldTypeDefinition;
+  export type FormField = import('../../builder/src/lib/formedible/builder-types').FormField;
+  export type FormPage = import('../../builder/src/lib/formedible/builder-types').FormPage;
+  export type FormTab = import('../../builder/src/lib/formedible/builder-types').FormTab;
+  export type FormSettings = import('../../builder/src/lib/formedible/builder-types').FormSettings;
+  export type FormMetadata = import('../../builder/src/lib/formedible/builder-types').FormMetadata;
+  export type TabContentProps = import('../../builder/src/lib/formedible/builder-types').TabContentProps;
+  export type TabConfig = import('../../builder/src/lib/formedible/builder-types').TabConfig;
+  export type FormBuilderProps = import('../../builder/src/lib/formedible/builder-types').FormBuilderProps;
+  export const builderFieldTypes: typeof import('../../builder/src/lib/formedible/builder-types').builderFieldTypes;
+  export const defaultFormMetadata: typeof import('../../builder/src/lib/formedible/builder-types').defaultFormMetadata;
+}
+
+declare module '@/components/formedible/builder/form-builder' {
+  export const FormBuilder: import('react').ComponentType<import('../../builder/src/lib/formedible/builder-types').FormBuilderProps>;
+}
+
+declare module '@/components/formedible/builder/field-configurator' {
+  export const FieldConfigurator: import('react').ComponentType<{
+    readonly fieldId: string;
+    readonly initialField: import('../../builder/src/lib/formedible/builder-types').FormField;
+    readonly availablePages?: readonly number[];
+    readonly metadata?: import('../../builder/src/lib/formedible/builder-types').FormMetadata;
+    readonly onFieldChange?: (field: import('../../builder/src/lib/formedible/builder-types').FormField) => void;
+    readonly className?: string;
+  }>;
+}
+
+declare module '@/components/formedible/builder/form-preview' {
+  export const FormPreview: import('react').ComponentType<{
+    readonly config: import('../../formedible/src/lib/formedible/types').UseFormedibleOptions<import('../../formedible/src/lib/formedible/types').FormedibleFormValues>;
+    readonly onFormSubmit?: (values: import('../../formedible/src/lib/formedible/types').FormedibleFormValues) => void;
+    readonly className?: string;
+  }>;
+}
+
+declare module '@/components/formedible/builder/default-tabs' {
+  export const defaultTabs: readonly import('../../builder/src/lib/formedible/builder-types').TabConfig[];
+}
+

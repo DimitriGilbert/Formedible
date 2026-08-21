@@ -1,5 +1,5 @@
 import { ChevronDown, Phone } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { FieldWrapper } from '@/components/formedible/fields/field-wrapper';
 import { Button } from '@/components/ui/button';
@@ -32,6 +32,7 @@ export function PhoneField<TFormValues extends FormedibleFormValues>({ fieldConf
   const defaultCountry = isCountryCode(config?.defaultCountry) ? config.defaultCountry : 'US';
   const [open, setOpen] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState<CountryCode>(() => getAllowedDefaultCountry(defaultCountry, config?.allowedCountries));
+  const dropdownContainerRef = useRef<HTMLDivElement | null>(null);
   const value = typeof field.value === 'string' ? field.value : '';
   const country = countries[selectedCountry];
   const phoneNumber = stripCountryCode(value, country.code);
@@ -52,7 +53,42 @@ export function PhoneField<TFormValues extends FormedibleFormValues>({ fieldConf
     }
   }, [availableCountries, config?.allowedCountries, defaultCountry, selectedCountry, value]);
 
+  useEffect(() => {
+    if (!open) {
+      return undefined;
+    }
+
+    function handlePointerDown(event: PointerEvent) {
+      const container = dropdownContainerRef.current;
+
+      if (container && container.contains(event.target as Node)) {
+        return;
+      }
+
+      setOpen(false);
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setOpen(false);
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [open]);
+
   function updateValue(countryCode: CountryCode, nextValue: string) {
+    if (nextValue.replace(/\D/g, '').length === 0) {
+      field.onChange('');
+      return;
+    }
+
     const nextCountry = countries[countryCode];
     const formatted = formatPhone(nextValue, nextCountry.format);
     field.onChange(config?.format === 'international' ? `${nextCountry.code} ${formatted}`.trim() : formatted);
@@ -62,13 +98,13 @@ export function PhoneField<TFormValues extends FormedibleFormValues>({ fieldConf
     <FieldWrapper fieldConfig={fieldConfig} field={field}>
       <div className="space-y-2">
         <div className="flex">
-          <div className="relative">
+          <div className="relative" ref={dropdownContainerRef}>
             <Button variant="outline" className="rounded-r-none border-r-0" disabled={fieldConfig.disabled} onClick={() => setOpen((isOpen) => !isOpen)}>
               {country.code}
               <ChevronDown className="size-3" />
             </Button>
             {open && (
-              <div className="absolute z-50 mt-1 min-w-48 rounded-md border bg-popover p-1 shadow-md">
+              <div data-slot="phone-country-menu" className="absolute z-50 mt-1 min-w-48 rounded-md border bg-popover p-1 shadow-md">
                 {availableCountries.map((code) => (
                   <Button
                     key={code}

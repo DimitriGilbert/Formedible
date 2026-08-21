@@ -1,5 +1,5 @@
 import { access } from 'node:fs/promises';
-import { dirname, resolve as resolvePath } from 'node:path';
+import { dirname, sep, resolve as resolvePath } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const repoRoot = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -30,7 +30,7 @@ export async function resolve(specifier, context, nextResolve) {
     }
 
     const parentPath = context.parentURL?.startsWith('file:') ? fileURLToPath(context.parentURL) : process.cwd();
-    const packageRoot = packageRoots.find((root) => parentPath.startsWith(root)) ?? process.cwd();
+    const packageRoot = packageRoots.find((root) => parentPath === root || parentPath.startsWith(root + sep)) ?? process.cwd();
     const resolved = await resolveExistingPath(resolvePath(packageRoot, 'src', specifier.slice(2)));
 
     if (resolved !== undefined) {

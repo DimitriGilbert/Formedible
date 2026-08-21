@@ -1,5 +1,12 @@
 export type ReturnContractDisposition = 'keep' | 'remove-replace';
 
+/**
+ * The removed return-helper names, as a literal union so other fixtures can
+ * derive type-level keys (e.g. `formOptionsAnalyticsContract` rows) from the
+ * same single source instead of hand-copying the names again.
+ */
+export type RemovedUseFormedibleReturnFieldName = 'crossFieldErrors' | 'asyncValidationStates' | 'validateCrossFields' | 'validateFieldAsync';
+
 export type UseFormedibleReturnContractRow = Readonly<{
   field: string;
   disposition: ReturnContractDisposition;

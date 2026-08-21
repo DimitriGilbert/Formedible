@@ -4,6 +4,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const requiredCoreDependency = 'https://formedible.dev/r/formedible-core.json';
 const requiredParserDependency = 'https://formedible.dev/r/formedible-parser.json';
+const requiredBuilderDependency = 'https://formedible.dev/r/form-builder.json';
 const requiredScrollAreaDependency = 'scroll-area';
 const forbiddenPublicRegistryNames = ['formedible-react-form', 'formedible-classname-runtime'];
 const skippedDirectoryNames = new Set(['.git', 'node_modules']);
@@ -30,7 +31,7 @@ const publicRegistryPackages = [
   {
     packageRoot: 'packages/ai-builder',
     itemName: 'ai-builder',
-    requiredRegistryDependencies: [requiredCoreDependency, requiredParserDependency, requiredScrollAreaDependency],
+    requiredRegistryDependencies: [requiredCoreDependency, requiredParserDependency, requiredBuilderDependency, requiredScrollAreaDependency],
     validatesRegistryDependencies: true,
   },
 ];

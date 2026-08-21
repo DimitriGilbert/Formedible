@@ -262,7 +262,7 @@ export const docsCompatibilityExamples = [
         { page: 2, title: 'Project Requirements' },
         { page: 3, title: 'Final Details' },
       ],
-      persistence: { key: 'demo-project-inquiry-form', storage: 'localStorage', debounceMs: 1500, exclude: ['agreeToTerms'], restoreOnMount: true },
+      persistence: { key: 'demo-project-inquiry-form-compat', storage: 'localStorage', debounceMs: 1500, exclude: ['agreeToTerms'], restoreOnMount: true },
       formOptions: {
         defaultValues: { name: '', email: '', phone: '', company: '', jobTitle: '', projectType: [], timeline: '', budget: '', description: '', agreeToTerms: false },
         onSubmit: handleExampleSubmit,

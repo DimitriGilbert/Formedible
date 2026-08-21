@@ -1,9 +1,38 @@
+import { createContext, useContext } from 'react';
+
 import type { FormedibleFieldType } from '@/components/formedible/lib/types';
 import { builderFieldTypes } from '@/lib/formedible/builder-types';
 import type { FormField } from '@/lib/formedible/builder-types';
 
 type StructureListener = () => void;
 type FieldListener = (field: FormField) => void;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function deepEqual(left: unknown, right: unknown): boolean {
+  if (left === right) {
+    return true;
+  }
+
+  if (Array.isArray(left) && Array.isArray(right)) {
+    return left.length === right.length && left.every((item, index) => deepEqual(item, right[index]));
+  }
+
+  if (isRecord(left) && isRecord(right)) {
+    const leftKeys = Object.keys(left);
+    const rightKeys = Object.keys(right);
+
+    if (leftKeys.length !== rightKeys.length) {
+      return false;
+    }
+
+    return leftKeys.every((key) => Object.prototype.hasOwnProperty.call(right, key) && deepEqual(left[key], right[key]));
+  }
+
+  return false;
+}
 
 export class FieldStore {
   private fields: Record<string, FormField> = {};
@@ -19,7 +48,7 @@ export class FieldStore {
     const label = builderFieldTypes.find((fieldType) => fieldType.value === type)?.label ?? type;
     const field: FormField = {
       id,
-      name: `field_${this.fieldOrder.length + 1}`,
+      name: this.createNextFieldName(),
       type,
       label: `${label} Field`,
       required: false,
@@ -42,6 +71,8 @@ export class FieldStore {
       return undefined;
     }
 
+    this.assertNameAvailable(fieldId, fieldUpdate.name, currentField.name);
+
     const updatedField: FormField = { ...currentField, ...fieldUpdate, id: fieldId };
     this.fields[fieldId] = updatedField;
     this.rebuildFieldSnapshot();
@@ -52,6 +83,8 @@ export class FieldStore {
   }
 
   replaceField(fieldId: string, field: FormField): FormField {
+    this.assertNameAvailable(fieldId, field.name, this.fields[fieldId]?.name);
+
     const updatedField = { ...field, id: fieldId };
     const isNewField = !this.fieldOrder.includes(fieldId);
     this.fields[fieldId] = updatedField;
@@ -92,7 +125,7 @@ export class FieldStore {
     this.fields[id] = {
       ...field,
       id,
-      name: `${field.name}_copy`,
+      name: this.createUniqueCopyName(field.name),
       label: `${String(field.label)} (Copy)`,
     };
     this.fieldOrder.push(id);
@@ -141,6 +174,10 @@ export class FieldStore {
   }
 
   importFields(fields: readonly FormField[]): void {
+    if (deepEqual(fields, this.fieldSnapshot)) {
+      return;
+    }
+
     this.fields = {};
     this.fieldOrder = [];
     this.nextId = 1;
@@ -176,6 +213,62 @@ export class FieldStore {
     this.nextId += 1;
 
     return id;
+  }
+
+  private assertNameAvailable(fieldId: string, requestedName: string | undefined, currentName: string | undefined): void {
+    if (requestedName === undefined || requestedName === currentName) {
+      return;
+    }
+
+    for (const [existingId, existingField] of Object.entries(this.fields)) {
+      if (existingId !== fieldId && existingField.name === requestedName) {
+        throw new Error(
+          `Cannot use field name "${requestedName}" for field "${currentName ?? fieldId}" (${fieldId}): field "${existingField.name}" (${existingId}) already uses that name. Field names must be unique.`,
+        );
+      }
+    }
+  }
+
+  private createNextFieldName(): string {
+    const namesInUse = this.collectFieldNames();
+    let counter = 1;
+
+    while (namesInUse.has(`field_${counter}`)) {
+      counter += 1;
+    }
+
+    return `field_${counter}`;
+  }
+
+  private createUniqueCopyName(baseName: string): string {
+    const namesInUse = this.collectFieldNames();
+    const baseCopyName = `${baseName}_copy`;
+
+    if (!namesInUse.has(baseCopyName)) {
+      return baseCopyName;
+    }
+
+    let counter = 2;
+
+    while (namesInUse.has(`${baseCopyName}_${counter}`)) {
+      counter += 1;
+    }
+
+    return `${baseCopyName}_${counter}`;
+  }
+
+  private collectFieldNames(): Set<string> {
+    const names = new Set<string>();
+
+    for (const fieldId of this.fieldOrder) {
+      const field = this.fields[fieldId];
+
+      if (field !== undefined) {
+        names.add(field.name);
+      }
+    }
+
+    return names;
   }
 
   private advanceNextIdFromFieldId(fieldId: string): void {
@@ -248,4 +341,11 @@ export class FieldStore {
 }
 
 export const globalFieldStore = new FieldStore();
+
+export const FieldStoreContext = createContext<FieldStore | null>(null);
+
+export function useFieldStore(): FieldStore {
+  return useContext(FieldStoreContext) ?? globalFieldStore;
+}
+
 export type { FormField };

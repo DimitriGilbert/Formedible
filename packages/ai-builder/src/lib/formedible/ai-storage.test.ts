@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { describe, it } from 'node:test';
 
-import { exportConversation, persistConversations, persistProviderModelCatalog, readPersistedAIBuilderState, readProviderModelCatalogs } from '@/lib/formedible/ai-storage';
+import { exportConversation, persistConversations, persistProviderModelCatalog, readPersistedAIBuilderState, readProviderModelCatalogs, STORAGE_KEYS, writeJson } from '@/lib/formedible/ai-storage';
 import type { AiConversation, ProviderSettings } from '@/lib/formedible/ai-types';
 
 class MemoryStorage implements Storage {
@@ -29,6 +29,32 @@ class MemoryStorage implements Storage {
 
   setItem(key: string, value: string): void {
     this.values.set(key, value);
+  }
+}
+
+class QuotaExceededStorage implements Storage {
+  get length(): number {
+    return 0;
+  }
+
+  clear(): void {
+    return;
+  }
+
+  getItem(_key: string): string | null {
+    return null;
+  }
+
+  key(_index: number): string | null {
+    return null;
+  }
+
+  removeItem(_key: string): void {
+    return;
+  }
+
+  setItem(_key: string, _value: string): void {
+    throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
   }
 }
 
@@ -586,7 +612,7 @@ describe('AI storage canonical config preservation', () => {
       const persisted = readPersistedAIBuilderState(fallbackProviderSettings);
       const formConfig = persisted.conversations[0]?.messages[0]?.formConfig;
 
-      assert.deepEqual(formConfig?.fields[0], {
+      assert.deepEqual(formConfig?.fields?.[0], {
         name: 'email',
         type: 'email',
         autocompleteConfig: {
@@ -596,6 +622,163 @@ describe('AI storage canonical config preservation', () => {
       assert.deepEqual(formConfig?.formOptions, { defaultValues: {} });
       assert.equal(formConfig?.schema, undefined);
       assert.equal(formConfig?.analytics, undefined);
+    } finally {
+      restoreWindow();
+    }
+  });
+});
+
+describe('AI storage persistence and export redaction split', () => {
+  const secretBearingFormConfig: NonNullable<AiConversation['messages'][number]['formConfig']> = {
+    fields: [
+      { name: 'token', type: 'password' },
+      { name: 'email', type: 'email' },
+    ],
+    formOptions: {
+      defaultValues: {
+        token: 'tok_123456',
+        password: 'hunter2',
+        email: 'user@example.com',
+      },
+    },
+    persistence: { key: 'signup-form-state', storage: 'localStorage' },
+    schema: 'z.object({ token: z.string() })',
+  };
+
+  function createSecretBearingConversation(): AiConversation {
+    return {
+      id: 'conversation_secrets',
+      title: 'Secret bearing form',
+      messages: [
+        {
+          id: 'message_secrets',
+          role: 'assistant',
+          content: 'Form generated with api key sk-live-secret',
+          formConfig: secretBearingFormConfig,
+        },
+      ],
+      createdAt: 1,
+      updatedAt: 2,
+    };
+  }
+
+  it('keeps persistence keys, secret-named default values, and schema strings verbatim through persist+read', () => {
+    const restoreWindow = installWindowStorage(new MemoryStorage());
+
+    try {
+      persistConversations([createSecretBearingConversation()]);
+
+      const persisted = readPersistedAIBuilderState(fallbackProviderSettings);
+      const formConfig = persisted.conversations[0]?.messages[0]?.formConfig;
+
+      assert.equal(formConfig?.persistence?.key, 'signup-form-state');
+      assert.equal(formConfig?.persistence?.storage, 'localStorage');
+      assert.deepEqual(formConfig?.formOptions?.defaultValues, {
+        token: 'tok_123456',
+        password: 'hunter2',
+        email: 'user@example.com',
+      });
+      assert.equal(formConfig?.schema, 'z.object({ token: z.string() })');
+      assert.equal(persisted.conversations[0]?.messages[0]?.content, 'Form generated with api key [REDACTED]');
+    } finally {
+      restoreWindow();
+    }
+  });
+
+  it('redacts persistence keys, secret-named default values, and schema strings in exports', () => {
+    const exported = exportConversation(createSecretBearingConversation());
+    const formConfig = exported.conversation.messages[0]?.formConfig;
+
+    assert.equal(formConfig?.persistence?.key, '[REDACTED]');
+    assert.deepEqual(formConfig?.formOptions?.defaultValues, {
+      token: '[REDACTED]',
+      password: '[REDACTED]',
+      email: 'user@example.com',
+    });
+    assert.notEqual(formConfig?.schema, 'z.object({ token: z.string() })');
+    assert.match(String(formConfig?.schema), /\[REDACTED\]/);
+  });
+
+  it('reports quota write failures once per storage key without throwing', () => {
+    const restoreWindow = installWindowStorage(new QuotaExceededStorage());
+    const originalError = console.error;
+    const failures: string[] = [];
+
+    console.error = (...args: unknown[]) => {
+      failures.push(args.map((arg) => String(arg)).join(' '));
+    };
+
+    try {
+      assert.equal(writeJson('formedible-test-quota-write', { value: 1 }), false);
+      assert.doesNotThrow(() => persistConversations([createSecretBearingConversation()]));
+      assert.doesNotThrow(() => persistConversations([createSecretBearingConversation()]));
+
+      assert.equal(failures.length, 2);
+      assert.match(failures[0] ?? '', /formedible-test-quota-write/);
+      assert.match(failures[0] ?? '', /QuotaExceededError/);
+      assert.match(failures[0] ?? '', /quota/i);
+      assert.match(failures[1] ?? '', new RegExp(STORAGE_KEYS.conversations));
+      assert.match(failures[1] ?? '', /quota/i);
+    } finally {
+      console.error = originalError;
+      restoreWindow();
+    }
+  });
+
+  it('returns write success from writeJson when storage accepts the value', () => {
+    const storage = new MemoryStorage();
+    const restoreWindow = installWindowStorage(storage);
+
+    try {
+      assert.equal(writeJson('formedible-test-write-ok', { value: 1 }), true);
+      assert.equal(storage.getItem('formedible-test-write-ok'), '{"value":1}');
+    } finally {
+      restoreWindow();
+    }
+  });
+
+  it('replaces per-token stream events with a compact summary when persisting conversations', () => {
+    const storage = new MemoryStorage();
+    const restoreWindow = installWindowStorage(storage);
+    const conversation: AiConversation = {
+      id: 'conversation_events',
+      title: 'Streamed form',
+      messages: [
+        { id: 'user_events', role: 'user', content: 'Create a form' },
+        {
+          id: 'assistant_events',
+          role: 'assistant',
+          content: 'Final answer',
+          events: [
+            { type: 'text-delta', delta: 'Final ', raw: { apiKey: 'secret-key' }, receivedAt: 1 },
+            { type: 'text-delta', delta: 'answer', raw: { apiKey: 'secret-key' }, receivedAt: 2 },
+            { type: 'finish', finishReason: 'stop', usage: { inputTokens: 3, outputTokens: 5, totalTokens: 8 }, raw: {}, receivedAt: 3 },
+          ],
+          status: 'completed',
+        },
+      ],
+      createdAt: 1,
+      updatedAt: 3,
+    };
+
+    try {
+      persistConversations([conversation]);
+
+      const storedConversations = storage.getItem(STORAGE_KEYS.conversations) ?? '';
+
+      assert.doesNotMatch(storedConversations, /"events"/);
+      assert.doesNotMatch(storedConversations, /secret-key/);
+
+      const persisted = readPersistedAIBuilderState(fallbackProviderSettings);
+      const assistantMessage = persisted.conversations[0]?.messages[1];
+
+      assert.equal(assistantMessage?.content, 'Final answer');
+      assert.equal(assistantMessage?.events, undefined);
+      assert.deepEqual(assistantMessage?.eventSummary, {
+        totalEvents: 3,
+        countsByType: { 'text-delta': 2, finish: 1 },
+        usage: { inputTokens: 3, outputTokens: 5, totalTokens: 8 },
+      });
     } finally {
       restoreWindow();
     }

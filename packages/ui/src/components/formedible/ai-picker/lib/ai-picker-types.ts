@@ -79,7 +79,15 @@ export interface AiPickerValues {
   readonly thinkingBudgetTokens?: number;
   readonly storageMode: ProviderSecretStorageMode;
   readonly rememberKey: boolean;
+  readonly [customField: string]: unknown;
 }
+
+/**
+ * Conditionals mirror the core package's semantics: a string is a field path
+ * evaluated for truthiness against the picker values (never compiled with
+ * `new Function`), a function receives the values directly.
+ */
+export type AiPickerConditional = string | ((values: AiPickerValues) => boolean);
 
 export interface AiPickerSchemaField {
   readonly name: string;
@@ -94,7 +102,7 @@ export interface AiPickerSchemaField {
   readonly max?: number;
   readonly step?: number;
   readonly defaultValue?: unknown;
-  readonly conditional?: string;
+  readonly conditional?: AiPickerConditional;
   readonly [customProp: string]: unknown;
 }
 

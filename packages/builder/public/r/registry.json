@@ -35,6 +35,11 @@
           "target": "@ui/formedible/builder/field-configurator.tsx"
         },
         {
+          "path": "src/components/formedible/builder/field-configuration-form.tsx",
+          "type": "registry:component",
+          "target": "@ui/formedible/builder/field-configuration-form.tsx"
+        },
+        {
           "path": "src/components/formedible/builder/form-preview.tsx",
           "type": "registry:component",
           "target": "@ui/formedible/builder/form-preview.tsx"
@@ -58,6 +63,21 @@
           "path": "src/lib/formedible/builder-types.ts",
           "type": "registry:lib",
           "target": "@ui/formedible/lib/builder-types.ts"
+        },
+        {
+          "path": "src/lib/formedible/builder-config-types.ts",
+          "type": "registry:lib",
+          "target": "@ui/formedible/lib/builder-config-types.ts"
+        },
+        {
+          "path": "src/lib/formedible/builder-config-registry.ts",
+          "type": "registry:lib",
+          "target": "@ui/formedible/lib/builder-config-registry.ts"
+        },
+        {
+          "path": "src/lib/formedible/builder-config-transforms.ts",
+          "type": "registry:lib",
+          "target": "@ui/formedible/lib/builder-config-transforms.ts"
         },
         {
           "path": "src/lib/formedible/code-generation.ts",

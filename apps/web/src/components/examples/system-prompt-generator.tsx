@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from "@formedible/ui/components/card";
 import { Brain, Copy, Check, Bot } from "lucide-react";
+import { toast } from "sonner";
 
 // Create schema for AI system prompt configuration
 const systemPromptSchema = z.object({
@@ -85,7 +86,6 @@ export function SystemPromptGenerator() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [generatedPrompt, setGeneratedPrompt] = useState("");
   const [copied, setCopied] = useState(false);
-  const [, setCopyError] = useState<string | null>(null);
 
   const generateCustomSystemPrompt = (
     values: SystemPromptFormValues
@@ -655,12 +655,11 @@ export function SystemPromptGenerator() {
     try {
       await navigator.clipboard.writeText(generatedPrompt);
       setCopied(true);
-      setCopyError(null);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Clipboard copy failed";
-      setCopyError(message);
       setCopied(false);
+      toast.error("Copy failed", { description: message });
     }
   };
 

@@ -7,7 +7,7 @@ export type SiteNavigationItem = {
   readonly description: string;
 };
 
-export const siteNavigation: readonly SiteNavigationItem[] = [
+export const siteNavigation = [
   {
     id: 'home',
     label: 'Home',
@@ -44,4 +44,4 @@ export const siteNavigation: readonly SiteNavigationItem[] = [
     href: '/ai-builder',
     description: 'Open the interactive AI-assisted Formedible builder workspace.',
   },
-];
+] as const satisfies readonly SiteNavigationItem[];

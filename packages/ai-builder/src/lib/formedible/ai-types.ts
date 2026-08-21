@@ -5,6 +5,11 @@ export type AIProvider = 'openai' | 'anthropic' | 'openrouter';
 
 export type AIBuilderMode = 'client';
 
+export interface BackendConfig {
+  endpoint: string;
+  headers?: Record<string, string>;
+}
+
 export type AiMessageRole = 'user' | 'assistant' | 'system';
 
 export type AiMessageStatus = 'idle' | 'submitted' | 'streaming' | 'completed' | 'error' | 'aborted';
@@ -166,6 +171,12 @@ export type AiMessagePart =
       readonly value: unknown;
     };
 
+export interface AiStreamEventSummary {
+  readonly totalEvents: number;
+  readonly countsByType: Readonly<Record<string, number>>;
+  readonly usage?: AiUsageMetadata;
+}
+
 export interface AiRawOutput {
   readonly text: string;
   readonly chunks?: readonly string[];
@@ -199,6 +210,7 @@ export interface AiMessage {
   readonly thinking?: string;
   readonly parts?: readonly AiMessagePart[];
   readonly events?: readonly AiStreamEvent[];
+  readonly eventSummary?: AiStreamEventSummary;
   readonly formCode?: string;
   readonly formConfig?: ParsedFormConfig;
   readonly parseErrors?: readonly AiParseError[];

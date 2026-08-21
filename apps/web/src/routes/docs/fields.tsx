@@ -13,7 +13,7 @@ const fieldTypes = [
   'aliases: multiselect, multicombobox, colorPicker, maskedInput',
 ] as const;
 
-const sourceBase = 'https://github.com/DimitriGilbert/Formedible/blob/main';
+const sourceBase = 'https://github.com/DimitriGilbert/Formedible/blob/re-codex';
 
 function sourceReference(title: string, path: string, description: string): DocsGuideLink {
   return {
@@ -58,7 +58,7 @@ const sections = [
     title: 'Field configuration',
     body: 'FormedibleFieldConfig defines the public keys. normalizeFieldConfig fills runtime defaults before the registry chooses a renderer.',
     bullets: [
-      'Source: packages/formedible/src/lib/formedible/types.ts lines 224-284 define the top-level field keys and nested config objects.',
+      'Source: packages/formedible/src/lib/formedible/types.ts lines 243-313 define the top-level field keys and nested config objects.',
       'Renderer lookup: packages/formedible/src/components/formedible/fields/field-registry.tsx maps normalized field types to components.',
       'Alias behavior is tested in tests/formedible/advanced-fields.test.tsx under “legacy alias fields render field-specific compatibility UI”.',
     ],
@@ -67,7 +67,7 @@ const sections = [
       rows: commonFieldRows,
     },
     references: [
-      sourceReference('FormedibleFieldConfig', 'packages/formedible/src/lib/formedible/types.ts#L224-L284', 'Top-level field config keys, nested config hooks, and custom renderer fields.'),
+      sourceReference('FormedibleFieldConfig', 'packages/formedible/src/lib/formedible/types.ts#L243-L313', 'Top-level field config keys, nested config hooks, and custom renderer fields.'),
       sourceReference('normalizeFieldConfig', 'packages/formedible/src/lib/formedible/normalize-field-config.ts#L3-L35', 'Alias normalization plus disabled and required defaults.'),
       sourceReference('fieldRegistry', 'packages/formedible/src/components/formedible/fields/field-registry.tsx#L30-L63', 'The renderer map used after a field type is normalized.'),
     ],
@@ -181,7 +181,7 @@ export const preferenceFields = [
     references: [
       sourceReference('resolveFieldOptions', 'packages/formedible/src/components/formedible/fields/advanced-field-utils.ts#L5-L20', 'String-to-object option normalization and functional option resolution.'),
       sourceReference('SelectField', 'packages/formedible/src/components/formedible/fields/select-field.tsx', 'The select renderer reads normalized options.'),
-      sourceReference('Survey example', 'apps/web/src/components/docs/examples/survey-form.tsx#L168-L217', 'Radio and multiSelect field usage in a live docs example.'),
+      sourceReference('Survey example', 'apps/web/src/components/docs/examples/survey-form.tsx#L55-L103', 'Radio and multiSelect field usage in a live docs example.'),
     ],
   },
   {
@@ -191,7 +191,7 @@ export const preferenceFields = [
       'Live example: /docs/examples?example=advanced-fields, id advanced-fields, source apps/web/src/components/docs/examples/advanced-field-types-form.tsx.',
       'Rating config: { ratingConfig: { max: 5, allowHalf: true, icon: "star", size: "lg", showValue: true } }. Source: rating-field.tsx.',
       'Slider config: { sliderConfig: { min: 0, max: 100, step: 5, valueLabelSuffix: "%", showValue: true, marks: [{ value: 50, label: "Mid" }] } }. Source: slider-field.tsx and tests/formedible/advanced-fields.test.tsx.',
-      'Color, phone, duration, location, date, and file keys are defined in types.ts lines 513-651 and consumed by their matching field files.',
+      'Color, phone, duration, location, date, and file keys are defined in types.ts lines 640-788 and consumed by their matching field files.',
     ],
     snippet: {
       title: 'Rating, slider, color, file, date, and location config',
@@ -256,7 +256,7 @@ export const advancedFields = [
     references: [
       { title: 'Advanced fields live example', description: 'Rendered docs example for advanced field types.', href: '/docs/examples?example=advanced-fields' },
       sourceReference('Advanced field example source', 'apps/web/src/components/docs/examples/advanced-field-types-form.tsx', 'The live example source for ratings, sliders, files, location, duration, color, and password.'),
-      sourceReference('Advanced config types', 'packages/formedible/src/lib/formedible/types.ts#L513-L651', 'Date, slider, rating, color, phone, duration, location, and file config interfaces.'),
+      sourceReference('Advanced config types', 'packages/formedible/src/lib/formedible/types.ts#L640-L788', 'Date, slider, rating, color, phone, duration, location, and file config interfaces.'),
     ],
   },
   {
@@ -325,9 +325,9 @@ export const discoveryFields = [
 ] satisfies readonly FormedibleFieldConfig<DiscoveryValues>[];`,
     },
     references: [
-      sourceReference('MultiSelectField', 'packages/formedible/src/components/formedible/fields/multi-select-field.tsx#L12-L78', 'maxSelections, searchable, creatable, placeholder, and noOptionsText reads.'),
-      sourceReference('AutocompleteField', 'packages/formedible/src/components/formedible/fields/autocomplete-field.tsx#L66-L152', 'debounce, minChars, maxResults, asyncOptions, and stale request handling.'),
-      sourceReference('Contact example source', 'apps/web/src/components/docs/examples/contact-form.tsx#L124-L168', 'Combobox and multiCombobox usage in the docs contact example.'),
+      sourceReference('MultiSelectField', 'packages/formedible/src/components/formedible/fields/multi-select-field.tsx#L20-L119', 'maxSelections, searchable, creatable, placeholder, and noOptionsText reads.'),
+      sourceReference('AutocompleteField', 'packages/formedible/src/components/formedible/fields/autocomplete-field.tsx#L76-L165', 'debounce, minChars, maxResults, asyncOptions, and stale request handling.'),
+      sourceReference('Contact example source', 'apps/web/src/components/docs/examples/contact-form.tsx#L58-L99', 'Combobox and multiCombobox usage in the docs contact example.'),
     ],
   },
   {
@@ -455,9 +455,10 @@ export const travelFields = [
 ] satisfies readonly FormedibleFieldConfig<TravelValues>[];`,
     },
     references: [
-      sourceReference('useFormedible conditional rendering', 'packages/formedible/src/hooks/use-formedible.tsx#L141-L163', 'String and function conditionals plus label, description, placeholder, and section text resolution.'),
-      sourceReference('Multi-page conditionals', 'packages/formedible/src/hooks/use-multi-page.ts#L27-L55', 'Page and field conditional checks.'),
-      sourceReference('Survey dynamic options source', 'apps/web/src/components/docs/examples/survey-form.tsx#L218-L276', 'Country-to-region option function in a docs example.'),
+      sourceReference('useFormedible conditional rendering', 'packages/formedible/src/hooks/use-formedible.tsx#L308-L310', 'String and function conditionals checked against current values.'),
+      sourceReference('useFormedible dynamic field text', 'packages/formedible/src/hooks/use-formedible.tsx#L447-L455', 'Label, description, placeholder, and section text resolution.'),
+      sourceReference('Multi-page conditionals', 'packages/formedible/src/hooks/use-multi-page.ts#L27-L45', 'Page and field conditional checks.'),
+      sourceReference('Survey dynamic options source', 'apps/web/src/components/docs/examples/survey-form.tsx#L104-L152', 'Country-to-region option function in a docs example.'),
       { title: 'Conditional pages live example', description: 'Rendered example for page-level conditions.', href: '/docs/examples?example=conditional-pages' },
     ],
   },
@@ -512,9 +513,9 @@ export function GlobalWrapper({ children }: { readonly children: ReactNode }) {
 }`, 
     },
     references: [
-      sourceReference('FieldRenderer', 'packages/formedible/src/components/formedible/field-renderer.tsx#L4-L23', 'Render order for component, defaultComponent, registry, wrapper, and globalWrapper.'),
+      sourceReference('FieldRenderer', 'packages/formedible/src/components/formedible/field-renderer.tsx#L92-L112', 'Render order for component, defaultComponent, registry, wrapper, and globalWrapper.'),
       sourceReference('fieldRegistry', 'packages/formedible/src/components/formedible/fields/field-registry.tsx#L30-L63', 'Built-in normalized type to component map.'),
-      sourceReference('UseFormedibleOptions', 'packages/formedible/src/lib/formedible/types.ts#L448-L460', 'defaultComponents and globalWrapper option types.'),
+      sourceReference('UseFormedibleOptions', 'packages/formedible/src/lib/formedible/types.ts#L520-L527', 'defaultComponents and globalWrapper option types.'),
     ],
   },
 ] satisfies readonly DocsGuideSection[];

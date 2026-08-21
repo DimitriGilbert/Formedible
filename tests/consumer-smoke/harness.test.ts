@@ -111,10 +111,10 @@ test('consumer smoke bootstraps Better-T-Stack app and installs Formedible from 
     const boundary = createConsumerSmokeRegistryBoundary(repositoryRoot);
     const bootstrapPlan = await createBetterTStackBootstrapPlan(repositoryRoot, workspace.rootDirectory);
 
-    assert.match(bootstrapPlan.sourceCommand, /pnpm create better-t-stack@latest formedible /);
+    assert.match(bootstrapPlan.sourceCommand, /pnpm create better-t-stack@3\.38\.2 formedible /);
     assert.deepEqual(bootstrapPlan.scaffoldCommand.args, [
       'create',
-      'better-t-stack@latest',
+      'better-t-stack@3.38.2',
       workspace.appName,
       '--frontend',
       'tanstack-start',

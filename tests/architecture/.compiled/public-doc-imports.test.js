@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import { assertHasViolations, assertNoViolations, collectRepositoryTextFiles, extractImportSpecifiers } from './utils.js';
-const documentationPathPattern = /(^|\/)(docs|app\/docs|src\/app\/docs|README\.(?:md|mdx)$|.*\.(?:md|mdx)$)/;
+const documentationPathPattern = /(^|\/)(docs|app\/docs|src\/app\/docs)(\/|$)|(^|\/)README\.(?:md|mdx)$/;
 const allowedFormedibleDocImports = new Set([
     '@/hooks/use-formedible',
     '@/components/formedible/form',
@@ -69,6 +69,42 @@ describe('public docs imports', () => {
             {
                 relativePath: 'README.md',
                 content: "import { Button } from '@formedible/ui/components/button';",
+            },
+        ]));
+    });
+    it('rejects sample docs importing Formedible through require or dynamic import', () => {
+        assertHasViolations(findPublicDocImportViolations([
+            {
+                relativePath: 'docs/getting-started.mdx',
+                content: "const formedible = require('@formedible/formedible');",
+            },
+            {
+                relativePath: 'docs/getting-started.mdx',
+                content: "const formedible = await import('@formedible/formedible');",
+            },
+        ]));
+    });
+    it('rejects forbidden Formedible imports in web docs route files', () => {
+        assertHasViolations(findPublicDocImportViolations([
+            {
+                relativePath: 'apps/web/src/routes/docs/getting-started.tsx',
+                content: "import { useFormedible } from '@formedible/formedible';",
+            },
+        ]));
+    });
+    it('ignores internal root-level notes outside public docs trees', () => {
+        assertNoViolations(findPublicDocImportViolations([
+            {
+                relativePath: 'FROM-SCRATCH-2.md',
+                content: "import { useFormedible } from '@formedible/formedible';",
+            },
+        ]));
+    });
+    it('ignores internal review notes in dot directories', () => {
+        assertNoViolations(findPublicDocImportViolations([
+            {
+                relativePath: '.review/session-20260819/review-report-10.md',
+                content: "import { useFormedible } from '@formedible/formedible';",
             },
         ]));
     });

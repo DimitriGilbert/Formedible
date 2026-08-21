@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Check, Copy } from 'lucide-react';
+import { toast } from 'sonner';
 import { ScrollArea } from '@formedible/ui/components/scroll-area';
 
 interface DemoCardProps {
@@ -24,6 +25,7 @@ export function DemoCard({
 
   function handleCopy() {
     if (!navigator.clipboard) {
+      toast.error('Copy failed', { description: 'Clipboard access is unavailable in this browser.' });
       return;
     }
 
@@ -33,8 +35,11 @@ export function DemoCard({
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         setCopied(false);
+        toast.error('Copy failed', {
+          description: error instanceof Error ? error.message : 'The code snippet could not be copied.',
+        });
       });
   }
 

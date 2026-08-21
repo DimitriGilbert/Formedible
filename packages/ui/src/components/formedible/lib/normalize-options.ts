@@ -6,6 +6,6 @@ export function normalizeOptions<TFormValues extends FormedibleFormValues>(
 ): NormalizedUseFormedibleOptions<TFormValues> {
   return {
     ...options,
-    fields: options.fields.map((field) => normalizeFieldConfig(field)),
+    fields: (options.fields ?? []).map((field) => normalizeFieldConfig(field)),
   };
 }

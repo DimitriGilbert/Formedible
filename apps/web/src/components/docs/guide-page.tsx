@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 
+import { Link, type LinkProps } from '@tanstack/react-router';
+
 import { docsCodeExamples, type DocsCodeExampleId } from '@/features/docs/code-examples';
 import { PageContainer } from '@/components/layout/page-container';
 import { SectionDivider } from '@/components/layout/section-divider';
@@ -13,6 +15,28 @@ export type DocsGuideLink = {
   readonly description: string;
   readonly href: string;
 };
+
+type InternalRoutePath = NonNullable<LinkProps['to']>;
+
+function isInternalRouteHref(href: string): href is InternalRoutePath {
+  return href.startsWith('/') && !href.includes('?');
+}
+
+function DocsGuideAnchor({ href, className, children }: { readonly href: DocsGuideLink['href']; readonly className: string; readonly children: ReactNode }) {
+  if (isInternalRouteHref(href)) {
+    return (
+      <Link to={href} className={className}>
+        {children}
+      </Link>
+    );
+  }
+
+  return (
+    <a href={href} className={className}>
+      {children}
+    </a>
+  );
+}
 
 export type DocsGuideSnippet = {
   readonly title?: string;
@@ -127,14 +151,14 @@ function DocsGuideReferences({ references }: { readonly references: readonly Doc
       <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Evidence references</p>
       <div className="mt-3 grid gap-2">
         {references.map((reference) => (
-          <a
+          <DocsGuideAnchor
             key={reference.href}
             href={reference.href}
             className="group rounded-xl bg-muted p-3 outline-none transition hover:bg-primary/5 focus-visible:ring-2 focus-visible:ring-ring"
           >
             <p className="text-sm font-semibold text-foreground group-hover:text-primary">{reference.title}</p>
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{reference.description}</p>
-          </a>
+          </DocsGuideAnchor>
         ))}
       </div>
     </nav>
@@ -198,7 +222,7 @@ export function DocsGuidePage({ eyebrow, title, description, sections, codeExamp
             <div className="overflow-hidden rounded-2xl">
               <div className="grid gap-px bg-border">
                 {sections.map((section) => {
-                  const evidence = <DocsGuideEvidence section={section} />;
+                  const hasEvidence = Boolean(section.snippet || section.references?.length);
 
                   return (
                     <section key={section.title} className="grid gap-px bg-border lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
@@ -217,7 +241,7 @@ export function DocsGuidePage({ eyebrow, title, description, sections, codeExamp
                     ) : null}
                     {section.table ? <DocsGuideTable table={section.table} /> : null}
                       </div>
-                      {evidence ?? <div className="hidden bg-muted lg:block" />}
+                      {hasEvidence ? <DocsGuideEvidence section={section} /> : <div className="hidden bg-muted lg:block" />}
                     </section>
                   );
                 })}
@@ -241,14 +265,14 @@ export function DocsGuidePage({ eyebrow, title, description, sections, codeExamp
               <div className="mt-4 overflow-hidden rounded-2xl">
                 <div className="grid gap-px bg-border md:grid-cols-2 lg:grid-cols-4">
                   {(related ?? defaultRelatedLinks).map((link) => (
-                    <a
+                    <DocsGuideAnchor
                       key={link.href}
                       href={link.href}
                       className="group bg-muted p-4 outline-none transition hover:bg-primary/5 focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <p className="text-sm font-semibold text-foreground group-hover:text-primary">{link.title}</p>
                       <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{link.description}</p>
-                    </a>
+                    </DocsGuideAnchor>
                   ))}
                 </div>
               </div>

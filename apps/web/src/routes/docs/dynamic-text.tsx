@@ -21,9 +21,9 @@ const sections = [
     title: 'Token syntax',
     body: 'Dynamic text runs through resolveDynamicText. It matches double-brace tokens made of word characters and dots, trims spaces inside the braces, and reads values with getValueAtFieldPath.',
     bullets: [
-      'Use {{firstName}} for top-level fields and {{address.city}} for nested paths.',
+      'Use {{firstName}} for top-level fields and {{address.city}} or {{items[0].name}} for nested paths.',
       '{{ firstName }} and {{firstName}} resolve the same field.',
-      'The regex is /\{\{\s*([\w.]+)\s*\}\}/g, so token names cannot contain hyphens.',
+      'The token regex is /\{\{\s*([\w.$[\]]+)\s*\}\}/g and tokens must round-trip through the field-path parser, so names containing hyphens stay verbatim.',
     ],
     snippet: {
       title: 'Supported token syntax',
@@ -35,7 +35,7 @@ const sections = [
 ];`,
     },
     references: [
-      sourceReference('Source: resolveDynamicText', 'packages/formedible/src/lib/formedible/dynamic-text.ts#L6-L15', 'Regex matching, field-path lookup, and nullish value handling.'),
+      sourceReference('Source: resolveDynamicText', 'packages/formedible/src/lib/formedible/dynamic-text.ts#L6-L23', 'Regex matching, field-path lookup, and nullish value handling.'),
       sourceReference('Source: field-path lookup', 'packages/formedible/src/lib/formedible/field-path.ts', 'Nested dot-path lookup used by dynamic text and string conditions.'),
       flowExample,
     ],
@@ -71,9 +71,9 @@ const sections = [
 });`,
     },
     references: [
-      sourceReference('Source: withDynamicText', 'packages/formedible/src/hooks/use-formedible.tsx#L155-L174', 'Field label, description, input hint, and section resolution.'),
-      sourceReference('Source: page copy', 'packages/formedible/src/hooks/use-formedible.tsx#L309-L326', 'Page title and description resolution.'),
-      sourceReference('Source: tab copy', 'packages/formedible/src/hooks/use-formedible.tsx#L384-L390', 'Tab label and description resolution.'),
+      sourceReference('Source: withDynamicText', 'packages/formedible/src/hooks/use-formedible.tsx#L447-L455', 'Field label, description, input hint, and section resolution.'),
+      sourceReference('Source: page copy', 'packages/formedible/src/hooks/use-formedible.tsx#L700-L720', 'Page title and description resolution.'),
+      sourceReference('Source: tab copy', 'packages/formedible/src/hooks/use-formedible.tsx#L818-L825', 'Tab label and description resolution.'),
     ],
   },
   {
@@ -100,9 +100,9 @@ resolveDynamicText(<strong>Fixed label</strong>, { firstName: 'Mina' });
 // returns the ReactNode unchanged`,
     },
     references: [
-      sourceReference('Source: resolveDynamicText', 'packages/formedible/src/lib/formedible/dynamic-text.ts#L6-L15', 'Non-string passthrough, token lookup, and stringification.'),
+      sourceReference('Source: resolveDynamicText', 'packages/formedible/src/lib/formedible/dynamic-text.ts#L6-L23', 'Non-string passthrough, token lookup, and stringification.'),
       sourceReference('Test: rental dynamic text', 'tests/formedible/phase10-behavior.test.ts#L167-L186', 'Checks token interpolation and conditional navigation in the rental flow.'),
-      sourceReference('Test: advanced flow dynamic text', 'tests/formedible/advanced-fields.test.tsx#L229-L242', 'Checks interpolated page copy and conditional destination behavior.'),
+      sourceReference('Test: advanced flow dynamic text', 'tests/formedible/advanced-fields.test.tsx#L301-L325', 'Checks interpolated page copy and conditional destination behavior.'),
     ],
   },
   {

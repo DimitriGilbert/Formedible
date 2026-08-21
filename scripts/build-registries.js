@@ -42,7 +42,7 @@ function runPackageRegistryBuild(rootDirectory, packageRoot) {
     const childProcess = spawn('pnpm', ['--dir', packageRoot, 'build:registry'], {
       cwd: rootDirectory,
       stdio: 'inherit',
-      shell: false,
+      shell: process.platform === 'win32',
     });
 
     childProcess.on('error', (error) => {

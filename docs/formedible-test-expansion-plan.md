@@ -57,7 +57,6 @@
 - `apps/web/src/components/docs/examples/persistence-form.tsx`
 - `apps/web/src/components/docs/examples/analytics-tracking-form.tsx`
 - `apps/web/src/features/docs/compatibility-examples.tsx`
-- `apps/web/src/data/code-examples.ts`
 - `tests/compatibility-examples/example-manifest.ts`
 - `tests/compatibility-examples/core-examples.ts`
 - `tests/compatibility-examples/behavior-examples.ts`
@@ -197,7 +196,7 @@ Grounded command source:
 Preferred command shape, copied from `bts.jsonc` and adjusted only for the temp project name:
 
 ```bash
-pnpm create better-t-stack@latest formedible-smoke \
+pnpm create better-t-stack@3.38.2 formedible-smoke \
   --frontend tanstack-start \
   --backend none \
   --runtime none \

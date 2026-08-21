@@ -17,7 +17,7 @@ export function FormPreview({ config, onFormSubmit, className }: FormPreviewProp
     ...config,
     formOptions: {
       ...config.formOptions,
-      defaultValues: config.formOptions.defaultValues,
+      defaultValues: config.formOptions?.defaultValues,
       onSubmit: async ({ value }) => {
         onFormSubmit?.(value);
       },
@@ -25,7 +25,7 @@ export function FormPreview({ config, onFormSubmit, className }: FormPreviewProp
   }), [config, onFormSubmit]);
   const { Form } = useFormedible(previewConfig);
 
-  if (config.fields.length === 0) {
+  if ((config.fields ?? []).length === 0) {
     return (
       <div className={cn('rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground', className)} data-builder-part="form-preview-empty">
         Add fields to preview the form.

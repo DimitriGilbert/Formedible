@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from "@formedible/ui/components/card";
 import { Terminal, Copy, Check, FileText } from "lucide-react";
+import { toast } from "sonner";
 
 const installationSchema = z.object({
   // Framework
@@ -33,7 +34,6 @@ export function InstallationPromptGenerator() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [generatedPrompt, setGeneratedPrompt] = useState("");
   const [copied, setCopied] = useState(false);
-  const [, setCopyError] = useState<string | null>(null);
 
   const generateInstallationPrompt = (
     values: InstallationFormValues
@@ -155,12 +155,11 @@ export function InstallationPromptGenerator() {
     try {
       await navigator.clipboard.writeText(generatedPrompt);
       setCopied(true);
-      setCopyError(null);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Clipboard copy failed";
-      setCopyError(message);
       setCopied(false);
+      toast.error("Copy failed", { description: message });
     }
   };
 

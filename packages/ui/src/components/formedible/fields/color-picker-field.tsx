@@ -1,4 +1,5 @@
 import { Check, Palette } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 import { FieldWrapper } from '@formedible/ui/components/formedible/fields/field-wrapper';
 import { Button } from '@formedible/ui/components/button';
@@ -10,14 +11,49 @@ const defaultPresets = ['#ff0000', '#ff8000', '#ffff00', '#00ff00', '#00ffff', '
 
 export function ColorPickerField<TFormValues extends FormedibleFormValues>({ fieldConfig, field }: FormedibleFieldRenderProps<TFormValues>) {
   const config = fieldConfig.colorConfig;
-  const value = typeof field.value === 'string' && field.value !== '' ? field.value : '#000000';
-  const hexValue = normalizeHex(value);
-  const displayValue = formatColor(hexValue, config?.format ?? 'hex');
+  const format = config?.format ?? 'hex';
+  const storedValue = typeof field.value === 'string' ? field.value : '';
+  const hexValue = normalizeHex(storedValue);
   const presets = config?.presetColors ?? defaultPresets;
   const allowCustom = config?.allowCustom ?? true;
+  const [draft, setDraft] = useState<string | null>(null);
+  const committedValueRef = useRef<unknown>(field.value);
+  const draftIsInvalid = draft !== null && draft.trim() !== '' && parseColorText(draft) === undefined;
 
-  function updateColor(color: string) {
-    field.onChange(formatColor(normalizeHex(color), config?.format ?? 'hex'));
+  useEffect(() => {
+    if (field.value !== committedValueRef.current) {
+      committedValueRef.current = field.value;
+      setDraft(null);
+    }
+  }, [field.value]);
+
+  function commitHex(nextHex: string) {
+    const nextValue = formatColor(nextHex, format);
+    committedValueRef.current = nextValue;
+    field.onChange(nextValue);
+  }
+
+  function commitColor(color: string) {
+    setDraft(null);
+    commitHex(normalizeHex(color));
+  }
+
+  function commitDraft() {
+    if (draft === null) {
+      return;
+    }
+
+    const draftHex = parseColorText(draft);
+    setDraft(null);
+    if (draftHex === undefined) {
+      return;
+    }
+
+    const formatted = formatColor(draftHex, format);
+    if (storedValue !== formatted) {
+      committedValueRef.current = formatted;
+      field.onChange(formatted);
+    }
   }
 
   return (
@@ -35,21 +71,36 @@ export function ColorPickerField<TFormValues extends FormedibleFormValues>({ fie
               disabled={fieldConfig.disabled}
               className="absolute inset-0 size-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
               onBlur={field.onBlur}
-              onChange={(event) => updateColor(event.target.value)}
+              onChange={(event) => commitColor(event.target.value)}
             />
           </div>
           {allowCustom && (
             <Input
-              value={displayValue}
+              value={draft ?? formatColor(hexValue, format)}
               placeholder="#000000"
               disabled={fieldConfig.disabled}
-              aria-invalid={field.error ? true : undefined}
+              aria-invalid={field.error || draftIsInvalid ? true : undefined}
               className={fieldConfig.inputClassName}
-              onBlur={field.onBlur}
-              onChange={(event) => field.onChange(event.target.value)}
+              onBlur={() => {
+                commitDraft();
+                field.onBlur();
+              }}
+              onChange={(event) => {
+                const nextDraft = event.target.value;
+                setDraft(nextDraft);
+                const nextHex = parseColorText(nextDraft);
+                if (nextHex !== undefined && nextHex.toLowerCase() !== hexValue.toLowerCase()) {
+                  commitHex(nextHex);
+                }
+              }}
             />
           )}
         </div>
+        {allowCustom && draftIsInvalid && (
+          <p data-slot="color-invalid-hint" className="text-sm text-destructive">
+            Enter a valid color, e.g. #ff0000, rgb(255, 0, 0), or hsl(0, 100%, 50%).
+          </p>
+        )}
         <div className="grid grid-cols-8 gap-2">
           {presets.map((color) => {
             const normalizedPreset = normalizeHex(color);
@@ -62,7 +113,7 @@ export function ColorPickerField<TFormValues extends FormedibleFormValues>({ fie
                 disabled={fieldConfig.disabled}
                 className={cn('size-7 rounded border transition-transform hover:scale-110 disabled:cursor-not-allowed disabled:opacity-50', hexValue.toLowerCase() === normalizedPreset.toLowerCase() ? 'ring-2 ring-ring ring-offset-2' : '')}
                 style={{ backgroundColor: normalizedPreset }}
-                onClick={() => updateColor(normalizedPreset)}
+                onClick={() => commitColor(normalizedPreset)}
               >
                 {hexValue.toLowerCase() === normalizedPreset.toLowerCase() && <Check className="mx-auto size-4 text-white drop-shadow" />}
               </Button>
@@ -74,7 +125,7 @@ export function ColorPickerField<TFormValues extends FormedibleFormValues>({ fie
   );
 }
 
-function normalizeHex(value: string): string {
+function parseColorText(value: string): string | undefined {
   const trimmed = value.trim();
   if (/^#[0-9a-fA-F]{6}$/.test(trimmed)) {
     return trimmed;
@@ -95,7 +146,11 @@ function normalizeHex(value: string): string {
     return rgbToHex(hslRgb.r, hslRgb.g, hslRgb.b);
   }
 
-  return '#000000';
+  return undefined;
+}
+
+function normalizeHex(value: string): string {
+  return parseColorText(value) ?? '#000000';
 }
 
 function parseRgbColor(value: string): { readonly r: number; readonly g: number; readonly b: number } | undefined {

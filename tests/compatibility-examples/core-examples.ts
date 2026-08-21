@@ -254,8 +254,8 @@ export const advancedFieldTypesCompatibilityExample = {
   sourceFile: advancedFieldTypesSource,
   publicBehavior: [
     'compatibility examples preserve advanced field coverage without copying custom React visualization implementation.',
-    'Location search remains configurable as an async public behavior but network behavior is represented as expected data shape only.',
-    'Slider fields preserve marks, value mappings, gradient configuration, suffixes, and custom visualization slots as configuration evidence.',
+    'Location search, geolocation, and manual entry render; tile-map rendering is the documented divergence D6 in FROM-SCRATCH-2.md (no map view, no mapProvider/tile-provider options; showMap stays typed but ignored).',
+    'Slider fields render marks, value mappings, gradient tracks (implemented), value-label suffixes, and custom visualization slots.',
   ],
   schemaFields: {
     satisfaction: ['number', 'required'],
@@ -280,7 +280,7 @@ export const advancedFieldTypesCompatibilityExample = {
     { name: 'overallRating', type: 'rating', config: ['max:5', 'icon:heart', 'size:md', 'showValue'] },
     { name: 'phoneNumber', type: 'phone', config: ['defaultCountry:US', 'format:international'] },
     { name: 'favoriteColor', type: 'colorPicker', config: ['format:hex', 'showPreview', 'presetColors', 'allowCustom'] },
-    { name: 'workLocation', type: 'location', config: ['openstreetmap', 'enableSearch', 'enableGeolocation', 'enableManualEntry', 'showMap'] },
+    { name: 'workLocation', type: 'location', config: ['enableSearch', 'enableGeolocation', 'enableManualEntry', 'showMap:divergent-no-map-rendering', 'mapProvider:divergent-not-typed', 'openstreetmap:divergent-no-tile-provider'] },
     { name: 'workDuration', type: 'duration', config: ['format:hm', 'maxHours:24', 'showLabels'] },
     {
       name: 'skills',
@@ -299,7 +299,7 @@ export const advancedFieldTypesCompatibilityExample = {
     },
     { name: 'experienceLevel', type: 'slider', config: ['min:1', 'max:10', 'step:1', 'marks', 'showTooltip', 'showValue'] },
     { name: 'energyRating', type: 'slider', config: ['min:1', 'max:5', 'valueMapping:E-D-C-B-A', 'visualizationComponentSlot'] },
-    { name: 'performanceLevel', type: 'slider', config: ['min:0', 'max:100', 'step:10', 'gradientColors', 'valueLabelSuffix:%'] },
+    { name: 'performanceLevel', type: 'slider', config: ['min:0', 'max:100', 'step:10', 'gradientColors:implemented', 'valueLabelSuffix:%'] },
     { name: 'speedometer', type: 'slider', config: ['min:0', 'max:200', 'step:10', 'valueMapping', 'visualizationComponentSlot', 'valueLabelSuffix:km/h'] },
     { name: 'birthDate', type: 'date', config: ['format:MM/dd/yyyy', 'maxDate:today', 'minDate:1900-01-01'] },
     { name: 'resume', type: 'file', config: ['accept:.pdf,.doc,.docx', 'multiple:false', 'maxSize:5242880', 'maxFiles:1'] },

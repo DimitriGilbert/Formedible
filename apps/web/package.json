@@ -12,7 +12,6 @@
   },
   "dependencies": {
     "@base-ui/react": "catalog:",
-    "@formedible/env": "workspace:*",
     "@formedible/ui": "workspace:*",
     "@tailwindcss/vite": "^4.2.2",
     "@tanstack/ai": "^0.16.0",

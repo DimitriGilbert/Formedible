@@ -8,8 +8,12 @@ import { PageContainer } from '@/components/layout/page-container';
 import { SectionDivider } from '@/components/layout/section-divider';
 import { SiteFooter } from '@/components/layout/site-footer';
 import { docsCodeExamples } from '@/features/docs/code-examples';
+import { createRouteSeoHead } from '@/features/docs/seo';
+
+const routeHead = createRouteSeoHead('/docs');
 
 export const Route = createFileRoute('/docs/')({
+  head: () => routeHead,
   component: DocsIndexRoute,
 });
 

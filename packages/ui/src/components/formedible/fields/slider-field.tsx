@@ -2,7 +2,18 @@ import { FieldWrapper } from '@formedible/ui/components/formedible/fields/field-
 import { getNumber } from '@formedible/ui/components/formedible/fields/advanced-field-utils';
 import { Button } from '@formedible/ui/components/button';
 import { Slider } from '@formedible/ui/components/slider';
-import type { FormedibleFieldRenderProps, FormedibleFormValues } from '@formedible/ui/components/formedible/lib/types';
+import type { FormedibleFieldRenderProps, FormedibleFormValues, FormedibleSliderGradientColors } from '@formedible/ui/components/formedible/lib/types';
+import { cn } from '@formedible/ui/lib/utils';
+
+function buildSliderGradientTrack(gradientColors: FormedibleSliderGradientColors | undefined) {
+  if (!gradientColors) {
+    return undefined;
+  }
+
+  const direction = gradientColors.direction === 'vertical' ? '180deg' : '90deg';
+
+  return `linear-gradient(${direction}, ${gradientColors.start}, ${gradientColors.end})`;
+}
 
 export function SliderField<TFormValues extends FormedibleFormValues>({ fieldConfig, field }: FormedibleFieldRenderProps<TFormValues>) {
   const config = fieldConfig.sliderConfig;
@@ -14,6 +25,7 @@ export function SliderField<TFormValues extends FormedibleFormValues>({ fieldCon
   const displayValue = mappingItem?.displayValue ?? value.toFixed(config?.valueDisplayPrecision ?? 0);
   const VisualizationComponent = config?.visualizationComponent;
   const label = fieldConfig.label && config?.showValue !== false ? `${fieldConfig.label} (${config?.valueLabelPrefix ?? ''}${displayValue}${config?.valueLabelSuffix ?? ''})` : fieldConfig.label;
+  const gradientTrack = buildSliderGradientTrack(config?.gradientColors);
 
   return (
     <FieldWrapper fieldConfig={{ ...fieldConfig, label }} field={field}>
@@ -38,6 +50,8 @@ export function SliderField<TFormValues extends FormedibleFormValues>({ fieldCon
           disabled={fieldConfig.disabled}
           invalid={field.error !== undefined}
           className={fieldConfig.inputClassName}
+          gradientClassName={gradientTrack ? 'formedible-slider-gradient' : undefined}
+          gradientStyle={gradientTrack ? { background: gradientTrack } : undefined}
           onBlur={field.onBlur}
           onChange={field.onChange}
         />
@@ -64,11 +78,13 @@ interface InputRangeProps {
   readonly disabled: boolean;
   readonly invalid: boolean;
   readonly className?: string;
+  readonly gradientClassName?: string;
+  readonly gradientStyle?: { readonly background: string };
   readonly onBlur: () => void;
   readonly onChange: (value: number) => void;
 }
 
-function InputRange({ id, name, min, max, step, value, disabled, invalid, className, onBlur, onChange }: InputRangeProps) {
+function InputRange({ id, name, min, max, step, value, disabled, invalid, className, gradientClassName, gradientStyle, onBlur, onChange }: InputRangeProps) {
   return (
     <Slider
       id={id}
@@ -79,7 +95,9 @@ function InputRange({ id, name, min, max, step, value, disabled, invalid, classN
       value={value}
       disabled={disabled}
       aria-invalid={invalid ? true : undefined}
-      className={className}
+      className={cn(className, gradientClassName)}
+      style={gradientStyle}
+      data-formedible-slider-gradient={gradientStyle ? 'true' : undefined}
       onBlur={onBlur}
       onValueChange={(nextValue) => onChange(Array.isArray(nextValue) ? (nextValue[0] ?? min) : nextValue)}
     />

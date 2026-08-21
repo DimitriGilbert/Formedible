@@ -1,5 +1,6 @@
 import type { ComponentType, ReactNode } from 'react';
 
+import type { FieldStore } from '@/components/formedible/builder/field-store';
 import type { FormedibleFieldConfig, FormedibleFieldType, FormedibleFormValues } from '@/components/formedible/lib/types';
 
 export interface BuilderFieldTypeDefinition {
@@ -96,6 +97,12 @@ export interface FormBuilderProps {
   readonly defaultTab?: string;
   readonly initialMetadata?: Partial<FormMetadata>;
   readonly initialFields?: readonly FormField[];
+  /**
+   * Field store backing this builder. Defaults to a per-instance `FieldStore` created on
+   * first render; pass the exported `globalFieldStore` to share one store across mounts.
+   * The value is captured on first render and later changes are ignored.
+   */
+  readonly fieldStore?: FieldStore;
   readonly onChange?: (metadata: FormMetadata, fields: readonly FormField[]) => void;
   readonly onTabChange?: (tabId: string) => void;
   readonly onSubmit?: (metadata: FormMetadata, fields: readonly FormField[]) => void;

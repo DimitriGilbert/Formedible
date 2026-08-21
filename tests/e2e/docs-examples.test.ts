@@ -6,6 +6,7 @@ import {
   closeAgentBrowser,
   getWebTarget,
   openPageAndCheckBrowserFailures,
+  reopenPageWithRecording,
   runAgentBrowser,
 } from './utils/agent-browser';
 import type { AllowedBrowserFailure } from './utils/agent-browser';
@@ -25,6 +26,7 @@ test('/docs/examples supports category selection and code tab inspection', async
   try {
     await openPageAndCheckBrowserFailures({
       session,
+      testName: '/docs/examples supports category selection and code tab inspection',
       url: `${web.origin}/docs/examples`,
       allowedFailures: allowedKnownFailures,
       run: async () => {
@@ -66,6 +68,7 @@ test('/docs/examples supports live Formedible form interactions', async () => {
   try {
     await openPageAndCheckBrowserFailures({
       session,
+      testName: '/docs/examples supports live Formedible form interactions',
       url: `${web.origin}/docs/examples`,
       allowedFailures: allowedKnownFailures,
       run: async () => {
@@ -103,7 +106,7 @@ async function submitContactForm(session: string): Promise<void> {
 }
 
 async function resetExamplesPage(session: string, origin: string): Promise<void> {
-  await runAgentBrowser(['open', `${origin}/docs/examples`], session);
+  await reopenPageWithRecording(session, `${origin}/docs/examples`);
   await waitForRequiredExamplesRouteText(session);
 }
 

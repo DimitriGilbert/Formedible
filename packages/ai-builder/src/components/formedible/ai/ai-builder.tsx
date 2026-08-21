@@ -1,9 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { AiPicker } from '@formedible/ui/components/formedible/ai-picker';
-
+import { AiPicker } from '@/components/ai-picker';
 import { AiFormRenderer } from '@/components/formedible/ai/ai-form-renderer';
 import { ChatInterface } from '@/components/formedible/ai/chat-interface';
 import { createDefaultProviderSecrets, createDefaultProviderSettings, validateProviderAccess } from '@/components/formedible/ai/provider-selection';
@@ -11,7 +10,7 @@ import { SidebarContent } from '@/components/formedible/ai/sidebar-content';
 import { SidebarIcons, type SidebarView } from '@/components/formedible/ai/sidebar-icons';
 import { Button } from '@/components/ui/button';
 import { fetchProviderModels } from '@/lib/formedible/ai-model-catalog';
-import { clearStoredProviderSecrets, exportConversation, getLastFormCode, persistConversations, persistProviderModelCatalog, persistProviderSecrets, persistProviderSettings, persistUiState, readPersistedAIBuilderState, readProviderModelCatalogs, readStoredProviderSecrets, upsertConversation } from '@/lib/formedible/ai-storage';
+import { clearStoredProviderSecrets, createConversationId, exportConversation, getLastFormCode, persistConversations, persistProviderModelCatalog, persistProviderSecrets, persistProviderSettings, persistUiState, readPersistedAIBuilderState, readProviderModelCatalogs, readStoredProviderSecrets, upsertConversation } from '@/lib/formedible/ai-storage';
 import type { ProviderSecretPersistencePreference } from '@/lib/formedible/ai-storage';
 import type { AIProvider, AiConversation, AiMessage, AiParserConfig, AIBuilderMode, ProviderModelCatalog, ProviderModelCatalogs, ProviderSecrets, ProviderSettings } from '@/lib/formedible/ai-types';
 import { defaultParserConfig, generateSystemPrompt, mergeParserConfig } from '@/components/formedible/lib/parser-config-schema';
@@ -57,6 +56,79 @@ function shouldPersistMessages(messages: readonly AiMessage[]): boolean {
   return messages.length > 0 && messages.every((message) => message.status !== 'streaming');
 }
 
+export interface ConversationSelectionContext {
+  readonly draftConversationId: string;
+  readonly currentConversationId: string | undefined;
+}
+
+export interface TargetedConversationUpdate {
+  readonly conversations: readonly AiConversation[];
+  readonly conversationId: string;
+  readonly selectedConversationId: string | undefined;
+}
+
+export interface ConversationDeletionUpdate {
+  readonly conversations: readonly AiConversation[];
+  readonly currentConversationId: string | undefined;
+}
+
+function findConversationForMessages(previousConversations: readonly AiConversation[], targetConversationId: string, firstMessageId: string | undefined): AiConversation | undefined {
+  return previousConversations.find((conversation) => conversation.id === targetConversationId)
+    ?? previousConversations.find((conversation) => firstMessageId !== undefined && conversation.messages[0]?.id === firstMessageId);
+}
+
+export function applyMessagesToConversation(
+  previousConversations: readonly AiConversation[],
+  targetConversationId: string,
+  nextMessages: readonly AiMessage[],
+  selection: ConversationSelectionContext,
+): TargetedConversationUpdate | undefined {
+  const firstMessageId = nextMessages[0]?.id;
+  const existingConversation = findConversationForMessages(previousConversations, targetConversationId, firstMessageId);
+
+  if (existingConversation) {
+    const result = upsertConversation(previousConversations, existingConversation.id, nextMessages);
+
+    return { conversations: result.conversations, conversationId: result.conversationId, selectedConversationId: undefined };
+  }
+
+  if (targetConversationId !== selection.draftConversationId) {
+    return undefined;
+  }
+
+  const result = upsertConversation(previousConversations, targetConversationId, nextMessages);
+
+  return {
+    conversations: result.conversations,
+    conversationId: result.conversationId,
+    selectedConversationId: selection.currentConversationId === undefined ? result.conversationId : undefined,
+  };
+}
+
+export function removeConversationFromList(
+  previousConversations: readonly AiConversation[],
+  conversationId: string,
+  currentConversationId: string | undefined,
+): ConversationDeletionUpdate {
+  const conversations = previousConversations.filter((conversation) => conversation.id !== conversationId);
+  const nextCurrentConversationId = currentConversationId === conversationId ? conversations.at(-1)?.id : currentConversationId;
+
+  return { conversations, currentConversationId: nextCurrentConversationId };
+}
+
+export function applyFormCodeToConversation(
+  previousConversations: readonly AiConversation[],
+  conversationId: string,
+  formCode: string,
+  updatedAt: number,
+): readonly AiConversation[] | undefined {
+  if (!previousConversations.some((conversation) => conversation.id === conversationId)) {
+    return undefined;
+  }
+
+  return previousConversations.map((conversation) => (conversation.id === conversationId ? { ...conversation, formCode, updatedAt } : conversation));
+}
+
 export function resolveInitialProviderAccess(
   controlledProviderSettings?: ProviderSettings,
   controlledProviderSecrets?: ProviderSecrets,
@@ -90,17 +162,20 @@ export function AIBuilder({
   const [refreshingProvider, setRefreshingProvider] = useState<AIProvider | undefined>(undefined);
   const [conversations, setConversations] = useState<readonly AiConversation[]>(() => readPersistedAIBuilderState(createDefaultProviderSettings()).conversations);
   const [currentConversationId, setCurrentConversationId] = useState<string | undefined>(() => readPersistedAIBuilderState(createDefaultProviderSettings()).currentConversationId);
+  const [draftConversationId, setDraftConversationId] = useState<string>(() => createConversationId());
   const [activeSidebarView, setActiveSidebarView] = useState<SidebarView | null>('history');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const currentConversationIdRef = useRef<string | undefined>(currentConversationId);
+  const draftConversationIdRef = useRef<string>(draftConversationId);
+  const conversationsRef = useRef<readonly AiConversation[]>(conversations);
   const providerSettings = controlledProviderSettings ?? internalProviderAccess.settings;
   const providerSecrets = controlledProviderSecrets ?? (internalProviderAccess.secrets.provider === providerSettings.provider ? internalProviderAccess.secrets : createDefaultProviderSecrets(providerSettings.provider));
   const currentConversation = conversations.find((conversation) => conversation.id === currentConversationId);
   const messages = currentConversation?.messages ?? [];
   const formCode = currentConversation?.formCode ?? getLastFormCode(messages);
   const providerValidationError = mode === 'client' ? validateProviderAccess(providerSettings, providerSecrets) : undefined;
-  const systemPrompt = generateSystemPrompt(parserConfig);
-  const aiParserConfig = toAiParserConfig(parserConfig);
+  const systemPrompt = useMemo(() => generateSystemPrompt(parserConfig), [parserConfig]);
+  const aiParserConfig = useMemo(() => toAiParserConfig(parserConfig), [parserConfig]);
 
   useEffect(() => {
     if (!controlledProviderSettings) {
@@ -178,48 +253,67 @@ export function AIBuilder({
     persistProviderModelCatalog(catalog);
   }
 
-  function updateMessages(nextMessages: readonly AiMessage[]) {
-    setConversations((previousConversations) => {
-      const result = upsertConversation(previousConversations, currentConversationIdRef.current, nextMessages);
-      currentConversationIdRef.current = result.conversationId;
-      setCurrentConversationId(result.conversationId);
-
-      if (shouldPersistMessages(nextMessages)) {
-        persistConversations(result.conversations);
-      }
-
-      return result.conversations;
-    });
+  function commitConversations(nextConversations: readonly AiConversation[]) {
+    conversationsRef.current = nextConversations;
+    setConversations(nextConversations);
   }
 
-  function updateFormCode(nextFormCode: string) {
-    const activeConversationId = currentConversationIdRef.current;
-    setConversations((previousConversations) => previousConversations.map((conversationEntry) => (conversationEntry.id === activeConversationId ? { ...conversationEntry, formCode: nextFormCode, updatedAt: Date.now() } : conversationEntry)));
-    onFormGenerated?.(nextFormCode);
-  }
-
-  function startNewConversation() {
-    currentConversationIdRef.current = undefined;
-    setCurrentConversationId(undefined);
-  }
-
-  function selectConversation(conversationId: string) {
+  function selectConversationId(conversationId: string | undefined) {
     currentConversationIdRef.current = conversationId;
     setCurrentConversationId(conversationId);
   }
 
-  function deleteConversation(conversationId: string) {
-    setConversations((previousConversations) => {
-      const nextConversations = previousConversations.filter((conversation) => conversation.id !== conversationId);
+  function rotateDraftConversationId() {
+    const nextDraftConversationId = createConversationId();
+    draftConversationIdRef.current = nextDraftConversationId;
+    setDraftConversationId(nextDraftConversationId);
+  }
 
-      if (currentConversationIdRef.current === conversationId) {
-        const nextCurrentConversationId = nextConversations.at(-1)?.id;
-        currentConversationIdRef.current = nextCurrentConversationId;
-        setCurrentConversationId(nextCurrentConversationId);
-      }
-
-      return nextConversations;
+  function updateMessages(conversationId: string, nextMessages: readonly AiMessage[]) {
+    const result = applyMessagesToConversation(conversationsRef.current, conversationId, nextMessages, {
+      draftConversationId: draftConversationIdRef.current,
+      currentConversationId: currentConversationIdRef.current,
     });
+
+    if (!result) {
+      return;
+    }
+
+    commitConversations(result.conversations);
+
+    if (result.selectedConversationId !== undefined) {
+      selectConversationId(result.selectedConversationId);
+    }
+
+    if (draftConversationIdRef.current === conversationId) {
+      rotateDraftConversationId();
+    }
+
+    if (shouldPersistMessages(nextMessages)) {
+      persistConversations(result.conversations);
+    }
+  }
+
+  function updateFormCode(conversationId: string, nextFormCode: string) {
+    const nextConversations = applyFormCodeToConversation(conversationsRef.current, conversationId, nextFormCode, Date.now());
+
+    if (nextConversations) {
+      commitConversations(nextConversations);
+    }
+
+    onFormGenerated?.(nextFormCode);
+  }
+
+  function startNewConversation() {
+    rotateDraftConversationId();
+    selectConversationId(undefined);
+  }
+
+  function deleteConversation(conversationId: string) {
+    const result = removeConversationFromList(conversationsRef.current, conversationId, currentConversationIdRef.current);
+
+    commitConversations(result.conversations);
+    selectConversationId(result.currentConversationId);
   }
 
   function downloadConversation(conversation: AiConversation) {
@@ -266,7 +360,7 @@ export function AIBuilder({
           onClearProviderSecrets={clearProviderSecrets}
           onRefreshProviderModels={refreshProviderModels}
           onParserConfigChange={setParserConfig}
-        onSelectConversation={selectConversation}
+        onSelectConversation={selectConversationId}
         onDeleteConversation={deleteConversation}
         onNewConversation={startNewConversation}
         onExportConversation={downloadConversation}
@@ -284,9 +378,9 @@ export function AIBuilder({
             providerSecrets={providerSecrets}
             mode={mode}
             messages={messages}
+            conversationId={currentConversationId ?? draftConversationId}
             onMessagesChange={updateMessages}
             onFormGenerated={updateFormCode}
-            conversationId={currentConversationId}
             systemPrompt={systemPrompt}
             parserConfig={aiParserConfig}
             className="min-h-0 flex-1"

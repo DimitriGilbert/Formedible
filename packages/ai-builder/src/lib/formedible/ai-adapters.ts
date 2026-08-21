@@ -6,7 +6,7 @@ import type { OpenAITextProviderOptions } from '@tanstack/ai-openai';
 import { createOpenRouterText } from '@tanstack/ai-openrouter';
 import type { OpenRouterTextModelOptions } from '@tanstack/ai-openrouter';
 
-import type { AIProvider, ProviderSecrets, ProviderSettings } from '@/lib/formedible/ai-types';
+import type { AIProvider, AnthropicProviderSettings, ProviderSecrets, ProviderSettings } from '@/lib/formedible/ai-types';
 
 export type OpenAIAdapterModel = Parameters<typeof createOpenaiChat>[0];
 export type AnthropicAdapterModel = Parameters<typeof createAnthropicChat>[0];
@@ -69,20 +69,24 @@ export function createTanStackTextAdapter(settings: ProviderSettings, secrets: P
   assertNoUnsupportedRuntimeOptions(settings);
 
   if (settings.provider === 'openai') {
-    return createOpenaiChat(settings.model as unknown as OpenAIAdapterModel, secrets.apiKey);
+    return createOpenaiChat(settings.model as unknown as OpenAIAdapterModel, secrets.apiKey, { dangerouslyAllowBrowser: true });
   }
 
   if (settings.provider === 'anthropic') {
-    return createAnthropicChat(settings.model as unknown as AnthropicAdapterModel, secrets.apiKey);
+    return createAnthropicChat(settings.model as unknown as AnthropicAdapterModel, secrets.apiKey, { dangerouslyAllowBrowser: true });
   }
 
   return createOpenRouterText(settings.model as unknown as OpenRouterAdapterModel, secrets.apiKey);
 }
 
+export function isAnthropicThinkingEnabled(settings: ProviderSettings): settings is AnthropicProviderSettings & { readonly thinkingBudgetTokens: number } {
+  return settings.provider === 'anthropic' && typeof settings.thinkingBudgetTokens === 'number' && settings.thinkingBudgetTokens > 0;
+}
+
 export function createTanStackModelOptions(settings: ProviderSettings): OpenAITextProviderOptions | AnthropicTextProviderOptions | OpenRouterTextModelOptions | undefined {
   assertNoUnsupportedRuntimeOptions(settings);
 
-  if (settings.provider !== 'anthropic' || !settings.thinkingBudgetTokens || settings.thinkingBudgetTokens <= 0) {
+  if (!isAnthropicThinkingEnabled(settings)) {
     return undefined;
   }
 

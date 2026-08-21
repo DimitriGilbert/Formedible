@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 
-import { getValueAtFieldPath } from '@formedible/ui/components/formedible/lib/field-path';
+import { evaluateFieldConditional, isPageNumberVisible } from '@formedible/ui/components/formedible/lib/field-visibility';
 import type { FormedibleFormValues, FormediblePageConfig, NormalizedFieldConfig } from '@formedible/ui/components/formedible/lib/types';
 
 export interface UseMultiPageOptions<TFormValues extends FormedibleFormValues> {
@@ -27,15 +27,7 @@ export function conditionMatches<TFormValues extends FormedibleFormValues>(
   conditional: NormalizedFieldConfig<TFormValues>['conditional'] | FormediblePageConfig<TFormValues>['conditional'],
   values: TFormValues,
 ) {
-  if (!conditional) {
-    return true;
-  }
-
-  if (typeof conditional === 'string') {
-    return Boolean(getValueAtFieldPath(values, conditional));
-  }
-
-  return conditional(values);
+  return evaluateFieldConditional(conditional, values);
 }
 
 export function getVisiblePageNumbers<TFormValues extends FormedibleFormValues>(
@@ -45,15 +37,7 @@ export function getVisiblePageNumbers<TFormValues extends FormedibleFormValues>(
 ) {
   const pageNumbers = Array.from(new Set(fields.map((field) => field.page ?? 1))).sort((first, second) => first - second);
 
-  return pageNumbers.filter((pageNumber) => {
-    const pageConfig = pages?.find((page) => page.page === pageNumber);
-
-    if (!conditionMatches(pageConfig?.conditional, values)) {
-      return false;
-    }
-
-    return fields.some((field) => (field.page ?? 1) === pageNumber && conditionMatches(field.conditional, values));
-  });
+  return pageNumbers.filter((pageNumber) => isPageNumberVisible(pageNumber, fields, pages, values));
 }
 
 export function useMultiPage<TFormValues extends FormedibleFormValues>({ fields, pages, values, onPageChange }: UseMultiPageOptions<TFormValues>): UseMultiPageResult {

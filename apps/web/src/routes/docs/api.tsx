@@ -6,7 +6,7 @@ import { createRouteSeoHead } from '@/features/docs/seo';
 
 const routeHead = createRouteSeoHead('/docs/api');
 
-const sourceBase = 'https://github.com/DimitriGilbert/Formedible/blob/main';
+const sourceBase = 'https://github.com/DimitriGilbert/Formedible/blob/re-codex';
 
 const propertyTableHeaders = ['Property', 'Type', 'Default', 'Description'] as const;
 
@@ -170,14 +170,14 @@ const sections = [
     ],
     snippet: { title: 'Typed hook call', language: 'tsx', code: useFormedibleSnippet },
     references: [
-      sourceReference('Hook source', 'packages/formedible/src/hooks/use-formedible.tsx#L28-L47', 'Signature, useForm setup, submit path, analytics completion, and persistence clearing.'),
-      sourceReference('Options type', 'packages/formedible/src/lib/formedible/types.ts#L448-L480', 'The config object accepted by the hook.'),
+      sourceReference('Hook source', 'packages/formedible/src/hooks/use-formedible.tsx#L73-L141', 'Signature, useForm setup, submit path, analytics completion, and persistence clearing.'),
+      sourceReference('Options type', 'packages/formedible/src/lib/formedible/types.ts#L506-L548', 'The config object accepted by the hook.'),
       docsExampleReference('Contact example', 'contact', 'Small typed form using the hook and returned Form component.'),
     ],
   },
   {
     title: 'UseFormedibleOptions',
-    body: 'fields and formOptions are required. Other options only matter when the hook or a child hook reads them.',
+    body: 'Every property is optional in the type: fields defaults to an empty list and defaultValues falls back to an empty object. Other options only matter when the hook or a child hook reads them.',
     bullets: [
       'Fields are normalized before rendering. Type aliases such as multiselect and colorPicker are compatibility inputs and normalize to the canonical renderer keys.',
       'Tabs win over pages for field filtering. In use-formedible.tsx, activeFields checks tabs first, pages second, then falls back to all fields.',
@@ -186,17 +186,18 @@ const sections = [
     table: {
       headers: propertyTableHeaders,
       rows: [
-        createPropertyRow('fields', 'readonly FormedibleFieldConfig<TFormValues>[]', 'Required', 'Field definitions rendered by FieldRenderer after normalization.'),
-        createPropertyRow('formOptions', 'FormedibleFormOptions<TFormValues>', 'Required', 'Default values plus submit/change/blur/focus/reset callbacks.'),
+        createPropertyRow('fields', 'readonly FormedibleFieldConfig<TFormValues>[]', '[]', 'Field definitions rendered by FieldRenderer after normalization.'),
+        createPropertyRow('formOptions', 'FormedibleFormOptions<TFormValues>', 'undefined', 'Default values plus submit/change/blur/focus/reset callbacks. defaultValues falls back to an empty object.'),
         createPropertyRow('schema', 'unknown', 'undefined', 'Standard-schema input passed to buildFormValidators and buildFieldValidators.'),
         createPropertyRow('crossFieldValidation', 'readonly FormedibleCrossFieldValidation<TFormValues>[]', 'undefined', 'Rules with fields and validator(values), used by form and field validators.'),
         createPropertyRow('asyncValidation', 'Partial<Record<Extract<keyof TFormValues, string> | string, FormedibleAsyncValidation<TFormValues>>>', 'undefined', 'Field-name keyed async validators passed into buildFieldValidators.'),
         createPropertyRow('pages', 'readonly FormediblePageConfig<TFormValues>[]', 'undefined', 'Page metadata consumed by useMultiPage and FormProgress.'),
         createPropertyRow('tabs', 'readonly (string | FormedibleTabConfig<TFormValues>)[]', 'undefined', 'Tab metadata consumed by useFormTabs and FormTabs.'),
         createPropertyRow('progress', 'FormedibleProgressConfig', 'undefined', 'showSteps and showPercentage passed to FormProgress.'),
+        createPropertyRow('validationSummary', 'boolean | FormedibleValidationSummaryConfig', 'true', 'Post-submit summary of invalid fields. Object form sets autoNavigate and showBadges; both default true. false disables the summary and badges.'),
         createPropertyRow('persistence', 'FormediblePersistenceConfig<TFormValues>', 'undefined', 'Draft save, load, restore, and clear config passed to useFormPersistence.'),
         createPropertyRow('analytics', 'FormedibleAnalyticsConfig<TFormValues>', 'undefined', 'Callbacks passed to useFormAnalytics.'),
-        createPropertyRow('defaultComponents', 'Partial<Record<NormalizedFieldType, FormedibleFieldComponent<TFormValues>>>', 'undefined', 'Per-type component overrides passed to FieldRenderer.'),
+        createPropertyRow('defaultComponents', 'Readonly<Record<string, FormedibleFieldComponent<TFormValues>>>', 'undefined', 'Per-type component overrides passed to FieldRenderer. Known type keys (including legacy aliases) are normalized; custom type strings match verbatim; unregistered types fall back to text.'),
         createPropertyRow('globalWrapper', 'FormedibleFieldWrapper<TFormValues>', 'undefined', 'Wrapper passed to FieldRenderer for rendered fields.'),
         createPropertyRow('submitLabel', 'ReactNode', "'Submit'", 'Label for the single submit button or final page navigation submit.'),
         createPropertyRow('nextLabel', 'ReactNode', "'Next'", 'Label for page navigation next button.'),
@@ -221,9 +222,9 @@ const sections = [
     },
     snippet: { title: 'Options groups in one config', language: 'tsx', code: useFormedibleOptionsSnippet },
     references: [
-      sourceReference('UseFormedibleOptions interface', 'packages/formedible/src/lib/formedible/types.ts#L448-L480', 'Complete property list.'),
-      sourceReference('Runtime reads in useFormedible', 'packages/formedible/src/hooks/use-formedible.tsx#L30-L443', 'Which options the hook reads and where they feed rendering.'),
-      sourceReference('Type compatibility test', 'tests/formedible/types/options.test-d.ts#L12-L90', 'A compile-time config covering pages, tabs, persistence, analytics, labels, events, and formOptions.'),
+      sourceReference('UseFormedibleOptions interface', 'packages/formedible/src/lib/formedible/types.ts#L506-L548', 'Complete property list.'),
+      sourceReference('Runtime reads in useFormedible', 'packages/formedible/src/hooks/use-formedible.tsx#L73-L882', 'Which options the hook reads and where they feed rendering.'),
+      sourceReference('Type compatibility test', 'tests/formedible/types/options.test-d.ts#L12-L99', 'A compile-time config covering pages, tabs, persistence, analytics, labels, events, and formOptions.'),
       docsExampleReference('Registration pages example', 'registration', 'Example for pages, progress, navigation labels, and submit handling.'),
       docsExampleReference('Tabbed example', 'tabbed', 'Example for tabs and field tab ids.'),
       docsExampleReference('Persistence example', 'persistence', 'Example for persistence config.'),
@@ -255,8 +256,9 @@ const sections = [
     },
     snippet: { title: 'Fields with nested array object config', language: 'tsx', code: fieldConfigSnippet },
     references: [
-      sourceReference('FormedibleFieldType and field config', 'packages/formedible/src/lib/formedible/types.ts#L6-L284', 'Supported field types and field config properties.'),
-      sourceReference('Render path', 'packages/formedible/src/hooks/use-formedible.tsx#L209-L265', 'FieldRenderer wiring, validators, and field controller callbacks.'),
+      sourceReference('FormedibleFieldType and field config', 'packages/formedible/src/lib/formedible/types.ts#L9-L41', 'Supported field type strings plus the normalized type alias.'),
+      sourceReference('FormedibleFieldConfig interface', 'packages/formedible/src/lib/formedible/types.ts#L243-L313', 'Top-level field config keys and nested config objects.'),
+      sourceReference('Render path', 'packages/formedible/src/hooks/use-formedible.tsx#L531-L592', 'FieldRenderer wiring, validators, and field controller callbacks.'),
       docsExampleReference('Arrays example', 'arrays', 'Example for arrayConfig and nested object fields.'),
       docsExampleReference('Contact example', 'contact', 'Minimal fields example.'),
     ],
@@ -268,7 +270,7 @@ const sections = [
       'defaultValues is the only required property inside FormedibleFormOptions.',
       'onSubmit receives { value, formApi } after onFormComplete analytics and before persistence is cleared.',
       'onChange receives a shallow next value object for the changed field name, then auto-submit may be scheduled.',
-      'onSubmitInvalid is typed as never in the source and locked by the options type test.',
+      'onSubmitInvalid is forwarded verbatim to the TanStack Form useForm config and runs when a submit fails validation.',
     ],
     table: {
       headers: propertyTableHeaders,
@@ -279,15 +281,15 @@ const sections = [
         createPropertyRow('onBlur', '(context: FormedibleFormEventContext<TFormValues>) => void', 'undefined', 'Runs from field onBlur after field.handleBlur and analytics blur/error/complete tracking.'),
         createPropertyRow('onFocus', '(context: FormedibleFormEventContext<TFormValues>) => void', 'undefined', 'Runs from field onFocus after analytics focus tracking.'),
         createPropertyRow('onReset', '(context: FormedibleFormEventContext<TFormValues>) => void', 'undefined', 'Runs from the rendered form reset handler after native onReset.'),
-        createPropertyRow('onSubmitInvalid', 'never', 'Unsupported', 'Removed helper. Type tests expect an error if it is supplied.'),
+        createPropertyRow('onSubmitInvalid', '(props: { value: TFormValues; formApi: AnyFormApi; meta: unknown }) => void', 'undefined', 'Forwarded verbatim to the underlying useForm config. Runs when a submit fails validation.'),
       ],
     },
     snippet: { title: 'Submit and change callbacks', language: 'tsx', code: formOptionsSnippet },
     references: [
-      sourceReference('FormedibleFormOptions interface', 'packages/formedible/src/lib/formedible/types.ts#L361-L371', 'Source type for defaultValues and lifecycle callbacks.'),
-      sourceReference('Submit and field callback wiring', 'packages/formedible/src/hooks/use-formedible.tsx#L39-L47', 'Submit path in useForm.'),
-      sourceReference('Field event callback wiring', 'packages/formedible/src/hooks/use-formedible.tsx#L239-L255', 'Focus, blur, and change callback order.'),
-      sourceReference('onSubmitInvalid type test', 'tests/formedible/types/options.test-d.ts#L128-L140', 'Compile-time evidence for removed onSubmitInvalid.'),
+      sourceReference('FormedibleFormOptions interface', 'packages/formedible/src/lib/formedible/types.ts#L396-L415', 'Source type for defaultValues and lifecycle callbacks.'),
+      sourceReference('Submit and field callback wiring', 'packages/formedible/src/hooks/use-formedible.tsx#L125-L141', 'onSubmitInvalid forwarding and the submit path in useForm.'),
+      sourceReference('Field event callback wiring', 'packages/formedible/src/hooks/use-formedible.tsx#L562-L583', 'Focus, blur, and change callback order.'),
+      sourceReference('onSubmitInvalid type test', 'tests/formedible/types/options.test-d.ts#L92-L97', 'Compile-time usage of the forwarded onSubmitInvalid callback.'),
     ],
   },
   {
@@ -310,8 +312,8 @@ const sections = [
     },
     snippet: { title: 'Persistence option object', language: 'tsx', code: persistenceSnippet },
     references: [
-      sourceReference('Persistence hook', 'packages/formedible/src/hooks/use-form-persistence.ts#L11-L165', 'Payload type, storage selection, save, load, clear, restore, and debounce effects.'),
-      sourceReference('Persistence options type', 'packages/formedible/src/lib/formedible/types.ts#L395-L402', 'Config interface.'),
+      sourceReference('Persistence hook', 'packages/formedible/src/hooks/use-form-persistence.ts#L11-L239', 'Payload type, storage selection, save, load, clear, restore, and debounce effects.'),
+      sourceReference('Persistence options type', 'packages/formedible/src/lib/formedible/types.ts#L444-L451', 'Config interface.'),
       sourceReference('Persistence behavior tests', 'tests/formedible/phase10-behavior.test.ts#L85-L149', 'Exclude behavior, payload shape, malformed payload handling, and storage defaults.'),
       docsExampleReference('Persistence example', 'persistence', 'Rendered persistence example.'),
     ],
@@ -323,7 +325,8 @@ const sections = [
       'onFormStart runs once from the analytics hook mount effect.',
       'Field events are emitted by FieldRenderer controller handlers in use-formedible.tsx.',
       'Page changes pass fromPage, toPage, timeSpent, and validation state for the page being left.',
-      'Superseded page, tab, and performance callbacks are typed as never and are not emitted by the current runtime.',
+      'Tab switch, first tab visit, and submission performance callbacks are restored and emitted by the current runtime.',
+      'Page completion, tab completion, and render/validation performance callbacks are superseded: typed as never and never emitted.',
     ],
     table: {
       headers: propertyTableHeaders,
@@ -335,16 +338,19 @@ const sections = [
         createPropertyRow('onFieldComplete', '(fieldName: string, isValid: boolean, timeSpent: number) => void', 'undefined', 'Runs on blur after errors are collected.'),
         createPropertyRow('onFieldError', '(fieldName: string, errors: readonly string[], timestamp: number) => void', 'undefined', 'Runs on blur when formatted errors exist.'),
         createPropertyRow('onPageChange', '(fromPage: number, toPage: number, timeSpent: number, pageValidationState?: { readonly hasErrors: boolean; readonly completionPercentage: number }) => void', 'undefined', 'Runs through useMultiPage changePage.'),
+        createPropertyRow('onTabChange', '(fromTab: string, toTab: string, timeSpent: number, tabCompletionState?: { readonly completionPercentage: number; readonly hasErrors: boolean }) => void', 'undefined', 'Runs through useFormTabs changeTab with the legacy tab arguments.'),
+        createPropertyRow('onTabFirstVisit', '(tabId: string, timestamp: number) => void', 'undefined', 'Fires the first time a tab becomes active, including the initial tab on mount.'),
         createPropertyRow('onFormComplete', '(timeSpent: number, formData: TFormValues) => void', 'undefined', 'Runs before formOptions.onSubmit.'),
         createPropertyRow('onFormAbandon', '(completionPercentage: number, context?: AbandonContext) => void', 'undefined', 'Runs on unmount unless completion was tracked.'),
         createPropertyRow('onFormReset', '(timestamp: number, reason?: string) => void', 'undefined', 'Rendered form reset path passes reason reset.'),
+        createPropertyRow('onSubmissionPerformance', '(submissionTime: number, validationTime: number, processingTime: number) => void', 'undefined', 'Runs after a successful submit with total time, validation time (always 0), and processing time.'),
       ],
     },
     snippet: { title: 'Analytics callbacks', language: 'tsx', code: analyticsSnippet },
     references: [
-      sourceReference('Analytics hook', 'packages/formedible/src/hooks/use-form-analytics.ts#L52-L136', 'Runtime emissions and argument order.'),
-      sourceReference('Analytics options type', 'packages/formedible/src/lib/formedible/types.ts#L404-L445', 'Current and superseded callbacks.'),
-      sourceReference('Analytics behavior tests', 'tests/formedible/phase10-behavior.test.ts#L188-L245', 'Approved callbacks and positional argument expectations.'),
+      sourceReference('Analytics hook', 'packages/formedible/src/hooks/use-form-analytics.ts#L63-L171', 'Runtime emissions and argument order.'),
+      sourceReference('Analytics options type', 'packages/formedible/src/lib/formedible/types.ts#L453-L504', 'Current and superseded callbacks.'),
+      sourceReference('Analytics behavior tests', 'tests/formedible/phase10-behavior.test.ts#L236-L264', 'Approved callbacks and positional argument expectations.'),
       docsExampleReference('Analytics example', 'analytics', 'Rendered analytics tracking example.'),
     ],
   },
@@ -373,8 +379,8 @@ const sections = [
     },
     snippet: { title: 'Conditional pages and tabs', language: 'tsx', code: pagesTabsSnippet },
     references: [
-      sourceReference('Multi-page hook', 'packages/formedible/src/hooks/use-multi-page.ts#L41-L115', 'Visible page calculation, navigation, and progress.'),
-      sourceReference('Tabs hook', 'packages/formedible/src/hooks/use-form-tabs.ts#L19-L45', 'Tab normalization, visibility, and active tab reset.'),
+      sourceReference('Multi-page hook', 'packages/formedible/src/hooks/use-multi-page.ts#L43-L99', 'Visible page calculation, navigation, and progress.'),
+      sourceReference('Tabs hook', 'packages/formedible/src/hooks/use-form-tabs.ts#L25-L99', 'Tab normalization, visibility, and active tab reset.'),
       sourceReference('Conditional pages test', 'tests/formedible/phase10-behavior.test.ts#L58-L83', 'Expected visible page paths.'),
       sourceReference('Tabbed behavior test', 'tests/formedible/phase10-behavior.test.ts#L151-L165', 'Expected tab ids and field grouping.'),
       docsExampleReference('Conditional pages example', 'conditional-pages', 'Rendered conditional page flow.'),
@@ -410,9 +416,9 @@ const sections = [
     },
     snippet: { title: 'Navigation and persistence helpers', language: 'tsx', code: returnValueSnippet },
     references: [
-      sourceReference('Hook return object', 'packages/formedible/src/hooks/use-formedible.tsx#L428-L443', 'Exact returned fields.'),
-      sourceReference('Return contract test', 'tests/formedible/phase10-behavior.test.ts#L188-L215', 'Kept and removed return field lists.'),
-      sourceReference('Persistence helper source', 'packages/formedible/src/hooks/use-form-persistence.ts#L95-L165', 'saveToStorage, loadFromStorage, clearStorage.'),
+      sourceReference('Hook return object', 'packages/formedible/src/hooks/use-formedible.tsx#L866-L882', 'Exact returned fields.'),
+      sourceReference('Return contract test', 'tests/formedible/phase10-behavior.test.ts#L207-L235', 'Kept and removed return field lists.'),
+      sourceReference('Persistence helper source', 'packages/formedible/src/hooks/use-form-persistence.ts#L136-L179', 'saveToStorage, loadFromStorage, clearStorage.'),
     ],
   },
   {
@@ -444,8 +450,8 @@ const sections = [
     snippet: { title: 'Native form attrs with formOptions.onSubmit', language: 'tsx', code: formComponentSnippet },
     references: [
       sourceReference('Base Form component', 'packages/formedible/src/components/formedible/form.tsx#L1-L9', 'FormProps = ComponentProps<\'form\'> and prop forwarding.'),
-      sourceReference('Returned Form event handling', 'packages/formedible/src/hooks/use-formedible.tsx#L330-L375', 'Native event order, aria-busy, and submit interception.'),
-      sourceReference('Rendered layout class target', 'packages/formedible/src/hooks/use-formedible.tsx#L376-L423', 'fieldset, FormLayout formClassName, tabs/pages, and buttons.'),
+      sourceReference('Returned Form event handling', 'packages/formedible/src/hooks/use-formedible.tsx#L752-L802', 'Native event order, aria-busy, and submit interception.'),
+      sourceReference('Rendered layout class target', 'packages/formedible/src/hooks/use-formedible.tsx#L815-L855', 'fieldset, FormLayout formClassName, tabs/pages, and buttons.'),
     ],
   },
 ] satisfies readonly DocsGuideSection[];

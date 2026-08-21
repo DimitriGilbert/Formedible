@@ -97,7 +97,7 @@ function tokenizeSimpleCommand(command: string): string[] {
 }
 
 function assertGroundedCommandPrefix(commandPrefix: readonly string[], sourceCommand: string): void {
-  const expectedPrefix = ['pnpm', 'create', 'better-t-stack@latest'];
+  const expectedPrefix = ['pnpm', 'create', 'better-t-stack@3.38.2'];
 
   if (!arraysEqual(commandPrefix, expectedPrefix)) {
     throw new Error(

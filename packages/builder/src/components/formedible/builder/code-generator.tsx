@@ -13,14 +13,21 @@ export interface CodeGeneratorProps {
 }
 
 export function CodeGenerator({ metadata, fields, className }: CodeGeneratorProps) {
-  const generatedCode = useMemo(() => generateFormCode({
-    title: metadata.title,
-    description: metadata.description,
-    fields,
-    pages: metadata.pages,
-    tabs: metadata.tabs,
-    settings: metadata.settings,
-  }).fullCode, [metadata, fields]);
+  const generatedCode = useMemo(() => {
+    try {
+      return generateFormCode({
+        title: metadata.title,
+        description: metadata.description,
+        fields,
+        pages: metadata.pages,
+        tabs: metadata.tabs,
+        settings: metadata.settings,
+      }).fullCode;
+    } catch (error) {
+      console.error('Failed to generate form code:', error);
+      return error instanceof Error ? `// ${error.message}` : '// Failed to generate form code';
+    }
+  }, [metadata, fields]);
 
   return (
     <div className={cn('space-y-3', className)} data-builder-part="code-generator">

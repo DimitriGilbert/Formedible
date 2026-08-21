@@ -2,7 +2,7 @@ export { FormBuilder } from '@/components/formedible/builder/form-builder';
 export { FieldConfigurator } from '@/components/formedible/builder/field-configurator';
 export { FormPreview } from '@/components/formedible/builder/form-preview';
 export { CodeGenerator } from '@/components/formedible/builder/code-generator';
-export { FieldStore, globalFieldStore } from '@/components/formedible/builder/field-store';
+export { FieldStore, FieldStoreContext, globalFieldStore, useFieldStore } from '@/components/formedible/builder/field-store';
 export {
   builderTab,
   codeTab,
@@ -30,3 +30,4 @@ export type {
 } from '@/lib/formedible/builder-types';
 export type { BuilderConfigContext, BuilderFieldValidationConfig, FieldConfigFormDefinition } from '@/lib/formedible/builder-config-types';
 export type { CodeGenerationOptions, GeneratedCodeResult } from '@/lib/formedible/code-generation';
+export { cn } from '@/lib/utils';

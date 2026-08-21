@@ -164,6 +164,9 @@ async function fetchAnthropicModels(apiKey: string, now: number, fetcher: typeof
 
     const response = await fetcher(url.toString(), {
       headers: {
+        // Required for the browser preflight to pass; without it Anthropic responds
+        // with HTTP 400 "Disallowed CORS origin" on the OPTIONS request.
+        'anthropic-dangerous-direct-browser-access': 'true',
         'anthropic-version': '2023-06-01',
         'X-Api-Key': apiKey,
       },

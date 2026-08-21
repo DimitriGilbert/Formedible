@@ -335,7 +335,7 @@ function assertMandatoryScripts(packageJson) {
   }
 }
 
-async function updateRootVersion(rootDirectory, release) {
+export async function updateRootVersion(rootDirectory, release) {
   const { packageJsonPath, packageJson } = await readRootPackageJson(rootDirectory);
   const currentVersion = readPackageVersion(packageJson);
   const currentSemver = parseSemverVersion(currentVersion);
@@ -345,13 +345,31 @@ async function updateRootVersion(rootDirectory, release) {
     throw new Error('Internal version validation error.');
   }
 
+  if (currentVersion === release.slice(1) && await isSameVersionRerunWorktreeState(rootDirectory)) {
+    console.info(`Root package.json is already at ${currentVersion}, matching --release ${release}; skipping the version bump for this rerun.`);
+    return;
+  }
+
   if (compareSemver(releaseSemver, currentSemver) <= 0) {
-    throw new Error(`Release ${release} must be greater than current root package.json version ${currentVersion}.`);
+    throw new Error(
+      `Release ${release} must be greater than current root package.json version ${currentVersion}. ` +
+      'A same-version rerun only continues when root package.json already carries the release version and is the only dirty deploy-affecting file; ' +
+      'commit, stash, or revert any other dirty deploy-affecting files, or provide a greater release version.',
+    );
   }
 
   packageJson.version = release.slice(1);
   await writeFile(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`, 'utf8');
   console.info(`Updated root package.json version: ${currentVersion} -> ${packageJson.version}`);
+}
+
+async function isSameVersionRerunWorktreeState(rootDirectory) {
+  const files = await changedFiles(rootDirectory);
+  const deployAffectingPaths = files
+    .flatMap((file) => releaseFilePaths(file))
+    .filter((filePath) => isDeployAffectingDirtyFile(filePath));
+
+  return deployAffectingPaths.length === 1 && deployAffectingPaths[0] === 'package.json';
 }
 
 function toLocalAssetVersion(currentVersion) {

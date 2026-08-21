@@ -9,6 +9,11 @@ import { cn } from '@/lib/utils';
 
 const icons = { star: Star, heart: Heart, thumbs: ThumbsUp } as const;
 const sizes = { sm: 'size-4', md: 'size-6', lg: 'size-8' } as const;
+const halfStepEpsilon = 1e-6;
+
+function isRatingChecked(value: number, rating: number): boolean {
+  return Math.abs(value - rating) < halfStepEpsilon;
+}
 
 export function RatingField<TFormValues extends FormedibleFormValues>({ fieldConfig, field }: FormedibleFieldRenderProps<TFormValues>) {
   const config = fieldConfig.ratingConfig;
@@ -27,7 +32,9 @@ export function RatingField<TFormValues extends FormedibleFormValues>({ fieldCon
           {Array.from({ length: max }, (_, index) => {
             const rating = index + 1;
             const halfRating = index + 0.5;
-            const isFilled = activeValue >= rating || (config?.allowHalf === true && activeValue >= halfRating);
+            const isFull = activeValue >= rating;
+            const isHalf = !isFull && config?.allowHalf === true && activeValue >= halfRating;
+            const iconSize = sizes[config?.size ?? 'md'];
 
             return (
               <span key={rating} className="relative inline-flex">
@@ -36,7 +43,8 @@ export function RatingField<TFormValues extends FormedibleFormValues>({ fieldCon
                   variant="ghost"
                   size="icon"
                   role="radio"
-                  aria-checked={value === rating}
+                  aria-checked={isRatingChecked(value, rating)}
+                  aria-label={`Rate ${rating}`}
                   disabled={fieldConfig.disabled}
                   className="transition-transform hover:scale-110 disabled:cursor-not-allowed disabled:opacity-50"
                   onBlur={field.onBlur}
@@ -44,12 +52,25 @@ export function RatingField<TFormValues extends FormedibleFormValues>({ fieldCon
                   onMouseEnter={() => setHoverValue(rating)}
                   onMouseLeave={() => setHoverValue(undefined)}
                 >
-                  <Icon className={cn(sizes[config?.size ?? 'md'], isFilled ? activeClass(icon) : 'text-muted-foreground')} />
+                  {isFull ? (
+                    <Icon className={cn(iconSize, activeClass(icon))} />
+                  ) : isHalf ? (
+                    <span className="relative inline-flex" data-slot="rating-half">
+                      <Icon className={cn(iconSize, 'text-muted-foreground')} />
+                      <span aria-hidden="true" className="absolute inset-y-0 left-0 w-1/2 overflow-hidden">
+                        <Icon className={cn(iconSize, activeClass(icon))} />
+                      </span>
+                    </span>
+                  ) : (
+                    <Icon className={cn(iconSize, 'text-muted-foreground')} />
+                  )}
                 </Button>
                 {config?.allowHalf && (
                   <Button
                     type="button"
                     variant="ghost"
+                    role="radio"
+                    aria-checked={isRatingChecked(value, halfRating)}
                     aria-label={`Rate ${halfRating}`}
                     disabled={fieldConfig.disabled}
                     className="absolute inset-y-0 left-0 h-auto w-1/2 p-0 disabled:cursor-not-allowed"

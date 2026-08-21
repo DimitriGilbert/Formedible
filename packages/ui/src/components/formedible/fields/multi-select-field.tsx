@@ -76,22 +76,36 @@ export function MultiSelectField<TFormValues extends FormedibleFormValues>({ fie
             {selectedValues.length === 0 && <span className="text-muted-foreground">{config?.placeholder ?? fieldConfig.placeholder ?? 'Select options...'}</span>}
             {selectedValues.map((value) => {
               const option = options.find((item) => item.value === value);
+              const label = option?.label ?? value;
+              const removeLabel = labelToText(label) || value;
               return (
                 <Badge key={value} variant="secondary" className="gap-1">
-                  {option?.label ?? value}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="size-4"
-                    disabled={fieldConfig.disabled}
+                  {label}
+                  <span
+                    role="button"
+                    tabIndex={fieldConfig.disabled ? -1 : 0}
+                    aria-label={`Remove ${removeLabel}`}
+                    className="inline-flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     onClick={(event) => {
                       event.stopPropagation();
-                      toggleValue(value);
+                      if (!fieldConfig.disabled) {
+                        toggleValue(value);
+                      }
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key !== 'Enter' && event.key !== ' ') {
+                        return;
+                      }
+
+                      event.preventDefault();
+                      event.stopPropagation();
+                      if (!fieldConfig.disabled) {
+                        toggleValue(value);
+                      }
                     }}
                   >
                     <X className="size-3" />
-                  </Button>
+                  </span>
                 </Badge>
               );
             })}

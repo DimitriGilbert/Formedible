@@ -1,9 +1,12 @@
 import { z } from 'zod';
+import type { ComponentType, ReactNode } from 'react';
 
 import type {
+  AnyFieldApi,
   FormedibleAutocompleteConfig,
   FormedibleColorConfig,
   FormedibleFieldComponent,
+  FormedibleFieldComponentProps,
   FormedibleFieldConfig,
   FormedibleFieldWrapper,
   FormedibleMaskedInputConfig,
@@ -161,6 +164,37 @@ const compatibilityFieldComponent: FormedibleFieldComponent<CompatibilityFormVal
   return null;
 };
 
+// Legacy flat-props component (main contract): required TanStack fieldApi plus the flat resolved props.
+const legacyFlatPropsComponent: ComponentType<{
+  fieldApi: AnyFieldApi;
+  label?: string;
+  description?: string;
+  placeholder?: string;
+  inputClassName?: string;
+  labelClassName?: string;
+  wrapperClassName?: string;
+  disabled?: boolean;
+  required?: boolean;
+  options?: { value: string; label: string }[];
+  min?: number;
+  max?: number;
+  step?: number;
+  sliderConfig?: { min?: number; max?: number; step?: number };
+  phoneConfig?: { defaultCountry?: string; format?: 'national' | 'international' };
+}> = ({ fieldApi, label, options }) => (fieldApi && label && options ? null : null);
+
+const legacyFlatPropsComponentIsARenderedComponent: FormedibleFieldComponent<CompatibilityFormValues> = legacyFlatPropsComponent;
+
+// Dual-shape component: receives the legacy flat props AND the render-props shape in one props object.
+const dualShapePropsComponent: ComponentType<FormedibleFieldComponentProps<CompatibilityFormValues>> = (props) => {
+  const flatLabel: string | undefined = props.label;
+  const hasFieldApi: boolean = props.fieldApi !== undefined;
+  const nested: ReactNode = props.renderField?.({ ...props.fieldConfig, name: 'email' }) ?? null;
+  props.field.onChange(props.field.value);
+
+  return flatLabel !== undefined && hasFieldApi && props.phoneConfig === undefined && nested === null ? null : null;
+};
+
 const compatibilityFieldWrapper: FormedibleFieldWrapper<CompatibilityFormValues> = ({ fieldConfig, field, children }) => {
   field.onBlur();
 
@@ -175,9 +209,16 @@ const customizationExtensionPoints = {
       component: compatibilityFieldComponent,
       wrapper: compatibilityFieldWrapper,
     },
+    {
+      name: 'legacyWidget',
+      type: 'myWidget',
+      component: legacyFlatPropsComponent,
+    },
   ],
   defaultComponents: {
     email: compatibilityFieldComponent,
+    myWidget: legacyFlatPropsComponent,
+    multiselect: dualShapePropsComponent,
   },
   globalWrapper: compatibilityFieldWrapper,
   formOptions: {
@@ -190,11 +231,29 @@ const customizationExtensionPoints = {
   },
 } satisfies UseFormedibleOptions<CompatibilityFormValues>;
 
-const customizationExtensionPointsRejectInvalidDefaultComponentKey = {
+const customFieldTypeKeysCompileWithoutRegistration = {
+  fields: [
+    { name: 'widget', type: 'myWidget' },
+    { name: 'otherWidget', type: 'otherWidget', component: dualShapePropsComponent },
+  ],
+  defaultComponents: {
+    myWidget: legacyFlatPropsComponent,
+  },
+  formOptions: {
+    defaultValues: {
+      name: '',
+      email: '',
+      urgent: false,
+      skills: [],
+    },
+  },
+} satisfies UseFormedibleOptions<CompatibilityFormValues>;
+
+const customizationExtensionPointsRejectNonComponentDefaultComponent = {
   fields: [{ name: 'name', type: 'text' }],
   defaultComponents: {
-    // @ts-expect-error unknownFieldType is not a normalized Formedible field type.
-    unknownFieldType: compatibilityFieldComponent,
+    // @ts-expect-error defaultComponents entries must be field components.
+    text: 'not-a-component',
   },
   formOptions: {
     defaultValues: {
@@ -271,30 +330,38 @@ const numberConfigPrecisionIsIntentionallyUnsupported = {
   },
 } satisfies FormedibleFieldConfig<CompatibilityFormValues>;
 
-const emailConfigIsIntentionallyUnsupported = {
+const emailConfigIsAcceptedForCompatibility = {
   name: 'legacyEmailConfig',
   type: 'email',
-  // @ts-expect-error emailConfig is intentionally unsupported because the audited compatibility examples have no stable email-specific behavior to restore.
-  emailConfig: {},
+  emailConfig: {
+    allowedDomains: 'formedible.dev',
+    blockedDomains: ['example.com'],
+    suggestions: ['formedible.dev'],
+    validateMX: true,
+  },
 } satisfies FormedibleFieldConfig<CompatibilityFormValues>;
 
 export {
   compatibilityFields,
   autocompleteConfigSupportsLegacyOptions,
   customFieldKeepsArbitraryProps,
+  customFieldTypeKeysCompileWithoutRegistration,
   datalistSupportsLegacySuggestions,
   directSchemaValidationSupportsLegacyZodFields,
-  emailConfigIsIntentionallyUnsupported,
+  dualShapePropsComponent,
+  emailConfigIsAcceptedForCompatibility,
   compatibilityFieldComponent,
   compatibilityFieldWrapper,
   customizationExtensionPoints,
-  customizationExtensionPointsRejectInvalidDefaultComponentKey,
   customizationExtensionPointsRejectInvalidWrapperContract,
+  customizationExtensionPointsRejectNonComponentDefaultComponent,
   explicitAutocompleteConfig,
   explicitMaskedInputConfig,
   explicitNumberConfig,
   explicitPasswordConfig,
   helpSupportsLegacyTooltip,
+  legacyFlatPropsComponent,
+  legacyFlatPropsComponentIsARenderedComponent,
   maskedInputConfigSupportsLegacyMaskOptions,
   normalizedAlias,
   numberConfigPrecisionIsIntentionallyUnsupported,

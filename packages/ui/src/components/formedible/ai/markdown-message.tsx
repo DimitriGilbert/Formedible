@@ -1,7 +1,7 @@
 'use client';
 
 import { Check, Copy } from 'lucide-react';
-import { Children, isValidElement, useState } from 'react';
+import { Children, isValidElement, memo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
 import remarkGfm from 'remark-gfm';
@@ -117,7 +117,7 @@ const markdownComponents = {
   },
 } satisfies Components;
 
-export function MarkdownMessage({ content, className }: MarkdownMessageProps) {
+export const MarkdownMessage = memo(function MarkdownMessage({ content, className }: MarkdownMessageProps) {
   return (
     <div className={cn('prose prose-sm max-w-none dark:prose-invert prose-pre:m-0 prose-pre:bg-transparent', className)}>
       <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]} components={markdownComponents} skipHtml>
@@ -125,4 +125,4 @@ export function MarkdownMessage({ content, className }: MarkdownMessageProps) {
       </ReactMarkdown>
     </div>
   );
-}
+});

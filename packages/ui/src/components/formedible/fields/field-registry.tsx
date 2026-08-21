@@ -57,7 +57,7 @@ const fieldRegistry: Partial<Record<NormalizedFieldType, FieldComponent>> = {
 };
 
 export function getFieldComponent<TFormValues extends FormedibleFormValues>(
-  type: NormalizedFieldType,
+  type: NormalizedFieldType | (string & {}),
 ): (props: FormedibleFieldRenderProps<TFormValues>) => ReactNode {
-  return fieldRegistry[type] ?? TextField;
+  return fieldRegistry[type as NormalizedFieldType] ?? TextField;
 }

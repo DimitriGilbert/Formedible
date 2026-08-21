@@ -3,6 +3,7 @@ export {
   extractFormedibleCode,
   supportedFieldTypeInfo,
   supportedFieldTypes,
+  version,
   type SupportedFieldType,
   type SupportedFieldTypeInfo,
 } from '@/lib/formedible/formedible-parser';

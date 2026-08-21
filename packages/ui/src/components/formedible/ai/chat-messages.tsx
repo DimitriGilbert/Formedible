@@ -1,6 +1,7 @@
 'use client';
 
 import { Bot, User } from 'lucide-react';
+import { memo } from 'react';
 
 import { MarkdownMessage } from '@formedible/ui/components/formedible/ai/markdown-message';
 import { RawOutputPanel } from '@formedible/ui/components/formedible/ai/raw-output-panel';
@@ -36,6 +37,36 @@ function renderStatus(message: AiMessage): string | undefined {
   return undefined;
 }
 
+interface MessageRowProps {
+  readonly message: AiMessage;
+}
+
+const MessageRow = memo(function MessageRow({ message }: MessageRowProps) {
+  const status = renderStatus(message);
+  const isAssistant = message.role === 'assistant';
+  const isStreaming = message.status === 'streaming';
+
+  return (
+    <article className={cn('rounded-lg p-3 text-sm', message.role === 'user' ? 'bg-muted' : 'border bg-background')}>
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <p className="flex items-center gap-2 font-medium capitalize">
+          <MessageIcon role={message.role} />
+          {message.role}
+        </p>
+        {status ? <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{status}</span> : null}
+      </div>
+      {message.thinking ? (
+        <details className="mb-3 rounded-md border bg-muted/30 p-2">
+          <summary className="cursor-pointer text-xs font-medium text-muted-foreground">Thinking</summary>
+          <p className="mt-2 whitespace-pre-wrap text-xs text-muted-foreground">{message.thinking}</p>
+        </details>
+      ) : null}
+      {isAssistant ? <MarkdownMessage content={message.content} /> : <p className="whitespace-pre-wrap">{message.content}</p>}
+      {isAssistant && !isStreaming ? <RawOutputPanel message={message} className="mt-3" /> : null}
+    </article>
+  );
+});
+
 export function ChatMessages({ messages, className }: ChatMessagesProps) {
   if (messages.length === 0) {
     return <p className={cn('text-sm text-muted-foreground', className)}>Describe the form you want to build.</p>;
@@ -43,31 +74,9 @@ export function ChatMessages({ messages, className }: ChatMessagesProps) {
 
   return (
     <div className={cn('space-y-3', className)}>
-      {messages.map((message) => {
-        const status = renderStatus(message);
-        const isAssistant = message.role === 'assistant';
-        const isStreaming = message.status === 'streaming';
-
-        return (
-          <article key={message.id} className={cn('rounded-lg p-3 text-sm', message.role === 'user' ? 'bg-muted' : 'border bg-background')}>
-            <div className="mb-2 flex items-center justify-between gap-3">
-              <p className="flex items-center gap-2 font-medium capitalize">
-                <MessageIcon role={message.role} />
-                {message.role}
-              </p>
-              {status ? <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{status}</span> : null}
-            </div>
-            {message.thinking ? (
-              <details className="mb-3 rounded-md border bg-muted/30 p-2">
-                <summary className="cursor-pointer text-xs font-medium text-muted-foreground">Thinking</summary>
-                <p className="mt-2 whitespace-pre-wrap text-xs text-muted-foreground">{message.thinking}</p>
-              </details>
-            ) : null}
-            {isAssistant ? <MarkdownMessage content={message.content} /> : <p className="whitespace-pre-wrap">{message.content}</p>}
-            {isAssistant && !isStreaming ? <RawOutputPanel message={message} className="mt-3" /> : null}
-          </article>
-        );
-      })}
+      {messages.map((message) => (
+        <MessageRow key={message.id} message={message} />
+      ))}
     </div>
   );
 }

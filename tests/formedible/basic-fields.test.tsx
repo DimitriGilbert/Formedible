@@ -15,7 +15,16 @@ import { TextareaField } from '../../packages/formedible/src/components/formedib
 import { createFormAnalyticsTracker } from '../../packages/formedible/src/hooks/use-form-analytics';
 import { useFormedible } from '../../packages/formedible/src/hooks/use-formedible';
 import type { FormProps } from '../../packages/formedible/src/components/formedible/form';
-import type { FormedibleFieldConfig, FormedibleFieldController, FormedibleFieldType, FormedibleFormValues } from '../../packages/formedible/src/lib/formedible/types';
+import type {
+  FormedibleFieldComponent,
+  FormedibleFieldComponentProps,
+  FormedibleFieldConfig,
+  FormedibleFieldController,
+  FormedibleFieldType,
+  FormedibleFieldWrapper,
+  FormedibleFieldWrapperProps,
+  FormedibleFormValues,
+} from '../../packages/formedible/src/lib/formedible/types';
 import {
   checkoutCompatibilityExample,
   contactCompatibilityExample,
@@ -156,6 +165,8 @@ function renderClient(element: ReactElement) {
   const previousWindow = globalThis.window;
   const previousDocument = globalThis.document;
   const previousHTMLElement = globalThis.HTMLElement;
+  const previousElement = globalThis.Element;
+  const previousNode = globalThis.Node;
   const previousEvent = globalThis.Event;
   const actGlobal = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean };
   const previousActEnvironment = actGlobal.IS_REACT_ACT_ENVIRONMENT;
@@ -167,6 +178,8 @@ function renderClient(element: ReactElement) {
   globalThis.window = dom.window as unknown as Window & typeof globalThis;
   globalThis.document = dom.window.document;
   globalThis.HTMLElement = dom.window.HTMLElement;
+  globalThis.Element = dom.window.Element;
+  globalThis.Node = dom.window.Node;
   globalThis.Event = dom.window.Event;
   actGlobal.IS_REACT_ACT_ENVIRONMENT = true;
   elementPrototype.attachEvent = () => undefined;
@@ -186,6 +199,8 @@ function renderClient(element: ReactElement) {
       globalThis.window = previousWindow;
       globalThis.document = previousDocument;
       globalThis.HTMLElement = previousHTMLElement;
+      globalThis.Element = previousElement;
+      globalThis.Node = previousNode;
       globalThis.Event = previousEvent;
       actGlobal.IS_REACT_ACT_ENVIRONMENT = previousActEnvironment;
       dom.window.close();
@@ -824,6 +839,173 @@ test('form-level defaultComponents map field types while preserving registry fal
   assert.match(markup, /data-slot="input"/);
 });
 
+test('form-level defaultComponents register custom field types rendered with legacy flat props', () => {
+  const capturedProps: FormedibleFieldComponentProps<FormedibleFormValues>[] = [];
+  const myWidget: FormedibleFieldComponent<FormedibleFormValues> = (props) => {
+    capturedProps.push(props);
+
+    return <div data-my-widget="true">{props.label}</div>;
+  };
+
+  function ExampleForm() {
+    const { Form } = useFormedible<FormedibleFormValues>({
+      fields: [
+        {
+          name: 'widget',
+          type: 'myWidget',
+          label: 'Widget label',
+          placeholder: 'Widget placeholder',
+          required: true,
+          options: ['alpha', 'beta'],
+          phoneConfig: { defaultCountry: 'FR', format: 'national' },
+        },
+      ],
+      defaultComponents: { myWidget },
+      formOptions: {
+        defaultValues: { widget: '' },
+        onSubmit: () => undefined,
+      },
+    });
+
+    return <Form />;
+  }
+
+  const markup = renderToStaticMarkup(<ExampleForm />);
+
+  assert.match(markup, /data-my-widget="true"/);
+  assert.match(markup, /Widget label/);
+
+  const widgetProps = capturedProps.at(-1);
+  assert.ok(widgetProps);
+  assert.ok(widgetProps.fieldApi);
+  assert.equal(typeof widgetProps.fieldApi.handleChange, 'function');
+  assert.equal(widgetProps.fieldApi.name, 'widget');
+  assert.equal(widgetProps.label, 'Widget label');
+  assert.equal(widgetProps.placeholder, 'Widget placeholder');
+  assert.equal(widgetProps.required, true);
+  assert.deepEqual(widgetProps.options, [
+    { value: 'alpha', label: 'alpha' },
+    { value: 'beta', label: 'beta' },
+  ]);
+  assert.deepEqual(widgetProps.phoneConfig, { defaultCountry: 'FR', format: 'national' });
+  assert.equal(widgetProps.fieldConfig.type, 'myWidget');
+  assert.equal(widgetProps.fieldConfig.name, 'widget');
+  assert.equal(widgetProps.field.name, 'widget');
+  assert.equal(typeof widgetProps.field.onChange, 'function');
+});
+
+test('field component overrides receive both legacy flat props and render props', () => {
+  const globalWrapper: FormedibleFieldWrapper<FormedibleFormValues> = ({ children }) => <div data-global-wrap="true">{children}</div>;
+  let capturedProps: FormedibleFieldComponentProps<FormedibleFormValues> | undefined;
+  const dualShapeComponent: FormedibleFieldComponent<FormedibleFormValues> = (props) => {
+    capturedProps = props;
+
+    return <input name={props.field.name} value={String(props.field.value ?? '')} onChange={() => undefined} readOnly />;
+  };
+
+  function ExampleForm() {
+    const { Form } = useFormedible<FormedibleFormValues>({
+      fields: [
+        {
+          name: 'email',
+          type: 'email',
+          label: 'Email',
+          placeholder: 'Enter your email',
+          description: 'Work email only',
+          component: dualShapeComponent,
+        },
+      ],
+      globalWrapper,
+      formOptions: {
+        defaultValues: { email: '' },
+        onSubmit: () => undefined,
+      },
+    });
+
+    return <Form />;
+  }
+
+  const markup = renderToStaticMarkup(<ExampleForm />);
+
+  assert.match(markup, /data-global-wrap="true"/);
+  assert.match(markup, /name="email"/);
+
+  const componentProps = capturedProps;
+  assert.ok(componentProps);
+  assert.ok(componentProps.fieldApi);
+  assert.equal(componentProps.fieldConfig.type, 'email');
+  assert.equal(componentProps.fieldConfig.label, 'Email');
+  assert.equal(componentProps.field.name, 'email');
+  assert.equal(typeof componentProps.field.onChange, 'function');
+  assert.equal(componentProps.label, 'Email');
+  assert.equal(componentProps.placeholder, 'Enter your email');
+  assert.equal(componentProps.description, 'Work email only');
+  assert.equal(componentProps.globalWrapper, globalWrapper);
+  assert.equal(componentProps.defaultComponent, undefined);
+  assert.equal(typeof componentProps.renderField, 'function');
+});
+
+test('field wrappers receive children field and fieldConfig', () => {
+  const capturedWrapperProps: FormedibleFieldWrapperProps<FormedibleFormValues>[] = [];
+  const fieldWrapper: FormedibleFieldWrapper<FormedibleFormValues> = (props) => {
+    capturedWrapperProps.push(props);
+
+    return <section data-wrapped-field={props.field.name}>{props.children}</section>;
+  };
+
+  function ExampleForm() {
+    const { Form } = useFormedible<FormedibleFormValues>({
+      fields: [
+        {
+          name: 'firstName',
+          type: 'text',
+          label: 'First name',
+          wrapper: fieldWrapper,
+        },
+      ],
+      formOptions: {
+        defaultValues: { firstName: '' },
+        onSubmit: () => undefined,
+      },
+    });
+
+    return <Form />;
+  }
+
+  const markup = renderToStaticMarkup(<ExampleForm />);
+
+  assert.match(markup, /<section data-wrapped-field="firstName">/);
+  assert.match(markup, /First name/);
+  assert.match(markup, /data-slot="input"/);
+
+  const wrapperProps = capturedWrapperProps.at(-1);
+  assert.ok(wrapperProps);
+  assert.equal(wrapperProps.field.name, 'firstName');
+  assert.equal(wrapperProps.fieldConfig.name, 'firstName');
+  assert.equal(wrapperProps.fieldConfig.type, 'text');
+  assert.ok(wrapperProps.children);
+});
+
+test('unregistered custom field types fall back to text rendering', () => {
+  function ExampleForm() {
+    const { Form } = useFormedible<FormedibleFormValues>({
+      fields: [{ name: 'mystery', type: 'mysteryShape', label: 'Mystery' }],
+      formOptions: {
+        defaultValues: { mystery: '' },
+        onSubmit: () => undefined,
+      },
+    });
+
+    return <Form />;
+  }
+
+  const markup = renderToStaticMarkup(<ExampleForm />);
+
+  assert.match(markup, /data-slot="input"/);
+  assert.match(markup, /type="text"/);
+  assert.match(markup, /Mystery/);
+});
+
 test('form-level globalWrapper wraps all rendered fields', () => {
   function ExampleForm() {
     const { Form } = useFormedible<FormedibleFormValues>({
@@ -1029,7 +1211,7 @@ test('number renders legacy datalist suggestions', () => {
   assert.match(markup, /<option value="5"><\/option>/);
 });
 
-test('field wrapper renders legacy help tooltip text as supplementary help', () => {
+test('field wrapper renders legacy help tooltip behind a popover trigger', () => {
   const markup = renderToStaticMarkup(
     <TextField
       fieldConfig={{
@@ -1046,5 +1228,527 @@ test('field wrapper renders legacy help tooltip text as supplementary help', () 
   );
 
   assert.match(markup, /Used on your profile\./);
-  assert.match(markup, /We use this to personalize your experience\./);
+  assert.match(markup, /data-formedible-help-tooltip="true"/);
+  assert.doesNotMatch(markup, /We use this to personalize your experience\./);
+});
+
+test('field wrapper renders rich help text and documentation link', () => {
+  const markup = renderToStaticMarkup(
+    <TextField
+      fieldConfig={{
+        name: 'email',
+        type: 'email',
+        label: 'Email',
+        disabled: false,
+        required: false,
+        help: {
+          text: 'We only use this for account access.',
+          link: { url: 'https://example.com/help', text: 'Read more' },
+        },
+      }}
+      field={{ id: 'email', name: 'email', value: '', onBlur: () => undefined, onChange: () => undefined }}
+    />,
+  );
+
+  assert.match(markup, /data-formedible-field-help="true"/);
+  assert.match(markup, /We only use this for account access\./);
+  assert.match(markup, /href="https:\/\/example\.com\/help"/);
+  assert.match(markup, /Read more/);
+  assert.match(markup, /data-formedible-help-link="true"/);
+});
+
+test('tab analytics fire on tab switch with legacy arguments', async () => {
+  const tabChangeCalls: string[] = [];
+  const tabFirstVisitCalls: string[] = [];
+
+  function ExampleForm() {
+    const { Form } = useFormedible<FormedibleFormValues>({
+      fields: [
+        { name: 'firstName', type: 'text', label: 'First name', tab: 'personal' },
+        { name: 'email', type: 'email', label: 'Email', tab: 'contact' },
+      ],
+      tabs: [
+        { id: 'personal', label: 'Personal' },
+        { id: 'contact', label: 'Contact' },
+      ],
+      analytics: {
+        onTabChange: (fromTab, toTab, timeSpent, tabCompletionState) =>
+          tabChangeCalls.push(`${fromTab}>${toTab}:${timeSpent >= 0}:${String(tabCompletionState?.completionPercentage)}`),
+        onTabFirstVisit: (tabId, timestamp) => tabFirstVisitCalls.push(`${tabId}:${timestamp > 0}`),
+      },
+      formOptions: {
+        defaultValues: { firstName: 'Ada', email: '' },
+        onSubmit: () => undefined,
+      },
+    });
+
+    return <Form />;
+  }
+
+  const rendered = renderClient(<ExampleForm />);
+  await act(async () => {
+    await wait(0);
+  });
+
+  assert.deepEqual(tabFirstVisitCalls, ['personal:true']);
+
+  const contactTab = [...rendered.document.querySelectorAll('[role="tab"]')].find((tab): tab is HTMLElement => tab.textContent?.includes('Contact') === true);
+  assert.ok(contactTab);
+  act(() => {
+    contactTab.click();
+  });
+  await act(async () => {
+    await wait(0);
+  });
+
+  assert.deepEqual(tabChangeCalls, ['personal>contact:true:100']);
+  assert.deepEqual(tabFirstVisitCalls, ['personal:true', 'contact:true']);
+  rendered.unmount();
+});
+
+test('submission performance analytics fire after a successful submit', async () => {
+  const performanceCalls: string[] = [];
+
+  function ExampleForm() {
+    const { Form } = useFormedible<FormedibleFormValues>({
+      fields: [{ name: 'email', type: 'text', label: 'Email', component: ({ field }) => (
+        <input name={field.name} value={String(field.value ?? '')} onChange={(event) => field.onChange(event.target.value)} readOnly />
+      ) }],
+      analytics: {
+        onSubmissionPerformance: (submissionTime, validationTime, processingTime) =>
+          performanceCalls.push(`${submissionTime >= 0}:${validationTime}:${processingTime >= 0}`),
+      },
+      formOptions: {
+        defaultValues: { email: 'ada@example.com' },
+        onSubmit: () => undefined,
+      },
+    });
+
+    return <Form />;
+  }
+
+  const rendered = renderClient(<ExampleForm />);
+  await act(async () => {
+    await wait(0);
+  });
+
+  act(() => {
+    rendered.document.querySelector('form')?.requestSubmit();
+  });
+  await act(async () => {
+    await wait(0);
+  });
+
+  assert.deepEqual(performanceCalls, ['true:0:true']);
+  rendered.unmount();
+});
+
+test('help tooltip popover opens on click and interpolates dynamic tokens', async () => {
+  function ExampleForm() {
+    const { Form } = useFormedible<FormedibleFormValues>({
+      fields: [
+        { name: 'firstName', type: 'text', label: 'First name' },
+        { name: 'nickname', type: 'text', label: 'Nickname', help: { tooltip: 'Hi {{ firstName }}, pick a nickname.', position: 'bottom' } },
+      ],
+      formOptions: {
+        defaultValues: { firstName: 'Ada', nickname: '' },
+        onSubmit: () => undefined,
+      },
+    });
+
+    return <Form />;
+  }
+
+  const rendered = renderClient(<ExampleForm />);
+  await act(async () => {
+    await wait(0);
+  });
+
+  const trigger = rendered.document.querySelector<HTMLElement>('[data-formedible-help-tooltip="true"]');
+  assert.ok(trigger, 'the help tooltip trigger must render');
+
+  act(() => {
+    trigger.click();
+  });
+  await act(async () => {
+    await wait(0);
+  });
+
+  const tooltipContent = rendered.document.querySelector('[data-formedible-help-tooltip-content="true"]');
+  assert.ok(tooltipContent, 'the help tooltip must open on click');
+  assert.match(tooltipContent.textContent ?? '', /Hi Ada, pick a nickname\./);
+  rendered.unmount();
+});
+
+test('hook-level styling classNames reach the field wrappers, labels, and buttons', () => {
+  function ExampleForm() {
+    const { Form } = useFormedible<FormedibleFormValues>({
+      fields: [{ name: 'email', type: 'email', label: 'Email' }],
+      formOptions: {
+        defaultValues: { email: '' },
+        onSubmit: () => undefined,
+      },
+      fieldClassName: 'hook-field-class',
+      labelClassName: 'hook-label-class',
+      submitButtonClassName: 'hook-submit-class',
+    });
+
+    return <Form />;
+  }
+
+  const markup = renderToStaticMarkup(<ExampleForm />);
+
+  assert.match(markup, /data-slot="field"[^>]*hook-field-class/);
+  assert.match(markup, /data-slot="field-label"[^>]*hook-label-class/);
+  assert.match(markup, /<button[^>]*hook-submit-class[^>]*>Submit<\/button>/);
+});
+
+test('hook-level field and label classNames merge with field-level classNames', () => {
+  function ExampleForm() {
+    const { Form } = useFormedible<FormedibleFormValues>({
+      fields: [{ name: 'email', type: 'email', label: 'Email', className: 'field-class', labelClassName: 'field-label-class' }],
+      formOptions: {
+        defaultValues: { email: '' },
+        onSubmit: () => undefined,
+      },
+      fieldClassName: 'hook-field-class',
+      labelClassName: 'hook-label-class',
+    });
+
+    return <Form />;
+  }
+
+  const markup = renderToStaticMarkup(<ExampleForm />);
+
+  assert.match(markup, /data-slot="field"[^>]*field-class hook-field-class/);
+  assert.match(markup, /data-slot="field-label"[^>]*field-label-class hook-label-class/);
+});
+
+test('multipage navigation forwards buttonClassName and submitButtonClassName', () => {
+  function renderMultipageClassNamesExample(startOnLastPage: boolean) {
+    function ExampleForm() {
+      const { Form } = useFormedible<FormedibleFormValues>({
+        fields: [
+          { name: 'firstName', type: 'text', label: 'First name', page: 1, conditional: () => startOnLastPage !== true },
+          { name: 'lastName', type: 'text', label: 'Last name', page: 2 },
+        ],
+        formOptions: {
+          defaultValues: { firstName: '', lastName: '' },
+          onSubmit: () => undefined,
+        },
+        buttonClassName: 'hook-button-class',
+        submitButtonClassName: 'hook-submit-class',
+      });
+
+      return <Form />;
+    }
+
+    return renderToStaticMarkup(<ExampleForm />);
+  }
+
+  const firstPageMarkup = renderMultipageClassNamesExample(false);
+
+  assert.match(firstPageMarkup, /<button[^>]*hook-button-class[^>]*>Next<\/button>/);
+  assert.doesNotMatch(firstPageMarkup, /hook-submit-class/, 'page one renders Next, not the submit button');
+
+  const lastPageMarkup = renderMultipageClassNamesExample(true);
+
+  assert.match(lastPageMarkup, /<button[^>]*hook-submit-class[^>]*>Submit<\/button>/);
+});
+
+test('submit button disables and re-enables reactively through canSubmit', async () => {
+  const fieldStore: { email?: FormedibleFieldController } = {};
+  function ExampleForm() {
+    const { Form } = useFormedible<FormedibleFormValues>({
+      fields: [
+        {
+          name: 'email',
+          type: 'text',
+          label: 'Email',
+          required: true,
+          component: ({ field }) => {
+            fieldStore.email = field;
+            return <input name={field.name} value={String(field.value ?? '')} onChange={(event) => field.onChange(event.target.value)} readOnly />;
+          },
+        },
+      ],
+      formOptions: {
+        defaultValues: { email: '' },
+        onSubmit: () => undefined,
+      },
+    });
+
+    return <Form />;
+  }
+
+  const rendered = renderClient(<ExampleForm />);
+  await act(async () => {
+    await wait(0);
+  });
+
+  const submitButton = [...rendered.document.querySelectorAll('button')].find((button) => button.textContent === 'Submit');
+  assert.ok(submitButton);
+  assert.equal(submitButton.disabled, false, 'an untouched form starts submittable');
+
+  act(() => {
+    fieldStore.email?.onBlur();
+  });
+  await act(async () => {
+    await wait(0);
+  });
+  assert.equal(submitButton.disabled, true, 'a touched invalid form must disable the submit button');
+
+  act(() => {
+    fieldStore.email?.onChange('ada@example.com');
+  });
+  await act(async () => {
+    await wait(0);
+  });
+  assert.equal(submitButton.disabled, false, 'fixing the invalid field must re-enable the submit button');
+  rendered.unmount();
+});
+
+test('successful submit resets the form to its default values by default', async () => {
+  const fieldStore: { email?: FormedibleFieldController } = {};
+  const submittedValues: string[] = [];
+  function ExampleForm() {
+    const { Form } = useFormedible<FormedibleFormValues>({
+      fields: [
+        {
+          name: 'email',
+          type: 'text',
+          label: 'Email',
+          component: ({ field }) => {
+            fieldStore.email = field;
+            return <input name={field.name} value={String(field.value ?? '')} onChange={(event) => field.onChange(event.target.value)} readOnly />;
+          },
+        },
+      ],
+      formOptions: {
+        defaultValues: { email: '' },
+        onSubmit: ({ value }) => {
+          submittedValues.push(String(value.email));
+        },
+      },
+    });
+
+    return <Form />;
+  }
+
+  const rendered = renderClient(<ExampleForm />);
+  await act(async () => {
+    await wait(0);
+  });
+
+  act(() => {
+    fieldStore.email?.onChange('ada@example.com');
+  });
+  await act(async () => {
+    await wait(0);
+  });
+
+  act(() => {
+    rendered.document.querySelector('form')?.requestSubmit();
+  });
+  await act(async () => {
+    await wait(0);
+  });
+
+  assert.deepEqual(submittedValues, ['ada@example.com']);
+  assert.equal(fieldStore.email?.value, '', 'a successful submit must reset the form values by default');
+  rendered.unmount();
+});
+
+test('resetOnSubmitSuccess false keeps the submitted values', async () => {
+  const fieldStore: { email?: FormedibleFieldController } = {};
+  function ExampleForm() {
+    const { Form } = useFormedible<FormedibleFormValues>({
+      fields: [
+        {
+          name: 'email',
+          type: 'text',
+          label: 'Email',
+          component: ({ field }) => {
+            fieldStore.email = field;
+            return <input name={field.name} value={String(field.value ?? '')} onChange={(event) => field.onChange(event.target.value)} readOnly />;
+          },
+        },
+      ],
+      formOptions: {
+        defaultValues: { email: '' },
+        onSubmit: () => undefined,
+      },
+      resetOnSubmitSuccess: false,
+    });
+
+    return <Form />;
+  }
+
+  const rendered = renderClient(<ExampleForm />);
+  await act(async () => {
+    await wait(0);
+  });
+
+  act(() => {
+    fieldStore.email?.onChange('grace@example.com');
+  });
+  await act(async () => {
+    await wait(0);
+  });
+
+  act(() => {
+    rendered.document.querySelector('form')?.requestSubmit();
+  });
+  await act(async () => {
+    await wait(0);
+  });
+
+  assert.equal(fieldStore.email?.value, 'grace@example.com', 'resetOnSubmitSuccess: false must keep the submitted values');
+  rendered.unmount();
+});
+
+test('canSubmitWhenInvalid keeps the submit button enabled on a touched invalid form', async () => {
+  const fieldStore: { email?: FormedibleFieldController } = {};
+  function ExampleForm() {
+    const { Form } = useFormedible<FormedibleFormValues>({
+      fields: [
+        {
+          name: 'email',
+          type: 'text',
+          label: 'Email',
+          required: true,
+          component: ({ field }) => {
+            fieldStore.email = field;
+            return <input name={field.name} value={String(field.value ?? '')} onChange={(event) => field.onChange(event.target.value)} readOnly />;
+          },
+        },
+      ],
+      formOptions: {
+        defaultValues: { email: '' },
+        onSubmit: () => undefined,
+        canSubmitWhenInvalid: true,
+      },
+    });
+
+    return <Form />;
+  }
+
+  const rendered = renderClient(<ExampleForm />);
+  await act(async () => {
+    await wait(0);
+  });
+
+  const submitButton = [...rendered.document.querySelectorAll('button')].find((button) => button.textContent === 'Submit');
+  assert.ok(submitButton);
+
+  act(() => {
+    fieldStore.email?.onBlur();
+  });
+  await act(async () => {
+    await wait(0);
+  });
+
+  assert.equal(submitButton.disabled, false, 'canSubmitWhenInvalid must keep the submit button enabled despite errors');
+  rendered.unmount();
+});
+
+test('formOptions.onSubmitInvalid is forwarded and fires on invalid submit', async () => {
+  const invalidSubmitCalls: string[] = [];
+
+  function ExampleForm() {
+    const { Form } = useFormedible<FormedibleFormValues>({
+      fields: [{ name: 'email', type: 'text', label: 'Email', required: true }],
+      formOptions: {
+        defaultValues: { email: '' },
+        onSubmit: () => undefined,
+        onSubmitInvalid: ({ value, formApi }) => {
+          invalidSubmitCalls.push(`empty:${value.email === ''}:api:${typeof formApi.handleSubmit}`);
+        },
+      },
+    });
+
+    return <Form />;
+  }
+
+  const rendered = renderClient(<ExampleForm />);
+  await act(async () => {
+    await wait(0);
+  });
+
+  act(() => {
+    rendered.document.querySelector('form')?.requestSubmit();
+  });
+  await act(async () => {
+    await wait(0);
+  });
+
+  assert.deepEqual(invalidSubmitCalls, ['empty:true:api:function']);
+  rendered.unmount();
+});
+
+test('useFormedible renders with empty fields and no formOptions', () => {
+  function ExampleForm() {
+    const { Form } = useFormedible({ fields: [] });
+
+    return <Form />;
+  }
+
+  const markup = renderToStaticMarkup(<ExampleForm />);
+
+  assert.match(markup, /<form/);
+  assert.match(markup, />Submit<\/button>/);
+});
+
+test('sections without a title render their description without a heading', () => {
+  function ExampleForm() {
+    const { Form } = useFormedible<FormedibleFormValues>({
+      fields: [{ name: 'firstName', type: 'text', label: 'First name', section: { description: 'About you' } }],
+      formOptions: {
+        defaultValues: { firstName: '' },
+        onSubmit: () => undefined,
+      },
+    });
+
+    return <Form />;
+  }
+
+  const markup = renderToStaticMarkup(<ExampleForm />);
+
+  assert.match(markup, /data-formedible-section="true"/);
+  assert.doesNotMatch(markup, /<h2/);
+  assert.match(markup, /About you/);
+});
+
+test('custom select components receive an empty options array when the field declares none', () => {
+  const capturedProps: FormedibleFieldComponentProps<FormedibleFormValues>[] = [];
+
+  function CapturingComponent(props: FormedibleFieldComponentProps<FormedibleFormValues>) {
+    capturedProps.push(props);
+    return <input name={props.fieldConfig.name} readOnly />;
+  }
+
+  function ExampleForm() {
+    const { Form } = useFormedible<FormedibleFormValues>({
+      fields: [
+        { name: 'country', type: 'select', label: 'Country', component: CapturingComponent },
+        { name: 'notes', type: 'text', label: 'Notes', component: CapturingComponent },
+      ],
+      formOptions: {
+        defaultValues: { country: '', notes: '' },
+        onSubmit: () => undefined,
+      },
+    });
+
+    return <Form />;
+  }
+
+  renderToStaticMarkup(<ExampleForm />);
+
+  const selectProps = capturedProps.find((props) => props.fieldConfig.name === 'country');
+  const textProps = capturedProps.find((props) => props.fieldConfig.name === 'notes');
+
+  assert.ok(selectProps);
+  assert.ok(textProps);
+  assert.deepEqual(selectProps.options, []);
+  assert.equal(textProps.options, undefined);
 });

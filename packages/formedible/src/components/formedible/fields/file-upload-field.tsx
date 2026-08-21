@@ -1,29 +1,58 @@
 import { PaperclipIcon, UploadCloudIcon, XIcon } from 'lucide-react';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 
 import { FieldWrapper } from '@/components/formedible/fields/field-wrapper';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import type { FormedibleFieldRenderProps, FormedibleFormValues } from '@/lib/formedible/types';
+import type { FormedibleFieldRenderProps, FormedibleFileRejection, FormedibleFormValues } from '@/lib/formedible/types';
 import { cn } from '@/lib/utils';
+
+const rejectionReasonLabels = {
+  maxSize: 'exceeds the maximum file size',
+  maxFiles: 'exceeds the maximum number of files',
+} as const;
 
 export function FileUploadField<TFormValues extends FormedibleFormValues>({ fieldConfig, field }: FormedibleFieldRenderProps<TFormValues>) {
   const config = fieldConfig.fileConfig;
+  const accept = fieldConfig.accept ?? config?.accept;
+  const multiple = fieldConfig.multiple ?? config?.multiple ?? false;
   const inputRef = useRef<HTMLInputElement>(null);
+  const [rejections, setRejections] = useState<readonly FormedibleFileRejection[]>([]);
   const files = getFiles(field.value);
 
   function setFiles(nextFiles: readonly File[]) {
-    const limitedFiles = config?.maxFiles === undefined ? nextFiles : nextFiles.slice(0, config.maxFiles);
+    const maxFiles = config?.maxFiles;
     const maxSize = config?.maxSize;
-    const acceptedFiles = maxSize === undefined ? limitedFiles : limitedFiles.filter((file) => file.size <= maxSize);
-    field.onChange(config?.multiple ? acceptedFiles : acceptedFiles[0] ?? null);
+    const acceptedFiles: File[] = [];
+    const nextRejections: FormedibleFileRejection[] = [];
+
+    nextFiles.forEach((file, index) => {
+      if (maxFiles !== undefined && index >= maxFiles) {
+        nextRejections.push({ file, reason: 'maxFiles' });
+        return;
+      }
+
+      if (maxSize !== undefined && file.size > maxSize) {
+        nextRejections.push({ file, reason: 'maxSize' });
+        return;
+      }
+
+      acceptedFiles.push(file);
+    });
+
+    setRejections(nextRejections);
+    if (nextRejections.length > 0) {
+      config?.onFilesRejected?.(nextRejections);
+    }
+
+    field.onChange(multiple ? acceptedFiles : acceptedFiles[0] ?? null);
     config?.onFilesChange?.(acceptedFiles);
     field.onBlur();
   }
 
   function removeFile(file: File) {
     const nextFiles = files.filter((entry) => entry !== file);
-    field.onChange(config?.multiple ? nextFiles : null);
+    field.onChange(multiple ? nextFiles : null);
     config?.onFileRemove?.(file);
     if (inputRef.current) {
       inputRef.current.value = '';
@@ -39,16 +68,16 @@ export function FileUploadField<TFormValues extends FormedibleFormValues>({ fiel
           id={field.id}
           name={field.name}
           type="file"
-          accept={config?.accept}
-          multiple={config?.multiple}
+          accept={accept}
+          multiple={multiple}
           disabled={fieldConfig.disabled}
           className="hidden"
           onChange={(event) => setFiles(Array.from(event.target.files ?? []))}
         />
         {files.length > 0 ? (
           <div className="space-y-2">
-            {files.map((file) => (
-              <div key={`${file.name}-${file.size}`} className="flex items-center justify-between rounded-lg border bg-muted/40 p-2.5">
+            {files.map((file, index) => (
+              <div key={index} className="flex items-center justify-between rounded-lg border bg-muted/40 p-2.5">
                 <div className="flex min-w-0 items-center gap-2 text-sm">
                   <PaperclipIcon className="size-5 shrink-0 text-primary" />
                   <span className="truncate" title={file.name}>{file.name}</span>
@@ -70,8 +99,17 @@ export function FileUploadField<TFormValues extends FormedibleFormValues>({ fiel
           >
             <UploadCloudIcon className="mb-2 size-8 text-muted-foreground" />
             <span className="text-sm font-medium text-muted-foreground">Click or drag and drop a file</span>
-            {config?.accept && <span className="mt-1 text-xs text-muted-foreground/80">Accepted types: {config.accept}</span>}
+            {accept && <span className="mt-1 text-xs text-muted-foreground/80">Accepted types: {accept}</span>}
           </Button>
+        )}
+        {rejections.length > 0 && (
+          <div role="alert" data-slot="file-rejections" className="space-y-1 text-sm text-destructive">
+            {rejections.map((rejection, index) => (
+              <div key={index}>
+                {rejection.file.name} was not uploaded ({rejectionReasonLabels[rejection.reason]}).
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </FieldWrapper>

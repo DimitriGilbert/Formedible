@@ -21,7 +21,9 @@ The registry item is `form-builder` in `packages/builder/registry.json`. It depe
 - `FormPreview`
 - `CodeGenerator`
 - `FieldStore`
+- `FieldStoreContext`
 - `globalFieldStore`
+- `useFieldStore`
 
 ### Tabs
 
@@ -90,7 +92,32 @@ export function BuilderWorkspace() {
 }
 ```
 
-`FormBuilderProps` is defined in `src/lib/formedible/builder-types.ts:86`. It accepts `tabs`, `defaultTab`, `initialMetadata`, `initialFields`, `onChange`, `onTabChange`, `onSubmit`, and `className`.
+`FormBuilderProps` is defined in `src/lib/formedible/builder-types.ts:86`. It accepts `tabs`, `defaultTab`, `initialMetadata`, `initialFields`, `fieldStore`, `onChange`, `onTabChange`, `onSubmit`, and `className`.
+
+## Field store scoping and re-imports
+
+Each `FormBuilder` mount creates its own `FieldStore` instance, so rendering two builders side by side never lets one instance wipe the other's fields. `FieldConfigurator` reads that store from `FieldStoreContext` when rendered inside `FormBuilder`, and falls back to the exported `globalFieldStore` when rendered standalone.
+
+To share one store across instances, opt in with the `fieldStore` prop:
+
+```tsx
+import { FormBuilder, globalFieldStore } from '@/components/ui/formedible/builder';
+
+export function SharedStoreWorkspace() {
+  return (
+    <>
+      <FormBuilder fieldStore={globalFieldStore} />
+      <FormBuilder fieldStore={globalFieldStore} />
+    </>
+  );
+}
+```
+
+The `fieldStore` prop is captured on first render; changing it later has no effect. Shared stores re-import `initialFields` on every mount, so instances passing different `initialFields` will keep overwriting each other.
+
+`initialFields` is structurally compared against the current fields before re-importing: re-renders that pass an inline array with identical content skip the import and never reset in-progress edits or notify subscribers. Use `store.clear()` plus a changed `initialFields` payload to reset deliberately.
+
+`FieldStore` also guarantees unique field names: `addField` picks the first unused `field_N` name, `duplicateField` appends `_copy` and then `_copy_2`, `_copy_3`, and so on, and `updateField`/`replaceField` throw a descriptive `Error` when a rename would collide with another field's name (the builder UI catches the throw, logs it, and keeps the previous name).
 
 ## Custom tab composition
 
@@ -172,4 +199,4 @@ pnpm run check-types
 - Source entrypoint: `packages/builder/src/index.ts`.
 - Main types: `packages/builder/src/lib/formedible/builder-types.ts`.
 - Code generation: `packages/builder/src/lib/formedible/code-generation.ts`.
-- Tests: `packages/builder/src/builder.test.tsx`.
+- Tests: `packages/builder/src/builder.test.tsx`, `packages/builder/src/lib/formedible/field-store.test.ts`.

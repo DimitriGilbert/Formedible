@@ -15,6 +15,7 @@ test('web landing page renders and exposes primary docs navigation', async () =>
   try {
     await openPageAndCheckBrowserFailures({
       session,
+      testName: 'web landing page renders and exposes primary docs navigation',
       url: web.origin,
       allowedFailures: [
         {

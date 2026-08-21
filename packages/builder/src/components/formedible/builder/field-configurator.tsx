@@ -3,7 +3,7 @@
 import { useSyncExternalStore } from 'react';
 
 import { FieldConfigurationForm } from '@/components/formedible/builder/field-configuration-form';
-import { globalFieldStore } from '@/components/formedible/builder/field-store';
+import { useFieldStore } from '@/components/formedible/builder/field-store';
 import { cn } from '@/lib/utils';
 import type { FormMetadata } from '@/lib/formedible/builder-types';
 import type { FormField } from '@/lib/formedible/builder-types';
@@ -25,14 +25,23 @@ export function FieldConfigurator({
   onFieldChange,
   className,
 }: FieldConfiguratorProps) {
+  const fieldStore = useFieldStore();
+
   const field = useSyncExternalStore(
-    (listener) => globalFieldStore.subscribeToFieldUpdates(fieldId, listener),
-    () => globalFieldStore.getField(fieldId) ?? initialField,
+    (listener) => fieldStore.subscribeToFieldUpdates(fieldId, listener),
+    () => fieldStore.getField(fieldId) ?? initialField,
     () => initialField,
   );
 
   function updateField(fieldUpdate: Partial<FormField>): void {
-    const updatedField = globalFieldStore.updateField(fieldId, fieldUpdate);
+    let updatedField: FormField | undefined;
+
+    try {
+      updatedField = fieldStore.updateField(fieldId, fieldUpdate);
+    } catch (error) {
+      console.error('[Formedible builder] field update rejected:', error);
+      return;
+    }
 
     if (updatedField === undefined) {
       return;

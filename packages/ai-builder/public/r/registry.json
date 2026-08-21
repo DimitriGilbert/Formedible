@@ -26,6 +26,7 @@
       "registryDependencies": [
         "https://formedible.dev/r/formedible-core.json",
         "https://formedible.dev/r/formedible-parser.json",
+        "https://formedible.dev/r/form-builder.json",
         "scroll-area"
       ],
       "files": [

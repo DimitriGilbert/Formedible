@@ -4,8 +4,12 @@ import { ScrollArea } from '@formedible/ui/components/scroll-area';
 import { HeroExamples } from '@/components/demo/hero-examples';
 import { InstallCommand } from '@/components/layout/install-command';
 import { SiteFooter } from '@/components/layout/site-footer';
+import { createRouteSeoHead } from '@/features/docs/seo';
+
+const routeHead = createRouteSeoHead('/');
 
 export const Route = createFileRoute('/')({
+  head: () => routeHead,
   component: LandingPage,
 });
 

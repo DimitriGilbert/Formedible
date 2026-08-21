@@ -54,7 +54,7 @@ export function AiFormRenderer({ code, isStreaming, onParseComplete, onSubmit, c
     formOptions: {
       ...parseResult.formOptions.formOptions,
       onSubmit: async ({ value }) => {
-        await parseResult.formOptions.formOptions.onSubmit?.({ value });
+        await parseResult.formOptions.formOptions?.onSubmit?.({ value });
         await onSubmit?.(value);
       },
     },

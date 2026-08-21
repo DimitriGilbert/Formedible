@@ -427,11 +427,11 @@ export const fieldConfigFormDefinitions: readonly FieldConfigFormDefinition[] = 
     objectLayout: field.objectConfig?.layout ?? 'stack',
     objectColumns: field.objectConfig?.columns ?? 1,
     nestedFields: field.objectConfig?.fields ?? field.nestedFields ?? [],
-  }), (values) => ({
+  }), (values, field) => ({
     objectConfig: {
       layout: optionalStringValue(values, 'objectLayout') as 'stack' | 'grid' | undefined,
       columns: optionalNumberValue(values, 'objectColumns'),
-      fields: nestedFieldsValue(values.nestedFields),
+      fields: nestedFieldsValue(values.nestedFields, field.objectConfig?.fields ?? field.nestedFields),
     },
   })),
   definition('duration', 'Duration', [
@@ -639,17 +639,48 @@ function sliderValueMapping(value: unknown): readonly { readonly sliderValue: nu
     .filter((item) => Number.isFinite(item.sliderValue) && item.displayValue.length > 0);
 }
 
-function nestedFieldsValue(value: unknown): readonly FormedibleFieldConfig<FormedibleFormValues>[] {
+function currentNestedField(
+  item: Record<string, unknown>,
+  index: number,
+  currentFields: readonly FormedibleFieldConfig<FormedibleFormValues>[] | undefined,
+): FormedibleFieldConfig<FormedibleFormValues> | undefined {
+  const byIndex = currentFields?.[index];
+
+  if (byIndex !== undefined && typeof item.name === 'string' && byIndex.name === item.name) {
+    return byIndex;
+  }
+
+  if (typeof item.name === 'string') {
+    return currentFields?.find((field) => field.name === item.name) ?? byIndex;
+  }
+
+  return byIndex;
+}
+
+function nestedFieldsValue(
+  value: unknown,
+  currentFields: readonly FormedibleFieldConfig<FormedibleFormValues>[] | undefined,
+): readonly FormedibleFieldConfig<FormedibleFormValues>[] {
   if (!Array.isArray(value)) {
     return [];
   }
 
+  // The nested editor only exposes name/type/label/placeholder per item, so every update
+  // carries just those keys. Spread-merge each edited item against the currently stored
+  // nested field to preserve options, required, disabled, description and nested
+  // arrayConfig/objectConfig that unrelated keystrokes would otherwise strip.
   return value
     .filter((item): item is Record<string, unknown> => typeof item === 'object' && item !== null)
-    .map((item) => ({
-      name: typeof item.name === 'string' && item.name.length > 0 ? item.name : 'nested_field',
-      type: typeof item.type === 'string' ? item.type as FormedibleFieldType : 'text',
-      label: typeof item.label === 'string' && item.label.length > 0 ? item.label : 'Nested Field',
-      placeholder: typeof item.placeholder === 'string' && item.placeholder.length > 0 ? item.placeholder : undefined,
-    }));
+    .map((item, index) => {
+      const { placeholder: _editedPlaceholder, ...preserved } = currentNestedField(item, index, currentFields) ?? {};
+      const merged: FormedibleFieldConfig<FormedibleFormValues> = {
+        ...preserved,
+        name: typeof item.name === 'string' && item.name.length > 0 ? item.name : 'nested_field',
+        type: typeof item.type === 'string' ? item.type as FormedibleFieldType : 'text',
+        label: typeof item.label === 'string' && item.label.length > 0 ? item.label : 'Nested Field',
+      };
+      const placeholder = typeof item.placeholder === 'string' && item.placeholder.length > 0 ? item.placeholder : undefined;
+
+      return placeholder === undefined ? merged : { ...merged, placeholder };
+    });
 }

@@ -129,11 +129,80 @@ describe('quick sync', () => {
     }
   });
 
+  it('does not rewrite alias-looking text outside real module specifiers', async () => {
+    const fixtureRoot = await mkdtemp(join(tmpdir(), 'formedible-ui-sync-scope-'));
+
+    try {
+      const sourceContent = [
+        "import { real } from '@/components/formedible/form';",
+        "export { real } from '@/components/formedible/form';",
+        '',
+        'const generatedSample = `import { useFormedible } from "@/hooks/use-formedible";`;',
+        "const describedSample = \"from '@/lib/formedible/types'\";",
+        "// guidance: import { helper } from '@/lib/utils'",
+        "const lazySample = import('@/lib/utils');",
+        'export const samples = [generatedSample, describedSample, lazySample];',
+        '',
+      ].join('\n');
+      const registryContent = JSON.stringify(
+        {
+          items: [
+            {
+              name: 'owner-core',
+              files: [{ path: 'src/components/formedible/example.tsx', target: '@ui/formedible/example.tsx' }],
+            },
+          ],
+        },
+        null,
+        2,
+      );
+
+      await writeFixtureFile(join(fixtureRoot, 'packages/owner/registry.json'), registryContent);
+      await writeFixtureFile(join(fixtureRoot, 'packages/owner/src/components/formedible/example.tsx'), sourceContent);
+      await writeFixtureFile(
+        join(fixtureRoot, 'packages/ui/components.json'),
+        JSON.stringify({ aliases: { ui: '@formedible/ui/components', utils: '@formedible/ui/lib/utils' } }),
+      );
+
+      const configPath = join(fixtureRoot, 'sync.config.json');
+      await writeFixtureFile(
+        configPath,
+        JSON.stringify({ routes: [{ ownerRoot: 'packages/owner', destinationRoots: ['packages/ui/src/components'], useRegistryTargets: true }] }),
+      );
+
+      await runSync(fixtureRoot, configPath);
+
+      const uiCopy = await readFile(join(fixtureRoot, 'packages/ui/src/components/formedible/example.tsx'), 'utf8');
+      const expectedContent = [
+        "import { real } from '@formedible/ui/components/formedible/form';",
+        "export { real } from '@formedible/ui/components/formedible/form';",
+        '',
+        'const generatedSample = `import { useFormedible } from "@/hooks/use-formedible";`;',
+        "const describedSample = \"from '@/lib/formedible/types'\";",
+        "// guidance: import { helper } from '@/lib/utils'",
+        "const lazySample = import('@formedible/ui/lib/utils');",
+        'export const samples = [generatedSample, describedSample, lazySample];',
+        '',
+      ].join('\n');
+
+      assert.equal(uiCopy, expectedContent);
+    } finally {
+      await rm(fixtureRoot, { recursive: true, force: true });
+    }
+  });
+
   it('rewrites only Formedible core imports for apps/web sync output', async () => {
     const fixtureRoot = await mkdtemp(join(tmpdir(), 'formedible-web-sync-'));
 
     try {
-      const sourceContent = "import { Button } from '@/components/ui/button';\nimport { useFormedible } from '@/hooks/use-formedible';\nimport { cn } from '@/lib/utils';\nimport type { FormedibleFormValues } from '@/lib/formedible/types';\n";
+      const sourceContent = [
+        "import { Button } from '@/components/ui/button';",
+        "import { useFormedible } from '@/hooks/use-formedible';",
+        "import { cn } from '@/lib/utils';",
+        "import type { FormedibleFormValues } from '@/lib/formedible/types';",
+        'const sample = `import { useFormedible } from "@/hooks/use-formedible";`;',
+        '',
+      ].join('\n');
       const registryContent = JSON.stringify(
         {
           items: [
@@ -160,10 +229,11 @@ describe('quick sync', () => {
 
       const webCopy = await readFile(join(fixtureRoot, 'apps/web/src/components/formedible/example.tsx'), 'utf8');
 
-      assert.match(webCopy, /from '@\/components\/ui\/button'/);
-      assert.match(webCopy, /from '@formedible\/ui\/components\/formedible\/hooks\/use-formedible'/);
-      assert.match(webCopy, /from '@\/lib\/utils'/);
-      assert.match(webCopy, /from '@formedible\/ui\/components\/formedible\/lib\/types'/);
+        assert.match(webCopy, /from '@\/components\/ui\/button'/);
+        assert.match(webCopy, /from '@formedible\/ui\/components\/formedible\/hooks\/use-formedible'/);
+        assert.match(webCopy, /from '@\/lib\/utils'/);
+        assert.match(webCopy, /from '@formedible\/ui\/components\/formedible\/lib\/types'/);
+        assert.match(webCopy, /from "@\/hooks\/use-formedible";`/);
     } finally {
       await rm(fixtureRoot, { recursive: true, force: true });
     }

@@ -1,9 +1,12 @@
 import type {
   AIProvider,
+  AiPickerProviderConfig,
   AiPickerSchema,
   AiPickerSchemaField,
   AiPickerValues,
+  ProviderModelCatalog,
   ProviderModelCatalogEntry,
+  ProviderModelCatalogs,
   ProviderSecrets,
   ProviderSettings,
 } from '@formedible/ui/components/formedible/ai-picker/lib/ai-picker-types';
@@ -131,4 +134,108 @@ function resolveProviderConfig(provider: AIProvider) {
     return found;
   }
   return defaultProviderConfigs[0]!;
+}
+
+const typedValueKeys: ReadonlySet<string> = new Set([
+  'provider',
+  'apiKey',
+  'model',
+  'temperature',
+  'maxTokens',
+  'thinkingBudgetTokens',
+  'storageMode',
+  'rememberKey',
+]);
+
+export interface SplitPickerValues {
+  readonly typed: AiPickerValues;
+  readonly customValues: Record<string, unknown>;
+}
+
+/**
+ * Splits picker values into the typed settings/secrets keys and the custom
+ * schema keys so custom fields survive the values round-trip instead of being
+ * dropped by `valuesToSettings`/`valuesToSecrets`.
+ */
+export function splitPickerValues(values: AiPickerValues): SplitPickerValues {
+  const customValues: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(values)) {
+    if (!typedValueKeys.has(key)) {
+      customValues[key] = value;
+    }
+  }
+
+  return {
+    typed: {
+      provider: values.provider,
+      apiKey: values.apiKey,
+      model: values.model,
+      temperature: values.temperature,
+      maxTokens: values.maxTokens,
+      thinkingBudgetTokens: values.thinkingBudgetTokens,
+      storageMode: values.storageMode,
+      rememberKey: values.rememberKey,
+    },
+    customValues,
+  };
+}
+
+/**
+ * Resolves the effective model catalog for a provider. Every source (explicit
+ * prop, per-provider map, fetched catalog) is only honored when its `provider`
+ * matches, so switching providers never surfaces another provider's catalog,
+ * `fetchedAt`, or error text.
+ */
+export function resolveEffectiveCatalog(
+  provider: AIProvider,
+  modelCatalogProp: ProviderModelCatalog | undefined,
+  modelCatalogs: ProviderModelCatalogs | undefined,
+  fetchedCatalogs: ProviderModelCatalogs,
+): ProviderModelCatalog | undefined {
+  const candidates = [modelCatalogProp, modelCatalogs?.[provider], fetchedCatalogs[provider]];
+
+  return candidates.find((catalog) => catalog !== undefined && catalog.provider === provider);
+}
+
+/**
+ * Builds the error-bearing catalog stored when a model refresh rejects,
+ * preserving the previous models and `fetchedAt` when available so a failed
+ * refresh does not wipe a valid catalog.
+ */
+export function createErrorCatalog(
+  provider: AIProvider,
+  previousCatalog: ProviderModelCatalog | undefined,
+  error: unknown,
+): ProviderModelCatalog {
+  const detail = error instanceof Error ? error.message : typeof error === 'string' ? error : 'unknown error';
+
+  return {
+    provider,
+    models: previousCatalog?.models ?? [],
+    fetchedAt: previousCatalog?.fetchedAt ?? Date.now(),
+    error: `Failed to refresh ${provider} models: ${detail}`,
+  };
+}
+
+/**
+ * Applies a provider switch to the picker values: the previous provider's API
+ * key is discarded (never re-labeled under the new provider), the model resets
+ * to the provider default, and Anthropic-only thinking budget tokens are
+ * cleared when leaving Anthropic.
+ */
+export function applyProviderSwitch(
+  values: AiPickerValues,
+  nextProvider: AIProvider,
+  providerConfigs: readonly AiPickerProviderConfig[],
+): AiPickerValues {
+  const config = providerConfigs.find((entry) => entry.value === nextProvider) ?? resolveProviderConfig(nextProvider);
+
+  return {
+    ...values,
+    provider: config.value,
+    apiKey: '',
+    model: config.defaultModel,
+    ...(config.value !== 'anthropic' ? { thinkingBudgetTokens: undefined } : {}),
+  };
 }

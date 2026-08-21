@@ -2,11 +2,24 @@ import assert from 'node:assert/strict';
 import { execFile, spawn } from 'node:child_process';
 import type { ChildProcessWithoutNullStreams } from 'node:child_process';
 import { once } from 'node:events';
+import { appendFile, mkdir } from 'node:fs/promises';
 import { createServer } from 'node:net';
+import path from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
+
+const recordingsDirectory = path.resolve(__dirname, '../../.recordings');
+
+/**
+ * Tracks how many recording segments have been started per session so a mid-test
+ * re-open continues into `<session>-part2.webm`, `-part3.webm`, and so on. The
+ * initial recording (started by `openPageAndCheckBrowserFailures`) is implicit
+ * segment 1 and is not stored. Sessions embed the process pid and each test
+ * process runs once, so counters never need resetting within a run.
+ */
+const recordingSegmentCounts = new Map<string, number>();
 
 export interface AgentBrowserResult {
   readonly stdout: string;
@@ -34,9 +47,13 @@ export interface AllowedBrowserFailure {
 /**
  * Opens a page, runs test interactions, then asserts agent-browser did not
  * capture console errors, uncaught page errors, or failed network requests.
+ * `testName` is the owning node:test title; when recording is enabled it is
+ * written to the recordings manifest so the stitcher can name the merged video
+ * after the test.
  */
 export interface OpenPageOptions<TInteractionResult> {
   readonly session: string;
+  readonly testName: string;
   readonly url: string;
   readonly allowedFailures?: readonly AllowedBrowserFailure[];
   readonly run: () => Promise<TInteractionResult>;
@@ -65,39 +82,183 @@ export async function runAgentBrowser(args: readonly string[], session: string):
   };
 }
 
+/**
+ * Whether opt-in e2e video recording is enabled through the E2E_RECORD
+ * environment variable. Only the exact values "1" and "true" (case-insensitive)
+ * enable it; every other value keeps recording off so CI runs do not accumulate
+ * videos.
+ */
+export function isE2ERecordingEnabled(): boolean {
+  const value = process.env.E2E_RECORD;
+
+  return value === '1' || value?.toLowerCase() === 'true';
+}
+
+/**
+ * Starts a WebM recording for the session after the page is opened. Recording
+ * must start after `open`: `record start` swaps in a fresh recorded context that
+ * re-navigates to the current page, while a recording started before `open`
+ * keeps recording a context the `open` navigation never joins. `recordingName`
+ * selects the output file (without extension). Returns the absolute output path.
+ */
+async function startSessionRecording(session: string, recordingName = session): Promise<string> {
+  await mkdir(recordingsDirectory, { recursive: true });
+
+  const recordingPath = path.join(recordingsDirectory, `${recordingName}.webm`);
+
+  await runAgentBrowser(['record', 'start', recordingPath], session);
+  console.log(`[e2e] recording session ${session} -> ${recordingPath}`);
+
+  return recordingPath;
+}
+
+/**
+ * Appends one `{ session, testName }` line to the recordings manifest so
+ * scripts/stitch-e2e-recordings.js can name each session's merged video after
+ * its test. The manifest is JSON-lines because node:test runs every test file
+ * as its own process and files may record concurrently; a small append is
+ * atomic while rewriting a shared JSON array would race.
+ */
+async function appendRecordingManifestEntry(session: string, testName: string): Promise<void> {
+  const manifestPath = path.join(recordingsDirectory, 'manifest.json');
+
+  await appendFile(manifestPath, `${JSON.stringify({ session, testName })}\n`, 'utf8');
+}
+
+/**
+ * Stops the active session recording, tolerating the CLI failure raised when no
+ * recording is in progress so cleanup stays best-effort. Any other failure is
+ * rethrown.
+ */
+async function stopSessionRecording(session: string): Promise<void> {
+  try {
+    await runAgentBrowser(['record', 'stop'], session);
+  } catch (error) {
+    if (!isNoRecordingInProgressError(error)) {
+      throw error;
+    }
+  }
+}
+
+/**
+ * Forces one invisible compositor repaint so a recording stopped right now ends
+ * on the page state the test has actually reached. The screencast only emits
+ * frames on repaints, and the recorder goes quiet while the page sits idle, so
+ * the most recent visual change (the very last interaction of a test, or the
+ * state just before a mid-test re-open) can otherwise fall off the end of the
+ * video. Toggling a compositing hint on the root element leaves no visible or
+ * behavioral trace and cannot affect test outcomes; when called after test
+ * interactions it also runs after diagnostics are collected. Best-effort:
+ * failures are logged and ignored so recording teardown still runs.
+ */
+async function flushFinalRecordingFrame(session: string): Promise<void> {
+  try {
+    await runAgentBrowser(
+      [
+        'eval',
+        `(() => {
+          const root = document.documentElement;
+          root.style.willChange = 'transform';
+          requestAnimationFrame(() => requestAnimationFrame(() => {
+            root.style.willChange = '';
+          }));
+        })()`,
+      ],
+      session,
+    );
+    await delay(500);
+  } catch (error) {
+    console.error(`Failed to flush the final recording frame for session "${session}".`, error);
+  }
+}
+
+interface ExecFileFailure extends Error {
+  readonly stdout?: string;
+  readonly stderr?: string;
+}
+
+function isNoRecordingInProgressError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const failure = error as ExecFileFailure;
+  const output = `${failure.message}\n${failure.stdout ?? ''}\n${failure.stderr ?? ''}`;
+
+  return output.includes('No recording in progress');
+}
+
+/**
+ * Re-opens the session page mid-test. A plain `open` swaps the session's active
+ * page out from under the recording context, which keeps recording the previous
+ * page forever, so the video truncates at the re-open. When recording is enabled
+ * the active recording is therefore stopped first (tolerating a missing one,
+ * after flushing its final frame so the segment ends on the page state the test
+ * had reached) and a fresh one started into the next segment file after the
+ * navigation. With recording disabled this is exactly a plain `open`.
+ */
+export async function reopenPageWithRecording(session: string, url: string): Promise<void> {
+  if (!isE2ERecordingEnabled()) {
+    await runAgentBrowser(['open', url], session);
+    return;
+  }
+
+  await flushFinalRecordingFrame(session);
+  await stopSessionRecording(session);
+  await runAgentBrowser(['open', url], session);
+
+  const nextSegment = (recordingSegmentCounts.get(session) ?? 1) + 1;
+
+  recordingSegmentCounts.set(session, nextSegment);
+  await startSessionRecording(session, `${session}-part${nextSegment}`);
+}
+
 export async function openPageAndCheckBrowserFailures<TInteractionResult>(
   options: OpenPageOptions<TInteractionResult>,
 ): Promise<TInteractionResult> {
   await clearBrowserDiagnostics(options.session);
   await runAgentBrowser(['open', options.url], options.session);
 
-  let interactionResult!: TInteractionResult;
-  let interactionError: unknown;
+  const recordingPath = isE2ERecordingEnabled() ? await startSessionRecording(options.session) : undefined;
+
+  if (recordingPath !== undefined) {
+    await appendRecordingManifestEntry(options.session, options.testName);
+  }
 
   try {
-    interactionResult = await options.run();
-  } catch (error) {
-    interactionError = error;
+    let interactionResult!: TInteractionResult;
+    let interactionError: unknown;
+
+    try {
+      interactionResult = await options.run();
+    } catch (error) {
+      interactionError = error;
+    }
+
+    const diagnosticsError = await getBrowserFailureAssertionError(options.session, options.allowedFailures ?? []);
+
+    if (interactionError && diagnosticsError) {
+      throw new AggregateError(
+        [interactionError, diagnosticsError],
+        'Page interaction failed and browser diagnostics reported failures.',
+      );
+    }
+
+    if (interactionError) {
+      throw interactionError;
+    }
+
+    if (diagnosticsError) {
+      throw diagnosticsError;
+    }
+
+    return interactionResult;
+  } finally {
+    if (recordingPath !== undefined) {
+      await flushFinalRecordingFrame(options.session);
+      await stopSessionRecording(options.session);
+    }
   }
-
-  const diagnosticsError = await getBrowserFailureAssertionError(options.session, options.allowedFailures ?? []);
-
-  if (interactionError && diagnosticsError) {
-    throw new AggregateError(
-      [interactionError, diagnosticsError],
-      'Page interaction failed and browser diagnostics reported failures.',
-    );
-  }
-
-  if (interactionError) {
-    throw interactionError;
-  }
-
-  if (diagnosticsError) {
-    throw diagnosticsError;
-  }
-
-  return interactionResult;
 }
 
 export async function assertNoBrowserFailures(

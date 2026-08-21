@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 
 import { Button } from '@/components/ui/button';
-import { globalFieldStore } from '@/components/formedible/builder/field-store';
+import { FieldStore, FieldStoreContext } from '@/components/formedible/builder/field-store';
 import { defaultTabs } from '@/components/formedible/builder/default-tabs';
 import { cn } from '@/lib/utils';
 import { defaultFormMetadata } from '@/lib/formedible/builder-types';
@@ -23,6 +23,7 @@ export function FormBuilder({
   defaultTab = 'builder',
   initialMetadata,
   initialFields,
+  fieldStore: fieldStoreProp,
   onChange,
   onTabChange,
   onSubmit,
@@ -40,20 +41,36 @@ export function FormBuilder({
       ...initialMetadata?.settings,
     },
   });
+
+  const fieldStoreRef = useRef<FieldStore | null>(null);
+
+  if (fieldStoreRef.current === null) {
+    fieldStoreRef.current = fieldStoreProp ?? new FieldStore();
+  }
+
+  const fieldStore = fieldStoreRef.current;
   const importedInitialFields = initialFields ?? emptyInitialFields;
+  const subscribeToStore = useCallback((listener: () => void) => fieldStore.subscribe(listener), [fieldStore]);
+  const getStoreSnapshot = useCallback(() => fieldStore.getAllFields(), [fieldStore]);
   const fields = useSyncExternalStore(
-    (listener) => globalFieldStore.subscribe(listener),
-    () => globalFieldStore.getAllFields(),
+    subscribeToStore,
+    getStoreSnapshot,
     () => importedInitialFields,
   );
 
   useEffect(() => {
-    globalFieldStore.importFields(importedInitialFields);
-  }, [importedInitialFields]);
+    fieldStore.importFields(importedInitialFields);
+  }, [fieldStore, importedInitialFields]);
+
+  const onChangeRef = useRef(onChange);
 
   useEffect(() => {
-    onChange?.(metadata, fields);
-  }, [fields, metadata, onChange]);
+    onChangeRef.current = onChange;
+  });
+
+  useEffect(() => {
+    onChangeRef.current?.(metadata, fields);
+  }, [fields, metadata]);
 
   function updateMetadata(metadataUpdate: Partial<FormMetadata>): void {
     setMetadata((currentMetadata) => ({
@@ -67,17 +84,17 @@ export function FormBuilder({
   }
 
   function addField(type: FormedibleFieldType): void {
-    const fieldId = globalFieldStore.addField(type, metadata.pages[0]?.page ?? 1);
+    const fieldId = fieldStore.addField(type, metadata.pages[0]?.page ?? 1);
     setSelectedFieldId(fieldId);
   }
 
   function deleteField(fieldId: string): void {
-    globalFieldStore.deleteField(fieldId);
+    fieldStore.deleteField(fieldId);
     setSelectedFieldId((currentFieldId) => (currentFieldId === fieldId ? null : currentFieldId));
   }
 
   function duplicateField(fieldId: string): void {
-    const duplicatedFieldId = globalFieldStore.duplicateField(fieldId);
+    const duplicatedFieldId = fieldStore.duplicateField(fieldId);
 
     if (duplicatedFieldId !== null) {
       setSelectedFieldId(duplicatedFieldId);
@@ -88,52 +105,54 @@ export function FormBuilder({
   const ActiveTabComponent = activeTabConfig?.component;
 
   return (
-    <div className={cn('flex min-h-[720px] flex-col rounded-xl border bg-background text-foreground', className)} data-builder-part="form-builder">
-      <div className="flex flex-wrap items-center gap-3 border-b p-4">
-        <div className="mr-auto">
-          <h1 className="text-xl font-semibold">{metadata.title}</h1>
-          <p className="text-sm text-muted-foreground">{metadata.description}</p>
+    <FieldStoreContext.Provider value={fieldStore}>
+      <div className={cn('flex min-h-[720px] flex-col rounded-xl border bg-background text-foreground', className)} data-builder-part="form-builder">
+        <div className="flex flex-wrap items-center gap-3 border-b p-4">
+          <div className="mr-auto">
+            <h1 className="text-xl font-semibold">{metadata.title}</h1>
+            <p className="text-sm text-muted-foreground">{metadata.description}</p>
+          </div>
+          <Button type="button" variant="outline" onClick={() => onSubmit?.(metadata, fields)}>
+            Save Form
+          </Button>
         </div>
-        <Button type="button" variant="outline" onClick={() => onSubmit?.(metadata, fields)}>
-          Save Form
-        </Button>
-      </div>
 
-      <div className="flex flex-wrap gap-2 border-b p-3">
-        {sortedTabs.map((tab) => {
-          const Icon = tab.icon;
+        <div className="flex flex-wrap gap-2 border-b p-3">
+          {sortedTabs.map((tab) => {
+            const Icon = tab.icon;
 
-          return (
-            <Button
-              key={tab.id}
-              type="button"
-              variant={tab.id === activeTab ? 'default' : 'ghost'}
-              onClick={() => {
-                setActiveTab(tab.id);
-                onTabChange?.(tab.id);
-              }}
-            >
-              {Icon !== undefined ? <Icon className="mr-2 size-4" /> : null}
-              {tab.label}
-            </Button>
-          );
-        })}
-      </div>
+            return (
+              <Button
+                key={tab.id}
+                type="button"
+                variant={tab.id === activeTab ? 'default' : 'ghost'}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  onTabChange?.(tab.id);
+                }}
+              >
+                {Icon !== undefined ? <Icon className="mr-2 size-4" /> : null}
+                {tab.label}
+              </Button>
+            );
+          })}
+        </div>
 
-      <div className="flex-1 p-4">
-        {ActiveTabComponent !== undefined ? (
-          <ActiveTabComponent
-            metadata={metadata}
-            fields={fields}
-            selectedFieldId={selectedFieldId}
-            onMetadataChange={updateMetadata}
-            onAddField={addField}
-            onSelectField={setSelectedFieldId}
-            onDeleteField={deleteField}
-            onDuplicateField={duplicateField}
-          />
-        ) : null}
+        <div className="flex-1 p-4">
+          {ActiveTabComponent !== undefined ? (
+            <ActiveTabComponent
+              metadata={metadata}
+              fields={fields}
+              selectedFieldId={selectedFieldId}
+              onMetadataChange={updateMetadata}
+              onAddField={addField}
+              onSelectField={setSelectedFieldId}
+              onDeleteField={deleteField}
+              onDuplicateField={duplicateField}
+            />
+          ) : null}
+        </div>
       </div>
-    </div>
+    </FieldStoreContext.Provider>
   );
 }

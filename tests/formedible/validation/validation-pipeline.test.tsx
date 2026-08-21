@@ -11,7 +11,7 @@ import type { FormedibleFormValues, NormalizedFieldConfig } from '../../../packa
 import { buildFieldValidators, buildFormValidators } from '../../../packages/formedible/src/lib/formedible/validation';
 import type { FormedibleAsyncValidatorContext, FormedibleFormValidationApi, FormedibleFormValidatorContext, FormedibleValidatorContext } from '../../../packages/formedible/src/lib/formedible/validation';
 import { getIssueFieldName } from '../../../packages/formedible/src/lib/formedible/zod-errors';
-import { removedUseFormedibleReturnFields } from '../../compatibility-examples/use-formedible-return-contract';
+import { keptUseFormedibleReturnFields, removedUseFormedibleReturnFields } from '../../compatibility-examples/use-formedible-return-contract';
 
 interface ValidationValues extends FormedibleFormValues {
   email: string;
@@ -255,7 +255,7 @@ test('async and inline validation use TanStack async validators and debounce', a
   );
 });
 
-test('removed validation helpers are neither returned nor authored in the hook', () => {
+test('hook return keeps every contract helper and removes the validation debug helpers', () => {
   function ContractProbe() {
     const formedible = useFormedible<ValidationValues>({
       fields: [fieldConfig({ name: 'email', type: 'email' })],
@@ -263,6 +263,10 @@ test('removed validation helpers are neither returned nor authored in the hook',
         defaultValues: validValues,
       },
     });
+
+    for (const keptField of keptUseFormedibleReturnFields) {
+      assert.equal(Object.hasOwn(formedible, keptField), true, `the hook return must keep the contract helper ${keptField}`);
+    }
 
     for (const removedField of removedUseFormedibleReturnFields) {
       assert.equal(Object.hasOwn(formedible, removedField), false);

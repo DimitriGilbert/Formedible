@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { conditionMatches } from '@/hooks/use-multi-page';
+import type { FormAnalyticsTabTracker, FormAnalyticsTabValidationState } from '@/hooks/use-form-analytics';
+import { isTabVisible } from '@/lib/formedible/field-visibility';
 import type { FormedibleFormValues, FormedibleTabConfig, NormalizedFieldConfig } from '@/lib/formedible/types';
 
 export interface NormalizedFormTab<TFormValues extends FormedibleFormValues = FormedibleFormValues> {
@@ -14,6 +15,10 @@ export interface UseFormTabsOptions<TFormValues extends FormedibleFormValues> {
   readonly fields: readonly NormalizedFieldConfig<TFormValues>[];
   readonly tabs?: readonly (string | FormedibleTabConfig<TFormValues>)[];
   readonly values: TFormValues;
+  /** Legacy tab analytics callbacks fired on tab switch and first tab visit. */
+  readonly analytics?: FormAnalyticsTabTracker;
+  /** Resolves the legacy completion state reported for the tab being left. */
+  readonly getTabValidationState?: (tabId: string) => FormAnalyticsTabValidationState;
 }
 
 export function normalizeTabs<TFormValues extends FormedibleFormValues>(
@@ -27,13 +32,21 @@ export function normalizeTabs<TFormValues extends FormedibleFormValues>(
   return Array.from(new Set(fields.map((field) => field.tab).filter((tab): tab is string => tab !== undefined))).map((tab) => ({ id: tab, label: tab }));
 }
 
-export function useFormTabs<TFormValues extends FormedibleFormValues>({ fields, tabs, values }: UseFormTabsOptions<TFormValues>) {
+export function useFormTabs<TFormValues extends FormedibleFormValues>({
+  fields,
+  tabs,
+  values,
+  analytics,
+  getTabValidationState,
+}: UseFormTabsOptions<TFormValues>) {
   const normalizedTabs = useMemo(() => normalizeTabs(tabs, fields), [fields, tabs]);
   const visibleTabs = useMemo(
-    () => normalizedTabs.filter((tab) => conditionMatches(tab.conditional, values) && fields.some((field) => field.tab === tab.id && conditionMatches(field.conditional, values))),
+    () => normalizedTabs.filter((tab) => isTabVisible(tab, fields, values)),
     [fields, normalizedTabs, values],
   );
   const [activeTab, setActiveTab] = useState(() => visibleTabs.at(0)?.id ?? normalizedTabs.at(0)?.id ?? 'default');
+  const tabStartTimesRef = useRef<Record<string, number>>({});
+  const visitedTabsRef = useRef<ReadonlySet<string>>(new Set());
 
   useEffect(() => {
     if (visibleTabs.length > 0 && !visibleTabs.some((tab) => tab.id === activeTab)) {
@@ -41,5 +54,46 @@ export function useFormTabs<TFormValues extends FormedibleFormValues>({ fields, 
     }
   }, [activeTab, visibleTabs]);
 
-  return { activeTab, setActiveTab, visibleTabs };
+  useEffect(() => {
+    if (activeTab === '' || tabStartTimesRef.current[activeTab] !== undefined) {
+      return;
+    }
+
+    const timestamp = Date.now();
+
+    tabStartTimesRef.current[activeTab] = timestamp;
+
+    if (!visitedTabsRef.current.has(activeTab)) {
+      visitedTabsRef.current = new Set([...visitedTabsRef.current, activeTab]);
+      analytics?.trackTabFirstVisit(activeTab, timestamp);
+    }
+  }, [activeTab, analytics]);
+
+  function changeTab(nextTabId: string) {
+    const timestamp = Date.now();
+
+    if (activeTab !== '' && activeTab !== nextTabId) {
+      const fromTabStartTime = tabStartTimesRef.current[activeTab];
+
+      analytics?.trackTabChange(
+        activeTab,
+        nextTabId,
+        fromTabStartTime === undefined ? 0 : timestamp - fromTabStartTime,
+        getTabValidationState?.(activeTab),
+      );
+    }
+
+    if (nextTabId !== '' && tabStartTimesRef.current[nextTabId] === undefined) {
+      tabStartTimesRef.current[nextTabId] = timestamp;
+    }
+
+    if (nextTabId !== '' && !visitedTabsRef.current.has(nextTabId)) {
+      visitedTabsRef.current = new Set([...visitedTabsRef.current, nextTabId]);
+      analytics?.trackTabFirstVisit(nextTabId, timestamp);
+    }
+
+    setActiveTab(nextTabId);
+  }
+
+  return { activeTab, setActiveTab, changeTab, visibleTabs };
 }

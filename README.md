@@ -85,7 +85,6 @@ Example IDs are registered in `apps/web/src/components/docs/examples/index.tsx`:
 | `@formedible/builder` | Visual builder package with preview and code generation. | `packages/builder/src/`, `packages/builder/registry.json` |
 | `@formedible/ai-builder` | AI builder package using TanStack AI providers, parser integration, chat, and live rendering. | `packages/ai-builder/src/`, `packages/ai-builder/registry.json` |
 | `@formedible/ui` | Internal synced UI package consumed by the docs app. Not a user install target. | `packages/ui/src/components/formedible/` |
-| `@formedible/env` | Shared environment helpers for the web app. | `packages/env/src/` |
 | `@formedible/config` | Shared TypeScript config package. | `packages/config/` |
 | `web` | TanStack Start docs app, live examples, builder routes, and registry host. | `apps/web/src/` |
 
@@ -151,7 +150,6 @@ packages/formedible-parser/   Parser package and registry item
 packages/builder/             Visual builder package and registry item
 packages/ai-builder/          AI builder package and registry item
 packages/ui/                  Internal synced UI mirror for the docs app
-packages/env/                 Shared env helpers
 packages/config/              Shared config
 scripts/                      Sync, registry, validation, and release scripts
 tests/                        Type, sync, architecture, consumer, and e2e checks

@@ -1,5 +1,5 @@
 import { MapPin, Navigation, Search, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { FieldWrapper } from '@/components/formedible/fields/field-wrapper';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,7 @@ export function LocationPickerField<TFormValues extends FormedibleFormValues>({ 
   const [results, setResults] = useState<readonly FormedibleLocationValue[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [error, setError] = useState<string | undefined>();
+  const searchContainerRef = useRef<HTMLDivElement | null>(null);
   const enableSearch = config?.enableSearch ?? true;
   const enableGeolocation = config?.enableGeolocation ?? true;
   const enableManualEntry = config?.enableManualEntry ?? true;
@@ -51,6 +52,36 @@ export function LocationPickerField<TFormValues extends FormedibleFormValues>({ 
       window.clearTimeout(timeout);
     };
   }, [config, enableSearch, maxResults, minQueryLength, query, searchOptions?.debounceMs]);
+
+  useEffect(() => {
+    if (!showResults) {
+      return undefined;
+    }
+
+    function handlePointerDown(event: PointerEvent) {
+      const container = searchContainerRef.current;
+
+      if (container && container.contains(event.target as Node)) {
+        return;
+      }
+
+      setShowResults(false);
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setShowResults(false);
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [showResults]);
 
   async function selectLocation(location: FormedibleLocationValue) {
     let nextLocation = location;
@@ -102,7 +133,7 @@ export function LocationPickerField<TFormValues extends FormedibleFormValues>({ 
     <FieldWrapper fieldConfig={fieldConfig} field={field}>
       <div className="space-y-3">
         {enableSearch && (
-          <div className="relative">
+          <div className="relative" ref={searchContainerRef}>
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               id={field.id}
@@ -121,7 +152,7 @@ export function LocationPickerField<TFormValues extends FormedibleFormValues>({ 
               </Button>
             )}
             {showResults && results.length > 0 && (
-              <div className="absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-md border bg-popover p-1 shadow-md">
+              <div data-slot="location-results" className="absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-md border bg-popover p-1 shadow-md">
                 {results.map((result) => (
                   <Button key={`${result.lat}-${result.lng}-${result.address ?? ''}`} type="button" variant="ghost" className="h-auto w-full justify-start rounded-sm px-3 py-2 text-left text-sm" onMouseDown={() => selectLocation(result)}>
                     <span className="font-medium">{result.address ?? `${result.lat}, ${result.lng}`}</span>

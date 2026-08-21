@@ -63,6 +63,16 @@ export function getAutocompleteSelection(option: FormedibleOptionConfig): Autoco
   };
 }
 
+export function getAutocompleteDisplayText(value: unknown, options: readonly FormedibleOptionConfig[]): string {
+  if (typeof value !== 'string') {
+    return '';
+  }
+
+  const matchedOption = options.find((option) => option.value === value);
+
+  return matchedOption ? labelToText(matchedOption.label) || matchedOption.value : value;
+}
+
 export function AutocompleteField<TFormValues extends FormedibleFormValues>({ fieldConfig, field }: FormedibleFieldRenderProps<TFormValues>) {
   const config = fieldConfig.autocompleteConfig;
   const debounceMs = config?.debounceMs ?? 300;
@@ -77,12 +87,24 @@ export function AutocompleteField<TFormValues extends FormedibleFormValues>({ fi
   const [asyncOptions, setAsyncOptions] = useState<readonly FormedibleOptionConfig[]>([]);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const asyncRequestIdRef = useRef(0);
+  const lastSyncedValueRef = useRef<unknown>(field.value);
 
   const staticOptions = useMemo(() => {
     const compatibilityOptions = normalizeAutocompleteOptions(config?.options);
 
     return config?.options !== undefined ? compatibilityOptions : resolveFieldOptions(fieldConfig, field.formValues);
   }, [config?.options, field.formValues, fieldConfig]);
+
+  const selectionOptions = config?.asyncOptions ? asyncOptions : staticOptions;
+
+  useEffect(() => {
+    if (field.value === lastSyncedValueRef.current) {
+      return;
+    }
+
+    lastSyncedValueRef.current = field.value;
+    setInputValue(getAutocompleteDisplayText(field.value, selectionOptions));
+  }, [field.value, selectionOptions]);
 
   const filteredOptions = useMemo(() => {
     const query = inputValue.toLowerCase();
@@ -171,6 +193,10 @@ export function AutocompleteField<TFormValues extends FormedibleFormValues>({ fi
             field.onBlur();
             if (shouldCommitCustomAutocompleteValue(allowCustom)) {
               field.onChange(inputValue);
+              lastSyncedValueRef.current = inputValue;
+            } else {
+              setInputValue(getAutocompleteDisplayText(field.value, selectionOptions));
+              lastSyncedValueRef.current = field.value;
             }
             setTimeout(() => setIsOpen(false), 150);
           }}
@@ -202,6 +228,7 @@ export function AutocompleteField<TFormValues extends FormedibleFormValues>({ fi
                     const selection = getAutocompleteSelection(option);
                     setInputValue(selection.inputValue);
                     field.onChange(selection.fieldValue);
+                    lastSyncedValueRef.current = selection.fieldValue;
                     setIsOpen(false);
                   }}
                 >

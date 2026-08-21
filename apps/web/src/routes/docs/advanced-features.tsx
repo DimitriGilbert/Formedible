@@ -45,8 +45,8 @@ const sections = [
 });`,
     },
     references: [
-      sourceReference('Source: use-multi-page.ts', 'packages/formedible/src/hooks/use-multi-page.ts#L41-L69', 'Visible page filtering, page 1 fallback, and progressValue calculation.'),
-      sourceReference('Types: FormediblePageConfig', 'packages/formedible/src/lib/formedible/types.ts#L373-L379', 'Page number, title, description, and conditional fields.'),
+      sourceReference('Source: use-multi-page.ts', 'packages/formedible/src/hooks/use-multi-page.ts#L33-L53', 'Visible page filtering, page 1 fallback, and progressValue calculation.'),
+      sourceReference('Types: FormediblePageConfig', 'packages/formedible/src/lib/formedible/types.ts#L456-L462', 'Page number, title, description, and conditional fields.'),
       registrationExample,
     ],
   },
@@ -76,7 +76,7 @@ const sections = [
 });`,
     },
     references: [
-      sourceReference('Source: use-form-tabs.ts', 'packages/formedible/src/hooks/use-form-tabs.ts#L19-L44', 'Tab normalization, inferred tabs, visible tab filtering, and active tab repair.'),
+      sourceReference('Source: use-form-tabs.ts', 'packages/formedible/src/hooks/use-form-tabs.ts#L24-L99', 'Tab normalization, inferred tabs, visible tab filtering, and active tab repair.'),
       sourceReference('Test: tabbed grouping', 'tests/formedible/phase10-behavior.test.ts#L151-L165', 'Checks that the tabbed example groups fields by configured tab ids.'),
       tabbedExample,
     ],
@@ -105,8 +105,8 @@ const sections = [
 />;`,
     },
     references: [
-      sourceReference('Source: use-formedible.tsx', 'packages/formedible/src/hooks/use-formedible.tsx#L309-L326', 'renderPageHeader passing progress props and resolved page copy.'),
-      sourceReference('Source: use-multi-page.ts', 'packages/formedible/src/hooks/use-multi-page.ts#L63-L69', 'Visible page count and progressValue formula.'),
+      sourceReference('Source: use-formedible.tsx', 'packages/formedible/src/hooks/use-formedible.tsx#L857-L877', 'renderPageHeader passing progress props and resolved page copy.'),
+      sourceReference('Source: use-multi-page.ts', 'packages/formedible/src/hooks/use-multi-page.ts#L48-L53', 'Visible page count and progressValue formula.'),
       conditionalPagesExample,
     ],
   },
@@ -134,8 +134,8 @@ pages: [
 ],`,
     },
     references: [
-      sourceReference('Source: conditionMatches', 'packages/formedible/src/hooks/use-multi-page.ts#L26-L39', 'String-path and function condition checks.'),
-      sourceReference('Source: field render condition', 'packages/formedible/src/hooks/use-formedible.tsx#L141-L153', 'Field-level conditional checks before rendering.'),
+      sourceReference('Source: conditionMatches', 'packages/formedible/src/hooks/use-multi-page.ts#L26-L31', 'String-path and function condition checks.'),
+      sourceReference('Source: field render condition', 'packages/formedible/src/hooks/use-formedible.tsx#L360-L362', 'Field-level conditional checks before rendering.'),
       conditionalPagesExample,
     ],
   },
@@ -169,7 +169,7 @@ fields: [
     },
     references: [
       sourceReference('Source: resolveFieldOptions', 'packages/formedible/src/components/formedible/fields/advanced-field-utils.ts#L13-L20', 'Function options called with form values and normalized for renderers.'),
-      sourceReference('Types: field options', 'packages/formedible/src/lib/formedible/types.ts#L224-L240', 'The FormedibleFieldConfig options type.'),
+      sourceReference('Types: field options', 'packages/formedible/src/lib/formedible/types.ts#L292-L293', 'The FormedibleFieldConfig options type.'),
       surveyExample,
     ],
   },
@@ -198,9 +198,9 @@ fields: [
 });`,
     },
     references: [
-      sourceReference('Source: auto-submit scheduler', 'packages/formedible/src/hooks/use-formedible.tsx#L49-L80', 'Timeout cleanup, debounce, and form.handleSubmit scheduling.'),
-      sourceReference('Source: field onChange path', 'packages/formedible/src/hooks/use-formedible.tsx#L249-L255', 'The field onChange path calling scheduleAutoSubmit.'),
-      sourceReference('Test: autoSubmitOnChange', 'tests/formedible/basic-fields.test.tsx#L445-L483', 'Runtime test for debounced submission and unmount cleanup.'),
+      sourceReference('Source: auto-submit scheduler', 'packages/formedible/src/hooks/use-formedible.tsx#L259-L271', 'Timeout cleanup, debounce, and form.handleSubmit scheduling.'),
+      sourceReference('Source: field onChange path', 'packages/formedible/src/hooks/use-formedible.tsx#L646-L656', 'The field onChange path calling scheduleAutoSubmit.'),
+      sourceReference('Test: autoSubmitOnChange', 'tests/formedible/basic-fields.test.tsx#L661-L724', 'Runtime test for debounced submission and unmount cleanup.'),
     ],
   },
 ] satisfies readonly DocsGuideSection[];

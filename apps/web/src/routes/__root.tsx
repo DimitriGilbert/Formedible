@@ -6,13 +6,13 @@ import { ThemeProvider } from '../components/theme-provider';
 import { ThemeSwitcher } from '../components/theme-switcher';
 import Header from '../components/header';
 
-import { createRouteSeoHead } from '../features/docs/seo';
+import { createRootHead } from '../features/docs/seo';
 
 import appCss from '../index.css?url';
 
 export interface RouterAppContext {}
 
-const rootHead = createRouteSeoHead('/');
+const rootHead = createRootHead();
 const shouldRenderRouterDevtools = import.meta.env.DEV;
 
 export const Route = createRootRouteWithContext<RouterAppContext>()({

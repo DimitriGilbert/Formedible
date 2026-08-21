@@ -10,7 +10,7 @@ export const siteMeta = {
   softwareId: 'https://formedible.dev/#software',
   websiteId: 'https://formedible.dev/#website',
   lastModified: '2026-05-23',
-  ogImagePath: '/og.svg',
+  ogImagePath: '/og.png',
   locale: 'en_US',
   themeColor: '#09090b',
   twitterSite: '@formedible',

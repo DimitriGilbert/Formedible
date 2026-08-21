@@ -44,6 +44,7 @@ lerna-debug.log*
 coverage
 .nyc_output
 tests/**/.compiled
+tests/e2e/.recordings
 
 # Misc
 *.tgz

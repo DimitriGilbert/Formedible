@@ -11,7 +11,6 @@
   },
   "dependencies": {
     "@base-ui/react": "catalog:",
-    "@formedible/ui": "workspace:*",
     "@tanstack/ai": "^0.16.0",
     "@tanstack/ai-anthropic": "^0.8.6",
     "@tanstack/ai-openai": "^0.8.5",

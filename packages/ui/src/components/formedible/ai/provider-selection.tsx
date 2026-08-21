@@ -13,6 +13,15 @@ export const providerOptions = [
   { value: 'openrouter', label: 'OpenRouter', defaultModel: 'minimax/minimax-2.7', requiresKey: true },
 ] as const satisfies readonly { readonly value: AIProvider; readonly label: string; readonly defaultModel: string; readonly requiresKey: boolean }[];
 
+export interface ProviderConfig {
+  provider: AIProvider;
+  apiKey: string;
+  model?: string;
+  temperature?: number;
+  maxTokens?: number;
+  endpoint?: string;
+}
+
 export interface ProviderSelectionProps {
   readonly settings: ProviderSettings;
   readonly secrets: ProviderSecrets;

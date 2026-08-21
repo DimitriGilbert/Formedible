@@ -1,7 +1,7 @@
 import type { ModelMessage } from '@tanstack/ai';
 
-import type { AiGenerationMetadata, AiMessage, AiMessagePart, AiMessageRole, AiMessageStatus, AiStreamEvent } from '@formedible/ui/components/formedible/lib/ai-types';
-import { parseSafeGenerationMetadata, parseSafeMessageParts, parseSafeStreamEvents } from '@formedible/ui/components/formedible/lib/ai-safe-persistence';
+import type { AiGenerationMetadata, AiMessage, AiMessagePart, AiMessageRole, AiMessageStatus, AiStreamEventSummary } from '@formedible/ui/components/formedible/lib/ai-types';
+import { createStreamEventSummary, parseSafeGenerationMetadata, parseSafeMessageParts, parseSafeStreamEvents, parseStreamEventSummary } from '@formedible/ui/components/formedible/lib/ai-safe-persistence';
 
 export type TanStackAiMessageInput = ModelMessage<string>;
 
@@ -20,7 +20,7 @@ export interface PersistedAiMessage {
   readonly model?: string;
   readonly generation?: AiGenerationMetadata;
   readonly status?: AiMessageStatus;
-  readonly events?: readonly AiStreamEvent[];
+  readonly eventSummary?: AiStreamEventSummary;
 }
 
 const AI_MESSAGE_ROLES = ['user', 'assistant', 'system'] as const satisfies readonly AiMessageRole[];
@@ -98,7 +98,7 @@ export function toTanStackSystemPrompts(messages: readonly Pick<AiMessage, 'role
 
 export function toPersistedAiMessage(message: AiMessage): PersistedAiMessage {
   const parts = parseSafeMessageParts(message.parts);
-  const events = parseSafeStreamEvents(message.events);
+  const eventSummary = createStreamEventSummary(parseSafeStreamEvents(message.events));
   const generation = parseSafeGenerationMetadata(message.generation);
 
   return {
@@ -116,7 +116,7 @@ export function toPersistedAiMessage(message: AiMessage): PersistedAiMessage {
     model: message.model,
     ...(generation ? { generation } : {}),
     status: message.status,
-    ...(events.length === 0 ? {} : { events }),
+    ...(eventSummary ? { eventSummary } : {}),
   };
 }
 
@@ -126,7 +126,7 @@ export function normalizePersistedAiMessage(value: unknown): AiMessage | undefin
   }
 
   const parts = parseSafeMessageParts(value.parts);
-  const events = parseSafeStreamEvents(value.events);
+  const eventSummary = parseStreamEventSummary(value.eventSummary) ?? createStreamEventSummary(parseSafeStreamEvents(value.events));
   const generation = parseSafeGenerationMetadata(value.generation);
 
   return {
@@ -144,7 +144,7 @@ export function normalizePersistedAiMessage(value: unknown): AiMessage | undefin
     model: optionalString(value.model),
     ...(generation ? { generation } : {}),
     status: optionalStatus(value.status),
-    ...(events.length === 0 ? {} : { events }),
+    ...(eventSummary ? { eventSummary } : {}),
   };
 }
 

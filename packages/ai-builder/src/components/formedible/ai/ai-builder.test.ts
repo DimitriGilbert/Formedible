@@ -5,22 +5,25 @@ import test from 'node:test';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 
-import { AI_BUILDER_DEFAULT_MODE, AIBuilder, resolveInitialProviderAccess } from '@/components/formedible/ai/ai-builder';
-import { AgentSettings, getFilteredModelOptions } from '@/components/formedible/ai/agent-settings';
+import { AI_BUILDER_DEFAULT_MODE, AIBuilder, applyFormCodeToConversation, applyMessagesToConversation, removeConversationFromList, resolveInitialProviderAccess } from '@/components/formedible/ai/ai-builder';
+import { AgentSettings, evaluateNumberDraft, getFilteredModelOptions } from '@/components/formedible/ai/agent-settings';
 import { AiFormRenderer, parseAiToFormedible } from '@/components/formedible/ai/ai-form-renderer';
-import { generateAiFormCode, resolveMessageStatus } from '@/components/formedible/ai/chat-interface';
+import { createGenerationUnmountCleanup, generateAiFormCode, resolveMessageStatus } from '@/components/formedible/ai/chat-interface';
+import type { ActiveGenerationRef } from '@/components/formedible/ai/chat-interface';
+import { ChatMessages } from '@/components/formedible/ai/chat-messages';
 import { ConversationHistory } from '@/components/formedible/ai/conversation-history';
 import { MarkdownMessage } from '@/components/formedible/ai/markdown-message';
-import { ParserSettings } from '@/components/formedible/ai/parser-settings';
+import { normalizeCustomInstructions, ParserSettings } from '@/components/formedible/ai/parser-settings';
 import { createDefaultProviderSecrets, createDefaultProviderSettings, providerOptions, ProviderSelection, validateProviderAccess } from '@/components/formedible/ai/provider-selection';
 import { RawOutputPanel } from '@/components/formedible/ai/raw-output-panel';
 import { SidebarContent } from '@/components/formedible/ai/sidebar-content';
 import { SidebarIcons } from '@/components/formedible/ai/sidebar-icons';
 import { createTanStackModelOptions, createTanStackTextAdapter, DEFAULT_TANSTACK_AI_MODELS, SUPPORTED_TANSTACK_AI_PROVIDERS } from '@/lib/formedible/ai-adapters';
-import { collectAiGenerationResult, streamAiResponse } from '@/lib/formedible/ai-generation';
+import { collectAiGenerationResult, createTanStackChatParameters, streamAiResponse } from '@/lib/formedible/ai-generation';
+import { fetchProviderModels } from '@/lib/formedible/ai-model-catalog';
 import { extractFormCode, parseAiToFormedible as parseAiCode } from '@/lib/formedible/ai-parser';
 import { createAiStreamScheduler } from '@/lib/formedible/ai-stream-scheduler';
-import { canUseStorage, clearConversations, clearStoredProviderSecrets, exportConversation, persistConversations, persistProviderSecrets, persistProviderSettings, persistUiState, readPersistedAIBuilderState, readStoredProviderSecrets, STORAGE_KEYS, upsertConversation, writeJson } from '@/lib/formedible/ai-storage';
+import { canUseStorage, clearConversations, clearStoredProviderSecrets, createConversationId, exportConversation, persistConversations, persistProviderSecrets, persistProviderSettings, persistUiState, readPersistedAIBuilderState, readStoredProviderSecrets, STORAGE_KEYS, upsertConversation, writeJson } from '@/lib/formedible/ai-storage';
 import type { AiConversation, AiMessage, AiStreamEvent, ProviderSecrets, ProviderSettings } from '@/lib/formedible/ai-types';
 import { defaultParserConfig, generateSystemPrompt } from '@/components/formedible/lib/parser-config-schema';
 
@@ -73,6 +76,14 @@ async function collectStreamEvents(stream: AsyncIterable<unknown>) {
   return events;
 }
 
+interface BrowserGuardedSdkClientView {
+  readonly client: {
+    readonly _options: {
+      readonly dangerouslyAllowBrowser?: boolean | null;
+    };
+  };
+}
+
 class MemoryStorage implements Storage {
   private readonly values = new Map<string, string>();
 
@@ -101,6 +112,32 @@ class MemoryStorage implements Storage {
   }
 }
 
+class QuotaExceededStorage implements Storage {
+  get length(): number {
+    return 0;
+  }
+
+  clear(): void {
+    return;
+  }
+
+  getItem(_key: string): string | null {
+    return null;
+  }
+
+  key(_index: number): string | null {
+    return null;
+  }
+
+  removeItem(_key: string): void {
+    return;
+  }
+
+  setItem(_key: string, _value: string): void {
+    throw new DOMException('The quota has been exceeded.', 'QuotaExceededError');
+  }
+}
+
 function installWindowStorage(storage: Storage): () => void {
   const previousWindow = Object.getOwnPropertyDescriptor(globalThis, 'window');
 
@@ -124,7 +161,7 @@ test('public AI builder exports are real components and functions', () => {
   assert.equal(typeof AgentSettings, 'function');
   assert.equal(typeof AiFormRenderer, 'function');
   assert.equal(typeof ConversationHistory, 'function');
-  assert.equal(typeof MarkdownMessage, 'function');
+  assert.ok(['function', 'object'].includes(typeof MarkdownMessage));
   assert.equal(typeof ParserSettings, 'function');
   assert.equal(typeof SidebarContent, 'function');
   assert.equal(typeof SidebarIcons, 'function');
@@ -136,9 +173,9 @@ test('parseAiToFormedible parses AI-produced schema and infers missing defaults'
   const result = parseAiToFormedible(sampleFormCode);
 
   assert.equal(result.success, true);
-  assert.equal(result.formOptions.fields.length, 2);
+  assert.equal(result.formOptions.fields?.length, 2);
   assert.equal(result.formOptions.submitLabel, 'Join');
-  assert.deepEqual(result.formOptions.formOptions.defaultValues, {
+  assert.deepEqual(result.formOptions.formOptions?.defaultValues, {
     email: 'test@example.com',
     subscribe: false,
   });
@@ -169,7 +206,7 @@ test('parser preserves schema result and old allowlist config keys', () => {
   assert.deepEqual(result.schema, { type: 'object', properties: { email: { type: 'string' } } });
   assert.equal(result.formOptions.submitLabel, 'Join');
   assert.equal(result.formOptions.formClassName, undefined);
-  assert.deepEqual(result.formOptions.fields[0], { name: 'email', type: 'email', label: 'Email' });
+  assert.deepEqual(result.formOptions.fields?.[0], { name: 'email', type: 'email', label: 'Email' });
   assert.deepEqual(result.formOptions.pages, [{ page: 0, title: 'Contact' }]);
   assert.deepEqual(result.formOptions.progress, { showSteps: true });
   assert.deepEqual(result.formOptions.formOptions, { defaultValues: { email: 'test@example.com', subscribe: false } });
@@ -193,9 +230,9 @@ test('parser normalizes common UI field type aliases before validation', () => {
   }`);
 
   assert.equal(result.success, true);
-  assert.equal(result.formOptions.fields[0]?.type, 'radio');
-  assert.equal(result.formOptions.fields[1]?.type, 'multiSelect');
-  assert.equal(result.formOptions.fields[2]?.type, 'colorPicker');
+  assert.equal(result.formOptions.fields?.[0]?.type, 'radio');
+  assert.equal(result.formOptions.fields?.[1]?.type, 'multiSelect');
+  assert.equal(result.formOptions.fields?.[2]?.type, 'colorPicker');
 });
 
 test('parser normalizes common enveloped page-field AI output', () => {
@@ -222,7 +259,7 @@ test('parser normalizes common enveloped page-field AI output', () => {
   assert.equal(result.formOptions.title, 'Restaurant Customer Feedback Survey');
   assert.equal(result.formOptions.submitLabel, 'Submit Feedback');
   assert.deepEqual(result.formOptions.pages, [{ page: 1, title: 'Food Quality', description: 'Tell us about the food.' }]);
-  assert.deepEqual(result.formOptions.fields[0], {
+  assert.deepEqual(result.formOptions.fields?.[0], {
     name: 'overall_food_rating',
     type: 'rating',
     label: 'Food quality?',
@@ -237,7 +274,7 @@ test('parser integration reports invalid generated schema without throwing', () 
   const result = parseAiToFormedible('{ fields: [{ name: 1, type: "unknown" }] }');
 
   assert.equal(result.success, false);
-  assert.equal(result.formOptions.fields.length, 0);
+  assert.equal(result.formOptions.fields?.length, 0);
   assert.match(result.error ?? '', /name|type|field/i);
   assert.equal(result.errors?.length, 1);
 });
@@ -337,6 +374,60 @@ test('provider-specific options only emit Anthropic thinking configuration', () 
       budget_tokens: 512,
     },
   });
+});
+
+test('OpenAI and Anthropic adapters construct their SDK clients with direct browser access enabled', () => {
+  const openaiAdapter = createTanStackTextAdapter({ provider: 'openai', model: DEFAULT_TANSTACK_AI_MODELS.openai }, { provider: 'openai', apiKey: 'openai-key' }) as unknown as BrowserGuardedSdkClientView;
+  const anthropicAdapter = createTanStackTextAdapter({ provider: 'anthropic', model: DEFAULT_TANSTACK_AI_MODELS.anthropic }, { provider: 'anthropic', apiKey: 'anthropic-key' }) as unknown as BrowserGuardedSdkClientView;
+
+  assert.equal(openaiAdapter.client._options.dangerouslyAllowBrowser, true);
+  assert.equal(anthropicAdapter.client._options.dangerouslyAllowBrowser, true);
+
+  const adapterSource = readFileSync(resolve(process.cwd(), 'src/lib/formedible/ai-adapters.ts'), 'utf8');
+  assert.doesNotMatch(adapterSource, /createOpenRouterText\([^;]*dangerouslyAllowBrowser/);
+});
+
+test('chat request parameters omit temperature while Anthropic extended thinking is enabled', () => {
+  const thinkingParameters = createTanStackChatParameters({ provider: 'anthropic', model: DEFAULT_TANSTACK_AI_MODELS.anthropic, temperature: 0.7, maxTokens: 4000, thinkingBudgetTokens: 2048 });
+  const standardAnthropicParameters = createTanStackChatParameters({ provider: 'anthropic', model: DEFAULT_TANSTACK_AI_MODELS.anthropic, temperature: 0.7 });
+  const openaiParameters = createTanStackChatParameters({ provider: 'openai', model: DEFAULT_TANSTACK_AI_MODELS.openai, temperature: 0.4 });
+
+  assert.equal('temperature' in thinkingParameters, false);
+  assert.deepEqual(thinkingParameters.modelOptions, { thinking: { type: 'enabled', budget_tokens: 2048 } });
+  assert.equal(thinkingParameters.maxTokens, 4000);
+
+  assert.equal(standardAnthropicParameters.temperature, 0.7);
+  assert.equal(standardAnthropicParameters.modelOptions, undefined);
+  assert.equal(openaiParameters.temperature, 0.4);
+
+  const generationSource = readFileSync(resolve(process.cwd(), 'src/lib/formedible/ai-generation.ts'), 'utf8');
+  assert.match(generationSource, /\.\.\.createTanStackChatParameters\(providerSettings\),/);
+  assert.doesNotMatch(generationSource, /temperature: providerSettings\.temperature/);
+});
+
+test('Anthropic model catalog refresh sends the direct browser access CORS header', async () => {
+  const catalogNow = Date.parse('2026-08-19T00:00:00.000Z');
+  const capturedHeaders: Headers[] = [];
+  const fetcher: typeof fetch = async (_input, init) => {
+    capturedHeaders.push(new Headers(init?.headers));
+
+    return new Response(JSON.stringify({
+      data: [{ id: 'claude-sonnet-4-6', display_name: 'Claude Sonnet 4.6', created_at: '2026-08-01T00:00:00.000Z' }],
+      has_more: false,
+    }), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  };
+
+  const catalog = await fetchProviderModels({ provider: 'anthropic', apiKey: 'anthropic-key', now: catalogNow, fetcher });
+
+  assert.equal(catalog.error, undefined);
+  assert.deepEqual(catalog.models.map((model) => model.id), ['claude-sonnet-4-6']);
+  assert.equal(capturedHeaders.length, 1);
+  assert.equal(capturedHeaders[0]?.get('anthropic-dangerous-direct-browser-access'), 'true');
+  assert.equal(capturedHeaders[0]?.get('anthropic-version'), '2023-06-01');
+  assert.equal(capturedHeaders[0]?.get('X-Api-Key'), 'anthropic-key');
 });
 
 test('AI builder persists provider settings without API keys, plus UI state and conversation history', () => {
@@ -537,6 +628,151 @@ test('AI builder storage validates unknown JSON and redacts secrets from exports
     assert.match(exportedJson, /form-1/);
     assert.match(exportedJson, /Parse warning/);
     assert.doesNotMatch(exportedJson, /sk-secret|secret-key|secret-token|secret-string|sk-title-secret/);
+  } finally {
+    restoreWindow();
+  }
+});
+
+test('AI builder persistence keeps formConfig integrity for restored forms while redacting message secrets', () => {
+  const restoreWindow = installWindowStorage(new MemoryStorage());
+  const formConfig: AiMessage['formConfig'] = {
+    fields: [
+      { name: 'token', type: 'password' },
+      { name: 'email', type: 'email' },
+    ],
+    formOptions: { defaultValues: { token: 'tok_123456', password: 'hunter2', email: 'user@example.com' } },
+    persistence: { key: 'signup-form-state', storage: 'localStorage' },
+    schema: 'z.object({ token: z.string() })',
+  };
+  const conversation: AiConversation = {
+    id: 'conversation-integrity',
+    title: 'Intact form config',
+    messages: [
+      { id: 'assistant-integrity', role: 'assistant', content: 'Generated with api key sk-live-secret', formConfig },
+    ],
+    createdAt: 1,
+    updatedAt: 2,
+  };
+
+  try {
+    persistConversations([conversation]);
+
+    const persisted = readPersistedAIBuilderState(createDefaultProviderSettings());
+    const restoredFormConfig = persisted.conversations[0]?.messages[0]?.formConfig;
+
+    assert.equal(restoredFormConfig?.persistence?.key, 'signup-form-state');
+    assert.equal(restoredFormConfig?.persistence?.storage, 'localStorage');
+    assert.deepEqual(restoredFormConfig?.formOptions?.defaultValues, { token: 'tok_123456', password: 'hunter2', email: 'user@example.com' });
+    assert.equal(restoredFormConfig?.schema, 'z.object({ token: z.string() })');
+    assert.equal(persisted.conversations[0]?.messages[0]?.content, 'Generated with api key [REDACTED]');
+  } finally {
+    restoreWindow();
+  }
+});
+
+test('AI builder conversation export redacts formConfig fields that persistence keeps verbatim', () => {
+  const conversation: AiConversation = {
+    id: 'conversation-export-redaction',
+    title: 'Exported form config',
+    messages: [
+      {
+        id: 'assistant-export-redaction',
+        role: 'assistant',
+        content: 'Generated form',
+        formConfig: {
+          fields: [{ name: 'token', type: 'password' }],
+          formOptions: { defaultValues: { token: 'tok_123456', email: 'user@example.com' } },
+          persistence: { key: 'signup-form-state' },
+          schema: 'z.object({ token: z.string() })',
+        },
+      },
+    ],
+    createdAt: 1,
+    updatedAt: 2,
+  };
+
+  const exportedFormConfig = exportConversation(conversation).conversation.messages[0]?.formConfig;
+
+  assert.equal(exportedFormConfig?.persistence?.key, '[REDACTED]');
+  assert.deepEqual(exportedFormConfig?.formOptions?.defaultValues, { token: '[REDACTED]', email: 'user@example.com' });
+  assert.notEqual(exportedFormConfig?.schema, 'z.object({ token: z.string() })');
+  assert.match(String(exportedFormConfig?.schema), /\[REDACTED\]/);
+});
+
+test('AI builder storage reports quota failures once per key without breaking persistence calls', () => {
+  const restoreWindow = installWindowStorage(new QuotaExceededStorage());
+  const originalError = console.error;
+  const failures: string[] = [];
+
+  console.error = (...args: unknown[]) => {
+    failures.push(args.map((arg) => String(arg)).join(' '));
+  };
+
+  try {
+    const conversation: AiConversation = { id: 'conversation-quota', title: 'Quota form', messages: [], createdAt: 1, updatedAt: 1 };
+
+    assert.equal(writeJson(STORAGE_KEYS.conversations, { version: 1, data: [] }), false);
+    assert.doesNotThrow(() => persistConversations([conversation]));
+    assert.doesNotThrow(() => persistConversations([conversation]));
+
+    assert.equal(failures.length, 1);
+    assert.match(failures[0] ?? '', new RegExp(STORAGE_KEYS.conversations));
+    assert.match(failures[0] ?? '', /QuotaExceededError/);
+    assert.match(failures[0] ?? '', /quota/i);
+  } finally {
+    console.error = originalError;
+    restoreWindow();
+  }
+});
+
+test('AI builder persisted messages store final content with compact event summaries instead of per-token events', () => {
+  const storage = new MemoryStorage();
+  const restoreWindow = installWindowStorage(storage);
+  const streamedEvents: readonly AiStreamEvent[] = [
+    { type: 'text-delta', delta: 'Here ', raw: { apiKey: 'secret-key' }, receivedAt: 1 },
+    { type: 'text-delta', delta: 'it is.', raw: { apiKey: 'secret-key' }, receivedAt: 2 },
+    { type: 'finish', finishReason: 'stop', usage: { inputTokens: 4, outputTokens: 6, totalTokens: 10 }, raw: {}, receivedAt: 3 },
+  ];
+  const conversation: AiConversation = {
+    id: 'conversation-summary',
+    title: 'Summarized stream',
+    messages: [
+      { id: 'user-summary', role: 'user', content: 'Create a form' },
+      { id: 'assistant-summary', role: 'assistant', content: 'Here it is.', events: streamedEvents, status: 'completed' },
+    ],
+    createdAt: 1,
+    updatedAt: 3,
+  };
+
+  try {
+    persistConversations([conversation]);
+
+    const storedConversations = storage.getItem(STORAGE_KEYS.conversations) ?? '';
+
+    assert.doesNotMatch(storedConversations, /"events"/);
+    assert.doesNotMatch(storedConversations, /secret-key/);
+
+    const persisted = readPersistedAIBuilderState(createDefaultProviderSettings());
+    const assistantMessage = persisted.conversations[0]?.messages[1];
+
+    assert.equal(assistantMessage?.content, 'Here it is.');
+    assert.equal(assistantMessage?.events, undefined);
+    assert.deepEqual(assistantMessage?.eventSummary, {
+      totalEvents: 3,
+      countsByType: { 'text-delta': 2, finish: 1 },
+      usage: { inputTokens: 4, outputTokens: 6, totalTokens: 10 },
+    });
+
+    storage.setItem(STORAGE_KEYS.conversations, JSON.stringify({ version: 1, data: [{ ...conversation, id: 'conversation-legacy' }] }));
+
+    const legacyMessage = readPersistedAIBuilderState(createDefaultProviderSettings()).conversations[0]?.messages[1];
+
+    assert.equal(legacyMessage?.events, undefined);
+    assert.deepEqual(legacyMessage?.eventSummary, {
+      totalEvents: 3,
+      countsByType: { 'text-delta': 2, finish: 1 },
+      usage: { inputTokens: 4, outputTokens: 6, totalTokens: 10 },
+    });
   } finally {
     restoreWindow();
   }
@@ -808,6 +1044,32 @@ test('Markdown renderer preserves highlighted fenced code markup while copying r
   assert.doesNotMatch(html, /dangerouslySetInnerHTML|<script/i);
 });
 
+test('Markdown message is memoized on its content prop so unchanged content skips markdown re-parsing', () => {
+  assert.equal(MarkdownMessage.$$typeof, Symbol.for('react.memo'));
+  assert.equal(typeof MarkdownMessage.type, 'function');
+
+  const html = renderToStaticMarkup(createElement(MarkdownMessage, { content: 'Unchanged **streamed** content' }));
+
+  assert.match(html, /<strong>streamed<\/strong>/);
+});
+
+test('chat message list renders through memoized per-message rows keyed by message identity', () => {
+  const chatSource = readFileSync(resolve(process.cwd(), 'src/components/formedible/ai/chat-messages.tsx'), 'utf8');
+
+  assert.match(chatSource, /const MessageRow = memo\(function MessageRow/);
+  assert.match(chatSource, /<MessageRow key=\{message\.id\} message=\{message\} \/>/);
+
+  const messages: readonly AiMessage[] = [
+    { id: 'chat-user', role: 'user', content: 'Create a signup form' },
+    { id: 'chat-assistant', role: 'assistant', content: 'Here is the **signup** form', status: 'completed' },
+  ];
+  const html = renderToStaticMarkup(createElement(ChatMessages, { messages }));
+
+  assert.match(html, /Create a signup form/);
+  assert.match(html, /<strong>signup<\/strong>/);
+  assert.match(html, /capitalize/);
+});
+
 test('raw output panel shows raw text, thinking, parsed forms, events, metadata, and copy controls', () => {
   const message: AiMessage = {
     id: 'assistant-debug',
@@ -923,6 +1185,305 @@ test('conversation updates dedupe rapid first-message updates before active id c
   assert.equal(secondUpdate.conversations[0]?.messages[1]?.content, 'Streaming more');
 });
 
+test('upsertConversation creates new conversations with the reserved draft id when provided', () => {
+  const userMessage: AiMessage = { id: 'user-draft', role: 'user', content: 'Create a signup form' };
+  const update = upsertConversation([], 'conversation-reserved', [userMessage]);
+
+  assert.equal(update.conversationId, 'conversation-reserved');
+  assert.equal(update.conversations[0]?.id, 'conversation-reserved');
+  assert.equal(update.conversations[0]?.title, 'Create a signup form');
+  assert.match(createConversationId(), /^conversation_\d+_/);
+});
+
+test('streaming flushes stay routed to the submission conversation when the user selects another conversation mid-stream', () => {
+  const conversationA: AiConversation = {
+    id: 'conv-A',
+    title: 'Signup form',
+    messages: [{ id: 'a1', role: 'user', content: 'Create a signup form' }],
+    createdAt: 1,
+    updatedAt: 1,
+  };
+  const conversationB: AiConversation = {
+    id: 'conv-B',
+    title: 'Survey form',
+    messages: [{ id: 'b1', role: 'user', content: 'Create a survey form' }],
+    createdAt: 2,
+    updatedAt: 2,
+  };
+  const flushedMessages: readonly AiMessage[] = [
+    { id: 'a1', role: 'user', content: 'Create a signup form' },
+    { id: 'a2', role: 'user', content: 'Add a phone field' },
+    { id: 'a3', role: 'assistant', content: '', status: 'streaming' },
+  ];
+
+  const update = applyMessagesToConversation([conversationA, conversationB], 'conv-A', flushedMessages, {
+    draftConversationId: 'conversation-reserved',
+    currentConversationId: 'conv-B',
+  });
+
+  assert.ok(update);
+  assert.equal(update.conversationId, 'conv-A');
+  assert.equal(update.selectedConversationId, undefined);
+  assert.equal(update.conversations.length, 2);
+
+  const updatedConversationA = update.conversations.find((conversation: AiConversation) => conversation.id === 'conv-A');
+  const untouchedConversationB = update.conversations.find((conversation: AiConversation) => conversation.id === 'conv-B');
+
+  assert.equal(updatedConversationA?.title, 'Signup form');
+  assert.deepEqual(updatedConversationA?.messages, flushedMessages);
+  assert.deepEqual(untouchedConversationB, conversationB);
+});
+
+test('starting a new conversation while streaming keeps the new-conversation selection', () => {
+  const conversationA: AiConversation = {
+    id: 'conv-A',
+    title: 'Signup form',
+    messages: [{ id: 'a1', role: 'user', content: 'Create a signup form' }],
+    createdAt: 1,
+    updatedAt: 1,
+  };
+  const flushedMessages: readonly AiMessage[] = [
+    { id: 'a1', role: 'user', content: 'Create a signup form' },
+    { id: 'a2', role: 'assistant', content: 'Streaming', status: 'streaming' },
+  ];
+
+  const update = applyMessagesToConversation([conversationA], 'conv-A', flushedMessages, {
+    draftConversationId: 'conversation-reserved',
+    currentConversationId: undefined,
+  });
+
+  assert.ok(update);
+  assert.equal(update.selectedConversationId, undefined);
+  assert.equal(update.conversationId, 'conv-A');
+  assert.deepEqual(update.conversations[0]?.messages, flushedMessages);
+});
+
+test('flushes targeting a deleted conversation are dropped instead of corrupting the current selection', () => {
+  const conversationB: AiConversation = {
+    id: 'conv-B',
+    title: 'Survey form',
+    messages: [{ id: 'b1', role: 'user', content: 'Create a survey form' }],
+    createdAt: 2,
+    updatedAt: 2,
+  };
+  const flushedMessages: readonly AiMessage[] = [
+    { id: 'a1', role: 'user', content: 'Create a signup form' },
+    { id: 'a2', role: 'assistant', content: 'Streaming', status: 'streaming' },
+  ];
+
+  const update = applyMessagesToConversation([conversationB], 'conv-A', flushedMessages, {
+    draftConversationId: 'conversation-reserved',
+    currentConversationId: 'conv-B',
+  });
+
+  assert.equal(update, undefined);
+});
+
+test('first flush of a new-conversation submission creates and selects the reserved conversation exactly once', () => {
+  const userMessage: AiMessage = { id: 'user-fresh', role: 'user', content: 'Create a contact form' };
+  const streamingMessages: readonly AiMessage[] = [userMessage, { id: 'assistant-fresh', role: 'assistant', content: '', status: 'streaming' }];
+
+  const firstUpdate = applyMessagesToConversation([], 'conversation-reserved', streamingMessages, {
+    draftConversationId: 'conversation-reserved',
+    currentConversationId: undefined,
+  });
+
+  assert.ok(firstUpdate);
+  assert.equal(firstUpdate.conversationId, 'conversation-reserved');
+  assert.equal(firstUpdate.selectedConversationId, 'conversation-reserved');
+  assert.deepEqual(firstUpdate.conversations[0]?.messages, streamingMessages);
+
+  const switchedBeforeFirstFlush = applyMessagesToConversation([], 'conversation-reserved', streamingMessages, {
+    draftConversationId: 'conversation-reserved',
+    currentConversationId: 'conv-B',
+  });
+
+  assert.ok(switchedBeforeFirstFlush);
+  assert.equal(switchedBeforeFirstFlush.selectedConversationId, undefined);
+
+  const completedMessages: readonly AiMessage[] = [userMessage, { id: 'assistant-fresh', role: 'assistant', content: 'Done', status: 'completed' }];
+  const laterUpdate = applyMessagesToConversation(firstUpdate.conversations, 'conversation-reserved', completedMessages, {
+    draftConversationId: 'conversation-rotated',
+    currentConversationId: 'conv-B',
+  });
+
+  assert.ok(laterUpdate);
+  assert.equal(laterUpdate.conversationId, 'conversation-reserved');
+  assert.equal(laterUpdate.selectedConversationId, undefined);
+  assert.deepEqual(laterUpdate.conversations[0]?.messages, completedMessages);
+
+  const afterDelete = applyMessagesToConversation(
+    laterUpdate.conversations.filter((conversation: AiConversation) => conversation.id !== 'conversation-reserved'),
+    'conversation-reserved',
+    completedMessages,
+    { draftConversationId: 'conversation-rotated', currentConversationId: undefined },
+  );
+
+  assert.equal(afterDelete, undefined);
+});
+
+test('generated form code attaches to the submission conversation instead of overwriting the current selection', () => {
+  const conversationA: AiConversation = {
+    id: 'conv-A',
+    title: 'Signup form',
+    messages: [{ id: 'a1', role: 'user', content: 'Create a signup form' }],
+    createdAt: 1,
+    updatedAt: 1,
+  };
+  const conversationB: AiConversation = {
+    id: 'conv-B',
+    title: 'Survey form',
+    formCode: 'const surveyForm = 1;',
+    messages: [{ id: 'b1', role: 'user', content: 'Create a survey form' }],
+    createdAt: 2,
+    updatedAt: 2,
+  };
+
+  const nextConversations = applyFormCodeToConversation([conversationA, conversationB], 'conv-A', 'const signupForm = 1;', 99);
+
+  assert.ok(nextConversations);
+  assert.equal(nextConversations.find((conversation: AiConversation) => conversation.id === 'conv-A')?.formCode, 'const signupForm = 1;');
+  assert.equal(nextConversations.find((conversation: AiConversation) => conversation.id === 'conv-A')?.updatedAt, 99);
+  assert.deepEqual(nextConversations.find((conversation: AiConversation) => conversation.id === 'conv-B'), conversationB);
+  assert.equal(applyFormCodeToConversation([conversationB], 'conv-A', 'const signupForm = 1;', 99), undefined);
+});
+
+test('conversation deletion derives the next selection purely from the previous state', () => {
+  const conversationA: AiConversation = { id: 'conv-A', title: 'A', messages: [], createdAt: 1, updatedAt: 1 };
+  const conversationB: AiConversation = { id: 'conv-B', title: 'B', messages: [], createdAt: 2, updatedAt: 2 };
+
+  const deletingCurrent = removeConversationFromList([conversationA, conversationB], 'conv-B', 'conv-B');
+  assert.deepEqual(deletingCurrent, { conversations: [conversationA], currentConversationId: 'conv-A' });
+
+  const deletingLastRemaining = removeConversationFromList([conversationA], 'conv-A', 'conv-A');
+  assert.deepEqual(deletingLastRemaining, { conversations: [], currentConversationId: undefined });
+
+  const deletingOther = removeConversationFromList([conversationA, conversationB], 'conv-A', 'conv-B');
+  assert.deepEqual(deletingOther, { conversations: [conversationB], currentConversationId: 'conv-B' });
+});
+
+test('conversation routing helpers stay pure and never write storage during state commits', () => {
+  const storage = new MemoryStorage();
+  const restoreWindow = installWindowStorage(storage);
+  const storageWrites: string[] = [];
+  const originalSetItem = storage.setItem.bind(storage);
+
+  storage.setItem = (key: string, value: string) => {
+    storageWrites.push(key);
+    originalSetItem(key, value);
+  };
+
+  try {
+    const conversationA: AiConversation = { id: 'conv-A', title: 'A', messages: [{ id: 'a1', role: 'user', content: 'Hi' }], createdAt: 1, updatedAt: 1 };
+    const flushedMessages: readonly AiMessage[] = [
+      { id: 'a1', role: 'user', content: 'Hi' },
+      { id: 'a2', role: 'assistant', content: 'Done', status: 'completed' },
+    ];
+
+    const messageUpdate = applyMessagesToConversation([conversationA], 'conv-A', flushedMessages, {
+      draftConversationId: 'conversation-reserved',
+      currentConversationId: 'conv-B',
+    });
+    const deletionUpdate = removeConversationFromList([conversationA], 'conv-A', 'conv-A');
+    const formCodeUpdate = applyFormCodeToConversation([conversationA], 'conv-A', 'const form = 1;', 5);
+
+    assert.ok(messageUpdate);
+    assert.ok(deletionUpdate);
+    assert.ok(formCodeUpdate);
+    assert.deepEqual(storageWrites, []);
+  } finally {
+    restoreWindow();
+  }
+});
+
+test('AI builder commits conversation state through handlers without side effects inside setState updaters', () => {
+  const builderSource = readFileSync(resolve(process.cwd(), 'src/components/formedible/ai/ai-builder.tsx'), 'utf8');
+  const updateMessagesMatch = /function updateMessages[\s\S]*?\n  }/.exec(builderSource);
+  const deleteConversationMatch = /function deleteConversation[\s\S]*?\n  }/.exec(builderSource);
+
+  assert.ok(updateMessagesMatch);
+  assert.ok(deleteConversationMatch);
+  assert.doesNotMatch(builderSource, /setConversations\(\(/);
+  assert.doesNotMatch(builderSource, /setCurrentConversationId\(\(/);
+  assert.doesNotMatch(updateMessagesMatch[0], /localStorage/);
+  assert.doesNotMatch(deleteConversationMatch[0], /localStorage/);
+});
+
+test('AI builder memoizes the parser config and system prompt derived from parserConfig', () => {
+  const builderSource = readFileSync(resolve(process.cwd(), 'src/components/formedible/ai/ai-builder.tsx'), 'utf8');
+
+  assert.match(builderSource, /useMemo\(\(\) => generateSystemPrompt\(parserConfig\), \[parserConfig\]\)/);
+  assert.match(builderSource, /useMemo\(\(\) => toAiParserConfig\(parserConfig\), \[parserConfig\]\)/);
+});
+
+test('stream scheduler cancel drops pending buffered chunks without flushing them', () => {
+  const frameCallbacks: Array<() => void> = [];
+  const cancelledFrameIds: number[] = [];
+  const flushes: Array<{ readonly textDelta: string; readonly thinkingDelta: string; readonly events: readonly AiStreamEvent[] }> = [];
+  const scheduler = createAiStreamScheduler((flush) => flushes.push(flush), {
+    scheduleFrame: (callback) => {
+      frameCallbacks.push(callback);
+      return frameCallbacks.length;
+    },
+    cancelFrame: (frameId) => {
+      cancelledFrameIds.push(frameId);
+    },
+  });
+
+  scheduler.enqueue({ type: 'text-delta', delta: 'Pending', receivedAt: 1 });
+  scheduler.enqueue({ type: 'thinking-delta', delta: 'Plan', receivedAt: 2 });
+  assert.equal(frameCallbacks.length, 1);
+
+  scheduler.cancel();
+  scheduler.flushNow();
+
+  assert.deepEqual(cancelledFrameIds, [1]);
+  assert.equal(flushes.length, 0);
+});
+
+test('chat interface unmount cleanup aborts the active generation and cancels pending flushes', () => {
+  const frameCallbacks: Array<() => void> = [];
+  const cancelledFrameIds: number[] = [];
+  const flushes: Array<{ readonly textDelta: string; readonly thinkingDelta: string; readonly events: readonly AiStreamEvent[] }> = [];
+  const scheduler = createAiStreamScheduler((flush) => flushes.push(flush), {
+    scheduleFrame: (callback) => {
+      frameCallbacks.push(callback);
+      return frameCallbacks.length;
+    },
+    cancelFrame: (frameId) => {
+      cancelledFrameIds.push(frameId);
+    },
+  });
+  const abortController = new AbortController();
+  const activeGenerationRef: ActiveGenerationRef = { current: { abortController, scheduler } };
+  const cleanup = createGenerationUnmountCleanup(activeGenerationRef);
+
+  scheduler.enqueue({ type: 'text-delta', delta: 'Partial', receivedAt: 1 });
+  cleanup();
+
+  assert.equal(abortController.signal.aborted, true);
+  assert.equal(abortController.signal.reason, 'component unmounted');
+  assert.equal(activeGenerationRef.current, undefined);
+  assert.deepEqual(cancelledFrameIds, [1]);
+  assert.equal(flushes.length, 0);
+
+  scheduler.flushNow();
+  assert.equal(flushes.length, 0);
+
+  const idleCleanup = createGenerationUnmountCleanup({ current: undefined });
+  assert.doesNotThrow(() => idleCleanup());
+});
+
+test('chat interface routes every message flush through the conversation captured at submit time', () => {
+  const chatSource = readFileSync(resolve(process.cwd(), 'src/components/formedible/ai/chat-interface.tsx'), 'utf8');
+  const routedCalls = chatSource.match(/onMessagesChange\(submissionConversationId, displayedMessages\)/g);
+
+  assert.equal(routedCalls?.length, 2);
+  assert.doesNotMatch(chatSource, /onMessagesChange\(displayedMessages\)/);
+  assert.match(chatSource, /onFormGenerated\?\.\(submissionConversationId, formCode\)/);
+  assert.match(chatSource, /useEffect\(\(\) => createGenerationUnmountCleanup\(activeGenerationRef\), \[\]\)/);
+});
+
 test('sidebar history and settings render without backend or settings UI bypasses', () => {
   const providerSettings = createDefaultProviderSettings('openrouter');
   const providerSecrets: ProviderSecrets = { provider: 'openrouter', apiKey: '' };
@@ -985,6 +1546,50 @@ test('model autocomplete filters catalog entries and preserves custom selected m
   assert.deepEqual(options.map((option) => option.id), ['custom/model', 'anthropic/claude-sonnet-4-6']);
 });
 
+test('numeric settings drafts commit clamped values and never commit empty input as zero', () => {
+  assert.deepEqual(evaluateNumberDraft('0.', { min: 0, max: 2, allowClear: false }), { kind: 'commit', value: 0 });
+  assert.deepEqual(evaluateNumberDraft('0.5', { min: 0, max: 2, allowClear: false }), { kind: 'commit', value: 0.5 });
+  assert.deepEqual(evaluateNumberDraft('-1', { min: 0, max: 2, allowClear: false }), { kind: 'commit', value: 0 });
+  assert.deepEqual(evaluateNumberDraft('3', { min: 0, max: 2, allowClear: false }), { kind: 'commit', value: 2 });
+  assert.deepEqual(evaluateNumberDraft('1e3', { min: 1, allowClear: false }), { kind: 'commit', value: 1000 });
+  assert.deepEqual(evaluateNumberDraft('not-a-number', { min: 0, max: 2, allowClear: false }), { kind: 'keep' });
+  assert.deepEqual(evaluateNumberDraft('', { min: 0, max: 2, allowClear: false }), { kind: 'keep' });
+  assert.deepEqual(evaluateNumberDraft('', { min: 0, max: 2, allowClear: true }), { kind: 'clear' });
+  assert.deepEqual(evaluateNumberDraft('0', { min: 1000, max: 10000000, allowClear: false }), { kind: 'commit', value: 1000 });
+  assert.deepEqual(evaluateNumberDraft('500', { min: 1000, max: 10000000, allowClear: false }), { kind: 'commit', value: 1000 });
+  assert.deepEqual(evaluateNumberDraft('99999999', { min: 1000, max: 10000000, allowClear: false }), { kind: 'commit', value: 10000000 });
+});
+
+test('numeric settings inputs keep raw keystroke drafts and normalize the display on blur', () => {
+  const agentSource = readFileSync(resolve(process.cwd(), 'src/components/formedible/ai/agent-settings.tsx'), 'utf8');
+  const parserSource = readFileSync(resolve(process.cwd(), 'src/components/formedible/ai/parser-settings.tsx'), 'utf8');
+
+  assert.match(agentSource, /const \[draft, setDraft\] = useState<string \| null>\(null\)/);
+  assert.match(agentSource, /setDraft\(rawValue\);/);
+  assert.match(agentSource, /onBlur=\{\(\) => setDraft\(null\)\}/);
+  assert.match(agentSource, /inputMode="decimal"/);
+  assert.doesNotMatch(agentSource, /parseOptionalNumber/);
+  assert.doesNotMatch(agentSource, /type="number"/);
+  assert.doesNotMatch(parserSource, /parseNumber/);
+  assert.doesNotMatch(parserSource, /type="number"/);
+
+  const modelMarkup = renderToStaticMarkup(createElement(AgentSettings, {
+    settings: { provider: 'anthropic', model: DEFAULT_TANSTACK_AI_MODELS.anthropic, temperature: 0.5, maxTokens: 2000, thinkingBudgetTokens: 512 },
+    secrets: { provider: 'anthropic', apiKey: '' },
+    onChange: () => undefined,
+  }));
+  const parserMarkup = renderToStaticMarkup(createElement(ParserSettings, {
+    config: { ...defaultParserConfig, maxCodeLength: 250000, maxNestingDepth: 12 },
+    onChange: () => undefined,
+  }));
+
+  assert.match(modelMarkup, /value="0\.5"/);
+  assert.match(modelMarkup, /value="2000"/);
+  assert.match(modelMarkup, /value="512"/);
+  assert.match(parserMarkup, /value="250000"/);
+  assert.match(parserMarkup, /value="12"/);
+});
+
 test('provider settings explain BYOK persistence and model settings keep Anthropic thinking scoped', () => {
   const anthropicSettings = { provider: 'anthropic', model: DEFAULT_TANSTACK_AI_MODELS.anthropic, temperature: 0.5, maxTokens: 2000, thinkingBudgetTokens: 512 } satisfies ProviderSettings;
   const providerSecrets: ProviderSecrets = { provider: 'anthropic', apiKey: '' };
@@ -1028,6 +1633,25 @@ test('parser settings render synced parser config and system prompt preview', ()
   assert.match(parserMarkup, /Strict Validation/);
   assert.match(prompt, /lowercase ```formedible fenced block/);
   assert.match(prompt, /Use concise labels/);
+});
+
+test('custom instructions keep typed spaces while editing and commit trimmed values on blur', () => {
+  assert.equal(normalizeCustomInstructions('  Use concise labels.  '), 'Use concise labels.');
+  assert.equal(normalizeCustomInstructions('Use  double  spaces'), 'Use  double  spaces');
+  assert.equal(normalizeCustomInstructions('Add a phone field '), 'Add a phone field');
+  assert.equal(normalizeCustomInstructions('   '), undefined);
+  assert.equal(normalizeCustomInstructions(''), undefined);
+
+  const parserMarkup = renderToStaticMarkup(createElement(ParserSettings, {
+    config: { ...defaultParserConfig, customInstructions: 'Add a phone field ' },
+    onChange: () => undefined,
+  }));
+  const parserSource = readFileSync(resolve(process.cwd(), 'src/components/formedible/ai/parser-settings.tsx'), 'utf8');
+
+  assert.match(parserMarkup, /Add a phone field\s/);
+  assert.match(parserSource, /customInstructions: event\.target\.value\.length > 0 \? event\.target\.value : undefined/);
+  assert.match(parserSource, /onBlur=\{\(event\) => \{\s*const customInstructions = normalizeCustomInstructions\(event\.target\.value\);/);
+  assert.doesNotMatch(parserSource, /\.trim\(\) \|\| undefined/);
 });
 
 test('conversation history selection updates existing conversation and new conversation starts separately', () => {

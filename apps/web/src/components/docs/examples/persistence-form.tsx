@@ -50,121 +50,126 @@ async function submitProjectInquiry(inquiry: PersistenceFormValues) {
   submittedProjectInquiries.push(inquiry);
 }
 
-const persistenceForm = useFormedible({
-  schema: persistenceFormSchema,
-  fields: [
-    {
-      name: "name",
-      type: "text",
-      label: "Full Name",
-      page: 1,
-      section: {
+export function PersistenceFormExample() {
+  const persistenceForm = useFormedible({
+    schema: persistenceFormSchema,
+    fields: [
+      {
+        name: "name",
+        type: "text",
+        label: "Full Name",
+        page: 1,
+        section: {
+          title: "Contact Information",
+          description: "Your basic details",
+        },
+      },
+      { name: "email", type: "email", label: "Email Address", page: 1 },
+      { name: "phone", type: "phone", label: "Phone Number", page: 1 },
+      { name: "company", type: "text", label: "Company Name", page: 1 },
+      { name: "jobTitle", type: "text", label: "Job Title", page: 1 },
+      {
+        name: "projectType",
+        type: "multiSelect",
+        label: "Project Type",
+        page: 2,
+        section: {
+          title: "Project Requirements",
+          description: "What do you need help with?",
+        },
+        options: [
+          { value: "web-dev", label: "Web Development" },
+          { value: "mobile-app", label: "Mobile App" },
+          { value: "ecommerce", label: "E-commerce Platform" },
+          { value: "api", label: "API Development" },
+          { value: "consulting", label: "Technical Consulting" },
+        ],
+        multiSelectConfig: { searchable: true, maxSelections: 3 },
+      },
+      {
+        name: "timeline",
+        type: "select",
+        label: "Timeline",
+        page: 2,
+        options: ["ASAP", "1-3 months", "3-6 months", "6+ months", "Flexible"],
+      },
+      {
+        name: "budget",
+        type: "radio",
+        label: "Budget Range",
+        page: 2,
+        options: [
+          { value: "<25k", label: "Less than $25,000" },
+          { value: "25k-75k", label: "$25,000 - $75,000" },
+          { value: "75k-150k", label: "$75,000 - $150,000" },
+          { value: "150k+", label: "$150,000+" },
+        ],
+      },
+      {
+        name: "description",
+        type: "textarea",
+        label: "Project Description",
+        page: 3,
+        section: {
+          title: "Project Details",
+          description: "Tell us more about your project",
+        },
+        textareaConfig: { rows: 6, showWordCount: true, maxLength: 1000 },
+      },
+      {
+        name: "agreeToTerms",
+        type: "checkbox",
+        label: "I agree to the terms of service and privacy policy",
+        page: 3,
+      },
+    ],
+    pages: [
+      {
+        page: 1,
         title: "Contact Information",
-        description: "Your basic details",
+        description: "Let's start with your details",
       },
-    },
-    { name: "email", type: "email", label: "Email Address", page: 1 },
-    { name: "phone", type: "phone", label: "Phone Number", page: 1 },
-    { name: "company", type: "text", label: "Company Name", page: 1 },
-    { name: "jobTitle", type: "text", label: "Job Title", page: 1 },
-    {
-      name: "projectType",
-      type: "multiSelect",
-      label: "Project Type",
-      page: 2,
-      section: {
+      {
+        page: 2,
         title: "Project Requirements",
-        description: "What do you need help with?",
+        description: "Tell us about your project",
       },
-      options: [
-        { value: "web-dev", label: "Web Development" },
-        { value: "mobile-app", label: "Mobile App" },
-        { value: "ecommerce", label: "E-commerce Platform" },
-        { value: "api", label: "API Development" },
-        { value: "consulting", label: "Technical Consulting" },
-      ],
-      multiSelectConfig: { searchable: true, maxSelections: 3 },
+      { page: 3, title: "Final Details", description: "Complete your inquiry" },
+    ],
+    progress: { showSteps: true, showPercentage: true },
+    persistence: {
+      key: "demo-project-inquiry-form",
+      storage: "localStorage",
+      debounceMs: 1500,
+      exclude: ["agreeToTerms"],
+      restoreOnMount: true,
     },
-    {
-      name: "timeline",
-      type: "select",
-      label: "Timeline",
-      page: 2,
-      options: ["ASAP", "1-3 months", "3-6 months", "6+ months", "Flexible"],
-    },
-    {
-      name: "budget",
-      type: "radio",
-      label: "Budget Range",
-      page: 2,
-      options: [
-        { value: "<25k", label: "Less than $25,000" },
-        { value: "25k-75k", label: "$25,000 - $75,000" },
-        { value: "75k-150k", label: "$75,000 - $150,000" },
-        { value: "150k+", label: "$150,000+" },
-      ],
-    },
-    {
-      name: "description",
-      type: "textarea",
-      label: "Project Description",
-      page: 3,
-      section: {
-        title: "Project Details",
-        description: "Tell us more about your project",
+    formOptions: {
+      defaultValues: {
+        name: "",
+        email: "",
+        phone: "",
+        company: "",
+        jobTitle: "",
+        projectType: [],
+        timeline: "",
+        budget: "",
+        description: "",
+        agreeToTerms: false,
       },
-      textareaConfig: { rows: 6, showWordCount: true, maxLength: 1000 },
+      onSubmit: async ({ value }) => {
+        await submitProjectInquiry(value);
+        toast.success("Inquiry submitted!", {
+          description:
+            "Form data auto-saved throughout - try refreshing the page!",
+        });
+      },
     },
-    {
-      name: "agreeToTerms",
-      type: "checkbox",
-      label: "I agree to the terms of service and privacy policy",
-      page: 3,
-    },
-  ],
-  pages: [
-    {
-      page: 1,
-      title: "Contact Information",
-      description: "Let's start with your details",
-    },
-    {
-      page: 2,
-      title: "Project Requirements",
-      description: "Tell us about your project",
-    },
-    { page: 3, title: "Final Details", description: "Complete your inquiry" },
-  ],
-  progress: { showSteps: true, showPercentage: true },
-  persistence: {
-    key: "demo-project-inquiry-form",
-    storage: "localStorage",
-    debounceMs: 1500,
-    exclude: ["agreeToTerms"],
-    restoreOnMount: true,
-  },
-  formOptions: {
-    defaultValues: {
-      name: "",
-      email: "",
-      phone: "",
-      company: "",
-      jobTitle: "",
-      projectType: [],
-      timeline: "",
-      budget: "",
-      description: "",
-      agreeToTerms: false,
-    },
-    onSubmit: async ({ value }) => {
-      await submitProjectInquiry(value);
-      toast.success("Inquiry submitted!", {
-        description:
-          "Form data auto-saved throughout - try refreshing the page!",
-      });
-    },
-  },
-});`;
+  });
+
+  return <persistenceForm.Form className="space-y-4" />;
+}
+`;
 
 export function PersistenceFormExample() {
   const persistenceForm = useFormedible({

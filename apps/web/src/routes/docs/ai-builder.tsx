@@ -233,9 +233,9 @@ function ParsedForm({ options }: { readonly options: UseFormedibleOptions<Formed
   },
   {
     title: 'Storage and export',
-    body: 'AI Builder uses separate browser keys for provider settings, provider secrets, conversations, and UI state. Secret persistence can be memory, session, or local.',
+    body: 'AI Builder uses separate browser keys for provider settings, provider secrets, model catalogs, conversations, and UI state. Secret persistence can be memory, session, or local.',
     bullets: [
-      'STORAGE_KEYS names four independent storage entries.',
+      'STORAGE_KEYS names five independent storage entries, including the cached provider model catalogs.',
       'persistProviderSecrets clears both storage areas first; memory mode stores nothing.',
       'rememberKey false stores the preference but not the secret value.',
       'persistConversations writes sanitized conversations, and exportConversation returns a sanitized export envelope.',
@@ -246,6 +246,7 @@ function ParsedForm({ options }: { readonly options: UseFormedibleOptions<Formed
       code: `export const STORAGE_KEYS = {
   providerSettings: 'formedible-ai-builder-provider-settings',
   providerSecrets: 'formedible-ai-builder-provider-secrets',
+  modelCatalogs: 'formedible-ai-builder-model-catalogs',
   conversations: 'formedible-ai-builder-conversations',
   uiState: 'formedible-ai-builder-ui-state',
 } as const;

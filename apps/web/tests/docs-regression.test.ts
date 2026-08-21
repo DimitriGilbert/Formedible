@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { docsCompatibilityExamples } from '../src/features/docs/compatibility-examples';
 import { docsCodeExamples } from '../src/features/docs/code-examples';
 import { migratedDocsExamples } from '../src/components/docs/examples';
-import { createRouteSeoHead } from '../src/features/docs/seo';
+import { createRootHead, createRouteSeoHead, type SeoHead, type SeoMeta } from '../src/features/docs/seo';
 import { publicRouteMeta, siteMeta } from '../src/features/docs/site-meta';
 
 const appRoot = process.cwd();
@@ -14,7 +14,6 @@ const docsSourceRoot = join(appRoot, 'src');
 const authoredRuntimeRoots = [
   join(appRoot, 'src/components'),
   join(appRoot, 'src/features/docs'),
-  join(appRoot, 'src/hooks'),
   join(appRoot, 'src/lib'),
   join(appRoot, 'src/routes'),
   join(appRoot, 'src/router.tsx'),
@@ -155,7 +154,7 @@ async function readFiles(files: readonly string[]): Promise<ReadonlyMap<string, 
   return new Map(entries);
 }
 
-function getMetaContent(head: ReturnType<typeof createRouteSeoHead>, key: 'name' | 'property', value: string): string | undefined {
+function getMetaContent(head: SeoHead, key: 'name' | 'property', value: string): string | undefined {
   const entry = head.meta.find((meta) => {
     if (key === 'name') {
       return 'name' in meta && meta.name === value;
@@ -171,10 +170,58 @@ function getMetaContent(head: ReturnType<typeof createRouteSeoHead>, key: 'name'
   return undefined;
 }
 
-function parseJsonLdScripts(head: ReturnType<typeof createRouteSeoHead>): readonly unknown[] {
+function parseJsonLdScripts(head: SeoHead): readonly unknown[] {
   return head.scripts
     .filter((script) => script.type === 'application/ld+json')
     .map((script) => JSON.parse(script.children) as unknown);
+}
+
+const rootHead = createRootHead();
+
+function metaDedupKey(meta: SeoMeta): string | undefined {
+  if ('name' in meta) {
+    return `name:${meta.name}`;
+  }
+
+  if ('property' in meta) {
+    return `property:${meta.property}`;
+  }
+
+  if ('title' in meta) {
+    return 'title';
+  }
+
+  return undefined;
+}
+
+/**
+ * Merges the root head with a leaf head the way TanStack Router merges
+ * matched routes: meta entries dedupe by name/property/title with the
+ * deepest match winning, while links and scripts concatenate.
+ */
+function composeHead(leafHead: SeoHead): SeoHead {
+  const meta: SeoMeta[] = [];
+  const seenKeys = new Set<string>();
+
+  for (const entry of [...leafHead.meta, ...rootHead.meta]) {
+    const key = metaDedupKey(entry);
+
+    if (key) {
+      if (seenKeys.has(key)) {
+        continue;
+      }
+
+      seenKeys.add(key);
+    }
+
+    meta.push(entry);
+  }
+
+  return {
+    meta,
+    links: [...rootHead.links, ...leafHead.links],
+    scripts: [...rootHead.scripts, ...leafHead.scripts],
+  };
 }
 
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
@@ -258,7 +305,7 @@ describe('docs compatibility examples', () => {
   it('keeps runtime docs imports on consumer-safe paths', async () => {
     const docsFile = await readFile(join(appRoot, 'src/features/docs/compatibility-examples.tsx'), 'utf8');
 
-    assert.match(docsFile, /from ['"]@\/hooks\/use-formedible['"]/);
+    assert.match(docsFile, /from ['"]@formedible\/ui\/components\/formedible\/hooks\/use-formedible['"]/);
     assert.doesNotMatch(docsFile, /@formedible\/formedible|packages\/formedible|old_version_for_knowledge_purpose|tests\/compatibility-examples/);
     assert.doesNotMatch(docsFile, /from ['"][^'"]+\.(?:js|mjs)['"]/);
   });
@@ -286,7 +333,7 @@ describe('docs compatibility examples', () => {
 
   it('keeps docs examples on the app-local useFormedible hook', async () => {
     const compatibilitySource = await readFile(join(appRoot, 'src/features/docs/compatibility-examples.tsx'), 'utf8');
-    const hookImportPattern = /import \{ useFormedible \} from ['"]@\/hooks\/use-formedible['"]/;
+    const hookImportPattern = /import \{ useFormedible \} from ['"](?:@formedible\/ui\/components\/formedible|@\/components\/ui\/formedible)\/hooks\/use-formedible['"]/;
 
     assert.match(compatibilitySource, hookImportPattern);
     assert.match(compatibilitySource, /useFormedible\(/);
@@ -357,7 +404,7 @@ describe('docs compatibility examples', () => {
 
   it('keeps metadata helpers emitting canonical, Open Graph, and Twitter essentials', () => {
     for (const route of publicRouteMeta) {
-      const head = createRouteSeoHead(route.path);
+      const head = composeHead(createRouteSeoHead(route.path));
       const canonicalUrl = `${siteMeta.siteUrl}${route.path === '/' ? '/' : route.path}`;
 
       assert.equal(getMetaContent(head, 'name', 'description'), route.description);
@@ -381,10 +428,30 @@ describe('docs compatibility examples', () => {
       assert.ok(head.links.some((link) => link.rel === 'manifest' && link.href === '/site.webmanifest'));
 
       const jsonLdScripts = parseJsonLdScripts(head);
-      assert.equal(jsonLdScripts.length, 2);
-      assert.ok(jsonLdScripts.some((script) => isRecord(script) && script['@type'] === 'BreadcrumbList'));
+      assert.equal(jsonLdScripts.length, 4);
+      const entityTypes = jsonLdScripts.filter(isRecord).map((script) => script['@type']);
+      assert.equal(new Set(entityTypes).size, entityTypes.length, 'JSON-LD entity types must not repeat across root and leaf heads');
+      assert.ok(entityTypes.includes('Organization'));
+      assert.ok(entityTypes.includes('WebSite'));
+      assert.ok(entityTypes.includes('BreadcrumbList'));
       assert.ok(jsonLdScripts.some((script) => isRecord(script) && script.url === canonicalUrl && script.dateModified === siteMeta.lastModified && Array.isArray(script.keywords)));
+
+      assert.equal(head.links.filter((link) => link.rel === 'canonical').length, 1, `${route.path} must ship exactly one canonical link`);
+      assert.equal(head.meta.filter((meta) => 'title' in meta).length, 1, `${route.path} must ship exactly one title`);
     }
+  });
+
+  it('keeps the root head limited to site-wide entities without a canonical', () => {
+    assert.ok(rootHead.links.every((link) => link.rel !== 'canonical'), 'root head must not emit a canonical link');
+
+    const rootJsonLdTypes = parseJsonLdScripts(rootHead)
+      .filter(isRecord)
+      .map((script) => script['@type'])
+      .sort();
+    assert.deepEqual(rootJsonLdTypes, ['Organization', 'WebSite']);
+
+    assert.equal(getMetaContent(rootHead, 'name', 'description'), siteMeta.description);
+    assert.equal(getMetaContent(rootHead, 'property', 'og:image'), `${siteMeta.siteUrl}${siteMeta.ogImagePath}`);
   });
 
   it('does not document removed validation or debug return helpers', async () => {

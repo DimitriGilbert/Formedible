@@ -25,6 +25,12 @@ export interface ParserOptions {
   readonly allowedPageKeys?: readonly string[];
   readonly allowedProgressKeys?: readonly string[];
   readonly allowedFormOptionsKeys?: readonly string[];
+  /**
+   * Maximum object/array nesting depth accepted in parsed values. Defaults to
+   * `defaultParserConfig.maxNestingDepth` (50). Deeper structures fail with the
+   * coded `EXCEEDS_MAX_NESTING_DEPTH` ParserError instead of a stack overflow.
+   */
+  readonly maxNestingDepth?: number;
 }
 
 export interface ParserError extends Error {
@@ -35,8 +41,20 @@ export interface ParserError extends Error {
 }
 
 export interface EnhancedParserOptions extends ParserOptions {
+  /**
+   * Base schema shape merged into the parsed config during validation,
+   * according to `mergeStrategy`. Non-record values are ignored. Consumed by
+   * `FormedibleParser.parse`/`parseStructured`/`parseAiOutput` via the same
+   * logic as the `mergeSchemas` static.
+   */
   readonly baseSchema?: unknown;
+  /** Strategy applied when merging `baseSchema` into the parsed config; defaults to 'extend'. */
   readonly mergeStrategy?: 'extend' | 'override' | 'intersect';
+  /**
+   * Reserved for future use. Accepted for API compatibility only: the parser
+   * never executes handlers from AI-generated configs, so any handlers
+   * supplied here are a documented no-op.
+   */
   readonly predefinedHandlers?: {
     readonly onSubmit?: (data: unknown) => void;
     readonly specificFields?: Readonly<Record<string, ParsedFieldConfig>>;
@@ -89,12 +107,14 @@ export interface FormedibleParseResult {
   readonly errors: readonly EnhancedParserError[];
 }
 
+// Structured model output: either a direct ParsedFormConfig (formOptions is
+// config content there, never an envelope key) or a single-payload envelope
+// wrapper. Mirrors the unwrap keys in pickStructuredCandidate.
 export type FormedibleStructuredOutput =
   | ParsedFormConfig
   | {
       readonly formedible?: unknown;
       readonly formConfig?: unknown;
-      readonly formOptions?: unknown;
       readonly config?: unknown;
       readonly output?: unknown;
     };

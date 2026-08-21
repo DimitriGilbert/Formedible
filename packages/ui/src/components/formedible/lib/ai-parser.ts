@@ -24,10 +24,10 @@ function defaultValueForField(field: FormedibleFieldConfig<FormedibleFormValues>
 }
 
 function inferDefaultValues(options: UseFormedibleOptions<FormedibleFormValues>): UseFormedibleOptions<FormedibleFormValues> {
-  const existingDefaults = options.formOptions.defaultValues;
+  const existingDefaults = options.formOptions?.defaultValues;
   const defaultValues: FormedibleFormValues = { ...existingDefaults };
 
-  for (const field of options.fields) {
+  for (const field of options.fields ?? []) {
     if (!Object.prototype.hasOwnProperty.call(defaultValues, field.name)) {
       defaultValues[field.name] = defaultValueForField(field);
     }

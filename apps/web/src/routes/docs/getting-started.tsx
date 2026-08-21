@@ -4,7 +4,7 @@ import { DocsGuidePage } from '@/components/docs/guide-page';
 import { createRouteSeoHead } from '@/features/docs/seo';
 
 const routeHead = createRouteSeoHead('/docs/getting-started');
-const githubRoot = 'https://github.com/DimitriGilbert/Formedible/blob/main';
+const githubRoot = 'https://github.com/DimitriGilbert/Formedible/blob/re-codex';
 
 const installSnippet = `pnpm dlx shadcn@latest add https://formedible.dev/r/formedible-core.json`;
 

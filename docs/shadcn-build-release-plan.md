@@ -157,7 +157,7 @@ Required flag:
 - `--release <version>`
   - Explicit version string. Must be valid semver with `v` prefix (e.g., `v1.0.0`, `v0.2.0-alpha.1`).
   - Uses direct JSON editing for the root `package.json` `version` field.
-  - Must be greater than the current root version.
+  - Must be greater than the current root version. Exception: a same-version rerun is idempotent when root `package.json` already carries the release version and is the only dirty deploy-affecting file (the recovery state after a mid-flow failure); the bump is skipped and the flow proceeds.
   - Derives release name and git tag as the provided version string.
 
 Optional flags:
@@ -177,7 +177,7 @@ Flag validation:
 
 - `--release` is required for real publish. Optional for `--no-publish` (if omitted, no version change occurs).
 - Invalid semver values must fail.
-- `--release` version must be greater than current root `package.json` version.
+- `--release` version must be greater than current root `package.json` version, except for the idempotent same-version rerun state described above (root `package.json` at the release version and the only dirty deploy-affecting file).
 - `--no-publish` must disable commit/tag/push/deploy/GitHub-release side effects.
 
 ## Registry Build Requirements

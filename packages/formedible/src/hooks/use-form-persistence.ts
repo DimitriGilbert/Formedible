@@ -14,10 +14,16 @@ export interface PersistedFormPayload<TFormValues extends FormedibleFormValues> 
   readonly currentPage?: number;
 }
 
-export interface FormPersistenceRuntimeOptions {
+export interface FormPersistenceRuntimeOptions<TFormValues extends FormedibleFormValues = FormedibleFormValues> {
   readonly currentPage?: number;
   readonly totalPages?: number;
   readonly setCurrentPage?: (page: number) => void;
+  /**
+   * Live form-values snapshot (store-subscribed by the host) driving autosave
+   * scheduling. Falls back to reading `form.state.values` at render time when
+   * the caller does not subscribe.
+   */
+  readonly values?: TFormValues;
 }
 
 export function getConfiguredStorage(config: FormediblePersistenceConfig | undefined) {
@@ -92,25 +98,62 @@ export function clearPersistedFormPayload(storage: Storage, key: string) {
   storage.removeItem(key);
 }
 
+function buildPersistedValuesSignature<TFormValues extends FormedibleFormValues>(values: TFormValues, exclude: readonly string[] | undefined) {
+  return JSON.stringify(withoutPersistedFields(values, exclude));
+}
+
+/**
+ * Substantive identity of a persistence config: object identity churns on every
+ * host render for inline configs, so guards key on these fields instead.
+ */
+function buildPersistenceConfigKey<TFormValues extends FormedibleFormValues>(config: FormediblePersistenceConfig<TFormValues> | undefined) {
+  if (!config) {
+    return '';
+  }
+
+  return JSON.stringify({
+    key: config.key,
+    storage: config.storage ?? 'sessionStorage',
+    restoreOnMount: config.restoreOnMount ?? false,
+    exclude: config.exclude ?? [],
+  });
+}
+
 export function useFormPersistence<TFormValues extends FormedibleFormValues>(
   form: FormPersistenceApi<TFormValues>,
   config: FormediblePersistenceConfig<TFormValues> | undefined,
-  options: FormPersistenceRuntimeOptions = {},
+  options: FormPersistenceRuntimeOptions<TFormValues> = {},
 ) {
-  const latestValuesRef = useRef(form.state.values);
-  latestValuesRef.current = form.state.values;
-  const persistedValuesSignature = config ? JSON.stringify(withoutPersistedFields(latestValuesRef.current, config.exclude)) : '';
-  const { currentPage, setCurrentPage, totalPages } = options;
+  const { currentPage, setCurrentPage, totalPages, values: subscribedValues } = options;
+  const liveValues = subscribedValues ?? form.state.values;
+  const persistedValuesSignature = config ? buildPersistedValuesSignature(liveValues, config.exclude) : '';
+  const persistenceConfigKey = buildPersistenceConfigKey(config);
+  const latestConfigRef = useRef(config);
+  latestConfigRef.current = config;
+  const latestCurrentPageRef = useRef(currentPage);
+  latestCurrentPageRef.current = currentPage;
+
+  /**
+   * Signature of the last values state acknowledged by the save pipeline
+   * (either persisted to storage or adopted as the no-save baseline). While the
+   * live values match it, no save is scheduled, so the debounced save scheduled
+   * at mount cannot clobber values restored by the restore effect — it adopts
+   * the post-restore snapshot instead and the first real save waits for an
+   * actual user edit. `clearStorage` also acknowledges the live snapshot so a
+   * post-submit reset cannot resurrect a phantom draft.
+   */
+  const acknowledgedSignatureRef = useRef<string | undefined>(undefined);
 
   const saveToStorage = useCallback(() => {
-    const storage = getConfiguredStorage(config);
+    const currentConfig = latestConfigRef.current;
+    const storage = getConfiguredStorage(currentConfig);
 
-    if (!storage || !config) {
+    if (!storage || !currentConfig) {
       return;
     }
 
-    savePersistedFormPayload(storage, config.key, createPersistedFormPayload(latestValuesRef.current, currentPage, config.exclude));
-  }, [config, currentPage]);
+    savePersistedFormPayload(storage, currentConfig.key, createPersistedFormPayload(form.state.values, latestCurrentPageRef.current, currentConfig.exclude));
+  }, [form]);
 
   const loadFromStorage = useCallback(() => {
     const storage = getConfiguredStorage(config);
@@ -143,28 +186,71 @@ export function useFormPersistence<TFormValues extends FormedibleFormValues>(
 
     if (storage && config) {
       clearPersistedFormPayload(storage, config.key);
+      // Acknowledge the live snapshot as the no-save baseline: after a
+      // successful submit the host clears the draft and resets to defaults.
+      // Without this the reset re-triggers the autosave effect below and a
+      // debounced save of the reset (default) values regains a phantom draft
+      // right after the key was removed. A later real user edit still differs
+      // from this signature and saves normally.
+      acknowledgedSignatureRef.current = buildPersistedValuesSignature(form.state.values, config.exclude);
     }
-  }, [config]);
+  }, [config, form]);
+
+  /**
+   * Restore exactly once per substantive persistence config. Without the guard
+   * this effect re-ran on every host re-render (inline `config` objects churn),
+   * reverting freshly typed values and snapping the page back to the stored
+   * snapshot.
+   */
+  const restoredConfigKeyRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
-    if (config?.restoreOnMount) {
-      loadFromStorage();
-    }
-  }, [config?.restoreOnMount, loadFromStorage]);
-
-  useEffect(() => {
-    if (!config) {
+    if (!config?.restoreOnMount) {
       return;
     }
 
-    if (typeof window === 'undefined') {
+    if (restoredConfigKeyRef.current === persistenceConfigKey) {
       return;
     }
 
-    const timeout = window.setTimeout(saveToStorage, config.debounceMs ?? 500);
+    restoredConfigKeyRef.current = persistenceConfigKey;
+    loadFromStorage();
+  }, [config?.restoreOnMount, persistenceConfigKey, loadFromStorage]);
+
+  useEffect(() => {
+    const currentConfig = latestConfigRef.current;
+
+    if (!currentConfig || typeof window === 'undefined') {
+      return;
+    }
+
+    const liveSignature = buildPersistedValuesSignature(form.state.values, currentConfig.exclude);
+
+    if (acknowledgedSignatureRef.current === undefined) {
+      acknowledgedSignatureRef.current = liveSignature;
+      return;
+    }
+
+    if (liveSignature === acknowledgedSignatureRef.current) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      const latestSignature = buildPersistedValuesSignature(form.state.values, currentConfig.exclude);
+
+      // A clearStorage() call while this save was pending acknowledged the
+      // live snapshot as the no-save baseline; the stale timer must not
+      // resurrect the just-removed draft.
+      if (latestSignature === acknowledgedSignatureRef.current) {
+        return;
+      }
+
+      acknowledgedSignatureRef.current = latestSignature;
+      saveToStorage();
+    }, currentConfig.debounceMs ?? 500);
 
     return () => window.clearTimeout(timeout);
-  }, [config, persistedValuesSignature, saveToStorage]);
+  }, [persistedValuesSignature, form, saveToStorage]);
 
   return { saveToStorage, loadFromStorage, clearStorage };
 }

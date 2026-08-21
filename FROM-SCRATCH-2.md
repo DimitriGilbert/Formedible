@@ -489,3 +489,53 @@ The rewrite is acceptable only when:
 The final architecture must be explainable as:
 
 Formedible authors shadcn-installable source in each component source directory, builds registry payloads from those directories, uses copy-only sync as local `shadcn add`, and renders compatibility examples through TanStack Form and shadcn components.
+
+## Intentional divergences (post-review)
+
+Review of the rewrite against the old reference surfaced five large DEGRADED gaps plus a few small residuals. Decision D13 of the fix plan (`.review/session-20260819/fix-plan.md`, Phase 24.3) chose to document them as intentional divergences instead of adding implementation phases. Each item below states the divergence from the old reference, the rationale, and the rewrite's replacement where one exists. The compatibility fixtures mirror these dispositions: `tests/compatibility-examples/core-examples.ts` annotates the location map rows, and `tests/compatibility-examples/form-options-analytics-contract.ts` carries the `autoScroll` row.
+
+### D6 — Location map rendering
+
+Divergence: the old reference rendered an interactive tile map inside `location` fields, with `mapProvider` selection (Leaflet) and tile-provider configuration (`googleMaps`, `openStreetMap`, `bingMaps`). The rewrite ships no map UI. `FormedibleLocationConfig` keeps `showMap` typed so legacy schemas still compile, but the renderer ignores it; no `mapProvider` or tile-provider option exists.
+
+Rationale: a tile map drags in a heavy external dependency (Leaflet, marker assets, provider SDKs) and per-provider API-key contracts that do not fit the shadcn-installable-source model, where consumers copy source files rather than install dependency bundles.
+
+Replacement: the location value contract is fully preserved without a map. The `location` field renders address search (debounced `searchCallback` with `searchOptions`), a geolocation button (browser API with `reverseGeocodeCallback` address enrichment), manual lat/lng entry, and a coordinates/address summary card. Consumers that need a map render their own beside the field using the emitted `lat`/`lng` value.
+
+### D7 — Custom progress, page, and submit-button component slots
+
+Divergence: the old reference accepted custom React components for the progress display (`progress.component`), page chrome (`page.component`), and the submit button (`submitButton`). The rewrite types none of these slots: `FormedibleProgressConfig` is declarative (`showSteps`, `showPercentage`), `FormediblePageConfig` carries only title/description/conditional, and the submit button is a fixed shadcn `Button`.
+
+Rationale: chrome-level component slots re-create a second renderer API inside the renderer; every slot multiplies the shadcn composition surface that must stay installable and typed.
+
+Replacement: styling hooks and native controls. `submitLabel`, `showSubmitButton`, `buttonClassName`, `submitButtonClassName`, `formClassName`, `fieldClassName`, and `labelClassName` (the className set was restored in Phase 22) style the built-in shadcn controls. Field-level component customization is not affected by this divergence: `field.component`, `defaultComponents` registry entries, and `globalWrapper` remain supported.
+
+### D8 — Core layout system
+
+Divergence: the old reference had a top-level `layout` option driving grid/flex arrangement of all fields, plus `conditionalSections`, `group`, and the per-field grid placement props (`gridColumn`, `gridRow`, `gridColumnSpan`, `gridRowSpan`, `gridArea`). The rewrite has no top-level `layout` option and none of those keys.
+
+Rationale: a general layout engine duplicates CSS grid/flex through a config schema and complicates the shadcn composition the rewrite standardizes on.
+
+Replacement: field-level `section` (title, description, `collapsible`, `defaultExpanded`) groups consecutive fields, and object/array-object configs expose `layout: 'stack' | 'grid'` (legacy `vertical`/`horizontal` normalize to `stack`) with `columns` for nested-field arrangement. Page-level arrangement is the consumer's own markup around `<Form />`.
+
+### D11 — `currentPage` visible-index semantics
+
+Divergence: in the old reference, `currentPage` was an index into the visible-page list, so its numeric value shifted when conditional pages hid entries. In the rewrite, `currentPage` is the actual page number from the field/page configs; `totalPages` is the count of currently visible pages and `visiblePages` lists their numbers. `goToNextPage`/`goToPreviousPage` still step across hidden pages by walking the visible list.
+
+Rationale: page-number semantics match what `pages[].page`, `fields[].page`, and analytics callbacks already exchange, removing a hidden index indirection that only existed to keep the pointer stable across visibility changes.
+
+Replacement for the clamping case: when a conditional page hides the current page, an effect resets `currentPage` to the first visible page rather than re-indexing, and the internal `changePage` helper only moves between currently visible pages (`goToNextPage`/`goToPreviousPage` both route through it).
+
+### D12 — Page-validation-gated navigation
+
+Divergence: the old reference blocked the Next button until the current page was valid. The rewrite navigates freely between visible pages and tabs.
+
+Rationale: gating navigation on per-page validity duplicates TanStack Form's validation lifecycle in navigation state and fights users who want to review later pages first.
+
+Replacement: submit-time enforcement plus guidance. Submit runs configured validation for every visible field, including fields on inactive pages/tabs that have no mounted instance, so an unseen invalid field still blocks submit. `onSubmitInvalid` then feeds a validation summary (default on) listing each invalid field with its page, and `validationSummary.autoNavigate` (default true) switches to the first invalid field's page or tab and smooth-scrolls to it. `formOptions.canSubmitWhenInvalid` and `formOptions.onSubmitInvalid` remain the escape hatches.
+
+### Small residuals
+
+1. `autoScroll`: the legacy option does not exist in the rewrite. Legacy `autoScroll` only toggled scroll-to-top during navigation; the rewrite instead smooth-scrolls to and focuses the first invalid field on invalid submit (default behavior of `validationSummary.autoNavigate`, also fired when a summary entry is clicked).
+2. Async form-validation slots are probed, not unconditional: form-level async validator slots are only registered when `isFormedibleSchemaAsync` probes the schema as genuinely async against the default values. A merely-registered async validator would schedule a debounced pass whose timer a stale change pass can clear mid-submit, leaving `handleSubmit` unsettled.
+3. Collapsed-section fields still validate on submit: a collapsed `section.collapsible` unmounts its fields, but the unmounted-visible-field submit pass still runs their configured validation, so an invalid collapsed section blocks submit. `autoNavigate` can switch page or tab for such an error, but cannot expand a collapsed section, so its scroll/focus step finds no element and is skipped.

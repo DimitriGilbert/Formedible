@@ -6,6 +6,7 @@ import type {
   AiJsonValue,
   AiMessagePart,
   AiStreamEvent,
+  AiStreamEventSummary,
   AiToolChunk,
   AiUsageMetadata,
 } from '@formedible/ui/components/formedible/lib/ai-types';
@@ -57,6 +58,59 @@ export function parseSafeStreamEvents(value: unknown): readonly AiStreamEvent[] 
     const event = parseSafeStreamEvent(entry);
     return event ? [event] : [];
   });
+}
+
+export function createStreamEventSummary(events: readonly AiStreamEvent[]): AiStreamEventSummary | undefined {
+  if (events.length === 0) {
+    return undefined;
+  }
+
+  const countsByType: Record<string, number> = {};
+  let usage: AiUsageMetadata | undefined;
+
+  for (const event of events) {
+    countsByType[event.type] = (countsByType[event.type] ?? 0) + 1;
+
+    if (event.type === 'finish' && event.usage) {
+      usage = event.usage;
+    }
+  }
+
+  return {
+    totalEvents: events.length,
+    countsByType,
+    ...(usage ? { usage } : {}),
+  };
+}
+
+export function parseStreamEventSummary(value: unknown): AiStreamEventSummary | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const totalEvents = parseNumber(value.totalEvents);
+
+  if (totalEvents === undefined || !isRecord(value.countsByType)) {
+    return undefined;
+  }
+
+  const countsByType: Record<string, number> = {};
+
+  for (const [eventType, count] of Object.entries(value.countsByType)) {
+    const parsedCount = parseNumber(count);
+
+    if (parsedCount !== undefined) {
+      countsByType[eventType] = parsedCount;
+    }
+  }
+
+  const usage = parseSafeUsageMetadata(value.usage);
+
+  return {
+    totalEvents,
+    countsByType,
+    ...(usage ? { usage } : {}),
+  };
 }
 
 export function parseSafeGenerationMetadata(value: unknown): AiGenerationMetadata | undefined {

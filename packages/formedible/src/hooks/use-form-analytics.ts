@@ -7,6 +7,17 @@ export interface FormAnalyticsPageValidationState {
   readonly completionPercentage: number;
 }
 
+export interface FormAnalyticsTabValidationState {
+  readonly hasErrors: boolean;
+  readonly completionPercentage: number;
+}
+
+/** Tab analytics surface consumed by `useFormTabs` to fire legacy tab callbacks. */
+export interface FormAnalyticsTabTracker {
+  readonly trackTabChange: (fromTab: string, toTab: string, timeSpentMs: number, tabValidationState?: FormAnalyticsTabValidationState) => void;
+  readonly trackTabFirstVisit: (tabId: string, timestamp: number) => void;
+}
+
 export interface FormAnalyticsAbandonContext {
   readonly completionPercentage: number;
   readonly currentPage?: number;
@@ -128,9 +139,33 @@ export function useFormAnalytics<TFormValues extends FormedibleFormValues>(
     );
   }
 
+  function trackTabChange(fromTab: string, toTab: string, timeSpentMs: number, tabValidationState?: FormAnalyticsTabValidationState) {
+    analyticsRef.current?.onTabChange?.(fromTab, toTab, timeSpentMs, tabValidationState);
+  }
+
+  function trackTabFirstVisit(tabId: string, timestamp: number) {
+    analyticsRef.current?.onTabFirstVisit?.(tabId, timestamp);
+  }
+
+  function trackSubmissionPerformance(processingTimeMs: number) {
+    // Legacy parity: submissionTime is the total time since form start and
+    // validationTime was never updated on the legacy runtime (always 0).
+    analyticsRef.current?.onSubmissionPerformance?.(Date.now() - startedAtRef.current, 0, processingTimeMs);
+  }
+
   function trackFormReset(reason?: string) {
     analyticsRef.current?.onFormReset?.(Date.now(), reason);
   }
 
-  return { trackFieldFocus, trackFieldBlur, trackFieldChange, trackFormComplete, trackFormReset, trackPageChange };
+  return {
+    trackFieldFocus,
+    trackFieldBlur,
+    trackFieldChange,
+    trackFormComplete,
+    trackFormReset,
+    trackPageChange,
+    trackTabChange,
+    trackTabFirstVisit,
+    trackSubmissionPerformance,
+  };
 }

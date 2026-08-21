@@ -1,8 +1,19 @@
 import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, resolve, sep } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+import ts from 'typescript';
+
 const defaultRoutes = [
+  {
+    // Installs the ai-picker block into the ai-builder source tree. Extension-package
+    // install routes must stay above the packages/formedible, packages/builder, and
+    // packages/formedible-parser owner routes: tests/sync/copy-only-sync.test.ts greps
+    // this file for forbidden core-owner-to-extension-package route pairings.
+    ownerRoot: 'packages/ai-picker',
+    destinationRoots: ['packages/ai-builder/src'],
+    useRegistryTargets: false,
+  },
   {
     ownerRoot: 'packages/formedible',
     destinationRoots: ['packages/ui/src/components'],
@@ -122,6 +133,102 @@ function resolveFromRoot(root, path) {
   return resolve(root, path);
 }
 
+function assertTargetInsideDestinationRoot(targetPath, destinationRootPath) {
+  const resolvedTargetPath = resolve(targetPath);
+  const resolvedDestinationRootPath = resolve(destinationRootPath);
+
+  if (!resolvedTargetPath.startsWith(resolvedDestinationRootPath + sep)) {
+    throw new Error(
+      `Refusing to sync outside destination root: target ${targetPath} resolves to ${resolvedTargetPath}, which is not inside ${resolvedDestinationRootPath}.`,
+    );
+  }
+}
+
+const scriptFileExtensionPattern = /\.[cm]?[jt]sx?$/;
+
+function parseSourceKind(filePath) {
+  if (filePath.endsWith('.tsx') || filePath.endsWith('.jsx')) {
+    return ts.ScriptKind.TSX;
+  }
+
+  if (filePath.endsWith('.ts')) {
+    return ts.ScriptKind.TS;
+  }
+
+  return ts.ScriptKind.JS;
+}
+
+function isDynamicImportCall(node) {
+  return (
+    ts.isCallExpression(node) &&
+    node.expression.kind === ts.SyntaxKind.ImportKeyword &&
+    node.arguments.length === 1 &&
+    ts.isStringLiteral(node.arguments[0])
+  );
+}
+
+function collectModuleSpecifierLiterals(sourceFile) {
+  const literals = [];
+
+  function visit(node) {
+    if ((ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier !== undefined && ts.isStringLiteral(node.moduleSpecifier)) {
+      literals.push(node.moduleSpecifier);
+    } else if (isDynamicImportCall(node)) {
+      literals.push(node.arguments[0]);
+    }
+
+    ts.forEachChild(node, visit);
+  }
+
+  visit(sourceFile);
+
+  return literals;
+}
+
+function escapeSpecifierText(specifier, quote) {
+  const escapedQuote = quote === "'" ? "\\'" : '\\"';
+
+  return specifier.replaceAll('\\', '\\\\').replaceAll(quote, escapedQuote);
+}
+
+// Rewrites only module specifiers the TypeScript parser identifies as import/export
+// declaration sources or dynamic import() arguments. Everything else in the file
+// (template literals, plain strings, comments) stays byte-identical because the
+// rewritten specifiers are spliced positionally into the original text instead of
+// re-printing the AST.
+function rewriteSpecifiersInSource(sourceText, filePath, rewriteSpecifier) {
+  if (!scriptFileExtensionPattern.test(filePath)) {
+    return sourceText;
+  }
+
+  const sourceFile = ts.createSourceFile(filePath, sourceText, ts.ScriptTarget.Latest, true, parseSourceKind(filePath));
+  const literals = collectModuleSpecifierLiterals(sourceFile);
+  let rewrittenText = '';
+  let splicePosition = 0;
+
+  for (const literal of literals) {
+    const rewrittenSpecifier = rewriteSpecifier(literal.text);
+
+    if (rewrittenSpecifier === literal.text) {
+      continue;
+    }
+
+    const startPosition = literal.getStart();
+    const endPosition = literal.end;
+
+    if (startPosition < splicePosition) {
+      throw new Error(`Overlapping module specifiers while rewriting imports in ${filePath}.`);
+    }
+
+    const quoteCharacter = sourceText[startPosition];
+    rewrittenText += sourceText.slice(splicePosition, startPosition);
+    rewrittenText += quoteCharacter + escapeSpecifierText(rewrittenSpecifier, quoteCharacter) + quoteCharacter;
+    splicePosition = endPosition;
+  }
+
+  return rewrittenText + sourceText.slice(splicePosition);
+}
+
 function readAliasValue(componentsConfig, aliasName) {
   if (!isRecord(componentsConfig)) {
     return undefined;
@@ -160,11 +267,15 @@ function rewriteAliasSpecifier(specifier, aliases) {
     return `${uiAlias}/formedible/hooks/${specifier.slice('@/hooks/'.length)}`;
   }
 
+  if (specifier === '@/components/ai-picker') {
+    return `${uiAlias}/formedible/ai-picker`;
+  }
+
   if (specifier.startsWith('@/components/ai-picker/')) {
     return `${uiAlias}/formedible/ai-picker/components/${specifier.slice('@/components/ai-picker/'.length)}`;
   }
 
-  if (specifier.startsWith('@/lib/ai-picker-') || specifier === '@/lib/default-picker-schema') {
+  if (specifier.startsWith('@/lib/ai-picker-') || specifier === '@/lib/default-picker-schema' || specifier === '@/lib/conditional-path') {
     return `${uiAlias}/formedible/ai-picker/lib/${specifier.slice('@/lib/'.length)}`;
   }
 
@@ -215,16 +326,12 @@ function rewriteWebSpecifier(specifier) {
   return specifier;
 }
 
-function rewriteModuleSpecifiers(sourceText, aliases) {
-  return sourceText.replace(/(from\s+['"]|import\s*\(\s*['"]|export\s+[^;]*?from\s+['"])(@\/[^'"]+)(['"])/g, (match, prefix, specifier, suffix) => {
-    return `${prefix}${rewriteAliasSpecifier(specifier, aliases)}${suffix}`;
-  });
+function rewriteModuleSpecifiers(sourceText, filePath, aliases) {
+  return rewriteSpecifiersInSource(sourceText, filePath, (specifier) => rewriteAliasSpecifier(specifier, aliases));
 }
 
-function rewriteWebCoreSpecifiers(sourceText) {
-  return sourceText.replace(/(from\s+['"]|import\s*\(\s*['"]|export\s+[^;]*?from\s+['"])(@\/[^'"]+)(['"])/g, (match, prefix, specifier, suffix) => {
-    return `${prefix}${rewriteWebSpecifier(specifier)}${suffix}`;
-  });
+function rewriteWebCoreSpecifiers(sourceText, filePath) {
+  return rewriteSpecifiersInSource(sourceText, filePath, rewriteWebSpecifier);
 }
 
 async function readDestinationAliases(rootDirectory, destinationRoot) {
@@ -247,7 +354,7 @@ async function readDestinationAliases(rootDirectory, destinationRoot) {
   return { ui, utils };
 }
 
-async function syncContentForDestination(sourceText, rootDirectory, destinationRoot) {
+async function syncContentForDestination(sourceText, sourcePath, rootDirectory, destinationRoot) {
   if (destinationRoot === 'packages/ui/src/components') {
     const aliases = await readDestinationAliases(rootDirectory, destinationRoot);
 
@@ -255,11 +362,11 @@ async function syncContentForDestination(sourceText, rootDirectory, destinationR
       throw new Error(`Unable to resolve shadcn aliases for ${destinationRoot}`);
     }
 
-    return rewriteModuleSpecifiers(sourceText, aliases);
+    return rewriteModuleSpecifiers(sourceText, sourcePath, aliases);
   }
 
   if (destinationRoot === 'apps/web/src') {
-    return rewriteWebCoreSpecifiers(sourceText);
+    return rewriteWebCoreSpecifiers(sourceText, sourcePath);
   }
 
   return sourceText;
@@ -292,10 +399,12 @@ async function copyRegistryFiles(route, rootDirectory) {
     }
 
     for (const destinationRoot of route.destinationRoots) {
-      const targetPath = join(resolveFromRoot(rootDirectory, destinationRoot), resolveSyncTargetPath(file.sourcePath, file.targetPath, route.useRegistryTargets === true));
+      const destinationRootPath = resolveFromRoot(rootDirectory, destinationRoot);
+      const targetPath = join(destinationRootPath, resolveSyncTargetPath(file.sourcePath, file.targetPath, route.useRegistryTargets === true));
+      assertTargetInsideDestinationRoot(targetPath, destinationRootPath);
       await mkdir(dirname(targetPath), { recursive: true });
       const sourceContent = await readFile(sourcePath, 'utf8');
-      const syncedContent = await syncContentForDestination(sourceContent, rootDirectory, destinationRoot);
+      const syncedContent = await syncContentForDestination(sourceContent, file.sourcePath, rootDirectory, destinationRoot);
       await writeFile(targetPath, syncedContent);
       copied += 1;
     }

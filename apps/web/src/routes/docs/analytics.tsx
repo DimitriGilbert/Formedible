@@ -64,8 +64,8 @@ const sections = [
 } satisfies FormedibleAnalyticsConfig<LeadFormValues>;`,
     },
     references: [
-      sourceReference('Types: FormedibleAnalyticsConfig', 'packages/formedible/src/lib/formedible/types.ts#L404-L445', 'Supported callbacks and never-typed older callbacks.'),
-      sourceReference('Source: use-form-analytics.ts', 'packages/formedible/src/hooks/use-form-analytics.ts#L52-L136', 'Runtime callback calls.'),
+      sourceReference('Types: FormedibleAnalyticsConfig', 'packages/formedible/src/lib/formedible/types.ts#L492-L543', 'Supported callbacks and never-typed older callbacks.'),
+      sourceReference('Source: use-form-analytics.ts', 'packages/formedible/src/hooks/use-form-analytics.ts#L63-L171', 'Runtime callback calls.'),
       analyticsExample,
     ],
   },
@@ -99,9 +99,9 @@ const sections = [
 }}`,
     },
     references: [
-      sourceReference('Source: field analytics methods', 'packages/formedible/src/hooks/use-form-analytics.ts#L91-L113', 'Focus, blur, change, error, and completion event calls.'),
-      sourceReference('Source: FieldRenderer wiring', 'packages/formedible/src/hooks/use-formedible.tsx#L239-L255', 'The field controller calls analytics from focus, blur, and change.'),
-      sourceReference('Test: blur timing', 'tests/formedible/phase10-behavior.test.ts#L217-L245', 'Asserts positional arguments and focus-derived blur time.'),
+      sourceReference('Source: field analytics methods', 'packages/formedible/src/hooks/use-form-analytics.ts#L102-L124', 'Focus, blur, change, error, and completion event calls.'),
+      sourceReference('Source: FieldRenderer wiring', 'packages/formedible/src/hooks/use-formedible.tsx#L636-L656', 'The field controller calls analytics from focus, blur, and change.'),
+      sourceReference('Test: blur timing', 'tests/formedible/phase10-behavior.test.ts#L236-L264', 'Asserts positional arguments and focus-derived blur time.'),
     ],
   },
   {
@@ -131,9 +131,9 @@ const form = useForm({
 });`,
     },
     references: [
-      sourceReference('Source: page change timing', 'packages/formedible/src/hooks/use-multi-page.ts#L77-L85', 'fromPage, toPage, and timeSpent are created before currentPage changes.'),
-      sourceReference('Source: page/form analytics', 'packages/formedible/src/hooks/use-form-analytics.ts#L115-L132', 'Form complete, page change, and reset tracking.'),
-      sourceReference('Source: validation state', 'packages/formedible/src/hooks/use-formedible.tsx#L109-L122', 'Page validation state shape passed into onPageChange.'),
+      sourceReference('Source: page change timing', 'packages/formedible/src/hooks/use-multi-page.ts#L61-L70', 'fromPage, toPage, and timeSpent are created before currentPage changes.'),
+      sourceReference('Source: page/form analytics', 'packages/formedible/src/hooks/use-form-analytics.ts#L126-L158', 'Form complete, page change, and reset tracking.'),
+      sourceReference('Source: validation state', 'packages/formedible/src/hooks/use-formedible.tsx#L321-L337', 'Page validation state shape passed into onPageChange.'),
     ],
   },
   {
@@ -162,8 +162,8 @@ const form = useForm({
 }`,
     },
     references: [
-      sourceReference('Source: analytics cleanup', 'packages/formedible/src/hooks/use-form-analytics.ts#L66-L89', 'Cleanup path and context assembly for onFormAbandon.'),
-      sourceReference('Source: abandon context', 'packages/formedible/src/hooks/use-formedible.tsx#L124-L139', 'Completion percentage, currentPage, and currentTab context.'),
+      sourceReference('Source: analytics cleanup', 'packages/formedible/src/hooks/use-form-analytics.ts#L77-L100', 'Cleanup path and context assembly for onFormAbandon.'),
+      sourceReference('Source: abandon context', 'packages/formedible/src/hooks/use-formedible.tsx#L343-L355', 'Completion percentage, currentPage, and currentTab context.'),
       analyticsExample,
     ],
   },
@@ -198,9 +198,9 @@ tracker.trackFieldError('email', ['Invalid email']);
 tracker.trackFormReset('clear-button');`,
     },
     references: [
-      sourceReference('Source: createFormAnalyticsTracker', 'packages/formedible/src/hooks/use-form-analytics.ts#L30-L50', 'Standalone factory and returned methods.'),
-      sourceReference('Test: compatibility tracker', 'tests/formedible/basic-fields.test.tsx#L295-L318', 'Asserts restored callbacks from the standalone tracker.'),
-      sourceReference('Test: analytics contract', 'tests/formedible/phase10-behavior.test.ts#L188-L215', 'Approved analytics options and useFormedible return contract.'),
+      sourceReference('Source: createFormAnalyticsTracker', 'packages/formedible/src/hooks/use-form-analytics.ts#L41-L61', 'Standalone factory and returned methods.'),
+      sourceReference('Test: compatibility tracker', 'tests/formedible/basic-fields.test.tsx#L413-L436', 'Asserts restored callbacks from the standalone tracker.'),
+      sourceReference('Test: analytics contract', 'tests/formedible/phase10-behavior.test.ts#L207-L234', 'Approved analytics options and useFormedible return contract.'),
     ],
   },
 ] satisfies readonly DocsGuideSection[];

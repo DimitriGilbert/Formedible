@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 
+import { NumberSettingInput } from '@/components/formedible/ai/agent-settings';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { defaultParserConfig, generateSystemPrompt, mergeParserConfig, parserConfigFields, validateParserConfig } from '@/components/formedible/lib/parser-config-schema';
@@ -16,9 +16,20 @@ export interface ParserSettingsProps {
   readonly className?: string;
 }
 
-function parseNumber(value: string, fallback: number): number {
-  const parsedValue = Number(value);
-  return Number.isFinite(parsedValue) ? parsedValue : fallback;
+function numericFieldRange(name: string): { readonly min: number; readonly max: number } {
+  const field = parserConfigFields.find((entry) => entry.name === name);
+  const min = typeof field?.min === 'number' ? field.min : 1;
+  const max = typeof field?.max === 'number' ? field.max : Number.POSITIVE_INFINITY;
+
+  return { min, max };
+}
+
+const maxCodeLengthRange = numericFieldRange('maxCodeLength');
+const maxNestingDepthRange = numericFieldRange('maxNestingDepth');
+
+export function normalizeCustomInstructions(value: string): string | undefined {
+  const trimmedValue = value.trim();
+  return trimmedValue.length > 0 ? trimmedValue : undefined;
 }
 
 function configLabel(name: string): string {
@@ -87,16 +98,37 @@ export function ParserSettings({ config, onChange, className }: ParserSettingsPr
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="grid gap-1 text-sm font-medium">
           {configLabel('maxCodeLength')}
-          <Input type="number" min="1000" max="10000000" step="1000" value={config.maxCodeLength} onChange={(event) => updateConfig(config, { maxCodeLength: parseNumber(event.target.value, defaultParserConfig.maxCodeLength) }, onChange)} />
+          <NumberSettingInput
+            value={config.maxCodeLength}
+            min={maxCodeLengthRange.min}
+            max={maxCodeLengthRange.max}
+            onCommit={(maxCodeLength) => updateConfig(config, { maxCodeLength }, onChange)}
+          />
         </label>
         <label className="grid gap-1 text-sm font-medium">
           {configLabel('maxNestingDepth')}
-          <Input type="number" min="5" max="200" step="1" value={config.maxNestingDepth} onChange={(event) => updateConfig(config, { maxNestingDepth: parseNumber(event.target.value, defaultParserConfig.maxNestingDepth) }, onChange)} />
+          <NumberSettingInput
+            value={config.maxNestingDepth}
+            min={maxNestingDepthRange.min}
+            max={maxNestingDepthRange.max}
+            onCommit={(maxNestingDepth) => updateConfig(config, { maxNestingDepth }, onChange)}
+          />
         </label>
       </div>
       <label className="grid gap-1 text-sm font-medium">
         {configLabel('customInstructions')}
-        <Textarea value={config.customInstructions ?? ''} onChange={(event) => updateConfig(config, { customInstructions: event.target.value.trim() || undefined }, onChange)} placeholder="Add constraints for generated forms..." />
+        <Textarea
+          value={config.customInstructions ?? ''}
+          onChange={(event) => updateConfig(config, { customInstructions: event.target.value.length > 0 ? event.target.value : undefined }, onChange)}
+          onBlur={(event) => {
+            const customInstructions = normalizeCustomInstructions(event.target.value);
+
+            if (customInstructions !== config.customInstructions) {
+              updateConfig(config, { customInstructions }, onChange);
+            }
+          }}
+          placeholder="Add constraints for generated forms..."
+        />
       </label>
       <div className="grid gap-2">
         <p className="text-sm font-medium">{configLabel('systemPromptFields')}</p>

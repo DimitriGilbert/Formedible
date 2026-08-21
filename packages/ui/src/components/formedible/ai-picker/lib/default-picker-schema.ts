@@ -1,4 +1,4 @@
-import type { AiPickerProviderConfig } from '@formedible/ui/components/formedible/ai-picker/lib/ai-picker-types';
+import type { AiPickerProviderConfig, AiPickerValues } from '@formedible/ui/components/formedible/ai-picker/lib/ai-picker-types';
 
 export const defaultProviderConfigs: readonly AiPickerProviderConfig[] = [
   { value: 'openai', label: 'OpenAI', defaultModel: 'gpt-5.4-mini', requiresKey: true },
@@ -51,7 +51,7 @@ export const defaultPickerSchema = [
     description: 'Anthropic-only reasoning budget.',
     min: 1,
     step: 1,
-    conditional: '(values) => values.provider === "anthropic"',
+    conditional: (values: AiPickerValues): boolean => values.provider === 'anthropic',
   },
   {
     name: 'storageMode',
@@ -69,7 +69,7 @@ export const defaultPickerSchema = [
     name: 'rememberKey',
     type: 'checkbox',
     label: 'Remember API key',
-    conditional: '(values) => values.storageMode !== "memory"',
+    conditional: (values: AiPickerValues): boolean => values.storageMode !== 'memory',
     disabled: false,
   },
 ] as const;

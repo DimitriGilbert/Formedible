@@ -185,6 +185,25 @@ test('rental car flow dynamic text and conditional navigation match compatibilit
   assert.equal(getVisiblePageNumbers(fields, undefined, { hasSpecialNeeds: true, needsInsurance: true, wantsChildSeat: true }).includes(17), true);
 });
 
+test('dynamic text resolves array-index paths while keeping dotted token behavior unchanged', () => {
+  const values: FormedibleFormValues = {
+    firstName: 'Mina',
+    destination: 'Lisbon',
+    items: [{ name: 'Passport' }, { name: 'Visa' }],
+    legs: [{ waypoints: ['Home', 'Airport'] }],
+  };
+
+  assert.equal(resolveDynamicText('Bring your {{items[0].name}}', values), 'Bring your Passport');
+  assert.equal(resolveDynamicText('Then the {{items[1].name}}', values), 'Then the Visa');
+  assert.equal(resolveDynamicText('From {{legs[0].waypoints[0]}}', values), 'From Home');
+  assert.equal(resolveDynamicText('Dotted {{firstName}} in {{destination}}', values), 'Dotted Mina in Lisbon');
+  assert.equal(resolveDynamicText('Missing [{{items[0].missing}}]', values), 'Missing []', 'unresolvable nested paths resolve empty like unresolvable dotted paths');
+  assert.equal(resolveDynamicText('Out of range [{{items[4].name}}]', values), 'Out of range []');
+  assert.equal(resolveDynamicText('Missing dotted [{{unknown}}]', values), 'Missing dotted []');
+  assert.equal(resolveDynamicText('Malformed {{items[0..name}} stays', values), 'Malformed {{items[0..name}} stays', 'malformed bracket tokens stay verbatim');
+  assert.equal(resolveDynamicText('Plain text without tokens', values), 'Plain text without tokens');
+});
+
 test('analytics tracking example keeps the six approved callbacks and return contract removes validation debug helpers', () => {
   assert.deepEqual(analyticsTrackingCompatibilityExample.optionsUsed, [
     'analytics.onFormStart',

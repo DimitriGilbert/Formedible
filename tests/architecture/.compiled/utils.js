@@ -13,8 +13,15 @@ const ignoredDirectoryNames = new Set([
     'old_version_for_knowledge_purpose',
     'out',
 ]);
-const ignoredGeneratedFileNames = new Set(['routeTree.gen.ts']);
+// Generated output is ignored by exact repository-relative path, never by bare
+// filename, so the ignore cannot silently widen to same-named files elsewhere.
+const ignoredGeneratedFilePaths = new Set(['apps/web/src/routeTree.gen.ts']);
 const ignoredRelativeDirectoryPaths = new Set(['tests/architecture']);
+const scriptFilePathPattern = /^scripts\/.*\.(?:cjs|js|mjs|ts)$/;
+// A script comes into sync-contract scope when its content writes files, not
+// when its filename mentions sync, so renamed or new writer scripts cannot
+// escape the copy-only contract (FROM-SCRATCH-2.md "Sync Model").
+const fileWritingCallPattern = /\b(?:writeFile|copyFile)(?:Sync)?\s*\(/;
 const textExtensions = new Set([
     '.cjs',
     '.css',
@@ -30,8 +37,9 @@ const textExtensions = new Set([
     '.yml',
 ]);
 export const repositoryRoot = process.cwd();
-export function isIgnoredGeneratedFileName(fileName) {
-    return ignoredGeneratedFileNames.has(fileName);
+export const pinnedGeneratedFilePaths = [...ignoredGeneratedFilePaths];
+export function isIgnoredGeneratedFilePath(relativePath) {
+    return ignoredGeneratedFilePaths.has(relativePath);
 }
 export function normalizePath(path) {
     return path.split(sep).join('/');
@@ -39,27 +47,45 @@ export function normalizePath(path) {
 export function isTextPath(path) {
     return [...textExtensions].some((extension) => path.endsWith(extension));
 }
+export function isFileWritingScript(file) {
+    return scriptFilePathPattern.test(file.relativePath) && fileWritingCallPattern.test(file.content);
+}
 export async function collectRepositoryEntries() {
     const entries = [];
+    await walkRepository((entry) => {
+        entries.push(entry);
+    });
+    return entries;
+}
+// Reports every repository-relative path the generated-output ignore actually
+// skips during collection, so tests can prove only pinned paths are ignored.
+export async function listIgnoredGeneratedFilePaths() {
+    const ignoredPaths = [];
+    await walkRepository(undefined, (relativePath) => {
+        ignoredPaths.push(relativePath);
+    });
+    return ignoredPaths;
+}
+async function walkRepository(visitEntry, visitIgnored) {
     async function walk(directoryPath) {
         const children = await readdir(directoryPath, { withFileTypes: true });
         for (const child of children) {
-            if (isIgnoredGeneratedFileName(child.name)) {
-                continue;
-            }
             const absolutePath = join(directoryPath, child.name);
             const relativePath = normalizePath(relative(repositoryRoot, absolutePath));
-            if (child.isDirectory() && (ignoredDirectoryNames.has(child.name) || ignoredRelativeDirectoryPaths.has(relativePath))) {
+            if (isIgnoredGeneratedFilePath(relativePath)) {
+                visitIgnored?.(relativePath);
                 continue;
             }
-            entries.push({ relativePath, isDirectory: child.isDirectory() });
+            if (child.isDirectory() && (child.name.startsWith('.') || ignoredDirectoryNames.has(child.name) || ignoredRelativeDirectoryPaths.has(relativePath))) {
+                continue;
+            }
+            visitEntry?.({ relativePath, isDirectory: child.isDirectory() });
             if (child.isDirectory()) {
                 await walk(absolutePath);
             }
         }
     }
     await walk(repositoryRoot);
-    return entries;
 }
 export async function collectRepositoryTextFiles() {
     const entries = await collectRepositoryEntries();
@@ -95,7 +121,11 @@ export function extractImportSpecifiers(content) {
     const importFromPattern = /import\s+(?:type\s+)?[\s\S]*?\s+from\s+['"]([^'"]+)['"]/g;
     const sideEffectImportPattern = /import\s+['"]([^'"]+)['"]/g;
     const exportFromPattern = /export\s+(?:type\s+)?[\s\S]*?\s+from\s+['"]([^'"]+)['"]/g;
-    for (const pattern of [importFromPattern, sideEffectImportPattern, exportFromPattern]) {
+    // require(...) and dynamic import(...) are module references too; without
+    // them CommonJS or lazy-loading callers could hide forbidden specifiers.
+    const requirePattern = /require\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
+    const dynamicImportPattern = /import\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
+    for (const pattern of [importFromPattern, sideEffectImportPattern, exportFromPattern, requirePattern, dynamicImportPattern]) {
         for (const match of content.matchAll(pattern)) {
             const specifier = match[1];
             if (specifier !== undefined) {

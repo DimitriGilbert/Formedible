@@ -1,17 +1,24 @@
+export { FormBuilder } from '@/components/formedible/builder/form-builder';
+export { FieldConfigurator } from '@/components/formedible/builder/field-configurator';
+export { FormPreview } from '@/components/formedible/builder/form-preview';
+export { defaultTabs } from '@/components/formedible/builder/default-tabs';
 export { AIBuilder } from '@/components/formedible/ai/ai-builder';
+export type { AIBuilderProps } from '@/components/formedible/ai/ai-builder';
 export { AgentSettings } from '@/components/formedible/ai/agent-settings';
 export { AiFormRenderer, parseAiToFormedible } from '@/components/formedible/ai/ai-form-renderer';
+export type { AiFormRendererProps } from '@/components/formedible/ai/ai-form-renderer';
 export { ChatInterface, generateAiFormCode } from '@/components/formedible/ai/chat-interface';
 export { ConversationHistory } from '@/components/formedible/ai/conversation-history';
 export { ParserSettings } from '@/components/formedible/ai/parser-settings';
 export { createDefaultProviderSecrets, createDefaultProviderSettings, providerOptions, ProviderSelection, validateProviderAccess } from '@/components/formedible/ai/provider-selection';
+export type { ProviderConfig, ProviderSelectionProps } from '@/components/formedible/ai/provider-selection';
 export { SidebarContent } from '@/components/formedible/ai/sidebar-content';
 export { SidebarIcons } from '@/components/formedible/ai/sidebar-icons';
 export { createTanStackTextAdapter, DEFAULT_TANSTACK_AI_MODELS, SUPPORTED_TANSTACK_AI_PROVIDERS } from '@/lib/formedible/ai-adapters';
 export { fetchProviderModels, getRecentModelCutoff, isRecentIsoTimestamp, isRecentUnixTimestamp, MODEL_CATALOG_MAX_AGE_MONTHS } from '@/lib/formedible/ai-model-catalog';
 export { normalizePersistedAiMessage, normalizePersistedAiMessages, toPersistedAiMessage, toTanStackMessageInput, toTanStackMessageInputs, toTanStackSystemPrompts } from '@/lib/formedible/ai-messages';
 export { extractFormCode } from '@/lib/formedible/ai-parser';
-export { canUseStorage, clearConversations, clearStoredProviderSecrets, createConversation, exportConversation, getLastFormCode, persistConversations, persistProviderModelCatalog, persistProviderSecrets, persistProviderSettings, persistUiState, readJson, readPersistedAIBuilderState, readProviderModelCatalogs, readStoredProviderSecrets, STORAGE_KEYS, upsertConversation, writeJson } from '@/lib/formedible/ai-storage';
+export { canUseStorage, clearConversations, clearStoredProviderSecrets, createConversation, createConversationId, exportConversation, getLastFormCode, persistConversations, persistProviderModelCatalog, persistProviderSecrets, persistProviderSettings, persistUiState, readJson, readPersistedAIBuilderState, readProviderModelCatalogs, readStoredProviderSecrets, STORAGE_KEYS, upsertConversation, writeJson } from '@/lib/formedible/ai-storage';
 export type { AnthropicAdapterModel, OpenAIAdapterModel, OpenRouterAdapterModel } from '@/lib/formedible/ai-adapters';
 export type { PersistedAiMessage, TanStackAiMessageInput } from '@/lib/formedible/ai-messages';
 export type { PersistedAIBuilderState, PersistedUiState, ProviderSecretPersistencePreference, ProviderSecretStorageMode, StorageArea, StoredProviderSecrets } from '@/lib/formedible/ai-storage';
@@ -38,6 +45,8 @@ export type {
   AiThinkingOutput,
   AiToolChunk,
   AiUsageMetadata,
+  AIProvider,
+  BackendConfig,
   GeneratedFormSnapshot,
   ProviderSecrets,
   ProviderModelCatalog,

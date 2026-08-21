@@ -60,123 +60,128 @@ async function saveProfileSettings(settings: TabbedFormValues) {
   savedProfiles.push(settings);
 }
 
-const tabbedForm = useFormedible({
-  schema: tabbedFormSchema,
-  fields: [
-    // Personal tab
-    { name: "firstName", type: "text", label: "First Name", tab: "personal" },
-    { name: "lastName", type: "text", label: "Last Name", tab: "personal" },
-    { name: "email", type: "email", label: "Email", tab: "personal" },
-    { name: "phone", type: "phone", label: "Phone", tab: "personal" },
+export function TabbedFormExample() {
+  const tabbedForm = useFormedible({
+    schema: tabbedFormSchema,
+    fields: [
+      // Personal tab
+      { name: "firstName", type: "text", label: "First Name", tab: "personal" },
+      { name: "lastName", type: "text", label: "Last Name", tab: "personal" },
+      { name: "email", type: "email", label: "Email", tab: "personal" },
+      { name: "phone", type: "phone", label: "Phone", tab: "personal" },
 
-    // Preferences tab
-    {
-      name: "theme",
-      type: "select",
-      label: "Theme",
-      tab: "preferences",
-      options: [
-        { value: "light", label: "Light" },
-        { value: "dark", label: "Dark" },
-        { value: "auto", label: "Auto" },
-      ],
-    },
-    {
-      name: "language",
-      type: "select",
-      label: "Language",
-      tab: "preferences",
-      options: [
-        { value: "en", label: "English" },
-        { value: "es", label: "Spanish" },
-        { value: "fr", label: "French" },
-        { value: "de", label: "German" },
-      ],
-    },
-    {
-      name: "notifications",
-      type: "switch",
-      label: "Enable Notifications",
-      tab: "preferences",
-    },
-    {
-      name: "newsletter",
-      type: "switch",
-      label: "Subscribe to Newsletter",
-      tab: "preferences",
-    },
+      // Preferences tab
+      {
+        name: "theme",
+        type: "select",
+        label: "Theme",
+        tab: "preferences",
+        options: [
+          { value: "light", label: "Light" },
+          { value: "dark", label: "Dark" },
+          { value: "auto", label: "Auto" },
+        ],
+      },
+      {
+        name: "language",
+        type: "select",
+        label: "Language",
+        tab: "preferences",
+        options: [
+          { value: "en", label: "English" },
+          { value: "es", label: "Spanish" },
+          { value: "fr", label: "French" },
+          { value: "de", label: "German" },
+        ],
+      },
+      {
+        name: "notifications",
+        type: "switch",
+        label: "Enable Notifications",
+        tab: "preferences",
+      },
+      {
+        name: "newsletter",
+        type: "switch",
+        label: "Subscribe to Newsletter",
+        tab: "preferences",
+      },
 
-    // Settings tab
-    {
-      name: "privacy",
-      type: "radio",
-      label: "Privacy Setting",
-      tab: "settings",
-      options: [
-        { value: "public", label: "Public" },
-        { value: "private", label: "Private" },
-        { value: "friends", label: "Friends Only" },
-      ],
+      // Settings tab
+      {
+        name: "privacy",
+        type: "radio",
+        label: "Privacy Setting",
+        tab: "settings",
+        options: [
+          { value: "public", label: "Public" },
+          { value: "private", label: "Private" },
+          { value: "friends", label: "Friends Only" },
+        ],
+      },
+      {
+        name: "marketing",
+        type: "checkbox",
+        label: "Allow Marketing Emails",
+        tab: "settings",
+      },
+      {
+        name: "analytics",
+        type: "checkbox",
+        label: "Allow Analytics",
+        tab: "settings",
+      },
+      {
+        name: "location",
+        type: "text",
+        label: "Location (Optional)",
+        tab: "settings",
+      },
+    ],
+    tabs: [
+      {
+        id: "personal",
+        label: "Personal Info",
+        description: "Basic information about you",
+      },
+      {
+        id: "preferences",
+        label: "Preferences",
+        description: "Your app preferences",
+      },
+      {
+        id: "settings",
+        label: "Settings",
+        description: "Privacy and account settings",
+      },
+    ],
+    formOptions: {
+      defaultValues: {
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        theme: "auto" as const,
+        language: "en" as const,
+        notifications: true,
+        newsletter: false,
+        privacy: "private" as const,
+        marketing: false,
+        analytics: true,
+        location: "",
+      },
+      onSubmit: async ({ value }) => {
+        await saveProfileSettings(value);
+        toast.success("Profile updated successfully!", {
+          description: "Your settings have been saved.",
+        });
+      },
     },
-    {
-      name: "marketing",
-      type: "checkbox",
-      label: "Allow Marketing Emails",
-      tab: "settings",
-    },
-    {
-      name: "analytics",
-      type: "checkbox",
-      label: "Allow Analytics",
-      tab: "settings",
-    },
-    {
-      name: "location",
-      type: "text",
-      label: "Location (Optional)",
-      tab: "settings",
-    },
-  ],
-  tabs: [
-    {
-      id: "personal",
-      label: "Personal Info",
-      description: "Basic information about you",
-    },
-    {
-      id: "preferences",
-      label: "Preferences",
-      description: "Your app preferences",
-    },
-    {
-      id: "settings",
-      label: "Settings",
-      description: "Privacy and account settings",
-    },
-  ],
-  formOptions: {
-    defaultValues: {
-      firstName: "",
-      lastName: "",
-      email: "",
-      phone: "",
-      theme: "auto" as const,
-      language: "en" as const,
-      notifications: true,
-      newsletter: false,
-      privacy: "private" as const,
-      marketing: false,
-      analytics: true,
-      location: "",
-    },
-    onSubmit: async ({ value }) => {
-      await saveProfileSettings(value);
-      toast.success("Profile updated successfully!", {
-        description: "Your settings have been saved.",
-      });
-    },
-  },
-});`;
+  });
+
+  return <tabbedForm.Form className="space-y-4" />;
+}
+`;
 
 export function TabbedFormExample() {
   const tabbedForm = useFormedible({

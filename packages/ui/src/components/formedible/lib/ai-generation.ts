@@ -1,15 +1,21 @@
 import { chat } from '@tanstack/ai';
 import type { StreamChunk } from '@tanstack/ai';
 
-import { createTanStackModelOptions, createTanStackTextAdapter } from '@formedible/ui/components/formedible/lib/ai-adapters';
+import { createTanStackModelOptions, createTanStackTextAdapter, isAnthropicThinkingEnabled } from '@formedible/ui/components/formedible/lib/ai-adapters';
 import { normalizeAiError } from '@formedible/ui/components/formedible/lib/ai-errors';
 import { toTanStackMessageInputs, toTanStackSystemPrompts } from '@formedible/ui/components/formedible/lib/ai-messages';
 import { extractFormCode } from '@formedible/ui/components/formedible/lib/ai-parser';
-import type { AiErrorInfo, AiFinishReason, AiGenerationMetadata, AiGenerationRequest, AiGenerationResult, AiStreamEvent, AiUsageMetadata } from '@formedible/ui/components/formedible/lib/ai-types';
+import type { AiErrorInfo, AiFinishReason, AiGenerationMetadata, AiGenerationRequest, AiGenerationResult, AiStreamEvent, AiUsageMetadata, ProviderSettings } from '@formedible/ui/components/formedible/lib/ai-types';
 
 export interface AiStreamOptions {
   readonly abortController?: AbortController;
   readonly streamFactory?: (request: AiGenerationRequest, abortController: AbortController) => AsyncIterable<unknown>;
+}
+
+export interface TanStackChatParameters {
+  readonly temperature?: number;
+  readonly maxTokens?: number;
+  readonly modelOptions: ReturnType<typeof createTanStackModelOptions>;
 }
 
 interface StreamAccumulator {
@@ -271,6 +277,16 @@ function assertValidGenerationRequest(request: AiGenerationRequest): asserts req
   }
 }
 
+export function createTanStackChatParameters(settings: ProviderSettings): TanStackChatParameters {
+  return {
+    // Anthropic rejects any temperature other than 1 while extended thinking is enabled,
+    // so the parameter must be omitted from the request instead of forced to a fixed value.
+    ...(isAnthropicThinkingEnabled(settings) ? {} : { temperature: settings.temperature }),
+    maxTokens: settings.maxTokens,
+    modelOptions: createTanStackModelOptions(settings),
+  };
+}
+
 function createTanStackStream(request: AiGenerationRequest, abortController: AbortController): AsyncIterable<StreamChunk> {
   assertValidGenerationRequest(request);
 
@@ -282,9 +298,7 @@ function createTanStackStream(request: AiGenerationRequest, abortController: Abo
     adapter,
     messages: toTanStackMessageInputs(request.messages),
     systemPrompts: toTanStackSystemPrompts(request.messages, request.systemPrompt),
-    temperature: providerSettings.temperature,
-    maxTokens: providerSettings.maxTokens,
-    modelOptions: createTanStackModelOptions(providerSettings),
+    ...createTanStackChatParameters(providerSettings),
     conversationId: request.conversationId,
     abortController,
   });

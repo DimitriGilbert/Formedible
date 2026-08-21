@@ -10,13 +10,18 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { AiPicker, settingsToValues, valuesToSecrets, valuesToSettings } from '@/components/ai-picker/ai-picker';
 import { AiPickerPanel } from '@/components/ai-picker/ai-picker-panel';
 import { AiPickerPopover } from '@/components/ai-picker/ai-picker-popover';
-import type { AiPickerValues, ProviderSecretPersistencePreference, ProviderSecrets, ProviderSettings } from '@/lib/ai-picker-types';
+import { evaluatePickerConditional, getValueAtPickerPath } from '@/lib/conditional-path';
+import type { AiPickerValues, ProviderModelCatalog, ProviderSecretPersistencePreference, ProviderSecrets, ProviderSettings } from '@/lib/ai-picker-types';
 import {
+  applyProviderSwitch,
   createDefaultPickerValues,
   createDefaultProviderSecrets,
   createDefaultProviderSettings,
+  createErrorCatalog,
   getFilteredModelOptions,
   mergePickerSchema,
+  resolveEffectiveCatalog,
+  splitPickerValues,
   validateProviderAccess,
 } from '@/lib/ai-picker-utils';
 import { defaultPickerSchema, defaultProviderConfigs } from '@/lib/default-picker-schema';
@@ -70,14 +75,19 @@ test('default picker schema field types are correct', () => {
   assert.equal(defaultPickerSchema[7]?.type, 'checkbox');
 });
 
-test('conditional schema fields have conditional expressions', () => {
+test('conditional schema fields carry function-valued conditionals', () => {
   const thinkingField = defaultPickerSchema.find((f) => f.name === 'thinkingBudgetTokens');
   const rememberField = defaultPickerSchema.find((f) => f.name === 'rememberKey');
 
-  assert.equal(typeof thinkingField?.conditional, 'string');
-  assert.match(thinkingField?.conditional ?? '', /anthropic/);
-  assert.equal(typeof rememberField?.conditional, 'string');
-  assert.match(rememberField?.conditional ?? '', /storageMode/);
+  const thinkingConditional = thinkingField?.conditional;
+  assert.ok(typeof thinkingConditional === 'function');
+  assert.equal(thinkingConditional(createDefaultPickerValues('anthropic')), true);
+  assert.equal(thinkingConditional(createDefaultPickerValues('openai')), false);
+
+  const rememberConditional = rememberField?.conditional;
+  assert.ok(typeof rememberConditional === 'function');
+  assert.equal(rememberConditional({ ...createDefaultPickerValues('openai'), storageMode: 'local' }), true);
+  assert.equal(rememberConditional(createDefaultPickerValues('openai')), false);
 });
 
 test('createDefaultPickerValues returns correct defaults for openai', () => {
@@ -559,4 +569,279 @@ test('public API exports types as type-only exports', () => {
   for (const typeName of typeNames) {
     assert.match(source, new RegExp(typeName));
   }
+});
+
+test('resolveEffectiveCatalog ignores catalogs whose provider does not match the active provider', () => {
+  const openaiCatalog: ProviderModelCatalog = { provider: 'openai', models: [{ id: 'gpt-5.4-mini' }], fetchedAt: 1 };
+  const anthropicCatalog: ProviderModelCatalog = { provider: 'anthropic', models: [{ id: 'claude-sonnet-4-6' }], fetchedAt: 2 };
+
+  assert.equal(resolveEffectiveCatalog('anthropic', openaiCatalog, { openai: openaiCatalog }, { openai: openaiCatalog }), undefined);
+  assert.equal(resolveEffectiveCatalog('openai', undefined, { openai: anthropicCatalog }, { openai: anthropicCatalog }), undefined);
+  assert.equal(resolveEffectiveCatalog('openai', openaiCatalog, { openai: anthropicCatalog }, { openai: anthropicCatalog }), openaiCatalog);
+});
+
+test('resolveEffectiveCatalog falls back to fetched catalogs keyed by provider', () => {
+  const openaiCatalog: ProviderModelCatalog = { provider: 'openai', models: [], fetchedAt: 1 };
+  const anthropicCatalog: ProviderModelCatalog = { provider: 'anthropic', models: [], fetchedAt: 2 };
+
+  const catalog = resolveEffectiveCatalog('anthropic', undefined, undefined, { openai: openaiCatalog, anthropic: anthropicCatalog });
+
+  assert.equal(catalog, anthropicCatalog);
+});
+
+test('AiPicker renders catalog metadata only when the catalog provider matches', () => {
+  const anthropicSettings = createDefaultProviderSettings('anthropic');
+  const anthropicSecrets = createDefaultProviderSecrets('anthropic');
+  const openaiCatalog: ProviderModelCatalog = { provider: 'openai', models: [], fetchedAt: Date.now() };
+
+  const staleHtml = renderToStaticMarkup(createElement(AiPicker, {
+    variant: 'panel',
+    settings: anthropicSettings,
+    secrets: anthropicSecrets,
+    modelCatalog: openaiCatalog,
+  }));
+  assert.doesNotMatch(staleHtml, /Last refreshed/);
+  assert.doesNotMatch(staleHtml, /Failed to refresh/);
+
+  const freshHtml = renderToStaticMarkup(createElement(AiPicker, {
+    variant: 'panel',
+    settings: anthropicSettings,
+    secrets: anthropicSecrets,
+    modelCatalog: { ...openaiCatalog, provider: 'anthropic' },
+  }));
+  assert.match(freshHtml, /Last refreshed/);
+});
+
+test('applyProviderSwitch clears the previous provider API key and resets the model', () => {
+  const switched = applyProviderSwitch(
+    { ...createDefaultPickerValues('openai'), apiKey: 'sk-openai-previous' },
+    'anthropic',
+    defaultProviderConfigs,
+  );
+
+  assert.equal(switched.provider, 'anthropic');
+  assert.equal(switched.apiKey, '');
+  assert.equal(switched.model, 'claude-sonnet-4-6');
+});
+
+test('applyProviderSwitch drops thinking budget tokens when leaving anthropic', () => {
+  const switched = applyProviderSwitch(
+    { ...createDefaultPickerValues('anthropic'), thinkingBudgetTokens: 512, apiKey: 'sk-ant-previous' },
+    'openrouter',
+    defaultProviderConfigs,
+  );
+
+  assert.equal(switched.provider, 'openrouter');
+  assert.equal(switched.apiKey, '');
+  assert.equal(switched.model, 'minimax/minimax-2.7');
+  assert.equal(switched.thinkingBudgetTokens, undefined);
+});
+
+test('createErrorCatalog preserves previous models and fetchedAt while surfacing the error', () => {
+  const previous: ProviderModelCatalog = { provider: 'openai', models: [{ id: 'gpt-5.4-mini' }], fetchedAt: 1234 };
+
+  const catalog = createErrorCatalog('openai', previous, new Error('rate limited'));
+
+  assert.equal(catalog.provider, 'openai');
+  assert.equal(catalog.models.length, 1);
+  assert.equal(catalog.models[0]?.id, 'gpt-5.4-mini');
+  assert.equal(catalog.fetchedAt, 1234);
+  assert.match(catalog.error ?? '', /rate limited/);
+});
+
+test('createErrorCatalog without a previous catalog yields empty models and a fresh timestamp', () => {
+  const catalog = createErrorCatalog('anthropic', undefined, 'unauthorized');
+
+  assert.equal(catalog.provider, 'anthropic');
+  assert.deepEqual(catalog.models, []);
+  assert.ok(catalog.fetchedAt > 0);
+  assert.match(catalog.error ?? '', /unauthorized/);
+});
+
+test('splitPickerValues separates typed picker keys from custom schema keys', () => {
+  const values: AiPickerValues = {
+    ...createDefaultPickerValues('openai'),
+    apiKey: 'sk-test',
+    workspace: 'acme',
+    tags: ['alpha'],
+  };
+
+  const { typed, customValues } = splitPickerValues(values);
+
+  assert.equal(typed.provider, 'openai');
+  assert.equal(typed.apiKey, 'sk-test');
+  assert.equal('workspace' in typed, false);
+  assert.deepEqual(customValues, { workspace: 'acme', tags: ['alpha'] });
+});
+
+test('custom schema keys survive the values round-trip alongside typed settings', () => {
+  const original: AiPickerValues = { ...createDefaultPickerValues('openai'), apiKey: 'sk-keep', workspace: 'acme' };
+
+  const { typed, customValues } = splitPickerValues(original);
+  const merged: AiPickerValues = { ...typed, ...customValues };
+
+  assert.equal(merged.workspace, 'acme');
+  assert.equal(valuesToSettings(typed).model, original.model);
+  assert.equal(valuesToSecrets(typed).apiKey, 'sk-keep');
+  assert.equal(valuesToSecrets(typed).provider, 'openai');
+});
+
+test('AiPickerPanel binds custom text fields to their current values', () => {
+  const schema = [{ name: 'workspace', type: 'text' as const, label: 'Workspace' }];
+
+  const html = renderToStaticMarkup(createElement(AiPickerPanel, {
+    schema,
+    values: { ...createDefaultPickerValues('openai'), workspace: 'acme' },
+    onChange: noopOnChange,
+  }));
+
+  assert.match(html, /value="acme"/);
+});
+
+test('AiPickerPanel binds custom checkbox fields to their current values', () => {
+  const schema = [{ name: 'verbose', type: 'checkbox' as const, label: 'Verbose logging' }];
+
+  const html = renderToStaticMarkup(createElement(AiPickerPanel, {
+    schema,
+    values: { ...createDefaultPickerValues('openai'), verbose: true },
+    onChange: noopOnChange,
+  }));
+
+  assert.match(html, /checked/);
+  assert.match(html, /Verbose logging/);
+});
+
+test('AiPickerPanel binds custom number fields to their current values', () => {
+  const schema = [{ name: 'retries', type: 'number' as const, label: 'Retries' }];
+
+  const html = renderToStaticMarkup(createElement(AiPickerPanel, {
+    schema,
+    values: { ...createDefaultPickerValues('openai'), retries: 3 },
+    onChange: noopOnChange,
+  }));
+
+  assert.match(html, /value="3"/);
+});
+
+test('AiPicker with only settings controlled renders the provided settings', () => {
+  const html = renderToStaticMarkup(createElement(AiPicker, {
+    variant: 'panel',
+    settings: { provider: 'anthropic', model: 'claude-custom-model', temperature: 0.5, maxTokens: 2000 },
+  }));
+
+  assert.match(html, /value="claude-custom-model"/);
+  assert.match(html, /Thinking budget tokens/);
+});
+
+test('AiPicker with only secrets controlled renders the provided API key with new-password autocomplete', () => {
+  const html = renderToStaticMarkup(createElement(AiPicker, {
+    variant: 'panel',
+    secrets: { provider: 'openai', apiKey: 'sk-partial-control' },
+  }));
+
+  assert.match(html, /value="sk-partial-control"/);
+  assert.match(html, /type="password"[^>]*autoComplete="new-password"/);
+});
+
+test('evaluatePickerConditional treats string conditionals as truthy field paths', () => {
+  const values: AiPickerValues = { ...createDefaultPickerValues('openai'), rememberKey: true };
+
+  assert.equal(evaluatePickerConditional(undefined, values), true);
+  assert.equal(evaluatePickerConditional('rememberKey', values), true);
+  assert.equal(evaluatePickerConditional('rememberKey', { ...values, rememberKey: false }), false);
+  assert.equal(evaluatePickerConditional('missing.path', values), false);
+});
+
+test('evaluatePickerConditional resolves nested and array-indexed paths', () => {
+  const values: AiPickerValues = {
+    ...createDefaultPickerValues('openai'),
+    nested: { enable: true },
+    tags: ['alpha', ''],
+  };
+
+  assert.equal(getValueAtPickerPath(values, 'tags[0]'), 'alpha');
+  assert.equal(evaluatePickerConditional('nested.enable', values), true);
+  assert.equal(evaluatePickerConditional('nested.missing', values), false);
+  assert.equal(evaluatePickerConditional('tags[0]', values), true);
+  assert.equal(evaluatePickerConditional('tags[1]', values), false);
+  assert.equal(evaluatePickerConditional('nested', values), true);
+});
+
+test('evaluatePickerConditional logs a descriptive error for malformed conditionals', () => {
+  const originalError = console.error;
+  const messages: string[] = [];
+  console.error = (message: unknown) => {
+    messages.push(String(message));
+  };
+
+  try {
+    assert.equal(evaluatePickerConditional('(values) => values.provider === "anthropic"', createDefaultPickerValues('openai')), false);
+    assert.equal(evaluatePickerConditional('storage mode', createDefaultPickerValues('openai')), false);
+  } finally {
+    console.error = originalError;
+  }
+
+  assert.equal(messages.length, 2);
+  assert.match(messages[0] ?? '', /Invalid ai-picker conditional/);
+  assert.match(messages[1] ?? '', /storage mode/);
+});
+
+test('evaluatePickerConditional calls function conditionals directly with the values', () => {
+  const values = createDefaultPickerValues('openai');
+
+  assert.equal(evaluatePickerConditional((candidate) => candidate.provider === 'openai', values), true);
+  assert.equal(evaluatePickerConditional((candidate) => candidate.provider === 'anthropic', values), false);
+});
+
+test('AiPickerPanel evaluates string conditionals as field paths', () => {
+  const schema = [
+    { name: 'visibleNote', type: 'text' as const, label: 'Visible Note', conditional: 'rememberKey' },
+    { name: 'hiddenNote', type: 'text' as const, label: 'Hidden Note', conditional: 'nested.enable' },
+  ];
+
+  const html = renderToStaticMarkup(createElement(AiPickerPanel, {
+    schema,
+    values: { ...createDefaultPickerValues('openai'), rememberKey: true, nested: { enable: false } },
+    onChange: noopOnChange,
+  }));
+
+  assert.match(html, /Visible Note/);
+  assert.doesNotMatch(html, /Hidden Note/);
+});
+
+test('AiPickerPanel renders the clear stored keys affordance only when the handler is provided', () => {
+  const withClear = renderToStaticMarkup(createElement(AiPickerPanel, {
+    schema: defaultPickerSchema,
+    values: createDefaultPickerValues('openai'),
+    onChange: noopOnChange,
+    onClearStoredSecrets: () => undefined,
+  }));
+  assert.match(withClear, /Clear stored keys/);
+
+  const withoutClear = renderToStaticMarkup(createElement(AiPickerPanel, {
+    schema: defaultPickerSchema,
+    values: createDefaultPickerValues('openai'),
+    onChange: noopOnChange,
+  }));
+  assert.doesNotMatch(withoutClear, /Clear stored keys/);
+});
+
+test('AiPicker forwards onClearStoredSecrets to the rendered panel', () => {
+  const html = renderToStaticMarkup(createElement(AiPicker, {
+    variant: 'panel',
+    settings: createDefaultProviderSettings('openai'),
+    secrets: createDefaultProviderSecrets('openai'),
+    onClearStoredSecrets: () => undefined,
+  }));
+
+  assert.match(html, /Clear stored keys/);
+});
+
+test('AiPicker honors custom providerConfigs for the popover trigger label', () => {
+  const html = renderToStaticMarkup(createElement(AiPicker, {
+    variant: 'popover',
+    providerConfigs: [{ value: 'openai', label: 'Custom OpenAI Label', defaultModel: 'custom-default-model', requiresKey: true }],
+  }));
+
+  assert.match(html, /Custom OpenAI Label/);
 });

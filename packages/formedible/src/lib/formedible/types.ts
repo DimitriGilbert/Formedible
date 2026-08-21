@@ -1,5 +1,8 @@
+import type { AnyFieldApi, AnyFormApi } from '@tanstack/react-form';
 import type { FocusEvent, FormEvent, KeyboardEvent, ReactNode } from 'react';
 import type { ComponentType } from 'react';
+
+export type { AnyFieldApi } from '@tanstack/react-form';
 
 export type FormedibleFormValues = Record<string, unknown>;
 
@@ -54,12 +57,15 @@ export type FormedibleConditional<TFormValues extends FormedibleFormValues = For
 export interface FormedibleFieldSection {
   /**
    * Section heading rendered before the first visible field in a consecutive section group.
-   * Legacy `collapsible` and `defaultExpanded` section options are intentionally unsupported;
-   * section metadata is rendered as a static compatibility header.
+   * Optional for compatibility with sections that only carry a description.
    */
-  readonly title: ReactNode;
+  readonly title?: ReactNode;
   /** Supporting text rendered below the section heading. */
   readonly description?: ReactNode;
+  /** When true, renders a collapse/expand toggle and hides the section fields while collapsed. */
+  readonly collapsible?: boolean;
+  /** Initial expanded state of a collapsible section; defaults to expanded (`false` collapses). */
+  readonly defaultExpanded?: boolean;
 }
 
 export interface FormedibleArrayObjectConfig<TFormValues extends FormedibleFormValues = FormedibleFormValues> {
@@ -67,14 +73,26 @@ export interface FormedibleArrayObjectConfig<TFormValues extends FormedibleFormV
   readonly collapsible?: boolean;
   readonly defaultCollapsed?: boolean;
   readonly showCard?: boolean;
-  readonly layout?: 'stack' | 'grid';
+  /** Legacy `vertical`/`horizontal` layouts render like `stack`. */
+  readonly layout?: 'stack' | 'grid' | 'vertical' | 'horizontal';
   readonly columns?: number;
   readonly [customProp: string]: unknown;
 }
 
 export interface FormedibleObjectConfig<TFormValues extends FormedibleFormValues = FormedibleFormValues> {
   readonly fields?: readonly FormedibleFieldConfig<TFormValues>[];
-  readonly layout?: 'stack' | 'grid';
+  /** When true, renders a collapse/expand toggle for the nested fields. */
+  readonly collapsible?: boolean;
+  /** Initial expanded state of a collapsible object; defaults to expanded (`false` collapses). */
+  readonly defaultExpanded?: boolean;
+  /** When true, wraps the nested fields in a card-style container. */
+  readonly showCard?: boolean;
+  /** Toggle label shown while the object fields are expanded. */
+  readonly collapseLabel?: ReactNode;
+  /** Toggle label shown while the object fields are collapsed. */
+  readonly expandLabel?: ReactNode;
+  /** Legacy `vertical`/`horizontal` layouts render like `stack`. */
+  readonly layout?: 'stack' | 'grid' | 'vertical' | 'horizontal';
   readonly columns?: number;
   readonly [customProp: string]: unknown;
 }
@@ -110,11 +128,20 @@ export interface FormediblePasswordConfig {
   readonly minStrength?: number;
 }
 
+export interface FormedibleHelpLinkConfig {
+  readonly url: string;
+  readonly text: string;
+}
+
 export interface FormedibleHelpConfig {
-  /** Supplementary help text rendered below the field for legacy tooltip-only examples. */
-  readonly tooltip?: ReactNode;
   /** Supplementary help text rendered below the field. */
   readonly text?: ReactNode;
+  /** Tooltip content rendered in a popover behind a help icon button. */
+  readonly tooltip?: ReactNode;
+  /** Preferred tooltip popover side; defaults to `top` (legacy default). */
+  readonly position?: 'top' | 'bottom' | 'left' | 'right';
+  /** External documentation link rendered below the field. */
+  readonly link?: FormedibleHelpLinkConfig;
 }
 
 export interface FormedibleNumberConfig {
@@ -124,6 +151,21 @@ export interface FormedibleNumberConfig {
   readonly max?: number;
   /** Native step value for legacy number fields. Top-level `step` takes precedence. */
   readonly step?: number;
+}
+
+/**
+ * Legacy email configuration, restored for compatibility. It is accepted and
+ * ignored at runtime; email rules were never implemented from it on the legacy
+ * main branch either. Use `schema` or `validation` for email-specific rules.
+ *
+ * @deprecated Declare email rules through `schema` or field `validation` instead.
+ */
+export interface FormedibleEmailConfig {
+  readonly allowedDomains?: string | readonly string[];
+  readonly blockedDomains?: string | readonly string[];
+  readonly suggestions?: string | readonly string[];
+  readonly validateMX?: boolean;
+  readonly [customProp: string]: unknown;
 }
 
 export interface FormedibleAutocompleteConfig {
@@ -211,7 +253,7 @@ export interface FormedibleInlineValidation<TFormValues extends FormedibleFormVa
   readonly showSuccess?: boolean;
 }
 
-export type FormedibleFieldComponent<TFormValues extends FormedibleFormValues = FormedibleFormValues> = ComponentType<FormedibleFieldRenderProps<TFormValues>>;
+export type FormedibleFieldComponent<TFormValues extends FormedibleFormValues = FormedibleFormValues> = ComponentType<FormedibleFieldComponentProps<TFormValues>>;
 
 export interface FormedibleFieldWrapperProps<TFormValues extends FormedibleFormValues = FormedibleFormValues> {
   readonly fieldConfig: NormalizedFieldConfig<TFormValues>;
@@ -223,7 +265,12 @@ export type FormedibleFieldWrapper<TFormValues extends FormedibleFormValues = Fo
 
 export interface FormedibleFieldConfig<TFormValues extends FormedibleFormValues = FormedibleFormValues> {
   readonly name: Extract<keyof TFormValues, string> | string;
-  readonly type?: FormedibleFieldType;
+  /**
+   * Field type. Known types resolve through the built-in field registry; custom
+   * type strings resolve through `defaultComponents` registrations and fall back
+   * to text rendering when unregistered.
+   */
+  readonly type?: FormedibleFieldType | (string & {});
   readonly label?: ReactNode;
   readonly description?: ReactNode;
   readonly placeholder?: string;
@@ -232,6 +279,12 @@ export interface FormedibleFieldConfig<TFormValues extends FormedibleFormValues 
   readonly required?: boolean;
   readonly className?: string;
   readonly inputClassName?: string;
+  /** Class applied to the label of this field; the hook-level `labelClassName` is appended. */
+  readonly labelClassName?: string;
+  /** File acceptance filter; falls back to `fileConfig.accept`. */
+  readonly accept?: string;
+  /** Multiple selection flag for file inputs; falls back to `fileConfig.multiple`. */
+  readonly multiple?: boolean;
   readonly page?: number;
   readonly tab?: string;
   readonly section?: string | FormedibleFieldSection;
@@ -254,8 +307,13 @@ export interface FormedibleFieldConfig<TFormValues extends FormedibleFormValues 
   /** Native datalist suggestions for text-like and number inputs. */
   readonly datalist?: readonly FormedibleFieldOption[];
   readonly help?: ReactNode | FormedibleHelpConfig;
-  /** Legacy `emailConfig` is intentionally unsupported; use schema or `validation` for email-specific rules. */
-  readonly emailConfig?: never;
+  /**
+   * Legacy email configuration; accepted and ignored at runtime. It was never
+   * implemented on the legacy main branch either — use `schema` or `validation`.
+   *
+   * @deprecated Declare email rules through `schema` or field `validation` instead.
+   */
+  readonly emailConfig?: FormedibleEmailConfig;
   readonly dateConfig?: FormedibleDateConfig<TFormValues>;
   readonly sliderConfig?: FormedibleSliderConfig;
   readonly ratingConfig?: FormedibleRatingConfig;
@@ -284,7 +342,8 @@ export interface FormedibleFieldConfig<TFormValues extends FormedibleFormValues 
 }
 
 export interface NormalizedFieldConfig<TFormValues extends FormedibleFormValues = FormedibleFormValues> {
-  readonly type: NormalizedFieldType;
+  /** Normalized known field type or a verbatim custom type string. */
+  readonly type: NormalizedFieldType | (string & {});
   readonly name: Extract<keyof TFormValues, string> | string;
   readonly label?: ReactNode;
   readonly description?: ReactNode;
@@ -294,6 +353,12 @@ export interface NormalizedFieldConfig<TFormValues extends FormedibleFormValues 
   readonly required: boolean;
   readonly className?: string;
   readonly inputClassName?: string;
+  /** Class applied to the label of this field; the hook-level `labelClassName` is appended. */
+  readonly labelClassName?: string;
+  /** File acceptance filter; falls back to `fileConfig.accept`. */
+  readonly accept?: string;
+  /** Multiple selection flag for file inputs; falls back to `fileConfig.multiple`. */
+  readonly multiple?: boolean;
   readonly page?: number;
   readonly tab?: string;
   readonly section?: string | FormedibleFieldSection;
@@ -316,8 +381,13 @@ export interface NormalizedFieldConfig<TFormValues extends FormedibleFormValues 
   /** Native datalist suggestions for text-like and number inputs. */
   readonly datalist?: readonly FormedibleFieldOption[];
   readonly help?: ReactNode | FormedibleHelpConfig;
-  /** Legacy `emailConfig` is intentionally unsupported; use schema or `validation` for email-specific rules. */
-  readonly emailConfig?: never;
+  /**
+   * Legacy email configuration; accepted and ignored at runtime. It was never
+   * implemented on the legacy main branch either — use `schema` or `validation`.
+   *
+   * @deprecated Declare email rules through `schema` or field `validation` instead.
+   */
+  readonly emailConfig?: FormedibleEmailConfig;
   readonly dateConfig?: FormedibleDateConfig<TFormValues>;
   readonly sliderConfig?: FormedibleSliderConfig;
   readonly ratingConfig?: FormedibleRatingConfig;
@@ -359,14 +429,27 @@ export type FormedibleFormEventHandler<TFormValues extends FormedibleFormValues,
 ) => void;
 
 export interface FormedibleFormOptions<TFormValues extends FormedibleFormValues> {
-  readonly defaultValues: TFormValues;
+  /** Initial form values; defaults to an empty object when omitted. */
+  readonly defaultValues?: TFormValues;
   readonly onSubmit?: (context: FormedibleFormEventContext<TFormValues>) => void | Promise<void>;
   readonly onChange?: (context: FormedibleFormEventContext<TFormValues>) => void;
   readonly onBlur?: (context: FormedibleFormEventContext<TFormValues>) => void;
   readonly onFocus?: (context: FormedibleFormEventContext<TFormValues>) => void;
   readonly onReset?: (context: FormedibleFormEventContext<TFormValues>) => void;
-  /** Removed debug/validation helper. Use TanStack Form validation state and rendered field errors instead. */
-  readonly onSubmitInvalid?: never;
+  /**
+   * Standard TanStack Form submit-invalid callback, forwarded verbatim from the
+   * underlying `useForm` config (legacy configs received the same props because
+   * `formOptions` used to be spread straight into `useForm`).
+   */
+  readonly onSubmitInvalid?: (props: {
+    readonly value: TFormValues;
+    readonly formApi: AnyFormApi;
+    readonly meta: unknown;
+  }) => void;
+  /** Debounce for async validation passes, forwarded into the TanStack `useForm` config. */
+  readonly asyncDebounceMs?: number;
+  /** Allows submitting while invalid (keeps the submit button enabled); forwarded into the TanStack `useForm` config. */
+  readonly canSubmitWhenInvalid?: boolean;
   readonly [customProp: string]: unknown;
 }
 
@@ -425,16 +508,21 @@ export interface FormedibleAnalyticsConfig<TFormValues extends FormedibleFormVal
   readonly onPageAbandon?: never;
   /** Superseded by TanStack Form validation state and rendered field errors. */
   readonly onPageValidationError?: never;
-  /** Superseded: current package runtime does not emit tab analytics callbacks. */
-  readonly onTabChange?: never;
-  /** Superseded: current package runtime does not emit tab analytics callbacks. */
+  /** Fired on tab switch with the legacy from/to tab, time spent, and completion state arguments. */
+  readonly onTabChange?: (
+    fromTab: string,
+    toTab: string,
+    timeSpent: number,
+    tabCompletionState?: { readonly completionPercentage: number; readonly hasErrors: boolean },
+  ) => void;
+  /** Superseded: current package runtime does not emit tab completion analytics. */
   readonly onTabComplete?: never;
-  /** Superseded: current package runtime does not emit tab analytics callbacks. */
+  /** Superseded: current package runtime does not emit tab abandonment analytics. */
   readonly onTabAbandon?: never;
-  /** Superseded: current package runtime does not emit tab analytics callbacks. */
+  /** Superseded: current package runtime does not emit tab validation-error analytics. */
   readonly onTabValidationError?: never;
-  /** Superseded: current package runtime does not emit tab analytics callbacks. */
-  readonly onTabFirstVisit?: never;
+  /** Fired the first time a tab becomes active (including the initial tab on mount). */
+  readonly onTabFirstVisit?: (tabId: string, timestamp: number) => void;
   readonly onFormComplete?: (timeSpent: number, formData: TFormValues) => void;
   readonly onFormAbandon?: (
     completionPercentage: number,
@@ -445,14 +533,20 @@ export interface FormedibleAnalyticsConfig<TFormValues extends FormedibleFormVal
   readonly onRenderPerformance?: never;
   /** Superseded: current package runtime does not measure validation performance. */
   readonly onValidationPerformance?: never;
-  /** Superseded: current package runtime does not measure submission performance. */
-  readonly onSubmissionPerformance?: never;
+  /**
+   * Fired after a successful submit with the legacy timing arguments:
+   * total time since form start, validation time (always 0, matching legacy
+   * runtime behavior), and processing time around the consumer's `onSubmit`.
+   */
+  readonly onSubmissionPerformance?: (submissionTime: number, validationTime: number, processingTime: number) => void;
   readonly [customProp: string]: unknown;
 }
 
 export interface UseFormedibleOptions<TFormValues extends FormedibleFormValues = FormedibleFormValues> {
-  readonly fields: readonly FormedibleFieldConfig<TFormValues>[];
-  readonly formOptions: FormedibleFormOptions<TFormValues>;
+  /** Field configurations; defaults to an empty list when omitted. */
+  readonly fields?: readonly FormedibleFieldConfig<TFormValues>[];
+  /** Form options forwarded to the hook runtime; all members are optional. */
+  readonly formOptions?: FormedibleFormOptions<TFormValues>;
   readonly schema?: unknown;
   readonly crossFieldValidation?: readonly FormedibleCrossFieldValidation<TFormValues>[];
   readonly asyncValidation?: Partial<Record<Extract<keyof TFormValues, string> | string, FormedibleAsyncValidation<TFormValues>>>;
@@ -462,7 +556,13 @@ export interface UseFormedibleOptions<TFormValues extends FormedibleFormValues =
   readonly validationSummary?: boolean | FormedibleValidationSummaryConfig;
   readonly persistence?: FormediblePersistenceConfig<TFormValues>;
   readonly analytics?: FormedibleAnalyticsConfig<TFormValues>;
-  readonly defaultComponents?: Partial<Record<NormalizedFieldType, FormedibleFieldComponent<TFormValues>>>;
+  /**
+   * Component registry keyed by field type. Known type keys (including legacy
+   * aliases like `multiselect`) are normalized before lookup; custom type
+   * strings are registered verbatim so fields declaring them render the mapped
+   * component. Unregistered types fall back to the built-in registry (text).
+   */
+  readonly defaultComponents?: Readonly<Record<string, FormedibleFieldComponent<TFormValues>>>;
   readonly globalWrapper?: FormedibleFieldWrapper<TFormValues>;
   readonly submitLabel?: ReactNode;
   readonly nextLabel?: ReactNode;
@@ -483,6 +583,19 @@ export interface UseFormedibleOptions<TFormValues extends FormedibleFormValues =
   readonly collapseLabel?: ReactNode;
   readonly expandLabel?: ReactNode;
   readonly formClassName?: string;
+  /** Class appended to every field wrapper alongside each field's own `className`. */
+  readonly fieldClassName?: string;
+  /** Class appended to every field label alongside each field's own `labelClassName`. */
+  readonly labelClassName?: string;
+  /** Class applied to the navigation buttons (Previous/Next). */
+  readonly buttonClassName?: string;
+  /** Class applied to the submit button. */
+  readonly submitButtonClassName?: string;
+  /**
+   * Reset the form to its default values after a successful submit. Defaults to
+   * `true` (legacy main behavior); pass `false` to keep the submitted values.
+   */
+  readonly resetOnSubmitSuccess?: boolean;
   readonly [customProp: string]: unknown;
 }
 
@@ -516,9 +629,73 @@ export interface FormedibleFieldRenderProps<TFormValues extends FormedibleFormVa
   readonly globalWrapper?: FormedibleFieldWrapper<TFormValues>;
 }
 
+/**
+ * Props delivered to custom field components (`field.component` and
+ * `defaultComponents` entries). Dual-shape contract: the legacy flat props
+ * (`fieldApi`, `label`, `options`, resolved config objects, ...) are delivered
+ * alongside the render-props shape (`field`, `fieldConfig`, `renderField`), so
+ * legacy flat-prop components and new render-props components both work.
+ *
+ * Flat text props (`label`, `description`) are strings; labels declared as
+ * ReactNode remain available through `fieldConfig.label`.
+ */
+export interface FormedibleFieldComponentProps<TFormValues extends FormedibleFormValues = FormedibleFormValues>
+  extends FormedibleFieldRenderProps<TFormValues> {
+  /** TanStack Form field api backing the rendered field (legacy alias). */
+  readonly fieldApi: AnyFieldApi;
+  /** Resolved label; only string labels are surfaced here. */
+  readonly label?: string;
+  /** Resolved placeholder. */
+  readonly placeholder?: string;
+  /** Resolved description; only string descriptions are surfaced here. */
+  readonly description?: string;
+  /** True when the field, form, or submit lifecycle disables the control. */
+  readonly disabled?: boolean;
+  readonly required?: boolean;
+  /** Resolved and normalized options; only present when the field declares options. */
+  readonly options?: { value: string; label: string; disabled?: boolean }[];
+  readonly min?: number;
+  readonly max?: number;
+  readonly step?: number;
+  readonly rows?: number;
+  readonly maxLength?: number;
+  /** File acceptance filter; falls back to `fileConfig.accept`. */
+  readonly accept?: string;
+  /** Multiple selection flag; falls back to `fileConfig.multiple`. */
+  readonly multiple?: boolean;
+  readonly className?: string;
+  readonly inputClassName?: string;
+  /** Class applied to the element wrapping label and control. */
+  readonly wrapperClassName?: string;
+  readonly labelClassName?: string;
+  readonly arrayConfig?: FormedibleArrayConfig<TFormValues>;
+  readonly objectConfig?: FormedibleObjectConfig<TFormValues>;
+  readonly datalist?: readonly FormedibleFieldOption[];
+  readonly textareaConfig?: FormedibleTextareaConfig;
+  readonly passwordConfig?: FormediblePasswordConfig;
+  readonly numberConfig?: FormedibleNumberConfig;
+  readonly dateConfig?: FormedibleDateConfig<TFormValues>;
+  readonly sliderConfig?: FormedibleSliderConfig;
+  readonly ratingConfig?: FormedibleRatingConfig;
+  readonly multiSelectConfig?: FormedibleMultiSelectConfig;
+  readonly comboboxConfig?: FormedibleComboboxConfig;
+  readonly autocompleteConfig?: FormedibleAutocompleteConfig;
+  readonly maskedInputConfig?: FormedibleMaskedInputConfig;
+  readonly multiComboboxConfig?: FormedibleMultiSelectConfig & FormedibleComboboxConfig;
+  readonly colorConfig?: FormedibleColorConfig;
+  readonly phoneConfig?: FormediblePhoneConfig;
+  readonly durationConfig?: FormedibleDurationConfig;
+  readonly locationConfig?: FormedibleLocationConfig;
+  readonly fileConfig?: FormedibleFileConfig;
+}
+
 export interface FormedibleDateConfig<TFormValues extends FormedibleFormValues = FormedibleFormValues> {
   readonly minDate?: Date | string;
   readonly maxDate?: Date | string;
+  /** When true, dates before today's local date are unselectable (effective min becomes the later of minDate and today). */
+  readonly disablePastDates?: boolean;
+  /** When true, dates after today's local date are unselectable (effective max becomes the earlier of maxDate and today). */
+  readonly disableFutureDates?: boolean;
   readonly disableDate?: (date: Date, values: TFormValues) => boolean;
   readonly format?: string;
   readonly [customProp: string]: unknown;
@@ -542,10 +719,21 @@ export interface FormedibleSliderVisualizationProps {
   readonly isActive: boolean;
 }
 
+export interface FormedibleSliderGradientColors {
+  /** Gradient start color (hex, e.g. `#ef4444`). */
+  readonly start: string;
+  /** Gradient end color (hex, e.g. `#22c55e`). */
+  readonly end: string;
+  /** Gradient direction; defaults to `horizontal`. */
+  readonly direction?: 'horizontal' | 'vertical';
+}
+
 export interface FormedibleSliderConfig {
   readonly min?: number;
   readonly max?: number;
   readonly step?: number;
+  /** Paints the slider track as a gradient between the configured colors. */
+  readonly gradientColors?: FormedibleSliderGradientColors;
   readonly valueMapping?: readonly FormedibleSliderValueMapping[];
   readonly visualizationComponent?: ComponentType<FormedibleSliderVisualizationProps>;
   readonly valueLabelPrefix?: string;
@@ -646,6 +834,11 @@ export interface FormedibleLocationConfig {
   readonly [customProp: string]: unknown;
 }
 
+export interface FormedibleFileRejection {
+  readonly file: File;
+  readonly reason: 'maxSize' | 'maxFiles';
+}
+
 export interface FormedibleFileConfig {
   readonly accept?: string;
   readonly multiple?: boolean;
@@ -653,5 +846,6 @@ export interface FormedibleFileConfig {
   readonly maxFiles?: number;
   readonly onFilesChange?: (files: readonly File[]) => void;
   readonly onFileRemove?: (file: File) => void;
+  readonly onFilesRejected?: (rejections: readonly FormedibleFileRejection[]) => void;
   readonly [customProp: string]: unknown;
 }

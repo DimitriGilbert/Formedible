@@ -5,34 +5,12 @@ import {
   assertHasViolations,
   collectRepositoryEntries,
   collectRepositoryTextFiles,
+  extractImportSpecifiers,
   type RepositoryEntry,
   type RepositoryFile,
 } from './utils.js';
 
 const fakeSurfacePattern = /(^|\/)generated\/formedible(\/|$)/;
-const moduleReferencePatterns = [
-  /import\s+(?:type\s+)?[\s\S]*?\s+from\s+['"]([^'"]+)['"]/g,
-  /import\s+['"]([^'"]+)['"]/g,
-  /export\s+(?:type\s+)?[\s\S]*?\s+from\s+['"]([^'"]+)['"]/g,
-  /require\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
-  /import\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
-];
-
-function extractModuleReferenceSpecifiers(content: string): string[] {
-  const specifiers: string[] = [];
-
-  for (const pattern of moduleReferencePatterns) {
-    for (const match of content.matchAll(pattern)) {
-      const specifier = match[1];
-
-      if (specifier !== undefined) {
-        specifiers.push(specifier);
-      }
-    }
-  }
-
-  return specifiers;
-}
 
 export function findFakeFormediblePathViolations(entries: readonly RepositoryEntry[]): string[] {
   return entries
@@ -42,7 +20,7 @@ export function findFakeFormediblePathViolations(entries: readonly RepositoryEnt
 
 export function findFakeFormedibleImportViolations(files: readonly RepositoryFile[]): string[] {
   return files.flatMap((file) =>
-    extractModuleReferenceSpecifiers(file.content)
+    extractImportSpecifiers(file.content)
       .filter((specifier) => specifier.includes('generated/formedible'))
       .map((specifier) => `generated Formedible import is forbidden in ${file.relativePath}: ${specifier}`),
   );

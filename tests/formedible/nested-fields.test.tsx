@@ -8,9 +8,10 @@ import { useFormedible } from '../../packages/formedible/src/hooks/use-formedibl
 import { arrayItemFieldPath, getValueAtFieldPath, joinFieldPath } from '../../packages/formedible/src/lib/formedible/field-path';
 import { buildFieldValidators, buildFormValidators } from '../../packages/formedible/src/lib/formedible/validation';
 import { getIssueFieldName } from '../../packages/formedible/src/lib/formedible/zod-errors';
-import { nestedConditionalObjectArrayCompatibilityExample } from '../compatibility-examples/nested-examples';
+import { arrayFieldsCompatibilityExample, nestedConditionalObjectArrayCompatibilityExample } from '../compatibility-examples/nested-examples';
+import type { FieldDescriptor } from '../compatibility-examples/example-manifest';
 import type { FormedibleFormValidationApi, FormedibleFormValidatorContext, FormedibleValidatorContext } from '../../packages/formedible/src/lib/formedible/validation';
-import type { FormedibleFormValues, NormalizedFieldConfig } from '../../packages/formedible/src/lib/formedible/types';
+import type { FormedibleFieldConfig, FormedibleFormValues, NormalizedFieldConfig } from '../../packages/formedible/src/lib/formedible/types';
 
 interface NestedValues extends FormedibleFormValues {
   readonly object: {
@@ -218,6 +219,186 @@ test('conditional-in-obj nested conditionals receive local array item values', (
   assert.equal(nestedConditionalObjectArrayCompatibilityExample.sourceFile.endsWith('conditional-in-obj.tsx'), true);
   assert.equal(textareaMatches.length, 1);
   assert.equal(textareaMatches[0], 'name="roomDetails[1].equipementListRoom"');
+});
+
+interface ArrayFieldsExampleValues extends FormedibleFormValues {
+  readonly teamMembers: readonly Record<string, unknown>[];
+  readonly contactMethods: readonly string[];
+  readonly emergencyContacts: readonly Record<string, unknown>[];
+}
+
+function fixtureDescriptor(name: string): FieldDescriptor {
+  const descriptor = arrayFieldsCompatibilityExample.fields.find((field) => field.name === name);
+
+  if (!descriptor) {
+    throw new Error(`array fields example fixture is missing the ${name} field`);
+  }
+
+  return descriptor;
+}
+
+function fixtureConfigValue(descriptor: FieldDescriptor, key: string): string | undefined {
+  const entry = descriptor.config?.find((token) => token.startsWith(`${key}:`));
+
+  return entry?.slice(key.length + 1);
+}
+
+function fixtureConfigNumber(descriptor: FieldDescriptor, key: string): number | undefined {
+  const value = fixtureConfigValue(descriptor, key);
+
+  return value !== undefined && /^\d+$/.test(value) ? Number(value) : undefined;
+}
+
+function fixtureStringOptions(descriptor: FieldDescriptor | undefined): readonly string[] {
+  return (descriptor?.options ?? []).filter((option): option is string => typeof option === 'string');
+}
+
+function fixtureArrayItem(descriptor: FieldDescriptor): Record<string, unknown> {
+  const item: Record<string, unknown> = {};
+
+  for (const nested of descriptor.nestedFields ?? []) {
+    item[nested.name] = nested.type === 'switch' ? false : nested.type === 'select' ? (fixtureStringOptions(nested)[0] ?? '') : '';
+  }
+
+  return item;
+}
+
+function fixtureArrayField(descriptor: FieldDescriptor): FormedibleFieldConfig<FormedibleFormValues> {
+  const nestedFields: readonly FormedibleFieldConfig<FormedibleFormValues>[] = (descriptor.nestedFields ?? []).map((nested) => ({
+    name: nested.name,
+    type: nested.type,
+    options: nested.options,
+  }));
+  const configuredItemType = fixtureConfigValue(descriptor, 'itemType');
+  const itemType = configuredItemType === 'email' ? 'email' : configuredItemType === 'object' || nestedFields.length > 0 ? 'object' : 'string';
+
+  return {
+    name: descriptor.name,
+    type: 'array',
+    label: descriptor.name,
+    arrayConfig: {
+      itemType,
+      objectConfig: nestedFields.length > 0 ? { fields: nestedFields } : undefined,
+    },
+  };
+}
+
+function ArrayFieldsExampleFixtureForm() {
+  const defaultValues: FormedibleFormValues = {};
+
+  for (const descriptor of arrayFieldsCompatibilityExample.fields) {
+    defaultValues[descriptor.name] = descriptor.nestedFields ? [fixtureArrayItem(descriptor)] : [''];
+  }
+
+  const { Form } = useFormedible<FormedibleFormValues>({
+    fields: arrayFieldsCompatibilityExample.fields.map(fixtureArrayField),
+    formOptions: { defaultValues },
+  });
+
+  return <Form />;
+}
+
+test('array fields example fixture renders nested item fields addressed by name', () => {
+  assert.ok(arrayFieldsCompatibilityExample.assertionsRequired.includes('nested fields are addressed by field names and not by array index'));
+
+  const markup = renderToStaticMarkup(<ArrayFieldsExampleFixtureForm />);
+
+  for (const descriptor of arrayFieldsCompatibilityExample.fields) {
+    for (const nested of descriptor.nestedFields ?? []) {
+      assert.match(markup, new RegExp(`name="${descriptor.name}\\[0\\]\\.${nested.name}"`), `${descriptor.name}.${nested.name} must render as a named TanStack path`);
+    }
+
+    if (!descriptor.nestedFields) {
+      assert.match(markup, new RegExp(`name="${descriptor.name}\\[0\\]"`));
+    }
+  }
+
+  const roleDescriptor = fixtureDescriptor('teamMembers').nestedFields?.find((nested) => nested.name === 'role');
+  assert.equal(fixtureStringOptions(roleDescriptor).length, 4, 'the fixture must keep the four team member role options');
+});
+
+test('array fields example min, max, and email item rules match fixture evidence through the real pipeline', () => {
+  assert.ok(arrayFieldsCompatibilityExample.assertionsRequired.includes('teamMembers requires at least one item and allows at most ten items'));
+  assert.ok(arrayFieldsCompatibilityExample.assertionsRequired.includes('contactMethods requires at least one valid email item and allows at most five items'));
+  assert.ok(arrayFieldsCompatibilityExample.assertionsRequired.includes('emergencyContacts allows at most three items'));
+
+  const teamMembers = fixtureDescriptor('teamMembers');
+  const contactMethods = fixtureDescriptor('contactMethods');
+  const emergencyContacts = fixtureDescriptor('emergencyContacts');
+
+  const roleDescriptor = teamMembers.nestedFields?.find((nested) => nested.name === 'role');
+  const roleOptions = fixtureStringOptions(roleDescriptor);
+  const itemShape = (descriptor: FieldDescriptor) => {
+    const shape: Record<string, z.ZodTypeAny> = {};
+
+    for (const nested of descriptor.nestedFields ?? []) {
+      shape[nested.name] =
+        nested.type === 'select' && descriptor.name === 'teamMembers'
+          ? z.string().refine((value) => roleOptions.includes(value), 'Role must be one of the fixture options')
+          : z.string();
+    }
+
+    return z.object(shape);
+  };
+  const boundedArray = (descriptor: FieldDescriptor, itemSchema: z.ZodTypeAny) => {
+    const minItems = fixtureConfigNumber(descriptor, 'minItems');
+    const maxItems = fixtureConfigNumber(descriptor, 'maxItems');
+    let arraySchema = z.array(itemSchema);
+
+    if (minItems !== undefined) {
+      arraySchema = arraySchema.min(minItems);
+    }
+
+    if (maxItems !== undefined) {
+      arraySchema = arraySchema.max(maxItems);
+    }
+
+    return arraySchema;
+  };
+
+  const contactItemSchema = fixtureConfigValue(contactMethods, 'itemType') === 'email' ? z.string().email('Contact method must be a valid email') : z.string();
+  const schema = z.object({
+    teamMembers: boundedArray(teamMembers, itemShape(teamMembers)),
+    contactMethods: boundedArray(contactMethods, contactItemSchema),
+    emergencyContacts: boundedArray(emergencyContacts, itemShape(emergencyContacts)),
+  });
+
+  const validators = buildFormValidators<ArrayFieldsExampleValues>(schema, undefined);
+  const onChange = validators?.onChange as unknown as FormRunner<ArrayFieldsExampleValues>;
+
+  const teamMembersMax = fixtureConfigNumber(teamMembers, 'maxItems') ?? 0;
+  const emergencyContactsMax = fixtureConfigNumber(emergencyContacts, 'maxItems') ?? 0;
+
+  const valuesWith = (teamMembersCount: number, contactMethodsValues: readonly string[], emergencyContactsCount: number): ArrayFieldsExampleValues => ({
+    teamMembers: Array.from({ length: teamMembersCount }, () => fixtureArrayItem(teamMembers)),
+    contactMethods: [...contactMethodsValues],
+    emergencyContacts: Array.from({ length: emergencyContactsCount }, () => fixtureArrayItem(emergencyContacts)),
+  });
+
+  const emptyValues = valuesWith(0, [], 0);
+  const emptyResult = onChange({ value: emptyValues, formApi: fakeFormApi(emptyValues) });
+  assert.ok(emptyResult?.fields.teamMembers !== undefined, 'teamMembers below its fixture minItems must error');
+  assert.ok(emptyResult?.fields.contactMethods !== undefined, 'contactMethods below its fixture minItems must error');
+
+  const invalidEmailValues = valuesWith(1, ['not-an-email'], 0);
+  const invalidEmailResult = onChange({ value: invalidEmailValues, formApi: fakeFormApi(invalidEmailValues) });
+  assert.equal(invalidEmailResult?.fields['contactMethods[0]'], 'Contact method must be a valid email');
+
+  const invalidRoleValues: ArrayFieldsExampleValues = {
+    ...valuesWith(1, ['dev@example.com'], 0),
+    teamMembers: [{ ...fixtureArrayItem(teamMembers), role: 'wizard' }],
+  };
+  const invalidRoleResult = onChange({ value: invalidRoleValues, formApi: fakeFormApi(invalidRoleValues) });
+  assert.equal(invalidRoleResult?.fields['teamMembers[0].role'], 'Role must be one of the fixture options');
+
+  const overMaxValues = valuesWith(teamMembersMax + 1, ['dev@example.com'], emergencyContactsMax + 1);
+  const overMaxResult = onChange({ value: overMaxValues, formApi: fakeFormApi(overMaxValues) });
+  assert.ok(overMaxResult?.fields.teamMembers !== undefined, 'teamMembers above its fixture maxItems must error');
+  assert.ok(overMaxResult?.fields.emergencyContacts !== undefined, 'emergencyContacts above its fixture maxItems must error');
+
+  const validValues = valuesWith(1, ['dev@example.com'], 1);
+  const validResult = onChange({ value: validValues, formApi: fakeFormApi(validValues) });
+  assert.equal(validResult, undefined, 'values within every fixture bound must validate clean');
 });
 
 test('submitted nested value shape remains a normal object and array tree', () => {

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { ChatMessages } from '@formedible/ui/components/formedible/ai/chat-messages';
 import { Button } from '@formedible/ui/components/button';
@@ -9,6 +9,7 @@ import { Textarea } from '@formedible/ui/components/textarea';
 import { collectAiGenerationResult, streamAiResponse } from '@formedible/ui/components/formedible/lib/ai-generation';
 import { extractFormCode, parseAiToFormedible } from '@formedible/ui/components/formedible/lib/ai-parser';
 import { createAiStreamScheduler } from '@formedible/ui/components/formedible/lib/ai-stream-scheduler';
+import type { AiStreamScheduler } from '@formedible/ui/components/formedible/lib/ai-stream-scheduler';
 import type {
   AiGenerationRequest,
   AiGenerationResult,
@@ -27,9 +28,9 @@ export interface ChatInterfaceProps {
   readonly providerSecrets: ProviderSecrets | null;
   readonly mode: AIBuilderMode;
   readonly messages: readonly AiMessage[];
-  readonly onMessagesChange: (messages: readonly AiMessage[]) => void;
-  readonly onFormGenerated?: (formCode: string) => void;
-  readonly conversationId?: string;
+  readonly conversationId: string;
+  readonly onMessagesChange: (conversationId: string, messages: readonly AiMessage[]) => void;
+  readonly onFormGenerated?: (conversationId: string, formCode: string) => void;
   readonly systemPrompt?: string;
   readonly parserConfig?: AiParserConfig;
   readonly className?: string;
@@ -79,6 +80,27 @@ export function resolveMessageStatus(finishReason: AiFinishReason | undefined, e
   return 'completed';
 }
 
+interface ActiveGeneration {
+  readonly abortController: AbortController;
+  readonly scheduler: AiStreamScheduler;
+}
+
+export type ActiveGenerationRef = { current: ActiveGeneration | undefined };
+
+export function createGenerationUnmountCleanup(activeGenerationRef: ActiveGenerationRef): () => void {
+  return () => {
+    const activeGeneration = activeGenerationRef.current;
+
+    if (!activeGeneration) {
+      return;
+    }
+
+    activeGenerationRef.current = undefined;
+    activeGeneration.scheduler.cancel();
+    activeGeneration.abortController.abort('component unmounted');
+  };
+}
+
 export function ChatInterface({
   providerSettings,
   providerSecrets,
@@ -95,6 +117,9 @@ export function ChatInterface({
   const [error, setError] = useState<string>();
   const [isGenerating, setIsGenerating] = useState(false);
   const [abortController, setAbortController] = useState<AbortController>();
+  const activeGenerationRef = useRef<ActiveGeneration | undefined>(undefined);
+
+  useEffect(() => createGenerationUnmountCleanup(activeGenerationRef), []);
 
   async function submitPrompt() {
     const trimmedPrompt = prompt.trim();
@@ -103,6 +128,7 @@ export function ChatInterface({
       return;
     }
 
+    const submissionConversationId = conversationId;
     const userMessage = createMessage('user', trimmedPrompt);
     const nextMessages = [...messages, userMessage];
     const assistantMessage: AiMessage = {
@@ -119,10 +145,10 @@ export function ChatInterface({
 
     function updateAssistantMessage(message: AiMessage): void {
       displayedMessages = displayedMessages.map((existingMessage) => (existingMessage.id === assistantMessage.id ? message : existingMessage));
-      onMessagesChange(displayedMessages);
+      onMessagesChange(submissionConversationId, displayedMessages);
     }
 
-    onMessagesChange(displayedMessages);
+    onMessagesChange(submissionConversationId, displayedMessages);
     setPrompt('');
     setError(undefined);
     setIsGenerating(true);
@@ -139,6 +165,7 @@ export function ChatInterface({
         status: 'streaming',
       });
     });
+    activeGenerationRef.current = { abortController: nextAbortController, scheduler: streamScheduler };
 
     try {
       if (mode !== 'client') {
@@ -192,7 +219,7 @@ export function ChatInterface({
       updateAssistantMessage(finalAssistantMessage);
 
       if (formCode) {
-        onFormGenerated?.(formCode);
+        onFormGenerated?.(submissionConversationId, formCode);
       }
     } catch (generationError) {
       streamScheduler.flushNow();
@@ -221,6 +248,7 @@ export function ChatInterface({
         status: wasAborted ? 'aborted' : 'error',
       });
     } finally {
+      activeGenerationRef.current = undefined;
       streamScheduler.flushNow();
       setIsGenerating(false);
       setAbortController(undefined);

@@ -40,9 +40,12 @@ const optionsWithCompatibilityExamplesShape = {
     onFieldComplete: (fieldName, isValid, timeSpent) => ({ fieldName, isValid, timeSpent }),
     onFieldError: (fieldName, errors, timestamp) => ({ fieldName, errors, timestamp }),
     onPageChange: (fromPage, toPage, timeSpent, validationState) => fromPage + toPage + timeSpent + (validationState?.completionPercentage ?? 0),
+    onTabChange: (fromTab, toTab, timeSpent, tabCompletionState) => `${fromTab}>${toTab}:${timeSpent}:${tabCompletionState?.completionPercentage ?? 0}`,
+    onTabFirstVisit: (tabId, timestamp) => `${tabId}:${timestamp}`,
     onFormComplete: (timeSpent, formData) => ({ formData, timeSpent }),
     onFormAbandon: (completionPercentage, context) => ({ completionPercentage, context }),
     onFormReset: (timestamp, reason) => ({ timestamp, reason }),
+    onSubmissionPerformance: (submissionTime, validationTime, processingTime) => submissionTime + validationTime + processingTime,
   },
   onPageChange: (page, direction) => `${direction}:${page}`,
   autoSubmitOnChange: true,
@@ -86,6 +89,12 @@ const optionsWithCompatibilityExamplesShape = {
     onReset: ({ value }) => {
       value.needsPremium.valueOf();
     },
+    onSubmitInvalid: ({ value, formApi, meta }) => {
+      value.email.toUpperCase();
+      formApi.state.values.email.toUpperCase();
+
+      return meta;
+    },
   },
 } satisfies UseFormedibleOptions<CompatibilityOptionsValues>;
 
@@ -106,37 +115,17 @@ const supersededAnalyticsCallbacks = {
     onPageAbandon: () => undefined,
     // @ts-expect-error Superseded: use rendered validation errors or TanStack Form state instead.
     onPageValidationError: () => undefined,
-    // @ts-expect-error Superseded: tab-specific analytics are not wired to current tab runtime.
-    onTabChange: () => undefined,
-    // @ts-expect-error Superseded: tab-specific analytics are not wired to current tab runtime.
+    // @ts-expect-error Superseded: no package runtime currently emits tab completion analytics.
     onTabComplete: () => undefined,
-    // @ts-expect-error Superseded: tab-specific analytics are not wired to current tab runtime.
+    // @ts-expect-error Superseded: no package runtime currently emits tab abandonment analytics.
     onTabAbandon: () => undefined,
-    // @ts-expect-error Superseded: tab-specific analytics are not wired to current tab runtime.
+    // @ts-expect-error Superseded: no package runtime currently emits tab validation-error analytics.
     onTabValidationError: () => undefined,
-    // @ts-expect-error Superseded: tab-specific analytics are not wired to current tab runtime.
-    onTabFirstVisit: () => undefined,
     // @ts-expect-error Superseded: render performance is not measured by the package runtime.
     onRenderPerformance: () => undefined,
     // @ts-expect-error Superseded: validation performance is not measured by the package runtime.
     onValidationPerformance: () => undefined,
-    // @ts-expect-error Superseded: submission performance is not measured by the package runtime.
-    onSubmissionPerformance: () => undefined,
   },
 } satisfies UseFormedibleOptions<CompatibilityOptionsValues>;
 
-const intentionallyRemovedFormOptions = {
-  fields: [],
-  formOptions: {
-    defaultValues: {
-      firstName: '',
-      email: '',
-      needsPremium: false,
-      interests: [],
-    },
-    // @ts-expect-error Removed debug/validation helper: invalid submission state is superseded by TanStack Form validation state and rendered errors.
-    onSubmitInvalid: () => undefined,
-  },
-} satisfies UseFormedibleOptions<CompatibilityOptionsValues>;
-
-export { intentionallyRemovedFormOptions, optionsWithCompatibilityExamplesShape, supersededAnalyticsCallbacks };
+export { optionsWithCompatibilityExamplesShape, supersededAnalyticsCallbacks };

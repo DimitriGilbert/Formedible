@@ -5,7 +5,7 @@ import { createRouteSeoHead } from '@/features/docs/seo';
 
 const routeHead = createRouteSeoHead('/docs/validation');
 
-const githubRoot = 'https://github.com/DimitriGilbert/Formedible/blob/main';
+const githubRoot = 'https://github.com/DimitriGilbert/Formedible/blob/re-codex';
 
 const sourceReferences = {
   validationRuntime: {

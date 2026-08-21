@@ -61,8 +61,8 @@ const sections = [
 });`,
     },
     references: [
-      sourceReference('Types: FormediblePersistenceConfig', 'packages/formedible/src/lib/formedible/types.ts#L395-L402', 'The persistence option shape.'),
-      sourceReference('Source: getConfiguredStorage', 'packages/formedible/src/hooks/use-form-persistence.ts#L23-L29', 'SSR guard and localStorage/sessionStorage selection.'),
+      sourceReference('Types: FormediblePersistenceConfig', 'packages/formedible/src/lib/formedible/types.ts#L483-L490', 'The persistence option shape.'),
+      sourceReference('Source: getConfiguredStorage', 'packages/formedible/src/hooks/use-form-persistence.ts#L29-L35', 'SSR guard and localStorage/sessionStorage selection.'),
       persistenceExample,
     ],
   },
@@ -91,8 +91,8 @@ const sections = [
 // }`,
     },
     references: [
-      sourceReference('Source: createPersistedFormPayload', 'packages/formedible/src/hooks/use-form-persistence.ts#L31-L52', 'Excluded fields, timestamp, and optional currentPage payload.'),
-      sourceReference('Source: debounce effect', 'packages/formedible/src/hooks/use-form-persistence.ts#L150-L162', 'Debounced writes tied to form values.'),
+      sourceReference('Source: createPersistedFormPayload', 'packages/formedible/src/hooks/use-form-persistence.ts#L43-L58', 'Excluded fields, timestamp, and optional currentPage payload.'),
+      sourceReference('Source: debounce effect', 'packages/formedible/src/hooks/use-form-persistence.ts#L220-L253', 'Debounced writes tied to form values.'),
       sourceReference('Test: payload shape', 'tests/formedible/phase10-behavior.test.ts#L94-L107', 'Asserts values, timestamp, currentPage, and exclude behavior.'),
     ],
   },
@@ -119,8 +119,8 @@ return (
 );`,
     },
     references: [
-      sourceReference('Source: helper callbacks', 'packages/formedible/src/hooks/use-form-persistence.ts#L95-L164', 'saveToStorage, loadFromStorage, clearStorage, restoreOnMount, and debounce effects.'),
-      sourceReference('Source: useFormedible return', 'packages/formedible/src/hooks/use-formedible.tsx#L428-L443', 'The hook return contract includes saveToStorage, loadFromStorage, and clearStorage.'),
+      sourceReference('Source: helper callbacks', 'packages/formedible/src/hooks/use-form-persistence.ts#L147-L253', 'saveToStorage, loadFromStorage, clearStorage, restoreOnMount, and debounce effects.'),
+      sourceReference('Source: useFormedible return', 'packages/formedible/src/hooks/use-formedible.tsx#L1027-L1042', 'The hook return contract includes saveToStorage, loadFromStorage, and clearStorage.'),
       sourceReference('Test: helpers', 'tests/formedible/phase10-behavior.test.ts#L109-L124', 'Save, load, clear, malformed payload rejection, and currentPage metadata.'),
     ],
   },
@@ -150,8 +150,8 @@ return (
 }`,
     },
     references: [
-      sourceReference('Source: payload parser', 'packages/formedible/src/hooks/use-form-persistence.ts#L54-L89', 'JSON parsing, shape checks, and optional currentPage handling.'),
-      sourceReference('Source: storage IO', 'packages/formedible/src/hooks/use-form-persistence.ts#L81-L93', 'JSON.stringify, getItem, and removeItem helpers.'),
+      sourceReference('Source: payload parser', 'packages/formedible/src/hooks/use-form-persistence.ts#L64-L85', 'JSON parsing, shape checks, and optional currentPage handling.'),
+      sourceReference('Source: storage IO', 'packages/formedible/src/hooks/use-form-persistence.ts#L87-L99', 'JSON.stringify, getItem, and removeItem helpers.'),
       sourceReference('Test: malformed payloads', 'tests/formedible/phase10-behavior.test.ts#L109-L124', 'Bad JSON and bad shape resolve to undefined.'),
     ],
   },
@@ -173,7 +173,7 @@ if (restored) {
 }`,
     },
     references: [
-      sourceReference('Source: loadFromStorage return value', 'packages/formedible/src/hooks/use-form-persistence.ts#L110-L134', 'loadFromStorage returns the parsed payload after applying values and page state.'),
+      sourceReference('Source: loadFromStorage return value', 'packages/formedible/src/hooks/use-form-persistence.ts#L158-L182', 'loadFromStorage returns the parsed payload after applying values and page state.'),
       sourceReference('Example: persistence form', 'apps/web/src/components/docs/examples/persistence-form.tsx', 'The live example uses localStorage, debounceMs 1500, exclude, and restoreOnMount.'),
       persistenceExample,
     ],

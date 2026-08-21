@@ -60,6 +60,22 @@ function isValidRegexPattern(pattern: string): boolean {
   }
 }
 
+function arrayItemSchemaCode(itemType: NonNullable<FormedibleFieldConfig<FormedibleFormValues>['arrayConfig']>['itemType']): string {
+  if (itemType === 'number') {
+    return 'z.number()';
+  }
+
+  if (itemType === 'checkbox' || itemType === 'switch') {
+    return 'z.boolean()';
+  }
+
+  if (itemType === 'object') {
+    return 'z.record(z.string(), z.unknown())';
+  }
+
+  return 'z.string()';
+}
+
 function fieldSchemaCode(field: FormedibleFieldConfig<FormedibleFormValues>): string {
   const label = reactNodeToCode(field.label) || field.name;
   const builderValidation = getBuilderValidation(field);
@@ -81,7 +97,11 @@ function fieldSchemaCode(field: FormedibleFieldConfig<FormedibleFormValues>): st
     schema = 'z.boolean()';
   }
 
-  if (field.type === 'multiSelect' || field.type === 'multiselect' || field.type === 'array') {
+  if (field.type === 'array') {
+    schema = `z.array(${arrayItemSchemaCode(field.arrayConfig?.itemType)})`;
+  }
+
+  if (field.type === 'multiSelect' || field.type === 'multiselect') {
     schema = 'z.array(z.string())';
   }
 
@@ -213,8 +233,35 @@ function serializeTabs(tabs: readonly FormTab[] | undefined): readonly Serialize
   }));
 }
 
+const identifierKeyPattern = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
+const lineBreakPattern = /[\r\n\u2028\u2029]/;
+
+function assertFieldNameSafeForCode(name: string): void {
+  if (lineBreakPattern.test(name)) {
+    throw new Error(`Field name must not contain line breaks because it is emitted into generated code: ${JSON.stringify(name)}`);
+  }
+}
+
+function schemaPropertyKey(name: string): string {
+  // Plain identifiers render bare for readable output. Every other name is emitted as a
+  // computed `[JSON.stringify(name)]` key: JSON.stringify escapes quotes, backslashes and
+  // control characters so crafted names stay a single inert string token (no schema source
+  // injection), and the computed form keeps even `__proto__` from triggering object-literal
+  // prototype-setter semantics. Both forms are valid TypeScript for any string.
+  if (name !== '__proto__' && identifierKeyPattern.test(name)) {
+    return name;
+  }
+
+  return `[${JSON.stringify(name)}]`;
+}
+
 export function generateFormCode(options: CodeGenerationOptions): GeneratedCodeResult {
-  const schemaFields = options.fields.map((field) => `  ${field.name}: ${fieldSchemaCode(field)}`).join(',\n');
+  const schemaFields = options.fields
+    .map((field) => {
+      assertFieldNameSafeForCode(field.name);
+      return `  ${schemaPropertyKey(field.name)}: ${fieldSchemaCode(field)}`;
+    })
+    .join(',\n');
   const schemaCode = `z.object({${schemaFields.length > 0 ? `\n${schemaFields}\n` : ''}})`;
   const configObject: Record<string, unknown> = {
     fields: options.fields.map(serializeField),
@@ -275,7 +322,7 @@ export function generateCodeFromParsedConfig(config: UseFormedibleOptions<Formed
   return generateFormCode({
     title: typeof config.title === 'string' ? config.title : undefined,
     description: typeof config.description === 'string' ? config.description : undefined,
-    fields: config.fields,
+    fields: config.fields ?? [],
     pages: config.pages?.map((page) => ({
       page: page.page,
       title: reactNodeToCode(page.title) || `Page ${page.page}`,

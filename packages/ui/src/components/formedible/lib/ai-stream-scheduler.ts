@@ -61,6 +61,17 @@ export class AiStreamScheduler {
     this.flush();
   }
 
+  cancel(): void {
+    if (this.frameId !== undefined) {
+      this.cancelFrame(this.frameId);
+      this.frameId = undefined;
+    }
+
+    this.textBuffer = '';
+    this.thinkingBuffer = '';
+    this.eventBuffer.length = 0;
+  }
+
   private scheduleFlush(): void {
     if (this.frameId !== undefined) {
       return;

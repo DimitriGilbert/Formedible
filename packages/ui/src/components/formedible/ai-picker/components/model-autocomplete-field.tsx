@@ -4,10 +4,9 @@ import { useMemo, useState } from 'react';
 
 import { Button } from '@formedible/ui/components/button';
 import { Input } from '@formedible/ui/components/input';
-import { cn } from '@formedible/ui/lib/utils';
-
 import type { ProviderModelCatalogEntry } from '@formedible/ui/components/formedible/ai-picker/lib/ai-picker-types';
 import { getFilteredModelOptions } from '@formedible/ui/components/formedible/ai-picker/lib/ai-picker-utils';
+import { cn } from '@formedible/ui/lib/utils';
 
 interface ModelAutocompleteFieldProps {
   readonly value: string;

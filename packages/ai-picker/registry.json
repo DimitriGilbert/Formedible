@@ -9,6 +9,7 @@
       "title": "Formedible AI Picker",
       "description": "AI provider picker with model selection, API key management, and storage preferences.",
       "dependencies": [
+        "@base-ui/react",
         "@tanstack/ai",
         "@tanstack/ai-anthropic",
         "@tanstack/ai-openai",
@@ -43,6 +44,16 @@
           "path": "src/lib/ai-picker-utils.ts",
           "type": "registry:lib",
           "target": "@ui/formedible/ai-picker/lib/ai-picker-utils.ts"
+        },
+        {
+          "path": "src/lib/conditional-path.ts",
+          "type": "registry:lib",
+          "target": "@ui/formedible/ai-picker/lib/conditional-path.ts"
+        },
+        {
+          "path": "src/components/ai-picker/index.ts",
+          "type": "registry:lib",
+          "target": "@ui/formedible/ai-picker/components/index.ts"
         },
         {
           "path": "src/components/ai-picker/model-autocomplete-field.tsx",

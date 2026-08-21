@@ -20,6 +20,9 @@ import type {
   SchemaInferenceResult,
   ValidationWithSuggestionsResult,
 } from '@formedible/ui/components/formedible/lib/parser-types';
+import { defaultParserConfig } from './parser-config-schema';
+
+export const version = '0.1.0';
 
 export const supportedFieldTypes = [
   'text',
@@ -185,6 +188,160 @@ const allowedFieldKeys = new Set([
 
 const executableSyntaxPattern = /(?:=>|\bfunction\s*\(|\bclass\s+[A-Za-z_$]|\bnew\s+[A-Za-z_$][\w$]*\s*\(|\beval\s*\(|\bFunction\s*\(|\bsetTimeout\s*\(|\bsetInterval\s*\(|\brequire\s*\(|\bimport\s*\(|<\s*[A-Z][A-Za-z0-9]*(?:\s|>|\/))/;
 
+type CodeRegionKind = 'code' | 'comment' | 'single' | 'double' | 'template';
+
+interface CodeRegion {
+  readonly kind: CodeRegionKind;
+  readonly text: string;
+}
+
+// Scans config source into contiguous regions, classifying each chunk as code,
+// comment, or one of the string-literal kinds. Every transform that rewrites or
+// audits executable syntax must operate on non-string regions only, so prose in
+// string values (e.g. "Close the window", "key => value") stays verbatim.
+// Template literals: the quoted text is a string region, while ${...}
+// interpolation expressions are scanned as code so executable content inside
+// interpolations is still audited and sanitized. Unterminated literals extend
+// to the end of the input, which keeps the scanner total (it never throws).
+function scanCodeRegions(code: string): readonly CodeRegion[] {
+  const regions: CodeRegion[] = [];
+  let kind: CodeRegionKind = 'code';
+  let buffer = '';
+
+  const flush = (): void => {
+    if (buffer.length > 0) {
+      regions.push({ kind, text: buffer });
+      buffer = '';
+    }
+  };
+
+  const begin = (next: CodeRegionKind): void => {
+    flush();
+    kind = next;
+  };
+
+  let index = 0;
+  let literal: 'single' | 'double' | 'template' | undefined;
+  let escaped = false;
+  const interpolationDepths: number[] = [];
+
+  while (index < code.length) {
+    const character = code[index];
+
+    if (literal !== undefined) {
+      buffer += character;
+
+      if (escaped) {
+        escaped = false;
+      } else if (character === '\\') {
+        escaped = true;
+      } else if (literal === 'template') {
+        if (character === '`') {
+          literal = undefined;
+          begin('code');
+        } else if (character === '$' && code[index + 1] === '{') {
+          buffer += '{';
+          index += 2;
+          interpolationDepths.push(0);
+          literal = undefined;
+          begin('code');
+          continue;
+        }
+      } else if ((literal === 'single' && character === '\'') || (literal === 'double' && character === '"')) {
+        literal = undefined;
+        begin('code');
+      }
+
+      index += 1;
+      continue;
+    }
+
+    if (character === '/' && code[index + 1] === '/') {
+      const lineEnd = code.indexOf('\n', index);
+      const commentEnd = lineEnd === -1 ? code.length : lineEnd;
+      begin('comment');
+      buffer += code.slice(index, commentEnd);
+      index = commentEnd;
+      begin('code');
+      continue;
+    }
+
+    if (character === '/' && code[index + 1] === '*') {
+      const closeIndex = code.indexOf('*/', index + 2);
+      const commentEnd = closeIndex === -1 ? code.length : closeIndex + 2;
+      begin('comment');
+      buffer += code.slice(index, commentEnd);
+      index = commentEnd;
+      begin('code');
+      continue;
+    }
+
+    const literalKind: CodeRegionKind | undefined =
+      character === '\'' ? 'single' : character === '"' ? 'double' : character === '`' ? 'template' : undefined;
+
+    if (literalKind !== undefined) {
+      begin(literalKind);
+      buffer += character;
+      literal = literalKind;
+      escaped = false;
+    } else {
+      buffer += character;
+
+      const interpolationDepth = interpolationDepths.at(-1);
+
+      if (character === '{' && interpolationDepth !== undefined) {
+        interpolationDepths[interpolationDepths.length - 1] = interpolationDepth + 1;
+      } else if (character === '}' && interpolationDepth !== undefined) {
+        if (interpolationDepth === 0) {
+          interpolationDepths.pop();
+          begin('template');
+          literal = 'template';
+          escaped = false;
+        } else {
+          interpolationDepths[interpolationDepths.length - 1] = interpolationDepth - 1;
+        }
+      }
+    }
+
+    index += 1;
+  }
+
+  flush();
+  return regions;
+}
+
+// Converts a single-quoted string region (delimiters included) into the
+// equivalent JSON double-quoted string: delimiters flip to `"`, the JSON-illegal
+// `\'` escape becomes a plain `'`, and bare `"` characters in the content are
+// escaped so the flipped region stays a single valid JSON token.
+function convertSingleQuotedRegion(region: string): string {
+  let output = '"';
+  let escaped = false;
+
+  for (let index = 1; index < region.length; index += 1) {
+    const character = region[index];
+
+    if (escaped) {
+      output += character === '\'' ? character : `\\${character}`;
+      escaped = false;
+      continue;
+    }
+
+    if (character === '\\') {
+      escaped = true;
+      continue;
+    }
+
+    if (character === '\'') {
+      break;
+    }
+
+    output += character === '"' ? '\\"' : character;
+  }
+
+  return `${output}"`;
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -195,6 +352,21 @@ function createParserError(message: string, code: string): ParserError {
   Object.defineProperty(error, 'code', { value: code, enumerable: true });
 
   return error;
+}
+
+function createMaxNestingDepthError(maxNestingDepth: number): ParserError {
+  return createParserError(`Configuration exceeds the maximum nesting depth of ${maxNestingDepth}.`, 'EXCEEDS_MAX_NESTING_DEPTH');
+}
+
+// Guards every recursive value walk (cloneJsonValue, sanitizeDefaultValue,
+// sanitizePlainConfig, sanitizeField) so hostile deeply nested input fails with
+// a coded error long before the call stack overflows. The default comes from
+// defaultParserConfig.maxNestingDepth and can be overridden per parse call via
+// ParserOptions.maxNestingDepth.
+function assertNestingDepth(depth: number, maxNestingDepth: number): void {
+  if (depth > maxNestingDepth) {
+    throw createMaxNestingDepthError(maxNestingDepth);
+  }
 }
 
 function parserErrorToEnhanced(error: unknown, code?: string): EnhancedParserError {
@@ -210,15 +382,15 @@ function parserErrorToEnhanced(error: unknown, code?: string): EnhancedParserErr
 }
 
 function assertNoExecutableSyntax(code: string): void {
-  if (executableSyntaxPattern.test(code)) {
+  const violates = scanCodeRegions(code).some((region) => region.kind !== 'single' && region.kind !== 'double' && region.kind !== 'template' && executableSyntaxPattern.test(region.text));
+
+  if (violates) {
     throw createParserError('Executable callbacks, constructors, imports, and component markup are not supported in AI-generated Formedible configs.', 'EXECUTABLE_INPUT');
   }
 }
 
-function sanitizeCode(code: string): string {
+function neutralizeExecutableConstructs(code: string): string {
   return code
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/(^|[^:])\/\/.*$/gm, '$1')
     .replace(/\b(eval|Function|setTimeout|setInterval|require|import)\s*\([^)]*\)/g, 'null')
     .replace(/\b(document|window|globalThis|global|process|__proto__|constructor|prototype)\b/g, 'null')
     .replace(/new\s+Date\(\)\.toISOString\(\)\.split\([^)]*\)\[0\]/g, '"2024-01-01"')
@@ -229,6 +401,18 @@ function sanitizeCode(code: string): string {
     .replace(/[A-Za-z_$][\w$]*\s*=>\s*[^,}\]]+/g, 'null')
     .replace(/function\s*\([^)]*\)\s*\{[^}]*\}/g, 'null')
     .replace(/new\s+[A-Za-z_$][\w$]*\([^)]*\)/g, 'null');
+}
+
+function sanitizeCode(code: string): string {
+  return scanCodeRegions(code)
+    .map((region) => {
+      if (region.kind === 'comment') {
+        return '';
+      }
+
+      return region.kind === 'code' ? neutralizeExecutableConstructs(region.text) : region.text;
+    })
+    .join('');
 }
 
 function findExpressionEnd(source: string, startIndex: number): number {
@@ -312,7 +496,14 @@ function replaceZodExpressions(code: string): string {
   return output.replace(/z\.[A-Za-z_$][\w$]*/g, `"${zodSentinel}"`);
 }
 
-function parseObjectLiteral(code: string): Record<string, unknown> {
+function normalizeObjectLiteralSyntax(code: string): string {
+  return code
+    .replace(/([{,]\s*)([A-Za-z_$][\w$]*)\s*:/g, '$1"$2":')
+    .replace(/,\s*([}\]])/g, '$1')
+    .replace(/:\s*undefined/g, ': null');
+}
+
+function parseObjectLiteral(code: string, maxNestingDepth: number): Record<string, unknown> {
   try {
     const parsed = JSON.parse(code) as unknown;
 
@@ -321,12 +512,23 @@ function parseObjectLiteral(code: string): Record<string, unknown> {
     }
 
     return parsed;
-  } catch {
-    const processed = replaceZodExpressions(code.trim())
-      .replace(/([{,]\s*)([A-Za-z_$][\w$]*)\s*:/g, '$1"$2":')
-      .replace(/,\s*([}\]])/g, '$1')
-      .replace(/(?<!\\)'/g, '"')
-      .replace(/:\s*undefined/g, ': null');
+  } catch (error) {
+    // JSON.parse recurses internally, so pathologically nested input can
+    // overflow the stack before any sanitizer runs. Map that to the coded
+    // nesting error instead of leaking a raw RangeError.
+    if (error instanceof RangeError) {
+      throw createMaxNestingDepthError(maxNestingDepth);
+    }
+
+    const processed = scanCodeRegions(replaceZodExpressions(code.trim()))
+      .map((region) => {
+        if (region.kind === 'single') {
+          return convertSingleQuotedRegion(region.text);
+        }
+
+        return region.kind === 'code' ? normalizeObjectLiteralSyntax(region.text) : region.text;
+      })
+      .join('');
 
     try {
       const parsed = JSON.parse(processed) as unknown;
@@ -336,19 +538,25 @@ function parseObjectLiteral(code: string): Record<string, unknown> {
       }
 
       return parsed;
-    } catch {
+    } catch (fallbackError) {
+      if (fallbackError instanceof RangeError) {
+        throw createMaxNestingDepthError(maxNestingDepth);
+      }
+
       throw createParserError('Invalid syntax. Use JSON or a JavaScript object literal.', 'SYNTAX_ERROR');
     }
   }
 }
 
-function cloneJsonValue(value: unknown): unknown {
+function cloneJsonValue(value: unknown, depth: number, maxNestingDepth: number): unknown {
+  assertNestingDepth(depth, maxNestingDepth);
+
   if (Array.isArray(value)) {
-    return value.map((entry) => cloneJsonValue(entry));
+    return value.map((entry) => cloneJsonValue(entry, depth + 1, maxNestingDepth));
   }
 
   if (isRecord(value)) {
-    return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, cloneJsonValue(entry)]));
+    return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, cloneJsonValue(entry, depth + 1, maxNestingDepth)]));
   }
 
   if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' || value === null) {
@@ -362,7 +570,9 @@ function cloneJsonValue(value: unknown): unknown {
   throw createParserError('Structured Formedible output contains non-serializable values.', 'UNSUPPORTED_STRUCTURED_VALUE');
 }
 
-function sanitizeDefaultValue(value: unknown): unknown {
+function sanitizeDefaultValue(value: unknown, depth: number, maxNestingDepth: number): unknown {
+  assertNestingDepth(depth, maxNestingDepth);
+
   if (typeof value === 'string' || typeof value === 'boolean' || value === null) {
     return value;
   }
@@ -376,7 +586,7 @@ function sanitizeDefaultValue(value: unknown): unknown {
   }
 
   if (Array.isArray(value)) {
-    return value.map((entry) => sanitizeDefaultValue(entry));
+    return value.map((entry) => sanitizeDefaultValue(entry, depth + 1, maxNestingDepth));
   }
 
   if (isRecord(value)) {
@@ -393,7 +603,7 @@ function sanitizeDefaultValue(value: unknown): unknown {
         throw createParserError(`Field defaultValue contains unsupported key '${key}'.`, 'UNSUPPORTED_CONFIG_KEY');
       }
 
-      output[key] = sanitizeDefaultValue(entry);
+      output[key] = sanitizeDefaultValue(entry, depth + 1, maxNestingDepth);
     }
 
     return output;
@@ -402,8 +612,8 @@ function sanitizeDefaultValue(value: unknown): unknown {
   throw createParserError('Field defaultValue contains non-serializable values.', 'UNSUPPORTED_CONFIG_VALUE');
 }
 
-function parseStructuredObject(value: unknown): Record<string, unknown> {
-  const cloned = cloneJsonValue(value);
+function parseStructuredObject(value: unknown, maxNestingDepth: number): Record<string, unknown> {
+  const cloned = cloneJsonValue(value, 0, maxNestingDepth);
 
   if (!isRecord(cloned)) {
     throw createParserError('Structured Formedible output must be an object.', 'INVALID_STRUCTURED_OUTPUT');
@@ -412,6 +622,10 @@ function parseStructuredObject(value: unknown): Record<string, unknown> {
   return cloned;
 }
 
+// Unwraps single-payload envelopes some models wrap around the config. A direct
+// ParsedFormConfig must NOT be unwrapped here: its required `formOptions` member
+// is config content, not an envelope key, so unwrapping it would strip the
+// config and fail validation (Finding 1 round-trip regression).
 function pickStructuredCandidate(value: FormedibleStructuredOutput): unknown {
   if (!isRecord(value)) {
     return value;
@@ -419,7 +633,7 @@ function pickStructuredCandidate(value: FormedibleStructuredOutput): unknown {
 
   const candidate = value as Readonly<Record<string, unknown>>;
 
-  for (const key of ['formedible', 'formConfig', 'config', 'output', 'formOptions']) {
+  for (const key of ['formedible', 'formConfig', 'config', 'output']) {
     if (candidate[key] !== undefined) {
       return candidate[key];
     }
@@ -473,12 +687,12 @@ function sanitizeOptionSets(value: unknown): Readonly<Record<string, readonly Fo
   return Object.keys(output).length > 0 ? output : undefined;
 }
 
-function sanitizeHelpConfig(value: unknown): string | Record<string, unknown> | undefined {
+function sanitizeHelpConfig(value: unknown, depth: number, maxNestingDepth: number): string | Record<string, unknown> | undefined {
   if (typeof value === 'string') {
     return value;
   }
 
-  return sanitizePlainConfig(value);
+  return sanitizePlainConfig(value, depth, maxNestingDepth);
 }
 
 function copyString(source: Readonly<Record<string, unknown>>, target: Record<string, unknown>, key: string): void {
@@ -499,10 +713,12 @@ function copyBoolean(source: Readonly<Record<string, unknown>>, target: Record<s
   }
 }
 
-function sanitizePlainConfig(value: unknown): Record<string, unknown> | undefined {
+function sanitizePlainConfig(value: unknown, depth: number, maxNestingDepth: number): Record<string, unknown> | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
+
+  assertNestingDepth(depth, maxNestingDepth);
 
   const output: Record<string, unknown> = {};
 
@@ -520,14 +736,14 @@ function sanitizePlainConfig(value: unknown): Record<string, unknown> | undefine
       continue;
     }
 
-    const nestedConfig = sanitizePlainConfig(nestedValue);
+    const nestedConfig = sanitizePlainConfig(nestedValue, depth + 1, maxNestingDepth);
     output[key] = nestedConfig ?? nestedValue;
   }
 
   return output;
 }
 
-function sanitizeObjectConfig(value: unknown): FormedibleObjectConfig<FormedibleFormValues> | undefined {
+function sanitizeObjectConfig(value: unknown, depth: number, maxNestingDepth: number): FormedibleObjectConfig<FormedibleFormValues> | undefined {
   if (!isRecord(value)) {
     return undefined;
   }
@@ -544,33 +760,43 @@ function sanitizeObjectConfig(value: unknown): FormedibleObjectConfig<Formedible
   }
 
   if (Array.isArray(value.fields)) {
-    config.fields = sanitizeFields(value.fields);
+    config.fields = sanitizeFields(value.fields, depth + 1, maxNestingDepth);
   }
 
   return config as FormedibleObjectConfig<FormedibleFormValues>;
 }
 
-function sanitizeArrayConfig(value: unknown): Record<string, unknown> | undefined {
-  const config = sanitizePlainConfig(value);
+function sanitizeArrayConfig(value: unknown, depth: number, maxNestingDepth: number): Record<string, unknown> | undefined {
+  const config = sanitizePlainConfig(value, depth, maxNestingDepth);
 
   if (!config) {
     return undefined;
   }
 
   if (config.objectConfig !== undefined) {
-    config.objectConfig = sanitizeObjectConfig(config.objectConfig);
+    config.objectConfig = sanitizeObjectConfig(config.objectConfig, depth + 1, maxNestingDepth);
   }
 
   return config;
 }
 
-function sanitizeField(field: unknown, index: number): FormedibleFieldConfig<FormedibleFormValues> {
+function sanitizeField(field: unknown, index: number, depth: number, maxNestingDepth: number): FormedibleFieldConfig<FormedibleFormValues> {
+  assertNestingDepth(depth, maxNestingDepth);
+
   if (!isRecord(field)) {
     throw createParserError(`Field at index ${index} must be an object`, 'INVALID_FIELD');
   }
 
   if (typeof field.name !== 'string' || typeof field.type !== 'string') {
     throw createParserError(`Field at index ${index} must have string name and type properties`, 'MISSING_REQUIRED_FIELD');
+  }
+
+  if (field.name.trim().length === 0) {
+    throw createParserError(`Field at index ${index} must have a non-empty name`, 'INVALID_FIELD_NAME');
+  }
+
+  if (field.name === '__proto__') {
+    throw createParserError(`Field at index ${index} cannot use the reserved name '__proto__'`, 'INVALID_FIELD_NAME');
   }
 
   for (const key of Object.keys(field)) {
@@ -601,7 +827,7 @@ function sanitizeField(field: unknown, index: number): FormedibleFieldConfig<For
   }
 
   if (field.defaultValue !== undefined) {
-    output.defaultValue = sanitizeDefaultValue(field.defaultValue);
+    output.defaultValue = sanitizeDefaultValue(field.defaultValue, depth + 1, maxNestingDepth);
   }
 
   copyString(field, output, 'mask');
@@ -621,21 +847,21 @@ function sanitizeField(field: unknown, index: number): FormedibleFieldConfig<For
     output.datalist = datalist;
   }
 
-  const help = sanitizeHelpConfig(field.help);
+  const help = sanitizeHelpConfig(field.help, depth + 1, maxNestingDepth);
   if (help !== undefined) {
     output.help = help;
   }
 
   if (Array.isArray(field.nestedFields)) {
-    output.nestedFields = sanitizeFields(field.nestedFields);
+    output.nestedFields = sanitizeFields(field.nestedFields, depth + 1, maxNestingDepth);
   }
 
-  const objectConfig = sanitizeObjectConfig(field.objectConfig);
+  const objectConfig = sanitizeObjectConfig(field.objectConfig, depth + 1, maxNestingDepth);
   if (objectConfig !== undefined) {
     output.objectConfig = objectConfig;
   }
 
-  const arrayConfig = sanitizeArrayConfig(field.arrayConfig);
+  const arrayConfig = sanitizeArrayConfig(field.arrayConfig, depth + 1, maxNestingDepth);
   if (arrayConfig !== undefined) {
     output.arrayConfig = arrayConfig;
   }
@@ -658,7 +884,7 @@ function sanitizeField(field: unknown, index: number): FormedibleFieldConfig<For
     'locationConfig',
     'fileConfig',
   ]) {
-    const config = sanitizePlainConfig(field[key]);
+    const config = sanitizePlainConfig(field[key], depth + 1, maxNestingDepth);
 
     if (config !== undefined) {
       output[key] = config;
@@ -668,8 +894,8 @@ function sanitizeField(field: unknown, index: number): FormedibleFieldConfig<For
   return output as FormedibleFieldConfig<FormedibleFormValues>;
 }
 
-function sanitizeFields(fields: readonly unknown[]): readonly FormedibleFieldConfig<FormedibleFormValues>[] {
-  return fields.map((field, index) => sanitizeField(field, index));
+function sanitizeFields(fields: readonly unknown[], depth: number, maxNestingDepth: number): readonly FormedibleFieldConfig<FormedibleFormValues>[] {
+  return fields.map((field, index) => sanitizeField(field, index, depth, maxNestingDepth));
 }
 
 function normalizeAiGeneratedField(field: unknown, pageNumber: number | undefined): unknown {
@@ -775,7 +1001,9 @@ function sanitizePages(value: unknown): readonly FormediblePageConfig<Formedible
     }
 
     const output: Record<string, unknown> = {
-      page: typeof page.page === 'number' ? page.page : index,
+      // Page numbers are 1-based, matching normalizeAiGeneratedPage, so fields
+      // declaring page: 1 land on the first auto-numbered page.
+      page: typeof page.page === 'number' ? page.page : index + 1,
       title: typeof page.title === 'string' ? page.title : `Page ${index + 1}`,
     };
 
@@ -785,7 +1013,7 @@ function sanitizePages(value: unknown): readonly FormediblePageConfig<Formedible
   });
 }
 
-function validateAndSanitize(parsed: Record<string, unknown>, options?: ParserOptions | EnhancedParserOptions): ParsedFormConfig {
+function validateAndSanitize(parsed: Record<string, unknown>, options: ParserOptions | EnhancedParserOptions | undefined, maxNestingDepth: number): ParsedFormConfig {
   const normalizedParsed = normalizeAiGeneratedConfig(parsed);
   const strictValidation = options?.strictValidation ?? true;
   const configuredTopLevelKeys = options?.allowedKeys === undefined ? undefined : new Set(options.allowedKeys);
@@ -796,7 +1024,7 @@ function validateAndSanitize(parsed: Record<string, unknown>, options?: ParserOp
   }
 
   const output: Record<string, unknown> = {
-    fields: sanitizeFields(normalizedParsed.fields).map((field) => {
+    fields: sanitizeFields(normalizedParsed.fields, 0, maxNestingDepth).map((field) => {
       const fieldType = field.type;
       if (configuredFieldTypes !== undefined && typeof fieldType === 'string' && !configuredFieldTypes.has(fieldType)) {
         throw createParserError(`Field type '${field.type}' is not allowed.`, 'DISALLOWED_FIELD_TYPE');
@@ -804,7 +1032,7 @@ function validateAndSanitize(parsed: Record<string, unknown>, options?: ParserOp
 
       return filterFieldByAllowedKeys(field, options?.allowedFieldKeys);
     }),
-    formOptions: isRecord(normalizedParsed.formOptions) ? sanitizePlainConfig(normalizedParsed.formOptions) : { defaultValues: {} },
+    formOptions: isRecord(normalizedParsed.formOptions) ? sanitizePlainConfig(normalizedParsed.formOptions, 0, maxNestingDepth) : { defaultValues: {} },
   };
 
   if (isRecord(output.formOptions) && options?.allowedFormOptionsKeys !== undefined) {
@@ -832,14 +1060,18 @@ function validateAndSanitize(parsed: Record<string, unknown>, options?: ParserOp
     }
 
     if (key === 'schema') {
-      const schema = sanitizePlainConfig(value);
+      const schema = sanitizePlainConfig(value, 0, maxNestingDepth);
       if (schema !== undefined) {
         output.schema = schema;
       }
       continue;
     }
 
-    if (['title', 'description', 'submitLabel', 'nextLabel', 'previousLabel', 'collapseLabel', 'expandLabel', 'formClassName'].includes(key)) {
+    if (
+      ['title', 'description', 'submitLabel', 'nextLabel', 'previousLabel', 'collapseLabel', 'expandLabel', 'formClassName', 'fieldClassName', 'labelClassName', 'buttonClassName', 'submitButtonClassName'].includes(
+        key,
+      )
+    ) {
       if (typeof value === 'string') {
         output[key] = value;
       }
@@ -868,7 +1100,7 @@ function validateAndSanitize(parsed: Record<string, unknown>, options?: ParserOp
     }
 
     if (key === 'progress' && isRecord(value)) {
-      output.progress = options?.allowedProgressKeys === undefined ? sanitizePlainConfig(value) : filterRecordKeys(value, options.allowedProgressKeys);
+      output.progress = options?.allowedProgressKeys === undefined ? sanitizePlainConfig(value, 0, maxNestingDepth) : filterRecordKeys(value, options.allowedProgressKeys);
       continue;
     }
 
@@ -877,10 +1109,20 @@ function validateAndSanitize(parsed: Record<string, unknown>, options?: ParserOp
       continue;
     }
 
-    const config = sanitizePlainConfig(value);
+    const config = sanitizePlainConfig(value, 0, maxNestingDepth);
     if (config !== undefined) {
       output[key] = config;
     }
+  }
+
+  // EnhancedParserOptions.baseSchema + mergeStrategy are consumed here so the
+  // advertised merge behavior actually applies to parsed configs. The static
+  // mergeSchemas method delegates to the same implementation.
+  const enhancedOptions: EnhancedParserOptions | undefined = options;
+  const baseSchema = enhancedOptions?.baseSchema;
+
+  if (baseSchema !== undefined) {
+    return mergeParsedConfigWithBaseSchema(output as ParsedFormConfig, baseSchema, enhancedOptions?.mergeStrategy ?? 'extend') as ParsedFormConfig;
   }
 
   return output as ParsedFormConfig;
@@ -964,6 +1206,49 @@ function createFieldFromSchema(name: string, schema: unknown): FormedibleFieldCo
   return { name, type, label };
 }
 
+// Shared by FormedibleParser.mergeSchemas and validateAndSanitize (when
+// EnhancedParserOptions.baseSchema is provided) so parsed configs and the
+// public static API merge base schemas identically.
+function mergeParsedConfigWithBaseSchema(
+  parsedConfig: UseFormedibleOptions<FormedibleFormValues>,
+  baseSchema: unknown,
+  strategy: 'extend' | 'override' | 'intersect',
+): UseFormedibleOptions<FormedibleFormValues> {
+  if (!isRecord(baseSchema)) {
+    return parsedConfig;
+  }
+
+  if (strategy === 'override') {
+    return { ...parsedConfig, schema: baseSchema };
+  }
+
+  const properties = isRecord(baseSchema.properties) ? baseSchema.properties : {};
+
+  if (strategy === 'intersect') {
+    return {
+      ...parsedConfig,
+      fields: (parsedConfig.fields ?? []).filter((field) => Object.prototype.hasOwnProperty.call(properties, field.name)),
+      schema: baseSchema,
+    };
+  }
+
+  const existingNames = new Set((parsedConfig.fields ?? []).map((field) => field.name));
+  const addedFields = Object.entries(properties).flatMap(([name, schema]) => {
+    if (existingNames.has(name)) {
+      return [];
+    }
+
+    const field = createFieldFromSchema(name, schema);
+    return field === undefined ? [] : [field];
+  });
+
+  return {
+    ...parsedConfig,
+    fields: [...(parsedConfig.fields ?? []), ...addedFields],
+    schema: baseSchema,
+  };
+}
+
 function extractErrorLocation(code: string, error: unknown): EnhancedParserError['location'] | undefined {
   const message = error instanceof Error ? error.message : String(error);
   const positionMatch = message.match(/at position (\d+)/i);
@@ -995,22 +1280,45 @@ export class FormedibleParser {
       throw createParserError(`Code length exceeds maximum allowed size of ${maxCodeLength} characters`, 'CODE_TOO_LARGE');
     }
 
-    assertNoExecutableSyntax(code);
-    const sanitizedCode = sanitizeCode(code);
-    const parsed = parseObjectLiteral(sanitizedCode);
+    const maxNestingDepth = options?.maxNestingDepth ?? defaultParserConfig.maxNestingDepth;
 
-    return validateAndSanitize(parsed, options);
+    try {
+      assertNoExecutableSyntax(code);
+      const sanitizedCode = sanitizeCode(code);
+      const parsed = parseObjectLiteral(sanitizedCode, maxNestingDepth);
+
+      return validateAndSanitize(parsed, options, maxNestingDepth);
+    } catch (error) {
+      // Residual RangeErrors (for example from JSON.parse on pathologically
+      // nested input) surface as the coded nesting error, never a raw
+      // RangeError.
+      if (error instanceof RangeError) {
+        throw createMaxNestingDepthError(maxNestingDepth);
+      }
+
+      throw error;
+    }
   }
 
   static parseStructured(output: FormedibleStructuredOutput, options?: ParserOptions | EnhancedParserOptions): ParsedFormConfig {
-    const candidate = pickStructuredCandidate(output);
-    if (typeof candidate === 'string') {
-      assertNoExecutableSyntax(candidate);
+    const maxNestingDepth = options?.maxNestingDepth ?? defaultParserConfig.maxNestingDepth;
+
+    try {
+      const candidate = pickStructuredCandidate(output);
+      if (typeof candidate === 'string') {
+        assertNoExecutableSyntax(candidate);
+      }
+
+      const parsed = typeof candidate === 'string' ? parseObjectLiteral(sanitizeCode(candidate), maxNestingDepth) : parseStructuredObject(candidate, maxNestingDepth);
+
+      return validateAndSanitize(parsed, options, maxNestingDepth);
+    } catch (error) {
+      if (error instanceof RangeError) {
+        throw createMaxNestingDepthError(maxNestingDepth);
+      }
+
+      throw error;
     }
-
-    const parsed = typeof candidate === 'string' ? parseObjectLiteral(sanitizeCode(candidate)) : parseStructuredObject(candidate);
-
-    return validateAndSanitize(parsed, options);
   }
 
   static parseAiOutput(output: string | FormedibleStructuredOutput, options?: ParserOptions | EnhancedParserOptions): FormedibleParseResult {
@@ -1060,7 +1368,7 @@ export class FormedibleParser {
         throw createParserError('Definition must be an object', 'INVALID_DEFINITION');
       }
 
-      validateAndSanitize(config, { strictValidation: true });
+      validateAndSanitize(config, { strictValidation: true }, defaultParserConfig.maxNestingDepth);
       return { isValid: true, errors: [] };
     } catch (error) {
       return { isValid: false, errors: [error instanceof Error ? error.message : String(error)] };
@@ -1073,7 +1381,7 @@ export class FormedibleParser {
     let confidence = options?.enabled ? 0.5 : 0;
 
     if (options?.enabled) {
-      for (const field of config.fields) {
+      for (const field of config.fields ?? []) {
         const schema = inferZodTypeFromField(field);
 
         if (schema !== undefined) {
@@ -1095,39 +1403,7 @@ export class FormedibleParser {
     baseSchema: unknown,
     strategy: 'extend' | 'override' | 'intersect' = 'extend',
   ): UseFormedibleOptions<FormedibleFormValues> {
-    if (!isRecord(baseSchema)) {
-      return parsedConfig;
-    }
-
-    if (strategy === 'override') {
-      return { ...parsedConfig, schema: baseSchema };
-    }
-
-    const properties = isRecord(baseSchema.properties) ? baseSchema.properties : {};
-
-    if (strategy === 'intersect') {
-      return {
-        ...parsedConfig,
-        fields: parsedConfig.fields.filter((field) => Object.prototype.hasOwnProperty.call(properties, field.name)),
-        schema: baseSchema,
-      };
-    }
-
-    const existingNames = new Set(parsedConfig.fields.map((field) => field.name));
-    const addedFields = Object.entries(properties).flatMap(([name, schema]) => {
-      if (existingNames.has(name)) {
-        return [];
-      }
-
-      const field = createFieldFromSchema(name, schema);
-      return field === undefined ? [] : [field];
-    });
-
-    return {
-      ...parsedConfig,
-      fields: [...parsedConfig.fields, ...addedFields],
-      schema: baseSchema,
-    };
+    return mergeParsedConfigWithBaseSchema(parsedConfig, baseSchema, strategy);
   }
 
   static validateWithSuggestions(code: string): ValidationWithSuggestionsResult {

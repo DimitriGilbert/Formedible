@@ -39,9 +39,9 @@ export default function Header() {
               const isActive = item.href === currentHref;
 
               return (
-                <a
+                <Link
                   key={item.id}
-                  href={item.href}
+                  to={item.href}
                   className={cn(
                     'rounded-full px-4 py-2 text-sm font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                     isActive ? 'bg-background text-foreground ring-1 ring-border' : 'text-muted-foreground hover:bg-background/75 hover:text-foreground',
@@ -50,7 +50,7 @@ export default function Header() {
                   aria-current={isActive ? 'location' : undefined}
                 >
                   {item.label}
-                </a>
+                </Link>
               );
             })}
           </nav>
@@ -61,9 +61,9 @@ export default function Header() {
             const isActive = item.href === currentHref;
 
             return (
-              <a
+              <Link
                 key={item.id}
-                href={item.href}
+                to={item.href}
                 className={cn(
                   'shrink-0 rounded-full border px-3.5 py-2 text-sm font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
                   isActive ? 'border-primary/45 bg-primary/10 text-primary' : 'border-border bg-muted text-muted-foreground hover:border-primary/40 hover:text-foreground',
@@ -72,7 +72,7 @@ export default function Header() {
                 aria-current={isActive ? 'location' : undefined}
               >
                 {item.label}
-              </a>
+              </Link>
             );
           })}
         </nav>
