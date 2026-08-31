@@ -10,7 +10,11 @@ const rewritePatterns = [
     /\bMagicString\b/,
     /\bts-morph\b/,
     /\bimport\b[\s\S]*?['"][^'"]*formedible[^'"]*\.m?js['"][\s\S]*?\bwriteFile/i,
-    /writeFile[\s\S]*?\bcontent\s*\./,
+    // A write whose own argument list applies a text rewrite to a content-like
+    // value. Call-site-local on purpose: a file-wide "writeFile ... content."
+    // pairing also fires on scripts that merely read a manifest into a variable
+    // named content (e.g. the e2e recording stitcher) and never rewrite source.
+    /\bwriteFile\(\s*[^;]{0,300}?\b(?:content|source|code|text|syncedContent)\b\s*\.\s*(?:replace|replaceAll|trim|split)\s*\(/,
     /@formedible\/ui\/lib\/formedible\//,
 ];
 export function findSourceRewriteSyncViolations(files) {
@@ -42,6 +46,22 @@ describe('no source rewrite sync', () => {
             {
                 relativePath: 'scripts/build-release.js',
                 content: "import { createReleaseAssets } from './create-release-assets.js';\nimport { deployGhPages } from './deploy-gh-pages.js';\nawait writeFile(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\\n`, 'utf8');",
+            },
+        ]));
+    });
+    it('rejects sample writer that rewrites content inside the writeFile call', () => {
+        assertHasViolations(findSourceRewriteSyncViolations([
+            {
+                relativePath: 'scripts/rewrite-copy.ts',
+                content: "await writeFile(targetPath, content.replace(/from '@\\//g, \"from '@formedible/ui/\"));",
+            },
+        ]));
+    });
+    it('allows sample writer that reads a manifest into a content variable and writes unrelated files', () => {
+        assertNoViolations(findSourceRewriteSyncViolations([
+            {
+                relativePath: 'scripts/stitch-tooling.js',
+                content: "const content = await readFile(manifestPath, 'utf8');\nfor (const line of content.split('\\n')) {\n  await writeFile(outputPath, segments.join('\\n'), 'utf8');\n}",
             },
         ]));
     });
