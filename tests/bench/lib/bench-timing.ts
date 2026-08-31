@@ -23,7 +23,7 @@ export interface TimingOptions {
 /** Default warmup runs executed (untimed) before measured runs begin. */
 export const DEFAULT_WARMUP_RUNS = 3;
 
-/** Default measured runs for jsdom timing scenarios (full suite). */
+/** Default measured runs for timing scenarios (full suite). */
 export const DEFAULT_MEASURED_RUNS = 25;
 
 /** Measured runs used by `bench:smoke` (DECISION-3). */

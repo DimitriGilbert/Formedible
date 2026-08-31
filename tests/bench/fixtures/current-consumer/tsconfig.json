@@ -1,0 +1,16 @@
+{
+  "extends": "../../../../packages/config/tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "baseUrl": ".",
+    "ignoreDeprecations": "6.0",
+    "noEmit": true,
+    "paths": {
+      "@formedible-src/*": ["../../../../packages/formedible/src/*"],
+      "@bench-scenarios": ["../../lib/scenarios/forms.ts"],
+      "@/*": ["../../../../packages/formedible/src/*"]
+    }
+  },
+  "include": ["*.ts", "*.tsx", "../../lib/adapter-types.ts", "../../lib/harness-protocol.ts"]
+}

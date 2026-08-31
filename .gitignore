@@ -49,6 +49,14 @@ tests/e2e/.recordings
 # Benchmark run artifacts (DECISION-4; the regression reference is committed)
 tests/bench/results/runs/
 
+# Benchmark fixture build output (vite build of the committed fixtures; the
+# bundle embeds vendored dependency code and stays out of the bench tree)
+.bench-dist/
+
+# Generated baseline tsconfig (written by bench:baseline:setup from the
+# committed template; carries the machine-local worktree path, DECISION-5)
+tests/bench/tsconfig.main.json
+
 # Misc
 *.tgz
 .cache

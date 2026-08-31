@@ -60,14 +60,34 @@ const VERSION_MANIFESTS: Readonly<Record<string, string>> = {
   react: join('packages', 'formedible', 'node_modules', 'react', 'package.json'),
 };
 
+/**
+ * Manifest lookup for the BASELINE worktree's npm-hoisted tree, in preference
+ * order: the worktree root `node_modules` first (npm hoists main's pinned
+ * `@tanstack/react-form` and `react` there), then a package-local install.
+ */
+const WORKTREE_VERSION_MANIFESTS: Readonly<Record<string, readonly string[]>> = {
+  '@tanstack/react-form': [
+    join('node_modules', '@tanstack', 'react-form', 'package.json'),
+    join('packages', 'formedible', 'node_modules', '@tanstack', 'react-form', 'package.json'),
+  ],
+  '@tanstack/ai': [
+    join('node_modules', '@tanstack', 'ai', 'package.json'),
+    join('apps', 'web', 'node_modules', '@tanstack', 'ai', 'package.json'),
+  ],
+  react: [
+    join('node_modules', 'react', 'package.json'),
+    join('packages', 'formedible', 'node_modules', 'react', 'package.json'),
+  ],
+};
+
 function readInstalledVersion(manifestPath: string): string {
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as { version?: unknown };
 
   return typeof manifest.version === 'string' ? manifest.version : 'unknown';
 }
 
-function runGit(args: readonly string[]): string {
-  return execFileSync('git', args, { cwd: repositoryRoot, encoding: 'utf8' }).trim();
+function runGit(args: readonly string[], cwd: string = repositoryRoot): string {
+  return execFileSync('git', args, { cwd, encoding: 'utf8' }).trim();
 }
 
 /** Environment metadata for the CURRENT implementation's installed tree. */
@@ -83,6 +103,29 @@ export function collectCurrentEnvironment(): BenchEnvironment {
   return {
     gitSha: runGit(['rev-parse', 'HEAD']),
     gitBranch: runGit(['branch', '--show-current']),
+    versions,
+    node: process.version,
+  };
+}
+
+/**
+ * Environment metadata for the BASELINE (main-branch) worktree: the SHA and
+ * branch the worktree actually runs (`main`), plus the dependency versions
+ * resolved from the WORKTREE's own installed tree — the DECISION-1 isolation
+ * proof embedded in every `implementation: 'main'` artifact.
+ */
+export function collectWorktreeEnvironment(worktreeDirectory: string): BenchEnvironment {
+  const versions: Record<string, string> = {};
+
+  for (const [name, manifests] of Object.entries(WORKTREE_VERSION_MANIFESTS)) {
+    const installed = manifests.map((manifest) => join(worktreeDirectory, manifest)).find((manifest) => existsSync(manifest));
+
+    versions[name] = installed === undefined ? 'not-installed' : readInstalledVersion(installed);
+  }
+
+  return {
+    gitSha: runGit(['rev-parse', 'HEAD'], worktreeDirectory),
+    gitBranch: runGit(['branch', '--show-current'], worktreeDirectory),
     versions,
     node: process.version,
   };

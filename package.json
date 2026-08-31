@@ -17,7 +17,7 @@
     "build:web": "pnpm --dir apps/web run build",
     "build:registries": "node scripts/build-registries.js",
     "build:release": "node scripts/build-release.js",
-    "check-types": "turbo check-types && tsc -p tests/compatibility-examples/tsconfig.json && pnpm test:formedible:types && tsc -p tests/architecture/tsconfig.json && tsc -p tests/sync/tsconfig.json && tsc -p tests/consumer-smoke/tsconfig.json && tsc -p tests/bench/tsconfig.json",
+    "check-types": "turbo check-types && tsc -p tests/compatibility-examples/tsconfig.json && pnpm test:formedible:types && tsc -p tests/architecture/tsconfig.json && tsc -p tests/sync/tsconfig.json && tsc -p tests/consumer-smoke/tsconfig.json && tsc -p tests/bench/tsconfig.json && tsc -p tests/bench/fixtures/current-consumer/tsconfig.json",
     "check-types:pkg": "pnpm --filter @formedible/formedible run check-types",
     "check-types:parser": "pnpm --filter @formedible/formedible-parser run check-types",
     "check-types:builder": "pnpm --filter @formedible/builder run check-types",

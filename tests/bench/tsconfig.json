@@ -13,6 +13,8 @@
   "include": [
     "lib/**/*.ts",
     "lib/**/*.tsx",
+    "utils/**/*.ts",
+    "../consumer-smoke/utils/ports.ts",
     "../../packages/formedible/src/**/*.ts",
     "../../packages/formedible/src/**/*.tsx",
     "../../packages/formedible-parser/src/index.ts",

@@ -1,45 +1,56 @@
 import { FormedibleParser } from '../../../packages/formedible-parser/src';
 
-import { currentAdapter } from './adapter-current';
+import { collectCurrentEnvironment, writeRunArtifact, type BenchEnvironment, type BenchRecord } from './artifacts';
 import {
   DEFAULT_MEASURED_RUNS,
   DEFAULT_WARMUP_RUNS,
   SMOKE_MEASURED_RUNS,
-  summarize,
   scaleStats,
+  summarize,
   timeNs,
   type TimingStats,
 } from './bench-timing';
-import { collectCurrentEnvironment, writeRunArtifact, type BenchEnvironment, type BenchRecord } from './artifacts';
+import { printReport, roundTo } from './report-table';
+import { BENCH_SCENARIOS, SMOKE_SCENARIO_IDS, getScenario, type BenchScenario } from './scenarios/index';
+import { PARSER_RUN_PARSE_COUNT, TYPING_EVENT_COUNT, createMediumParserConfig, createTypingText } from './scenarios/forms';
+import type { BenchImplementation } from './adapter-types';
 import {
-  BENCH_SCENARIOS,
-  SMOKE_SCENARIO_IDS,
-  getScenario,
-  type BenchScenario,
-} from './scenarios/index';
-import {
-  PARSER_RUN_PARSE_COUNT,
-  TYPING_EVENT_COUNT,
-  createDefaultValues,
-  createMediumParserConfig,
-  createSubmitSchema,
-  createTextHeavyFields,
-  createTypingText,
-  createValidValues,
-} from './scenarios/forms';
+  BENCH_VIEWPORT_NOTE,
+  buildCurrentConsumerFixture,
+  closeAgentBrowserSession,
+  createAgentBrowserDriver,
+  getAgentBrowserVersion,
+  startCurrentConsumerPreview,
+  type BenchBrowserDriver,
+} from '../utils/agent-browser';
 
 /**
- * Current-implementation benchmark runner (jsdom in-process, headless — no dev
- * server). Prints a results table to stdout and writes one run artifact under
- * `tests/bench/results/runs/`.
+ * Current-implementation benchmark runner (real Chromium via agent-browser is
+ * the ONLY UI timing medium — DECISION-2 revised; node stays for the DOM-free
+ * parser scenario).
+ *
+ * Per run: build the committed fixture (`vite build`), serve it with
+ * `vite preview` on an allocated port, open each scenario page with
+ * agent-browser, execute the warmup + measured operation loops IN-PAGE
+ * (`performance.now()` sampling, samples returned to this runner), summarize
+ * the samples with the shared `bench-timing.ts` statistics, print the results
+ * table, and write one artifact under `tests/bench/results/runs/`. The preview
+ * server and the browser session are torn down in `finally` so a failing run
+ * never leaks processes or ports.
  *
  * CLI: `--smoke` (DECISION-3 subset, N=5), `--only <scenario-id>` (repeatable),
  * `--runs <n>`. Timed scenarios always execute 3 warmup runs before the
  * measured runs; medians are nearest-rank over the measured samples.
  */
 
+const IMPLEMENTATION: BenchImplementation = 'current';
+const BROWSER_SESSION = 'formedible-bench-current';
+const PARSER_SCENARIO_ID = 'parser-medium';
 const TYPING_TARGET_FIELD = 'field001';
 const MEDIUM_PARSER_FIELD_COUNT = 25;
+
+const BROWSER_MEDIUM_NOTE = 'medium: chromium (agent-browser, in-page performance.now() loops)';
+const NODE_MEDIUM_NOTE = 'medium: node (no DOM)';
 
 interface CliOptions {
   readonly smoke: boolean;
@@ -105,113 +116,92 @@ function parseArguments(argv: readonly string[]): CliOptions {
   return { smoke, only, runs };
 }
 
-async function mountUnmountCycle(mount: () => Promise<{ readonly root: { unmount(): void } }>): Promise<void> {
-  const mounted = await mount();
-
-  mounted.root.unmount();
+function chromiumVersionFromUserAgent(userAgent: string): string {
+  return /Chrome\/([\d.]+)/.exec(userAgent)?.[1] ?? 'unknown';
 }
 
-async function runMountScenario(fieldCount: number, runs: number): Promise<TimingStats> {
-  const fields = createTextHeavyFields(fieldCount);
-  const mountOptions = { fields, defaultValues: createDefaultValues(fields) };
-  const mount = () => currentAdapter.mountForm(mountOptions);
-
-  for (let warmup = 0; warmup < DEFAULT_WARMUP_RUNS; warmup += 1) {
-    await mountUnmountCycle(mount);
-  }
-
-  const samples: number[] = [];
-
-  for (let run = 0; run < runs; run += 1) {
-    const mounted = await mount();
-    const renderedFieldCount = mounted.getRenderedFieldCount();
-
-    if (renderedFieldCount !== fieldCount) {
-      mounted.root.unmount();
-
-      throw new Error(`mount-${fieldCount} rendered ${renderedFieldCount} distinct named fields, expected ${fieldCount}.`);
-    }
-
-    samples.push(mounted.mountMs);
-    mounted.root.unmount();
-  }
-
-  return summarize(samples);
+function withBrowserMetadata(
+  environment: BenchEnvironment,
+  chromiumUserAgent: string,
+  agentBrowserVersion: string,
+): BenchEnvironment {
+  return {
+    ...environment,
+    versions: {
+      ...environment.versions,
+      'agent-browser': agentBrowserVersion,
+      chromium: chromiumVersionFromUserAgent(chromiumUserAgent),
+      viewport: BENCH_VIEWPORT_NOTE,
+    },
+  };
 }
 
-async function runTypingScenario(fieldCount: number, runs: number): Promise<TimingStats> {
-  const fields = createTextHeavyFields(fieldCount);
-  const typingText = createTypingText();
-  const mount = () => currentAdapter.mountForm({ fields, defaultValues: createDefaultValues(fields) });
+/**
+ * Opens the scenario page and runs its operation loop in-page. Every result is
+ * verified before its samples are trusted: mount must render the exact field
+ * count, typing must land the workload in BOTH the DOM input and the React
+ * form state, and every submit must reach the consumer `onSubmit`.
+ */
+async function runBrowserScenario(
+  driver: BenchBrowserDriver,
+  scenario: BenchScenario,
+  runs: number,
+): Promise<TimingStats> {
+  const match = /^(?:mount|typing|submit)-(\d+)$/.exec(scenario.id);
+  const fieldCount = match === null ? Number.NaN : Number.parseInt(match[1] ?? '', 10);
 
-  for (let warmup = 0; warmup < DEFAULT_WARMUP_RUNS; warmup += 1) {
-    const mounted = await mount();
-
-    await mounted.keystroke(TYPING_TARGET_FIELD, typingText);
-    mounted.root.unmount();
+  if (!Number.isInteger(fieldCount) || fieldCount <= 0) {
+    throw new Error(`No browser executor is registered for scenario "${scenario.id}" in this phase.`);
   }
 
-  const samples: number[] = [];
+  await driver.openScenario(scenario.id);
 
-  for (let run = 0; run < runs; run += 1) {
-    const mounted = await mount();
-    const elapsedMs = await mounted.keystroke(TYPING_TARGET_FIELD, typingText);
+  const loopOptions = { warmupRuns: DEFAULT_WARMUP_RUNS, measuredRuns: runs };
 
-    samples.push(elapsedMs);
-    mounted.root.unmount();
-  }
+  if (scenario.id.startsWith('mount-')) {
+    const result = await driver.mountLoop(loopOptions);
 
-  return scaleStats(summarize(samples), 1 / TYPING_EVENT_COUNT);
-}
-
-async function runSubmitScenario(fieldCount: number, runs: number): Promise<TimingStats> {
-  const fields = createTextHeavyFields(fieldCount);
-  const schema = createSubmitSchema(fields);
-  const validValues = createValidValues(fields);
-  let submitCount = 0;
-  const mount = () =>
-    currentAdapter.mountForm({
-      fields,
-      defaultValues: validValues,
-      schema,
-      onSubmit: () => {
-        submitCount += 1;
-      },
-    });
-
-  for (let warmup = 0; warmup < DEFAULT_WARMUP_RUNS; warmup += 1) {
-    const mounted = await mount();
-    const submitsBefore = submitCount;
-
-    await mounted.submit();
-
-    if (submitCount === submitsBefore) {
-      mounted.root.unmount();
-
-      throw new Error(`submit-${fieldCount} warmup submit never reached onSubmit.`);
+    if (result.renderedFieldCount !== fieldCount) {
+      throw new Error(
+        `mount-${fieldCount} rendered ${result.renderedFieldCount} distinct named fields, expected ${fieldCount}.`,
+      );
     }
 
-    mounted.root.unmount();
+    return summarize(result.samples);
   }
 
-  const samples: number[] = [];
+  if (scenario.id.startsWith('typing-')) {
+    const typingText = createTypingText();
+    const result = await driver.keystrokeLoop(TYPING_TARGET_FIELD, typingText, loopOptions);
 
-  for (let run = 0; run < runs; run += 1) {
-    const mounted = await mount();
-    const submitsBefore = submitCount;
-    const elapsedMs = await mounted.submit();
-
-    if (submitCount === submitsBefore) {
-      mounted.root.unmount();
-
-      throw new Error(`submit-${fieldCount} measured submit never reached onSubmit.`);
+    if (result.eventCount !== TYPING_EVENT_COUNT) {
+      throw new Error(`typing-${fieldCount} dispatched ${result.eventCount} input events, expected ${TYPING_EVENT_COUNT}.`);
     }
 
-    samples.push(elapsedMs);
-    mounted.root.unmount();
+    if (result.finalInputValue !== typingText) {
+      throw new Error(
+        `typing-${fieldCount} input value drifted: expected "${typingText.slice(0, 16)}...", received "${result.finalInputValue.slice(0, 16)}...".`,
+      );
+    }
+
+    if (result.formValue !== typingText) {
+      throw new Error(
+        `typing-${fieldCount} never reached the React form state: form value for "${TYPING_TARGET_FIELD}" is ${JSON.stringify(result.formValue)}.`,
+      );
+    }
+
+    return scaleStats(summarize(result.samples), 1 / result.eventCount);
   }
 
-  return summarize(samples);
+  const result = await driver.submitLoop(loopOptions);
+
+  if (result.submitCount !== result.expectedSubmitCount) {
+    throw new Error(
+      `submit-${fieldCount}: only ${result.submitCount} of ${result.expectedSubmitCount} submits reached onSubmit (validation failed?).`,
+    );
+  }
+
+  return summarize(result.samples);
 }
 
 function runParserScenario(runs: number): TimingStats {
@@ -241,29 +231,6 @@ function runParserScenario(runs: number): TimingStats {
   return scaleStats(summarize(samples), 1 / (1_000_000 * PARSER_RUN_PARSE_COUNT));
 }
 
-async function runScenario(scenario: BenchScenario, runs: number): Promise<TimingStats> {
-  if (scenario.id === 'parser-medium') {
-    return runParserScenario(runs);
-  }
-
-  const match = /^(?:mount|typing|submit)-(\d+)$/.exec(scenario.id);
-  const fieldCount = match === null ? Number.NaN : Number.parseInt(match[1] ?? '', 10);
-
-  if (!Number.isInteger(fieldCount) || fieldCount <= 0) {
-    throw new Error(`No executor is registered for scenario "${scenario.id}" in this phase.`);
-  }
-
-  if (scenario.id.startsWith('mount-')) {
-    return runMountScenario(fieldCount, runs);
-  }
-
-  if (scenario.id.startsWith('typing-')) {
-    return runTypingScenario(fieldCount, runs);
-  }
-
-  return runSubmitScenario(fieldCount, runs);
-}
-
 async function main(): Promise<void> {
   const cli = parseArguments(process.argv.slice(2));
   const runs = cli.runs ?? (cli.smoke ? SMOKE_MEASURED_RUNS : DEFAULT_MEASURED_RUNS);
@@ -273,26 +240,69 @@ async function main(): Promise<void> {
       : cli.smoke
         ? SMOKE_SCENARIO_IDS
         : BENCH_SCENARIOS.map((scenario) => scenario.id);
-  const environment = collectCurrentEnvironment();
+  const browserScenarioIds = requestedIds.filter((id) => id !== PARSER_SCENARIO_ID);
+  const nodeScenarioIds = requestedIds.filter((id) => id === PARSER_SCENARIO_ID);
+  let environment = collectCurrentEnvironment();
   const records: BenchRecord[] = [];
 
-  for (const scenarioId of requestedIds) {
-    const scenario = getScenario(scenarioId);
-    const stats = await runScenario(scenario, runs);
+  if (browserScenarioIds.length > 0) {
+    console.log('[bench] building the committed fixture (vite build) ...');
+    await buildCurrentConsumerFixture();
 
-    records.push(toRecord(scenario, stats, environment));
+    const preview = await startCurrentConsumerPreview();
+
+    console.log(`[bench] fixture preview: ${preview.origin}`);
+
+    try {
+      const driver = await createAgentBrowserDriver(BROWSER_SESSION, preview.origin);
+
+      environment = withBrowserMetadata(environment, driver.chromiumUserAgent, await getAgentBrowserVersion());
+      console.log(
+        `[bench] agent-browser session "${BROWSER_SESSION}": chromium ${environment.versions['chromium'] ?? 'unknown'} @ viewport ${BENCH_VIEWPORT_NOTE}`,
+      );
+
+      for (const scenarioId of browserScenarioIds) {
+        const scenario = getScenario(scenarioId);
+        const stats = await runBrowserScenario(driver, scenario, runs);
+
+        records.push(toRecord(scenario, stats, environment, [BROWSER_MEDIUM_NOTE]));
+        console.log(`[bench] ${scenario.id}: median ${roundTo(stats.median, 4)} ${scenario.unit}`);
+      }
+    } finally {
+      await closeAgentBrowserSession(BROWSER_SESSION);
+      await preview.stop();
+      console.log('[bench] browser session closed; fixture preview stopped');
+    }
   }
 
-  printReport(records, environment, { mode: cli.smoke ? 'smoke' : 'full', runs, only: cli.only });
+  for (const scenarioId of nodeScenarioIds) {
+    const scenario = getScenario(scenarioId);
+    const stats = runParserScenario(runs);
 
-  const artifactFile = writeRunArtifact(currentAdapter.implementation, records);
+    records.push(toRecord(scenario, stats, environment, [NODE_MEDIUM_NOTE]));
+    console.log(`[bench] ${scenario.id}: median ${roundTo(stats.median, 4)} ${scenario.unit}`);
+  }
+
+  printReport(IMPLEMENTATION, records, environment, {
+    mode: cli.smoke ? 'smoke' : 'full',
+    runs,
+    only: cli.only,
+    warmupRuns: DEFAULT_WARMUP_RUNS,
+  });
+
+  const artifactFile = writeRunArtifact(IMPLEMENTATION, records);
 
   console.log(`Artifact written: ${artifactFile}`);
 }
 
-function toRecord(scenario: BenchScenario, stats: TimingStats, environment: BenchEnvironment): BenchRecord {
+function toRecord(
+  scenario: BenchScenario,
+  stats: TimingStats,
+  environment: BenchEnvironment,
+  notes: readonly string[],
+): BenchRecord {
   return {
-    implementation: currentAdapter.implementation,
+    implementation: IMPLEMENTATION,
     gitSha: environment.gitSha,
     gitBranch: environment.gitBranch,
     versions: environment.versions,
@@ -306,63 +316,9 @@ function toRecord(scenario: BenchScenario, stats: TimingStats, environment: Benc
     max: roundTo(stats.max, 6),
     runs: stats.runs,
     comparable: scenario.comparable,
-    notes: [],
+    notes,
     timestamp: new Date().toISOString(),
   };
-}
-
-function roundTo(value: number, decimals: number): number {
-  const factor = 10 ** decimals;
-
-  return Math.round(value * factor) / factor;
-}
-
-function formatNumber(value: number): string {
-  return value.toFixed(4);
-}
-
-function printReport(
-  records: readonly BenchRecord[],
-  environment: BenchEnvironment,
-  options: { readonly mode: 'smoke' | 'full'; readonly runs: number; readonly only: readonly string[] },
-): void {
-  const versions = Object.entries(environment.versions)
-    .map(([name, version]) => `${name} ${version}`)
-    .join(' | ');
-
-  console.log(`Formedible benchmark — implementation: ${currentAdapter.implementation}`);
-  console.log(`node ${environment.node} | branch ${environment.gitBranch} | sha ${environment.gitSha}`);
-  console.log(versions);
-  console.log(
-    `mode: ${options.mode}${options.only.length > 0 ? ` (--only ${options.only.join(', ')})` : ''} | measured runs: ${options.runs} | warmup runs: ${DEFAULT_WARMUP_RUNS}`,
-  );
-  console.log('');
-
-  const header = ['scenario', 'metric', 'unit', 'median', 'p75', 'min', 'max', 'runs'];
-  const rows = records.map((record) => [
-    record.scenario,
-    record.metric,
-    record.unit,
-    formatNumber(record.median),
-    formatNumber(record.p75),
-    formatNumber(record.min),
-    formatNumber(record.max),
-    String(record.runs),
-  ]);
-  const widths = header.map((title, columnIndex) =>
-    Math.max(title.length, ...rows.map((row) => row[columnIndex]?.length ?? 0)),
-  );
-  const formatRow = (row: readonly string[]): string =>
-    row
-      .map((cell, columnIndex) => (columnIndex < 3 ? cell.padEnd(widths[columnIndex] ?? 0) : cell.padStart(widths[columnIndex] ?? 0)))
-      .join('  ')
-      .trimEnd();
-
-  console.log(formatRow(header));
-
-  for (const row of rows) {
-    console.log(formatRow(row));
-  }
 }
 
 main().catch((error: unknown) => {
