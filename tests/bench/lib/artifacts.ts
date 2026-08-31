@@ -64,15 +64,13 @@ const VERSION_MANIFESTS: Readonly<Record<string, string>> = {
  * Manifest lookup for the BASELINE worktree's npm-hoisted tree, in preference
  * order: the worktree root `node_modules` first (npm hoists main's pinned
  * `@tanstack/react-form` and `react` there), then a package-local install.
+ * These are the runtimes main's formedible source actually imports — main
+ * predates the `@tanstack/ai` family, so no AI manifest is looked up.
  */
 const WORKTREE_VERSION_MANIFESTS: Readonly<Record<string, readonly string[]>> = {
   '@tanstack/react-form': [
     join('node_modules', '@tanstack', 'react-form', 'package.json'),
     join('packages', 'formedible', 'node_modules', '@tanstack', 'react-form', 'package.json'),
-  ],
-  '@tanstack/ai': [
-    join('node_modules', '@tanstack', 'ai', 'package.json'),
-    join('apps', 'web', 'node_modules', '@tanstack', 'ai', 'package.json'),
   ],
   react: [
     join('node_modules', 'react', 'package.json'),

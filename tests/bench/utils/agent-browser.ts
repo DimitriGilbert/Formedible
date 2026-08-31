@@ -48,14 +48,13 @@ export const BENCH_VIEWPORT_NOTE = `${BENCH_VIEWPORT_WIDTH}x${BENCH_VIEWPORT_HEI
 
 const utilsDirectory = path.dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = path.resolve(utilsDirectory, '..', '..', '..');
-const fixtureViteConfig = path.join(
-  repositoryRoot,
-  'tests',
-  'bench',
-  'fixtures',
-  'current-consumer',
-  'vite.config.ts',
-);
+
+/** The committed bench fixtures this driver's helpers build and serve. */
+export type BenchFixtureName = 'current-consumer' | 'main-consumer';
+
+function fixtureViteConfigPath(fixture: BenchFixtureName): string {
+  return path.join(repositoryRoot, 'tests', 'bench', 'fixtures', fixture, 'vite.config.ts');
+}
 
 const HTTP_OK_TIMEOUT_MS = 30_000;
 const HARNESS_READY_TIMEOUT_MS = 30_000;
@@ -143,6 +142,13 @@ export interface BenchBrowserDriver {
   readonly chromiumUserAgent: string;
   /** Opens `/?scenario=<id>` on the fixture origin and waits until mounted. */
   openScenario(scenarioId: string): Promise<void>;
+  /**
+   * Reads the fixture's in-page runtime version report
+   * (`window.__benchRuntimeVersions`), when the fixture exposes one — the
+   * main-baseline fixture does, as its DECISION-1 dependency-isolation
+   * assertion. Fixtures without the global report an empty record.
+   */
+  readRuntimeVersions(): Promise<Readonly<Record<string, string>>>;
   mountLoop(options: HarnessLoopOptions): Promise<HarnessMountResult>;
   keystrokeLoop(fieldName: string, text: string, options: HarnessLoopOptions): Promise<HarnessKeystrokeResult>;
   submitLoop(options: HarnessLoopOptions): Promise<HarnessSubmitResult>;
@@ -176,6 +182,8 @@ export async function createAgentBrowserDriver(session: string, origin: string):
   return {
     chromiumUserAgent,
     openScenario,
+    readRuntimeVersions: () =>
+      evalExpression<Readonly<Record<string, string>>>(session, 'window.__benchRuntimeVersions ?? {}'),
     mountLoop: (options) => evalExpression<HarnessMountResult>(session, harnessCall('mountLoop', [options])),
     keystrokeLoop: (fieldName, text, options) =>
       evalExpression<HarnessKeystrokeResult>(session, harnessCall('keystrokeLoop', [fieldName, text, options])),
@@ -258,11 +266,11 @@ async function stopProcess(child: ChildProcessWithoutNullStreams): Promise<void>
   }
 }
 
-/** Builds the committed fixture once per run (`vite build`, deterministic output). */
-export async function buildCurrentConsumerFixture(): Promise<void> {
+/** Builds a committed fixture once per run (`vite build`, deterministic output). */
+export async function buildBenchFixture(fixture: BenchFixtureName): Promise<void> {
   await execFileAsync(
     'pnpm',
-    ['--dir', 'apps/web', 'exec', 'vite', 'build', '--config', fixtureViteConfig],
+    ['--dir', 'apps/web', 'exec', 'vite', 'build', '--config', fixtureViteConfigPath(fixture)],
     { cwd: repositoryRoot, maxBuffer: 1024 * 1024 * 10 },
   );
 }
@@ -272,7 +280,7 @@ export async function buildCurrentConsumerFixture(): Promise<void> {
  * (port-book pattern). Deterministic static preview of committed output — one
  * server lifecycle per run, stopped by the runner's `finally`.
  */
-export async function startCurrentConsumerPreview(): Promise<BenchFixturePreview> {
+export async function startBenchPreview(fixture: BenchFixtureName): Promise<BenchFixturePreview> {
   const port = await allocateLocalhostPort();
   const origin = `http://127.0.0.1:${port}`;
   const preview = spawn(
@@ -284,7 +292,7 @@ export async function startCurrentConsumerPreview(): Promise<BenchFixturePreview
       'vite',
       'preview',
       '--config',
-      fixtureViteConfig,
+      fixtureViteConfigPath(fixture),
       '--host',
       '127.0.0.1',
       '--port',

@@ -16,8 +16,11 @@ import { fileURLToPath } from 'node:url';
  *
  * Modes:
  * - `--setup`   create the worktree if missing (idempotent), sync it to local
- *              `main`, run `npm ci`, and (re)generate the runtime tsconfig
- *              `tests/bench/tsconfig.main.json` from the committed template.
+ *              `main`, run `npm ci`, and (re)generate the runtime tsconfigs
+ *              from the committed templates: `tests/bench/tsconfig.main.json`
+ *              (node parser path) and
+ *              `tests/bench/fixtures/main-consumer/tsconfig.json` (browser
+ *              fixture build path, DECISION-6 revised).
  * - `--refresh` reset the worktree to local `main` HEAD and re-run `npm ci`
  *              ONLY when the recorded HEAD changed (persisted in
  *              `<worktree>/.bench-setup.json`).
@@ -28,8 +31,8 @@ import { fileURLToPath } from 'node:url';
  *              `bench:baseline:setup` when the baseline is not ready.
  *
  * No absolute machine paths are committed: the worktree location enters the
- * generated tsconfig only at generation time, through the template's
- * placeholder, as a repo-root-relative path.
+ * generated tsconfigs only at generation time, through the templates'
+ * placeholders, as paths relative to each generated file.
  */
 
 export const MAIN_WORKTREE_ENV_VAR = 'FORMEDIBLE_MAIN_WORKTREE';
@@ -41,8 +44,11 @@ const TEMPLATE_PLACEHOLDER = '__FORMEDIBLE_MAIN_WORKTREE__';
 
 const benchLibDirectory = dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = join(benchLibDirectory, '..', '..', '..');
+const mainFixtureDirectory = join(benchLibDirectory, '..', 'fixtures', 'main-consumer');
 const templateFile = join(benchLibDirectory, 'tsconfig.main.template.json');
 const generatedTsconfigFile = join(benchLibDirectory, '..', 'tsconfig.main.json');
+const fixtureTemplateFile = join(mainFixtureDirectory, 'tsconfig.template.json');
+const generatedFixtureTsconfigFile = join(mainFixtureDirectory, 'tsconfig.json');
 
 export function resolveMainWorktreeDirectory(): string {
   const configured = process.env[MAIN_WORKTREE_ENV_VAR];
@@ -87,13 +93,39 @@ function writeSetupRecord(worktreeDirectory: string, sha: string): void {
 }
 
 /** Regenerates `tests/bench/tsconfig.main.json` from the committed template. */
-function generateMainTsconfig(worktreeDirectory: string): void {
-  const template = readFileSync(templateFile, 'utf8');
-  const worktreeFromRepositoryRoot = relative(repositoryRoot, worktreeDirectory).split('\\').join('/');
-  const generated = template.split(TEMPLATE_PLACEHOLDER).join(worktreeFromRepositoryRoot);
+function writeGeneratedTsconfig(
+  templateFileToRead: string,
+  generatedFile: string,
+  worktreeRelativeTo: string,
+  worktreeDirectory: string,
+): void {
+  const template = readFileSync(templateFileToRead, 'utf8');
+  const worktreePath = relative(worktreeRelativeTo, worktreeDirectory).split('\\').join('/');
+  const generated = template.split(TEMPLATE_PLACEHOLDER).join(worktreePath);
 
-  writeFileSync(generatedTsconfigFile, generated, 'utf8');
-  console.log(`Generated ${generatedTsconfigFile} (worktree: ${worktreeFromRepositoryRoot})`);
+  writeFileSync(generatedFile, generated, 'utf8');
+  console.log(`Generated ${generatedFile} (worktree: ${worktreePath})`);
+}
+
+/**
+ * (Re)generates every runtime tsconfig that points into the baseline
+ * worktree: the node parser path (`tests/bench/tsconfig.main.json`, used by
+ * `tsx` for `run-main.ts`'s in-process worktree import) and the browser
+ * fixture build path (`tests/bench/fixtures/main-consumer/tsconfig.json`,
+ * read by vite's `resolve.tsconfigPaths` at build time). Both files are
+ * gitignored; the worktree location enters only here, from the environment.
+ */
+export function generateMainTsconfigs(): void {
+  const worktreeDirectory = resolveMainWorktreeDirectory();
+
+  if (!existsSync(worktreeDirectory)) {
+    throw new Error(
+      `Baseline worktree not found at ${worktreeDirectory}. Run pnpm run bench:baseline:setup first.`,
+    );
+  }
+
+  writeGeneratedTsconfig(templateFile, generatedTsconfigFile, repositoryRoot, worktreeDirectory);
+  writeGeneratedTsconfig(fixtureTemplateFile, generatedFixtureTsconfigFile, mainFixtureDirectory, worktreeDirectory);
 }
 
 function requireOnMain(worktreeDirectory: string): string {
@@ -211,7 +243,7 @@ function setupBaseline(): void {
 
   runNpmCi(worktreeDirectory);
   writeSetupRecord(worktreeDirectory, mainSha);
-  generateMainTsconfig(worktreeDirectory);
+  generateMainTsconfigs();
 
   console.log(`Baseline setup complete at ${mainSha}.`);
 }
@@ -232,7 +264,7 @@ function refreshBaseline(): void {
 
   if (recordedSha === mainSha && worktreeHead === mainSha && nodeModulesPresent) {
     console.log(`Baseline already at ${mainSha}; nothing to refresh.`);
-    generateMainTsconfig(worktreeDirectory);
+    generateMainTsconfigs();
 
     return;
   }
@@ -240,12 +272,17 @@ function refreshBaseline(): void {
   resetWorktreeToMain(worktreeDirectory, mainSha);
   runNpmCi(worktreeDirectory);
   writeSetupRecord(worktreeDirectory, mainSha);
-  generateMainTsconfig(worktreeDirectory);
+  generateMainTsconfigs();
 
   console.log(`Baseline refreshed to ${mainSha}.`);
 }
 
-function checkBaseline(): void {
+/**
+ * Readiness gate shared by `--check` and `run-main.ts`: the worktree exists,
+ * is on `main`, has an installed tree, and both generated runtime tsconfigs
+ * exist with the template placeholder substituted.
+ */
+export function assertBaselineReady(): string {
   const worktreeDirectory = resolveMainWorktreeDirectory();
 
   if (!existsSync(worktreeDirectory)) {
@@ -262,18 +299,23 @@ function checkBaseline(): void {
     );
   }
 
-  if (!existsSync(generatedTsconfigFile)) {
-    throw new Error(
-      `${generatedTsconfigFile} is missing. Run pnpm run bench:baseline:setup first.`,
-    );
+  for (const generatedFile of [generatedTsconfigFile, generatedFixtureTsconfigFile]) {
+    if (!existsSync(generatedFile)) {
+      throw new Error(`${generatedFile} is missing. Run pnpm run bench:baseline:setup first.`);
+    }
+
+    if (readFileSync(generatedFile, 'utf8').includes(TEMPLATE_PLACEHOLDER)) {
+      throw new Error(
+        `${generatedFile} still contains the template placeholder. Re-run pnpm run bench:baseline:setup.`,
+      );
+    }
   }
 
-  if (readFileSync(generatedTsconfigFile, 'utf8').includes(TEMPLATE_PLACEHOLDER)) {
-    throw new Error(
-      `${generatedTsconfigFile} still contains the template placeholder. Re-run pnpm run bench:baseline:setup.`,
-    );
-  }
+  return worktreeDirectory;
+}
 
+function checkBaseline(): void {
+  const worktreeDirectory = assertBaselineReady();
   const sha = runGit(['rev-parse', 'HEAD'], worktreeDirectory);
   const recordedSha = readRecordedSha(worktreeDirectory);
 

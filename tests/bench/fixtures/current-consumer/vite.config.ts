@@ -19,7 +19,7 @@ import { fileURLToPath } from 'node:url';
  */
 
 const fixtureDirectory = path.dirname(fileURLToPath(import.meta.url));
-const repositoryRoot = path.resolve(fixtureDirectory, '..', '..', '..');
+const repositoryRoot = path.resolve(fixtureDirectory, '..', '..', '..', '..');
 
 const config = {
   root: fixtureDirectory,

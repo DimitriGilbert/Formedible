@@ -16,11 +16,11 @@ import { PARSER_RUN_PARSE_COUNT, TYPING_EVENT_COUNT, createMediumParserConfig, c
 import type { BenchImplementation } from './adapter-types';
 import {
   BENCH_VIEWPORT_NOTE,
-  buildCurrentConsumerFixture,
+  buildBenchFixture,
   closeAgentBrowserSession,
   createAgentBrowserDriver,
   getAgentBrowserVersion,
-  startCurrentConsumerPreview,
+  startBenchPreview,
   type BenchBrowserDriver,
 } from '../utils/agent-browser';
 
@@ -247,9 +247,9 @@ async function main(): Promise<void> {
 
   if (browserScenarioIds.length > 0) {
     console.log('[bench] building the committed fixture (vite build) ...');
-    await buildCurrentConsumerFixture();
+    await buildBenchFixture('current-consumer');
 
-    const preview = await startCurrentConsumerPreview();
+    const preview = await startBenchPreview('current-consumer');
 
     console.log(`[bench] fixture preview: ${preview.origin}`);
 

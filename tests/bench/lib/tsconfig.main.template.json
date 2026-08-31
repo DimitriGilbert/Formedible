@@ -7,17 +7,9 @@
     "ignoreDeprecations": "6.0",
     "noEmit": true,
     "paths": {
-      "formedible-bench-main-hook": [
-        "__FORMEDIBLE_MAIN_WORKTREE__/packages/formedible/src/hooks/use-formedible.tsx"
-      ],
       "formedible-bench-main-parser": [
         "__FORMEDIBLE_MAIN_WORKTREE__/packages/formedible-parser/src/index.ts"
-      ],
-      "@/*": ["__FORMEDIBLE_MAIN_WORKTREE__/packages/formedible/src/*"],
-      "react": ["__FORMEDIBLE_MAIN_WORKTREE__/node_modules/react"],
-      "react/*": ["__FORMEDIBLE_MAIN_WORKTREE__/node_modules/react/*"],
-      "react-dom": ["__FORMEDIBLE_MAIN_WORKTREE__/node_modules/react-dom"],
-      "react-dom/*": ["__FORMEDIBLE_MAIN_WORKTREE__/node_modules/react-dom/*"]
+      ]
     }
   }
 }

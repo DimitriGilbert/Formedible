@@ -53,9 +53,10 @@ tests/bench/results/runs/
 # bundle embeds vendored dependency code and stays out of the bench tree)
 .bench-dist/
 
-# Generated baseline tsconfig (written by bench:baseline:setup from the
-# committed template; carries the machine-local worktree path, DECISION-5)
+# Generated baseline tsconfigs (written by bench:baseline:setup from the
+# committed templates; carry the machine-local worktree path, DECISION-5)
 tests/bench/tsconfig.main.json
+tests/bench/fixtures/main-consumer/tsconfig.json
 
 # Misc
 *.tgz

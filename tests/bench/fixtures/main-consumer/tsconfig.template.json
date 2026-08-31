@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "target": "ES2022",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "baseUrl": ".",
+    "paths": {
+      "formedible-bench-main-hook": [
+        "__FORMEDIBLE_MAIN_WORKTREE__/packages/formedible/src/hooks/use-formedible.tsx"
+      ],
+      "formedible-bench-main-react-form-manifest": [
+        "__FORMEDIBLE_MAIN_WORKTREE__/node_modules/@tanstack/react-form/package.json"
+      ],
+      "formedible-bench-main-react-manifest": [
+        "__FORMEDIBLE_MAIN_WORKTREE__/node_modules/react/package.json"
+      ],
+      "react": ["__FORMEDIBLE_MAIN_WORKTREE__/node_modules/react"],
+      "react/*": ["__FORMEDIBLE_MAIN_WORKTREE__/node_modules/react/*"],
+      "react-dom": ["__FORMEDIBLE_MAIN_WORKTREE__/node_modules/react-dom"],
+      "react-dom/*": ["__FORMEDIBLE_MAIN_WORKTREE__/node_modules/react-dom/*"],
+      "@bench-scenarios": ["../../lib/scenarios/forms.ts"]
+    }
+  }
+}
