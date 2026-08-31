@@ -9,33 +9,28 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as BuilderRouteImport } from './routes/builder'
-import { Route as AiBuilderRouteImport } from './routes/ai-builder'
-import { Route as R404RouteImport } from './routes/404'
-import { Route as DocsRouteRouteImport } from './routes/docs/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as R404RouteImport } from './routes/404'
+import { Route as AiBuilderRouteImport } from './routes/ai-builder'
+import { Route as BuilderRouteImport } from './routes/builder'
+import { Route as DocsRouteRouteImport } from './routes/docs/route'
 import { Route as DocsIndexRouteImport } from './routes/docs/index'
-import { Route as DocsValidationRouteImport } from './routes/docs/validation'
-import { Route as DocsPersistenceRouteImport } from './routes/docs/persistence'
-import { Route as DocsParserRouteImport } from './routes/docs/parser'
-import { Route as DocsGettingStartedRouteImport } from './routes/docs/getting-started'
-import { Route as DocsFieldsRouteImport } from './routes/docs/fields'
-import { Route as DocsExamplesRouteImport } from './routes/docs/examples'
-import { Route as DocsDynamicTextRouteImport } from './routes/docs/dynamic-text'
-import { Route as DocsBuilderRouteImport } from './routes/docs/builder'
-import { Route as DocsApiRouteImport } from './routes/docs/api'
-import { Route as DocsAnalyticsRouteImport } from './routes/docs/analytics'
-import { Route as DocsAiBuilderRouteImport } from './routes/docs/ai-builder'
 import { Route as DocsAdvancedFeaturesRouteImport } from './routes/docs/advanced-features'
+import { Route as DocsAiBuilderRouteImport } from './routes/docs/ai-builder'
+import { Route as DocsAnalyticsRouteImport } from './routes/docs/analytics'
+import { Route as DocsApiRouteImport } from './routes/docs/api'
+import { Route as DocsBuilderRouteImport } from './routes/docs/builder'
+import { Route as DocsDynamicTextRouteImport } from './routes/docs/dynamic-text'
+import { Route as DocsExamplesRouteImport } from './routes/docs/examples'
+import { Route as DocsFieldsRouteImport } from './routes/docs/fields'
+import { Route as DocsGettingStartedRouteImport } from './routes/docs/getting-started'
+import { Route as DocsParserRouteImport } from './routes/docs/parser'
+import { Route as DocsPersistenceRouteImport } from './routes/docs/persistence'
+import { Route as DocsValidationRouteImport } from './routes/docs/validation'
 
-const BuilderRoute = BuilderRouteImport.update({
-  id: '/builder',
-  path: '/builder',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AiBuilderRoute = AiBuilderRouteImport.update({
-  id: '/ai-builder',
-  path: '/ai-builder',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const R404Route = R404RouteImport.update({
@@ -43,14 +38,19 @@ const R404Route = R404RouteImport.update({
   path: '/404',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AiBuilderRoute = AiBuilderRouteImport.update({
+  id: '/ai-builder',
+  path: '/ai-builder',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BuilderRoute = BuilderRouteImport.update({
+  id: '/builder',
+  path: '/builder',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DocsRouteRoute = DocsRouteRouteImport.update({
   id: '/docs',
   path: '/docs',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DocsIndexRoute = DocsIndexRouteImport.update({
@@ -58,54 +58,9 @@ const DocsIndexRoute = DocsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => DocsRouteRoute,
 } as any)
-const DocsValidationRoute = DocsValidationRouteImport.update({
-  id: '/validation',
-  path: '/validation',
-  getParentRoute: () => DocsRouteRoute,
-} as any)
-const DocsPersistenceRoute = DocsPersistenceRouteImport.update({
-  id: '/persistence',
-  path: '/persistence',
-  getParentRoute: () => DocsRouteRoute,
-} as any)
-const DocsParserRoute = DocsParserRouteImport.update({
-  id: '/parser',
-  path: '/parser',
-  getParentRoute: () => DocsRouteRoute,
-} as any)
-const DocsGettingStartedRoute = DocsGettingStartedRouteImport.update({
-  id: '/getting-started',
-  path: '/getting-started',
-  getParentRoute: () => DocsRouteRoute,
-} as any)
-const DocsFieldsRoute = DocsFieldsRouteImport.update({
-  id: '/fields',
-  path: '/fields',
-  getParentRoute: () => DocsRouteRoute,
-} as any)
-const DocsExamplesRoute = DocsExamplesRouteImport.update({
-  id: '/examples',
-  path: '/examples',
-  getParentRoute: () => DocsRouteRoute,
-} as any)
-const DocsDynamicTextRoute = DocsDynamicTextRouteImport.update({
-  id: '/dynamic-text',
-  path: '/dynamic-text',
-  getParentRoute: () => DocsRouteRoute,
-} as any)
-const DocsBuilderRoute = DocsBuilderRouteImport.update({
-  id: '/builder',
-  path: '/builder',
-  getParentRoute: () => DocsRouteRoute,
-} as any)
-const DocsApiRoute = DocsApiRouteImport.update({
-  id: '/api',
-  path: '/api',
-  getParentRoute: () => DocsRouteRoute,
-} as any)
-const DocsAnalyticsRoute = DocsAnalyticsRouteImport.update({
-  id: '/analytics',
-  path: '/analytics',
+const DocsAdvancedFeaturesRoute = DocsAdvancedFeaturesRouteImport.update({
+  id: '/advanced-features',
+  path: '/advanced-features',
   getParentRoute: () => DocsRouteRoute,
 } as any)
 const DocsAiBuilderRoute = DocsAiBuilderRouteImport.update({
@@ -113,9 +68,54 @@ const DocsAiBuilderRoute = DocsAiBuilderRouteImport.update({
   path: '/ai-builder',
   getParentRoute: () => DocsRouteRoute,
 } as any)
-const DocsAdvancedFeaturesRoute = DocsAdvancedFeaturesRouteImport.update({
-  id: '/advanced-features',
-  path: '/advanced-features',
+const DocsAnalyticsRoute = DocsAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => DocsRouteRoute,
+} as any)
+const DocsApiRoute = DocsApiRouteImport.update({
+  id: '/api',
+  path: '/api',
+  getParentRoute: () => DocsRouteRoute,
+} as any)
+const DocsBuilderRoute = DocsBuilderRouteImport.update({
+  id: '/builder',
+  path: '/builder',
+  getParentRoute: () => DocsRouteRoute,
+} as any)
+const DocsDynamicTextRoute = DocsDynamicTextRouteImport.update({
+  id: '/dynamic-text',
+  path: '/dynamic-text',
+  getParentRoute: () => DocsRouteRoute,
+} as any)
+const DocsExamplesRoute = DocsExamplesRouteImport.update({
+  id: '/examples',
+  path: '/examples',
+  getParentRoute: () => DocsRouteRoute,
+} as any)
+const DocsFieldsRoute = DocsFieldsRouteImport.update({
+  id: '/fields',
+  path: '/fields',
+  getParentRoute: () => DocsRouteRoute,
+} as any)
+const DocsGettingStartedRoute = DocsGettingStartedRouteImport.update({
+  id: '/getting-started',
+  path: '/getting-started',
+  getParentRoute: () => DocsRouteRoute,
+} as any)
+const DocsParserRoute = DocsParserRouteImport.update({
+  id: '/parser',
+  path: '/parser',
+  getParentRoute: () => DocsRouteRoute,
+} as any)
+const DocsPersistenceRoute = DocsPersistenceRouteImport.update({
+  id: '/persistence',
+  path: '/persistence',
+  getParentRoute: () => DocsRouteRoute,
+} as any)
+const DocsValidationRoute = DocsValidationRouteImport.update({
+  id: '/validation',
+  path: '/validation',
   getParentRoute: () => DocsRouteRoute,
 } as any)
 
@@ -251,18 +251,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/builder': {
-      id: '/builder'
-      path: '/builder'
-      fullPath: '/builder'
-      preLoaderRoute: typeof BuilderRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/ai-builder': {
-      id: '/ai-builder'
-      path: '/ai-builder'
-      fullPath: '/ai-builder'
-      preLoaderRoute: typeof AiBuilderRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/404': {
@@ -272,18 +265,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof R404RouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ai-builder': {
+      id: '/ai-builder'
+      path: '/ai-builder'
+      fullPath: '/ai-builder'
+      preLoaderRoute: typeof AiBuilderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/builder': {
+      id: '/builder'
+      path: '/builder'
+      fullPath: '/builder'
+      preLoaderRoute: typeof BuilderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/docs': {
       id: '/docs'
       path: '/docs'
       fullPath: '/docs'
       preLoaderRoute: typeof DocsRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/docs/': {
@@ -293,74 +293,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocsIndexRouteImport
       parentRoute: typeof DocsRouteRoute
     }
-    '/docs/validation': {
-      id: '/docs/validation'
-      path: '/validation'
-      fullPath: '/docs/validation'
-      preLoaderRoute: typeof DocsValidationRouteImport
-      parentRoute: typeof DocsRouteRoute
-    }
-    '/docs/persistence': {
-      id: '/docs/persistence'
-      path: '/persistence'
-      fullPath: '/docs/persistence'
-      preLoaderRoute: typeof DocsPersistenceRouteImport
-      parentRoute: typeof DocsRouteRoute
-    }
-    '/docs/parser': {
-      id: '/docs/parser'
-      path: '/parser'
-      fullPath: '/docs/parser'
-      preLoaderRoute: typeof DocsParserRouteImport
-      parentRoute: typeof DocsRouteRoute
-    }
-    '/docs/getting-started': {
-      id: '/docs/getting-started'
-      path: '/getting-started'
-      fullPath: '/docs/getting-started'
-      preLoaderRoute: typeof DocsGettingStartedRouteImport
-      parentRoute: typeof DocsRouteRoute
-    }
-    '/docs/fields': {
-      id: '/docs/fields'
-      path: '/fields'
-      fullPath: '/docs/fields'
-      preLoaderRoute: typeof DocsFieldsRouteImport
-      parentRoute: typeof DocsRouteRoute
-    }
-    '/docs/examples': {
-      id: '/docs/examples'
-      path: '/examples'
-      fullPath: '/docs/examples'
-      preLoaderRoute: typeof DocsExamplesRouteImport
-      parentRoute: typeof DocsRouteRoute
-    }
-    '/docs/dynamic-text': {
-      id: '/docs/dynamic-text'
-      path: '/dynamic-text'
-      fullPath: '/docs/dynamic-text'
-      preLoaderRoute: typeof DocsDynamicTextRouteImport
-      parentRoute: typeof DocsRouteRoute
-    }
-    '/docs/builder': {
-      id: '/docs/builder'
-      path: '/builder'
-      fullPath: '/docs/builder'
-      preLoaderRoute: typeof DocsBuilderRouteImport
-      parentRoute: typeof DocsRouteRoute
-    }
-    '/docs/api': {
-      id: '/docs/api'
-      path: '/api'
-      fullPath: '/docs/api'
-      preLoaderRoute: typeof DocsApiRouteImport
-      parentRoute: typeof DocsRouteRoute
-    }
-    '/docs/analytics': {
-      id: '/docs/analytics'
-      path: '/analytics'
-      fullPath: '/docs/analytics'
-      preLoaderRoute: typeof DocsAnalyticsRouteImport
+    '/docs/advanced-features': {
+      id: '/docs/advanced-features'
+      path: '/advanced-features'
+      fullPath: '/docs/advanced-features'
+      preLoaderRoute: typeof DocsAdvancedFeaturesRouteImport
       parentRoute: typeof DocsRouteRoute
     }
     '/docs/ai-builder': {
@@ -370,11 +307,74 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DocsAiBuilderRouteImport
       parentRoute: typeof DocsRouteRoute
     }
-    '/docs/advanced-features': {
-      id: '/docs/advanced-features'
-      path: '/advanced-features'
-      fullPath: '/docs/advanced-features'
-      preLoaderRoute: typeof DocsAdvancedFeaturesRouteImport
+    '/docs/analytics': {
+      id: '/docs/analytics'
+      path: '/analytics'
+      fullPath: '/docs/analytics'
+      preLoaderRoute: typeof DocsAnalyticsRouteImport
+      parentRoute: typeof DocsRouteRoute
+    }
+    '/docs/api': {
+      id: '/docs/api'
+      path: '/api'
+      fullPath: '/docs/api'
+      preLoaderRoute: typeof DocsApiRouteImport
+      parentRoute: typeof DocsRouteRoute
+    }
+    '/docs/builder': {
+      id: '/docs/builder'
+      path: '/builder'
+      fullPath: '/docs/builder'
+      preLoaderRoute: typeof DocsBuilderRouteImport
+      parentRoute: typeof DocsRouteRoute
+    }
+    '/docs/dynamic-text': {
+      id: '/docs/dynamic-text'
+      path: '/dynamic-text'
+      fullPath: '/docs/dynamic-text'
+      preLoaderRoute: typeof DocsDynamicTextRouteImport
+      parentRoute: typeof DocsRouteRoute
+    }
+    '/docs/examples': {
+      id: '/docs/examples'
+      path: '/examples'
+      fullPath: '/docs/examples'
+      preLoaderRoute: typeof DocsExamplesRouteImport
+      parentRoute: typeof DocsRouteRoute
+    }
+    '/docs/fields': {
+      id: '/docs/fields'
+      path: '/fields'
+      fullPath: '/docs/fields'
+      preLoaderRoute: typeof DocsFieldsRouteImport
+      parentRoute: typeof DocsRouteRoute
+    }
+    '/docs/getting-started': {
+      id: '/docs/getting-started'
+      path: '/getting-started'
+      fullPath: '/docs/getting-started'
+      preLoaderRoute: typeof DocsGettingStartedRouteImport
+      parentRoute: typeof DocsRouteRoute
+    }
+    '/docs/parser': {
+      id: '/docs/parser'
+      path: '/parser'
+      fullPath: '/docs/parser'
+      preLoaderRoute: typeof DocsParserRouteImport
+      parentRoute: typeof DocsRouteRoute
+    }
+    '/docs/persistence': {
+      id: '/docs/persistence'
+      path: '/persistence'
+      fullPath: '/docs/persistence'
+      preLoaderRoute: typeof DocsPersistenceRouteImport
+      parentRoute: typeof DocsRouteRoute
+    }
+    '/docs/validation': {
+      id: '/docs/validation'
+      path: '/validation'
+      fullPath: '/docs/validation'
+      preLoaderRoute: typeof DocsValidationRouteImport
       parentRoute: typeof DocsRouteRoute
     }
   }

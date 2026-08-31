@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 export const providerOptions = [
   { value: 'openai', label: 'OpenAI', defaultModel: 'gpt-5.4-mini', requiresKey: true },
   { value: 'anthropic', label: 'Anthropic', defaultModel: 'claude-sonnet-4-6', requiresKey: true },
-  { value: 'openrouter', label: 'OpenRouter', defaultModel: 'minimax/minimax-2.7', requiresKey: true },
+  { value: 'openrouter', label: 'OpenRouter', defaultModel: 'minimax/minimax-m2.7', requiresKey: true },
 ] as const satisfies readonly { readonly value: AIProvider; readonly label: string; readonly defaultModel: string; readonly requiresKey: boolean }[];
 
 export interface ProviderConfig {

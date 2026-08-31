@@ -1,7 +1,7 @@
 import { chat } from '@tanstack/ai';
 import type { StreamChunk } from '@tanstack/ai';
 
-import { createTanStackModelOptions, createTanStackTextAdapter, isAnthropicThinkingEnabled } from '@formedible/ui/components/formedible/lib/ai-adapters';
+import { createTanStackModelOptions, createTanStackTextAdapter } from '@formedible/ui/components/formedible/lib/ai-adapters';
 import { normalizeAiError } from '@formedible/ui/components/formedible/lib/ai-errors';
 import { toTanStackMessageInputs, toTanStackSystemPrompts } from '@formedible/ui/components/formedible/lib/ai-messages';
 import { extractFormCode } from '@formedible/ui/components/formedible/lib/ai-parser';
@@ -13,8 +13,6 @@ export interface AiStreamOptions {
 }
 
 export interface TanStackChatParameters {
-  readonly temperature?: number;
-  readonly maxTokens?: number;
   readonly modelOptions: ReturnType<typeof createTanStackModelOptions>;
 }
 
@@ -63,11 +61,18 @@ function readUsage(value: unknown): AiUsageMetadata | undefined {
   }
 
   const usage = isRecord(value.usage) ? value.usage : value;
+  // TanStack AI 0.52 providers report usage as a TokenUsage record whose cached
+  // and reasoning token counts live under the details sub-objects, while the
+  // AG-UI spec usage shape keeps those counts flat next to inputTokens/outputTokens.
+  const promptTokensDetails = isRecord(usage.promptTokensDetails) ? usage.promptTokensDetails : undefined;
+  const completionTokensDetails = isRecord(usage.completionTokensDetails) ? usage.completionTokensDetails : undefined;
   const inputTokens = readNumber(usage, 'inputTokens') ?? readNumber(usage, 'promptTokens');
   const outputTokens = readNumber(usage, 'outputTokens') ?? readNumber(usage, 'completionTokens');
   const totalTokens = readNumber(usage, 'totalTokens');
-  const cachedInputTokens = readNumber(usage, 'cachedInputTokens');
-  const reasoningTokens = readNumber(usage, 'reasoningTokens');
+  const cachedInputTokens = readNumber(usage, 'cachedInputTokens')
+    ?? (promptTokensDetails === undefined ? undefined : readNumber(promptTokensDetails, 'cachedTokens'));
+  const reasoningTokens = readNumber(usage, 'reasoningTokens')
+    ?? (completionTokensDetails === undefined ? undefined : readNumber(completionTokensDetails, 'reasoningTokens'));
 
   if (inputTokens === undefined && outputTokens === undefined && totalTokens === undefined && cachedInputTokens === undefined && reasoningTokens === undefined) {
     return undefined;
@@ -131,7 +136,7 @@ function toThinkingEvent(raw: unknown, receivedAt: number): AiStreamEvent | unde
   const type = readString(raw, 'type');
   const delta = readString(raw, 'delta');
 
-  if ((type === 'REASONING_MESSAGE_CONTENT' || type === 'thinking-delta' || type === 'reasoning-delta') && delta !== undefined) {
+  if ((type === 'REASONING_MESSAGE_CONTENT' || type === 'THINKING_TEXT_MESSAGE_CONTENT' || type === 'thinking-delta' || type === 'reasoning-delta') && delta !== undefined) {
     return { type: 'thinking-delta', delta, raw, receivedAt };
   }
 
@@ -278,11 +283,10 @@ function assertValidGenerationRequest(request: AiGenerationRequest): asserts req
 }
 
 export function createTanStackChatParameters(settings: ProviderSettings): TanStackChatParameters {
+  // Sampling controls (temperature, token caps) and the Anthropic thinking
+  // budget are per-provider provider options in @tanstack/ai 0.52; chat() no
+  // longer accepts top-level temperature/maxTokens options.
   return {
-    // Anthropic rejects any temperature other than 1 while extended thinking is enabled,
-    // so the parameter must be omitted from the request instead of forced to a fixed value.
-    ...(isAnthropicThinkingEnabled(settings) ? {} : { temperature: settings.temperature }),
-    maxTokens: settings.maxTokens,
     modelOptions: createTanStackModelOptions(settings),
   };
 }
@@ -299,7 +303,7 @@ function createTanStackStream(request: AiGenerationRequest, abortController: Abo
     messages: toTanStackMessageInputs(request.messages),
     systemPrompts: toTanStackSystemPrompts(request.messages, request.systemPrompt),
     ...createTanStackChatParameters(providerSettings),
-    conversationId: request.conversationId,
+    threadId: request.threadId,
     abortController,
   });
 }

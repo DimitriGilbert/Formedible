@@ -63,7 +63,7 @@ console.error(result.errors);   // EnhancedParserError[] with code, field?, line
 
 ## AI Builder — chat that generates forms
 
-BYOK: keys live in the browser (or your controlled state), never a server. Providers: `openai`, `anthropic`, `openrouter` — all require an API key; custom endpoints/`baseURL` are rejected. Default models: `gpt-5.4-mini`, `claude-sonnet-4-6`, `minimax/minimax-2.7`. `thinkingBudgetTokens` is Anthropic-only.
+BYOK: keys live in the browser (or your controlled state), never a server. Providers: `openai`, `anthropic`, `openrouter` — all require an API key; custom endpoints/`baseURL` are rejected. Default models: `gpt-5.4-mini`, `claude-sonnet-4-6`, `minimax/minimax-m2.7`. `thinkingBudgetTokens` is Anthropic-only.
 
 ```tsx
 import { AIBuilder } from '@/components/ui/formedible/ai/ai-builder';

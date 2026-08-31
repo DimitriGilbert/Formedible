@@ -50,7 +50,7 @@ test('each default provider config has value, label, defaultModel, and requiresK
 test('default provider models match expected values', () => {
   assert.equal(defaultProviderConfigs[0]?.defaultModel, 'gpt-5.4-mini');
   assert.equal(defaultProviderConfigs[1]?.defaultModel, 'claude-sonnet-4-6');
-  assert.equal(defaultProviderConfigs[2]?.defaultModel, 'minimax/minimax-2.7');
+  assert.equal(defaultProviderConfigs[2]?.defaultModel, 'minimax/minimax-m2.7');
 });
 
 test('default picker schema has exactly eight fields', () => {
@@ -115,7 +115,7 @@ test('createDefaultPickerValues returns correct defaults for openrouter', () => 
   const values = createDefaultPickerValues('openrouter');
 
   assert.equal(values.provider, 'openrouter');
-  assert.equal(values.model, 'minimax/minimax-2.7');
+  assert.equal(values.model, 'minimax/minimax-m2.7');
   assert.equal(values.temperature, 0.7);
   assert.equal(values.maxTokens, 16000);
 });
@@ -320,7 +320,7 @@ test('valuesToSettings with openrouter returns OpenRouterProviderSettings', () =
   const values: AiPickerValues = {
     provider: 'openrouter',
     apiKey: 'test-key',
-    model: 'minimax/minimax-2.7',
+    model: 'minimax/minimax-m2.7',
     temperature: 0.3,
     maxTokens: 8000,
     storageMode: 'local',
@@ -330,7 +330,7 @@ test('valuesToSettings with openrouter returns OpenRouterProviderSettings', () =
   const settings = valuesToSettings(values);
 
   assert.equal(settings.provider, 'openrouter');
-  assert.equal(settings.model, 'minimax/minimax-2.7');
+  assert.equal(settings.model, 'minimax/minimax-m2.7');
   assert.equal(settings.temperature, 0.3);
   assert.equal(settings.maxTokens, 8000);
 });
@@ -633,7 +633,7 @@ test('applyProviderSwitch drops thinking budget tokens when leaving anthropic', 
 
   assert.equal(switched.provider, 'openrouter');
   assert.equal(switched.apiKey, '');
-  assert.equal(switched.model, 'minimax/minimax-2.7');
+  assert.equal(switched.model, 'minimax/minimax-m2.7');
   assert.equal(switched.thinkingBudgetTokens, undefined);
 });
 

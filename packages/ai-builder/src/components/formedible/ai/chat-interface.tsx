@@ -173,7 +173,7 @@ export function ChatInterface({
       }
 
       const startedAt = Date.now();
-      const request: AiGenerationRequest = { prompt: trimmedPrompt, providerSettings, providerSecrets, messages: nextMessages, systemPrompt, userMessage, conversationId };
+      const request: AiGenerationRequest = { prompt: trimmedPrompt, providerSettings, providerSecrets, messages: nextMessages, systemPrompt, userMessage, threadId: conversationId };
 
       for await (const event of streamAiResponse(request, { abortController: nextAbortController })) {
         if (event.type === 'finish') {

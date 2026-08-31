@@ -78,7 +78,7 @@ function installWindowStorage(storage: Storage): () => void {
 
 const fallbackProviderSettings: ProviderSettings = {
   provider: 'openrouter',
-  model: 'minimax/minimax-2.7',
+  model: 'minimax/minimax-m2.7',
 };
 
 function createConversation(formConfig: NonNullable<AiConversation['messages'][number]['formConfig']>): AiConversation {
@@ -256,8 +256,8 @@ describe('AI storage canonical config preservation', () => {
         fetchedAt: 1,
         models: [
           {
-            id: 'minimax/minimax-2.7',
-            label: 'MiniMax 2.7',
+            id: 'minimax/minimax-m2.7',
+            label: 'MiniMax M2.7',
             createdAt: '2026-05-01T00:00:00.000Z',
             contextLength: 1_000_000,
             inputPricePerMillionTokens: '0.2',
@@ -269,7 +269,7 @@ describe('AI storage canonical config preservation', () => {
       const catalogs = readProviderModelCatalogs();
       const storedCatalogs = storage.getItem('formedible-ai-builder-model-catalogs') ?? '';
 
-      assert.deepEqual(catalogs.openrouter?.models.map((model) => model.id), ['minimax/minimax-2.7']);
+      assert.deepEqual(catalogs.openrouter?.models.map((model) => model.id), ['minimax/minimax-m2.7']);
       assert.doesNotMatch(storedCatalogs, /sk-|apiKey|secret/i);
     } finally {
       restoreWindow();

@@ -17,7 +17,7 @@ export const SUPPORTED_TANSTACK_AI_PROVIDERS = ['openai', 'anthropic', 'openrout
 export const DEFAULT_TANSTACK_AI_MODELS = {
   openai: 'gpt-5.4-mini',
   anthropic: 'claude-sonnet-4-6',
-  openrouter: 'minimax/minimax-2.7',
+  openrouter: 'minimax/minimax-m2.7',
 } as const satisfies {
   readonly openai: string;
   readonly anthropic: string;
@@ -83,14 +83,35 @@ export function isAnthropicThinkingEnabled(settings: ProviderSettings): settings
   return settings.provider === 'anthropic' && typeof settings.thinkingBudgetTokens === 'number' && settings.thinkingBudgetTokens > 0;
 }
 
-export function createTanStackModelOptions(settings: ProviderSettings): OpenAITextProviderOptions | AnthropicTextProviderOptions | OpenRouterTextModelOptions | undefined {
+export function createTanStackModelOptions(settings: ProviderSettings): OpenAITextProviderOptions | AnthropicTextProviderOptions | OpenRouterTextModelOptions {
   assertNoUnsupportedRuntimeOptions(settings);
 
+  if (settings.provider === 'openai') {
+    return {
+      ...(settings.temperature === undefined ? {} : { temperature: settings.temperature }),
+      ...(settings.maxTokens === undefined ? {} : { max_output_tokens: settings.maxTokens }),
+    } satisfies OpenAITextProviderOptions;
+  }
+
+  if (settings.provider === 'openrouter') {
+    return {
+      ...(settings.temperature === undefined ? {} : { temperature: settings.temperature }),
+      ...(settings.maxTokens === undefined ? {} : { maxCompletionTokens: settings.maxTokens }),
+    } satisfies OpenRouterTextModelOptions;
+  }
+
   if (!isAnthropicThinkingEnabled(settings)) {
-    return undefined;
+    return {
+      ...(settings.temperature === undefined ? {} : { temperature: settings.temperature }),
+      ...(settings.maxTokens === undefined ? {} : { max_tokens: settings.maxTokens }),
+    } satisfies AnthropicTextProviderOptions;
   }
 
   return {
+    // Anthropic rejects any temperature other than 1 while extended thinking is
+    // enabled, so the parameter must be omitted from the request instead of
+    // forced to a fixed value.
+    ...(settings.maxTokens === undefined ? {} : { max_tokens: settings.maxTokens }),
     thinking: {
       type: 'enabled',
       budget_tokens: settings.thinkingBudgetTokens,

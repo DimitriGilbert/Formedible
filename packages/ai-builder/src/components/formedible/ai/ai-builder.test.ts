@@ -38,7 +38,7 @@ const sampleFormCode = `{
 
 const generationProviderSettings: ProviderSettings = {
   provider: 'openrouter',
-  model: 'minimax/minimax-2.7',
+  model: 'minimax/minimax-m2.7',
   temperature: 0.2,
   maxTokens: 1000,
 };
@@ -328,7 +328,7 @@ test('provider selection preserves provider-specific default models', () => {
   assert.equal(createDefaultProviderSettings('anthropic').model, 'claude-sonnet-4-6');
   assert.deepEqual(createDefaultProviderSettings('openrouter'), {
     provider: 'openrouter',
-    model: 'minimax/minimax-2.7',
+    model: 'minimax/minimax-m2.7',
     temperature: 0.7,
     maxTokens: 16000,
   });
@@ -365,9 +365,9 @@ test('TanStack AI adapter boundary preserves custom model strings', () => {
   assert.equal(createTanStackTextAdapter({ provider: 'openrouter', model: 'custom/provider-model' }, { provider: 'openrouter', apiKey: 'openrouter-key' }).model, 'custom/provider-model');
 });
 
-test('provider-specific options only emit Anthropic thinking configuration', () => {
-  assert.equal(createTanStackModelOptions({ provider: 'openai', model: DEFAULT_TANSTACK_AI_MODELS.openai }), undefined);
-  assert.equal(createTanStackModelOptions({ provider: 'openrouter', model: DEFAULT_TANSTACK_AI_MODELS.openrouter }), undefined);
+test('provider model options map per-provider sampling keys and Anthropic thinking', () => {
+  assert.deepEqual(createTanStackModelOptions({ provider: 'openai', model: DEFAULT_TANSTACK_AI_MODELS.openai }), {});
+  assert.deepEqual(createTanStackModelOptions({ provider: 'openrouter', model: DEFAULT_TANSTACK_AI_MODELS.openrouter }), {});
   assert.deepEqual(createTanStackModelOptions({ provider: 'anthropic', model: DEFAULT_TANSTACK_AI_MODELS.anthropic, thinkingBudgetTokens: 512 }), {
     thinking: {
       type: 'enabled',
@@ -390,15 +390,15 @@ test('OpenAI and Anthropic adapters construct their SDK clients with direct brow
 test('chat request parameters omit temperature while Anthropic extended thinking is enabled', () => {
   const thinkingParameters = createTanStackChatParameters({ provider: 'anthropic', model: DEFAULT_TANSTACK_AI_MODELS.anthropic, temperature: 0.7, maxTokens: 4000, thinkingBudgetTokens: 2048 });
   const standardAnthropicParameters = createTanStackChatParameters({ provider: 'anthropic', model: DEFAULT_TANSTACK_AI_MODELS.anthropic, temperature: 0.7 });
-  const openaiParameters = createTanStackChatParameters({ provider: 'openai', model: DEFAULT_TANSTACK_AI_MODELS.openai, temperature: 0.4 });
+  const openaiParameters = createTanStackChatParameters({ provider: 'openai', model: DEFAULT_TANSTACK_AI_MODELS.openai, temperature: 0.4, maxTokens: 900 });
+  const openRouterParameters = createTanStackChatParameters({ provider: 'openrouter', model: DEFAULT_TANSTACK_AI_MODELS.openrouter, maxTokens: 1200 });
 
-  assert.equal('temperature' in thinkingParameters, false);
-  assert.deepEqual(thinkingParameters.modelOptions, { thinking: { type: 'enabled', budget_tokens: 2048 } });
-  assert.equal(thinkingParameters.maxTokens, 4000);
+  assert.equal('temperature' in thinkingParameters.modelOptions, false);
+  assert.deepEqual(thinkingParameters.modelOptions, { max_tokens: 4000, thinking: { type: 'enabled', budget_tokens: 2048 } });
 
-  assert.equal(standardAnthropicParameters.temperature, 0.7);
-  assert.equal(standardAnthropicParameters.modelOptions, undefined);
-  assert.equal(openaiParameters.temperature, 0.4);
+  assert.deepEqual(standardAnthropicParameters.modelOptions, { temperature: 0.7 });
+  assert.deepEqual(openaiParameters.modelOptions, { temperature: 0.4, max_output_tokens: 900 });
+  assert.deepEqual(openRouterParameters.modelOptions, { maxCompletionTokens: 1200 });
 
   const generationSource = readFileSync(resolve(process.cwd(), 'src/lib/formedible/ai-generation.ts'), 'utf8');
   assert.match(generationSource, /\.\.\.createTanStackChatParameters\(providerSettings\),/);
@@ -488,7 +488,7 @@ test('AI builder rejects legacy provider settings with unsupported endpoints or 
       version: 1,
       data: {
         provider: 'openrouter',
-        model: 'minimax/minimax-2.7',
+        model: 'minimax/minimax-m2.7',
         endpoint: 'https://example.test/v1',
       },
     });
@@ -589,7 +589,7 @@ test('AI builder storage validates unknown JSON and redacts secrets from exports
         formCode: sampleFormCode,
         parseErrors: [{ message: 'Parse warning', details: { token: 'secret-token', line: 1 } }],
         provider: 'openrouter',
-        model: 'minimax/minimax-2.7',
+        model: 'minimax/minimax-m2.7',
         timestamp: 12,
         status: 'completed',
       },
@@ -603,7 +603,7 @@ test('AI builder storage validates unknown JSON and redacts secrets from exports
         status: 'extracted',
         createdAt: 12,
         provider: 'openrouter',
-        model: 'minimax/minimax-2.7',
+        model: 'minimax/minimax-m2.7',
       },
     ],
     createdAt: 1,
@@ -1083,7 +1083,7 @@ test('raw output panel shows raw text, thinking, parsed forms, events, metadata,
     ],
     formCode: sampleFormCode,
     provider: 'openrouter',
-    model: 'minimax/minimax-2.7',
+    model: 'minimax/minimax-m2.7',
     status: 'completed',
   };
   const html = renderToStaticMarkup(createElement(RawOutputPanel, { message }));
@@ -1533,7 +1533,7 @@ test('sidebar history and settings render without backend or settings UI bypasse
 
   assert.match(historyMarkup, /Sidebar conversation/);
   assert.match(modelMarkup, /Model settings/);
-  assert.match(modelMarkup, /minimax\/minimax-2.7/);
+  assert.match(modelMarkup, /minimax\/minimax-m2\.7/);
   assert.match(iconsMarkup, /AI builder sidebar/);
 });
 

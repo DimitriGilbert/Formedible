@@ -257,7 +257,8 @@ export interface AiGenerationRequest {
   readonly messages: readonly AiMessage[];
   readonly systemPrompt: string;
   readonly userMessage: AiMessage;
-  readonly conversationId?: string;
+  /** Correlates the run with the conversation; passed to chat() as the AG-UI threadId. */
+  readonly threadId?: string;
 }
 
 export interface AiGenerationResult {

@@ -26,7 +26,7 @@ test('OpenRouter model catalog fetches recent text output models', async () => {
 
     return jsonResponse({
       data: [
-        { id: 'minimax/minimax-2.7', name: 'MiniMax 2.7', created: Date.parse('2026-05-01T00:00:00.000Z') / 1000, architecture: { output_modalities: ['text'] }, context_length: 1_000_000, pricing: { prompt: '0.2', completion: '1.1' } },
+        { id: 'minimax/minimax-m2.7', name: 'MiniMax M2.7', created: Date.parse('2026-05-01T00:00:00.000Z') / 1000, architecture: { output_modalities: ['text'] }, context_length: 1_000_000, pricing: { prompt: '0.2', completion: '1.1' } },
         { id: 'old/model', name: 'Old model', created: Date.parse('2025-01-01T00:00:00.000Z') / 1000, architecture: { output_modalities: ['text'] } },
         { id: 'image/model', name: 'Image model', created: Date.parse('2026-05-01T00:00:00.000Z') / 1000, architecture: { output_modalities: ['image'] } },
       ],
@@ -36,7 +36,7 @@ test('OpenRouter model catalog fetches recent text output models', async () => {
   const catalog = await fetchProviderModels({ provider: 'openrouter', apiKey: 'openrouter-key', now, fetcher });
 
   assert.equal(requestedUrls[0], 'https://openrouter.ai/api/v1/models?output_modalities=text');
-  assert.deepEqual(catalog.models.map((model) => model.id), ['minimax/minimax-2.7']);
+  assert.deepEqual(catalog.models.map((model) => model.id), ['minimax/minimax-m2.7']);
   assert.equal(catalog.models[0]?.contextLength, 1_000_000);
   assert.equal(catalog.error, undefined);
 });
