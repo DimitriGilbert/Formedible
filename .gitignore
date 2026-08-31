@@ -46,6 +46,9 @@ coverage
 tests/**/.compiled
 tests/e2e/.recordings
 
+# Benchmark run artifacts (DECISION-4; the regression reference is committed)
+tests/bench/results/runs/
+
 # Misc
 *.tgz
 .cache

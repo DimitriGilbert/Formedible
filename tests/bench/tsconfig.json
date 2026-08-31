@@ -1,0 +1,21 @@
+{
+  "extends": "../../packages/config/tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "baseUrl": "../..",
+    "ignoreDeprecations": "6.0",
+    "noEmit": true,
+    "paths": {
+      "@/*": ["packages/formedible/src/*", "packages/formedible-parser/src/*"]
+    }
+  },
+  "include": [
+    "lib/**/*.ts",
+    "lib/**/*.tsx",
+    "../../packages/formedible/src/**/*.ts",
+    "../../packages/formedible/src/**/*.tsx",
+    "../../packages/formedible-parser/src/index.ts",
+    "../../packages/formedible-parser/src/registry-dependencies.d.ts"
+  ]
+}

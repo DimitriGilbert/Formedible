@@ -17,7 +17,7 @@
     "build:web": "pnpm --dir apps/web run build",
     "build:registries": "node scripts/build-registries.js",
     "build:release": "node scripts/build-release.js",
-    "check-types": "turbo check-types && tsc -p tests/compatibility-examples/tsconfig.json && pnpm test:formedible:types && tsc -p tests/architecture/tsconfig.json && tsc -p tests/sync/tsconfig.json && tsc -p tests/consumer-smoke/tsconfig.json",
+    "check-types": "turbo check-types && tsc -p tests/compatibility-examples/tsconfig.json && pnpm test:formedible:types && tsc -p tests/architecture/tsconfig.json && tsc -p tests/sync/tsconfig.json && tsc -p tests/consumer-smoke/tsconfig.json && tsc -p tests/bench/tsconfig.json",
     "check-types:pkg": "pnpm --filter @formedible/formedible run check-types",
     "check-types:parser": "pnpm --filter @formedible/formedible-parser run check-types",
     "check-types:builder": "pnpm --filter @formedible/builder run check-types",
@@ -41,6 +41,8 @@
     "test:e2e": "pnpm --dir apps/web build && tsc -p tests/e2e/tsconfig.json && node --test tests/e2e/.compiled/*.test.js",
     "test:e2e:record": "E2E_RECORD=1 pnpm run test:e2e; e2e_status=$?; node scripts/stitch-e2e-recordings.js; stitch_status=$?; if [ \"$e2e_status\" -ne 0 ]; then exit \"$e2e_status\"; fi; exit \"$stitch_status\"",
     "test:e2e:existing": "tsc -p tests/e2e/tsconfig.json && node --test tests/e2e/.compiled/*.test.js",
+    "bench": "tsc -p tests/bench/tsconfig.json && tsx --tsconfig tests/bench/tsconfig.json tests/bench/lib/run.ts",
+    "bench:smoke": "tsc -p tests/bench/tsconfig.json && tsx --tsconfig tests/bench/tsconfig.json tests/bench/lib/run.ts --smoke",
     "dev:web": "turbo -F web dev"
   },
   "dependencies": {
