@@ -15,19 +15,24 @@ import type {
 import reactFormManifest from 'formedible-bench-main-react-form-manifest';
 import reactManifest from 'formedible-bench-main-react-manifest';
 import {
+  createArrayFieldFormScenario,
   createDefaultValues,
+  createMemoryFormScenario,
   createPagedFormScenario,
   createSubmitSchema,
+  createTabbedFormScenario,
   createTextHeavyFields,
   createValidValues,
 } from '@bench-scenarios';
-import type { BenchField } from '../../lib/adapter-types';
-import type { BenchHarnessGlobal } from '../../lib/harness-protocol';
+import type { BenchArrayOp, BenchField, BenchMemoryOp } from '../../lib/adapter-types';
 import type {
+  BenchHarnessGlobal,
+  HarnessArrayOpResult,
+  HarnessHeapSnapshot,
   HarnessKeystrokeResult,
   HarnessLoopOptions,
+  HarnessMemoryRunResult,
   HarnessMountResult,
-  HarnessPersistenceResult,
   HarnessStatus,
   HarnessSubmitResult,
   HarnessSwitchResult,
@@ -46,7 +51,11 @@ import type {
  * `validation` instead of the never-wired top-level `schema`,
  * validation-gated `setCurrentPage` (D12) driven with schema-valid values,
  * and `label[for]` field counting (main's selects render a radix trigger
- * without a `[name]` control).
+ * without a `[name]` control). Main's tab and array DOM hooks also differ
+ * from current's (radix `[role="tab"]` triggers instead of
+ * `data-tabs-trigger`; FieldWrapper-rooted array scope with
+ * `title`-matched remove buttons instead of `data-formedible-array-*`
+ * attributes), so those selectors live in this fixture only.
  *
  * `window.__benchRuntimeVersions` reports the @tanstack/react-form and react
  * versions the page actually resolved (the worktree manifests, imported
@@ -168,6 +177,29 @@ function createPagedScenario(): ScenarioSpec {
   };
 }
 
+function createTabbedScenario(): ScenarioSpec {
+  const scenario = createTabbedFormScenario();
+
+  return {
+    options: {
+      fields: scenario.fields.map((field) => toFieldConfig(field)),
+      tabs: scenario.tabs.map((tab) => ({ id: tab.id, label: tab.label })),
+      formOptions: { defaultValues: { ...scenario.defaultValues } },
+    },
+  };
+}
+
+function createArrayScenario(): ScenarioSpec {
+  const scenario = createArrayFieldFormScenario();
+
+  return {
+    options: {
+      fields: scenario.fields.map((field) => toFieldConfig(field)),
+      formOptions: { defaultValues: { ...scenario.defaultValues } },
+    },
+  };
+}
+
 function createPersistentScenario(): ScenarioSpec {
   const fields = createTextHeavyFields(50);
 
@@ -176,6 +208,23 @@ function createPersistentScenario(): ScenarioSpec {
       fields: fields.map((field) => toFieldConfig(field)),
       persistence: { key: PERSISTENCE_KEY, storage: 'localStorage', debounceMs: 0 },
       formOptions: { defaultValues: { ...createDefaultValues(fields) } },
+    },
+  };
+}
+
+function createMemoryScenario(): ScenarioSpec {
+  const scenario = createMemoryFormScenario();
+
+  /**
+   * The memory form carries no validation and no required flags, so main's
+   * D12 navigation gate (which reads per-field errors) stays open for every
+   * switch in the workload even with plain default values.
+   */
+  return {
+    options: {
+      fields: scenario.fields.map((field) => toFieldConfig(field)),
+      pages: scenario.pages.map((page) => ({ page: page.page, title: page.title, description: page.description })),
+      formOptions: { defaultValues: { ...scenario.defaultValues } },
     },
   };
 }
@@ -192,12 +241,24 @@ function resolveScenario(scenario: string): ScenarioSpec {
     return createPagedScenario();
   }
 
+  if (scenario === 'tabbed') {
+    return createTabbedScenario();
+  }
+
+  if (scenario === 'array') {
+    return createArrayScenario();
+  }
+
   if (scenario === 'persistent') {
     return createPersistentScenario();
   }
 
+  if (scenario === 'memory') {
+    return createMemoryScenario();
+  }
+
   throw new Error(
-    `Unknown benchmark scenario "${scenario}" for the main fixture. Use ?scenario=<mount|typing|submit>-<N> | paged | persistent.`,
+    `Unknown benchmark scenario "${scenario}" for the main fixture. Use ?scenario=<mount|typing|submit>-<N> | paged | tabbed | array | persistent | memory.`,
   );
 }
 
@@ -503,73 +564,289 @@ async function submitLoop(options: HarnessLoopOptions): Promise<HarnessSubmitRes
   return { samples, submitCount: submitCount - submitsBefore, expectedSubmitCount };
 }
 
-async function switchPageLoop(pageNumber: number, options: HarnessLoopOptions): Promise<HarnessSwitchResult> {
-  /**
-   * D11: main's `currentPage` is a 1-based index over VISIBLE pages; the
-   * loop returns main's reading so the driver-side contract stays identical.
-   */
-  const setCurrentPage = requireCapturedHook().setCurrentPage;
-
-  const runOnce = async (): Promise<number> => {
-    const start = performance.now();
-
-    setCurrentPage(pageNumber);
-    await nextFrame();
-
-    return performance.now() - start;
-  };
-
-  for (let run = 0; run < options.warmupRuns; run += 1) {
-    await runOnce();
+/**
+ * Executes a deterministic op sequence `warmupRuns + measuredRuns` times and
+ * returns one `performance.now()` sample per executed operation of every
+ * MEASURED run (warmup passes are untimed).
+ */
+async function sequenceLoop(
+  opCount: number,
+  options: HarnessLoopOptions,
+  runStep: (stepIndex: number) => Promise<number>,
+): Promise<readonly number[]> {
+  for (let warmupRun = 0; warmupRun < options.warmupRuns; warmupRun += 1) {
+    for (let step = 0; step < opCount; step += 1) {
+      await runStep(step);
+    }
   }
 
   const samples: number[] = [];
 
   for (let run = 0; run < options.measuredRuns; run += 1) {
-    samples.push(await runOnce());
+    for (let step = 0; step < opCount; step += 1) {
+      samples.push(await runStep(step));
+    }
   }
+
+  return samples;
+}
+
+/**
+ * Bounded frame budget main's `currentPage` state may lag a completed switch
+ * before it is read again: main commits the page change but its host render
+ * sometimes lands one frame after the switch frame, so an immediate read of
+ * the captured hook can be stale even though the DOM already shows the target
+ * page. The wait is verification-only (never inside a timing sample) and gives
+ * up after the budget, leaving any real mismatch to fail loudly upstream.
+ */
+const PAGE_SETTLE_MAX_FRAMES = 10;
+
+function waitForPageState(pageNumber: number): Promise<void> {
+  return new Promise<void>((resolve) => {
+    let frames = 0;
+
+    const check = (): void => {
+      if (requireCapturedHook().currentPage === pageNumber || frames >= PAGE_SETTLE_MAX_FRAMES) {
+        resolve();
+
+        return;
+      }
+
+      frames += 1;
+      requestAnimationFrame(check);
+    };
+
+    requestAnimationFrame(check);
+  });
+}
+
+async function switchPageSequenceLoop(
+  pageNumbers: readonly number[],
+  options: HarnessLoopOptions,
+): Promise<HarnessSwitchResult> {
+  /**
+   * D11: main's `currentPage` is a 1-based index over VISIBLE pages; the loop
+   * returns main's reading so the driver-side contract stays identical. The
+   * paged scenario mounts with schema-valid values so main's D12 navigation
+   * gate (forward switches validate the crossed pages) stays open — the
+   * runner records the divergence note on every main pageswitch record.
+   *
+   * Main's `setCurrentPage` is a component closure recreated on every render
+   * (unlike current's stable React setter): a callback captured once at loop
+   * start goes stale — its internal `currentPage` snapshot then no-ops later
+   * switches through its `targetPage === currentPage` guard — so the callback
+   * is re-resolved from the captured hook before EVERY operation.
+   */
+  const samples = await sequenceLoop(pageNumbers.length, options, async (step) => {
+    const pageNumber = pageNumbers[step];
+
+    if (pageNumber === undefined) {
+      throw new Error(`No page number for switch step ${step}.`);
+    }
+
+    const start = performance.now();
+
+    requireCapturedHook().setCurrentPage(pageNumber);
+    await nextFrame();
+
+    const elapsed = performance.now() - start;
+
+    await waitForPageState(pageNumber);
+
+    return elapsed;
+  });
 
   return { samples, activeIndex: requireCapturedHook().currentPage };
 }
 
-async function persistenceSaveLoop(options: HarnessLoopOptions): Promise<HarnessPersistenceResult> {
-  const hook = requireCapturedHook();
-  const values = hook.form.state.values;
+/**
+ * Main's FormTabs renders radix `TabsTrigger`s (no `data-tabs-trigger`
+ * attribute like current's); the ARIA tab role orders by configured tab order,
+ * and radix marks the active trigger with `data-state="active"`.
+ */
+function findTabTriggers(): readonly HTMLButtonElement[] {
+  return [...document.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+}
 
-  const runOnce = (): number => {
+async function switchTabSequenceLoop(
+  tabIndices: readonly number[],
+  options: HarnessLoopOptions,
+): Promise<HarnessSwitchResult> {
+  const samples = await sequenceLoop(tabIndices.length, options, async (step) => {
+    const tabIndex = tabIndices[step];
+
+    if (tabIndex === undefined) {
+      throw new Error(`No tab index for switch step ${step}.`);
+    }
+
+    const trigger = findTabTriggers()[tabIndex];
+
+    if (!trigger) {
+      throw new Error(`No rendered tab trigger for tab index ${tabIndex}.`);
+    }
+
     const start = performance.now();
 
-    /**
-     * Main's `saveToStorage` takes the values explicitly (the current hook
-     * defaults them from the form state).
-     */
-    hook.saveToStorage(values);
+    trigger.click();
+    await nextFrame();
 
     return performance.now() - start;
-  };
+  });
 
-  for (let run = 0; run < options.warmupRuns; run += 1) {
-    runOnce();
-  }
+  const triggers = findTabTriggers();
+  const activeTrigger = document.querySelector<HTMLButtonElement>('[role="tab"][data-state="active"]');
 
-  const samples: number[] = [];
-
-  for (let run = 0; run < options.measuredRuns; run += 1) {
-    samples.push(runOnce());
-  }
-
-  return { samples, storageKey: PERSISTENCE_KEY, stored: window.localStorage.getItem(PERSISTENCE_KEY) !== null };
+  return { samples, activeIndex: activeTrigger === null ? -1 : triggers.indexOf(activeTrigger) };
 }
 
 /**
- * The operations this fixture serves today (the shared protocol surface the
- * existing driver calls): tab switches and array operations need main-side
- * DOM selector verification and land with the Phase 3.1 scenarios.
+ * Main's ArrayField renders no `data-formedible-*` attributes: the FieldWrapper
+ * root (an ancestor of the `label[for=<name>]` that IS rendered) scopes the
+ * field, the add button is the one whose text starts with the default
+ * "Add Item" label, and every item's remove button carries
+ * `title="Remove"` — the title-matched buttons double as the item count.
  */
-type MainBenchHarness = Pick<
-  BenchHarnessGlobal,
-  'status' | 'mountLoop' | 'keystrokeLoop' | 'submitLoop' | 'switchPageLoop' | 'persistenceSaveLoop'
->;
+function findArrayFieldRoot(fieldName: string): HTMLElement {
+  const label = document.querySelector<HTMLLabelElement>(`form label[for="${fieldName}"]`);
+
+  if (!label || !(label.parentElement instanceof HTMLElement)) {
+    throw new Error(`No rendered array field wrapper labeled "${fieldName}".`);
+  }
+
+  return label.parentElement;
+}
+
+function findArrayOpButton(fieldRoot: HTMLElement, op: BenchArrayOp): HTMLButtonElement {
+  const buttons = [...fieldRoot.querySelectorAll<HTMLButtonElement>('button')];
+  const button =
+    op.op === 'add'
+      ? buttons.find((candidate) => candidate.textContent?.startsWith('Add'))
+      : buttons.filter((candidate) => candidate.getAttribute('title')?.startsWith('Remove'))[op.itemIndex];
+
+  if (!button) {
+    throw new Error(
+      op.op === 'add'
+        ? 'The array field renders no add-item button.'
+        : `The array field renders no remove button for item index ${op.itemIndex}.`,
+    );
+  }
+
+  return button;
+}
+
+async function arraySequenceLoop(
+  fieldName: string,
+  ops: readonly BenchArrayOp[],
+  options: HarnessLoopOptions,
+): Promise<HarnessArrayOpResult> {
+  const fieldRoot = findArrayFieldRoot(fieldName);
+
+  const samples = await sequenceLoop(ops.length, options, async (step) => {
+    const op = ops[step];
+
+    if (!op) {
+      throw new Error(`No array operation for step ${step}.`);
+    }
+
+    const button = findArrayOpButton(fieldRoot, op);
+    const start = performance.now();
+
+    button.click();
+    await nextFrame();
+
+    return performance.now() - start;
+  });
+
+  return { samples, itemCount: fieldRoot.querySelectorAll('button[title^="Remove"]').length };
+}
+
+/**
+ * Heap reader over the Chromium APIs the page can access (same contract as the
+ * current fixture): cross-origin-isolated `measureUserAgentSpecificMemory` when
+ * available, else the legacy `performance.memory` counter. No forced GC is
+ * assumed anywhere.
+ */
+function resolveHeapReader(): { readonly apiName: string; read(): Promise<number> } {
+  const extendedPerformance = performance as Performance & {
+    memory?: { readonly usedJSHeapSize?: number };
+    measureUserAgentSpecificMemory?: () => Promise<{ readonly bytes: number }>;
+  };
+
+  if (crossOriginIsolated) {
+    const measure = extendedPerformance.measureUserAgentSpecificMemory;
+
+    if (typeof measure === 'function') {
+      const boundMeasure = measure.bind(extendedPerformance);
+
+      return {
+        apiName: 'performance.measureUserAgentSpecificMemory',
+        read: async () => (await boundMeasure()).bytes / 1_048_576,
+      };
+    }
+  }
+
+  const memory = extendedPerformance.memory;
+
+  if (memory !== undefined && typeof memory.usedJSHeapSize === 'number') {
+    return {
+      apiName: 'performance.memory.usedJSHeapSize',
+      read: async () => (memory.usedJSHeapSize ?? 0) / 1_048_576,
+    };
+  }
+
+  throw new Error(
+    'No Chromium heap API is available on this page (performance.memory missing and the page is not crossOriginIsolated for performance.measureUserAgentSpecificMemory).',
+  );
+}
+
+/** Two frames of settle before every heap checkpoint (no forced GC assumption). */
+async function heapSettle(): Promise<void> {
+  await nextFrame();
+  await nextFrame();
+}
+
+async function heapSnapshot(): Promise<HarnessHeapSnapshot> {
+  const heap = resolveHeapReader();
+
+  await heapSettle();
+
+  return { apiName: heap.apiName, heapMb: await heap.read() };
+}
+
+async function memoryLoop(ops: readonly BenchMemoryOp[]): Promise<HarnessMemoryRunResult> {
+  for (let index = 0; index < ops.length; index += 1) {
+    const op = ops[index];
+
+    if (!op) {
+      throw new Error(`No memory operation at index ${index}.`);
+    }
+
+    if (op.op === 'type') {
+      const control = requireControl(op.fieldName);
+
+      for (let charCount = 1; charCount <= op.text.length; charCount += 1) {
+        setNativeValue(control, op.text.slice(0, charCount));
+        dispatchInput(control);
+      }
+    } else if (op.op === 'switchPage') {
+      // Re-resolved per op for the same stale-closure reason as the page loop.
+      requireCapturedHook().setCurrentPage(op.pageNumber);
+      await waitForPageState(op.pageNumber);
+    } else {
+      const fieldRoot = findArrayFieldRoot(op.fieldName);
+      const button =
+        op.op === 'arrayAdd'
+          ? findArrayOpButton(fieldRoot, { op: 'add' })
+          : findArrayOpButton(fieldRoot, { op: 'remove', itemIndex: op.itemIndex });
+
+      button.click();
+    }
+
+    await nextFrame();
+  }
+
+  return { opCount: ops.length };
+}
 
 function status(): HarnessStatus {
   return {
@@ -579,17 +856,20 @@ function status(): HarnessStatus {
   };
 }
 
-const harness: MainBenchHarness = {
+const harness: BenchHarnessGlobal = {
   status,
   mountLoop,
   keystrokeLoop,
   submitLoop,
-  switchPageLoop,
-  persistenceSaveLoop,
+  switchPageSequenceLoop,
+  switchTabSequenceLoop,
+  arraySequenceLoop,
+  memoryLoop,
+  heapSnapshot,
 };
 
 const benchWindow = window as typeof window & {
-  __benchHarness?: MainBenchHarness;
+  __benchHarness?: BenchHarnessGlobal;
   __benchRuntimeVersions?: Readonly<Record<string, string>>;
 };
 

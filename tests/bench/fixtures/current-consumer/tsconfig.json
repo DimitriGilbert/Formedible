@@ -7,10 +7,17 @@
     "ignoreDeprecations": "6.0",
     "noEmit": true,
     "paths": {
+      "@ai-src/*": ["../../../../packages/ai-builder/src/*"],
       "@formedible-src/*": ["../../../../packages/formedible/src/*"],
       "@bench-scenarios": ["../../lib/scenarios/forms.ts"],
-      "@/*": ["../../../../packages/formedible/src/*"]
+      "@/*": ["../../../../packages/formedible/src/*", "../../../../packages/ai-builder/src/*"]
     }
   },
-  "include": ["*.ts", "*.tsx", "../../lib/adapter-types.ts", "../../lib/harness-protocol.ts"]
+  "include": [
+    "*.ts",
+    "*.tsx",
+    "../../lib/adapter-types.ts",
+    "../../lib/harness-protocol.ts",
+    "../../../../packages/ai-builder/src/registry-dependencies.d.ts"
+  ]
 }

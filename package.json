@@ -17,7 +17,7 @@
     "build:web": "pnpm --dir apps/web run build",
     "build:registries": "node scripts/build-registries.js",
     "build:release": "node scripts/build-release.js",
-    "check-types": "turbo check-types && tsc -p tests/compatibility-examples/tsconfig.json && pnpm test:formedible:types && tsc -p tests/architecture/tsconfig.json && tsc -p tests/sync/tsconfig.json && tsc -p tests/consumer-smoke/tsconfig.json && tsc -p tests/bench/tsconfig.json && tsc -p tests/bench/fixtures/current-consumer/tsconfig.json && tsc -p tests/bench/fixtures/main-consumer/tsconfig.check.json",
+    "check-types": "turbo check-types && tsc -p tests/compatibility-examples/tsconfig.json && pnpm test:formedible:types && tsc -p tests/architecture/tsconfig.json && tsc -p tests/sync/tsconfig.json && tsc -p tests/consumer-smoke/tsconfig.json && tsc -p tests/bench/tsconfig.json && tsc -p tests/bench/fixtures/current-consumer/tsconfig.json && tsc -p tests/bench/fixtures/main-consumer/tsconfig.check.json && tsc -p tests/bench/fixtures/minimal-consumer/tsconfig.json",
     "check-types:pkg": "pnpm --filter @formedible/formedible run check-types",
     "check-types:parser": "pnpm --filter @formedible/formedible-parser run check-types",
     "check-types:builder": "pnpm --filter @formedible/builder run check-types",
@@ -43,6 +43,7 @@
     "test:e2e:existing": "tsc -p tests/e2e/tsconfig.json && node --test tests/e2e/.compiled/*.test.js",
     "bench": "tsc -p tests/bench/tsconfig.json && tsx --tsconfig tests/bench/tsconfig.json tests/bench/lib/run.ts",
     "bench:smoke": "tsc -p tests/bench/tsconfig.json && tsx --tsconfig tests/bench/tsconfig.json tests/bench/lib/run.ts --smoke",
+    "bench:full": "tsc -p tests/bench/tsconfig.json && tsx --tsconfig tests/bench/tsconfig.json tests/bench/lib/run.ts --full",
     "bench:baseline:setup": "tsx tests/bench/lib/baseline-worktree.ts --setup",
     "bench:baseline": "tsc -p tests/bench/tsconfig.json && tsc -p tests/bench/fixtures/main-consumer/tsconfig.check.json && tsx --tsconfig tests/bench/tsconfig.main.json tests/bench/lib/run-main.ts",
     "dev:web": "turbo -F web dev"

@@ -1,7 +1,10 @@
-import { createElement, Fragment, useEffect } from 'react';
+import { createElement, Fragment, useEffect, useState } from 'react';
+import type { ReactElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { Root } from 'react-dom/client';
 
+import { createAiStreamScheduler } from '@ai-src/lib/formedible/ai-stream-scheduler';
+import type { AiStreamEvent } from '@ai-src/lib/formedible/ai-types';
 import { useFormedible } from '@formedible-src/hooks/use-formedible';
 import type {
   FormedibleArrayConfig,
@@ -12,21 +15,27 @@ import type {
 import {
   createArrayFieldFormScenario,
   createDefaultValues,
+  createMemoryFormScenario,
   createPagedFormScenario,
+  createStreamChunkEvents,
+  createStreamTranscriptText,
   createSubmitSchema,
   createTabbedFormScenario,
   createTextHeavyFields,
   createValidValues,
 } from '@bench-scenarios';
-import type { BenchField } from '../../lib/adapter-types';
+import type { BenchArrayOp, BenchField, BenchMemoryOp, BenchStreamChunkEvent } from '../../lib/adapter-types';
 import type {
   BenchHarnessGlobal,
   HarnessArrayOpResult,
+  HarnessHeapSnapshot,
   HarnessKeystrokeResult,
   HarnessLoopOptions,
+  HarnessMemoryRunResult,
   HarnessMountResult,
-  HarnessPersistenceResult,
   HarnessStatus,
+  HarnessStreamLoop,
+  HarnessStreamRunResult,
   HarnessSubmitResult,
   HarnessSwitchResult,
 } from '../../lib/harness-protocol';
@@ -49,6 +58,8 @@ const BENCH_MOUNT_ID = 'bench-mount';
 const FLAT_SCENARIO_PATTERN = /^(?:mount|typing|submit)-(\d+)$/;
 const PERSISTENCE_KEY = 'formedible-bench-draft';
 const OPERATION_TIMEOUT_MS = 15_000;
+const STREAM_SCENARIO_ID = 'stream';
+const STREAM_EXPECTED_TEXT = createStreamTranscriptText();
 
 type CapturedHook = ReturnType<typeof useFormedible<FormedibleFormValues>>;
 
@@ -171,6 +182,18 @@ function createPersistentScenario(): ScenarioSpec {
   };
 }
 
+function createMemoryScenario(): ScenarioSpec {
+  const scenario = createMemoryFormScenario();
+
+  return {
+    options: {
+      fields: scenario.fields.map((field) => toFieldConfig(field)),
+      pages: scenario.pages.map((page) => ({ page: page.page, title: page.title, description: page.description })),
+      formOptions: { defaultValues: { ...scenario.defaultValues } },
+    },
+  };
+}
+
 function resolveScenario(scenario: string): ScenarioSpec {
   const flatMatch = FLAT_SCENARIO_PATTERN.exec(scenario);
   const fieldCount = flatMatch === null ? Number.NaN : Number.parseInt(flatMatch[1] ?? '', 10);
@@ -195,8 +218,12 @@ function resolveScenario(scenario: string): ScenarioSpec {
     return createPersistentScenario();
   }
 
+  if (scenario === 'memory') {
+    return createMemoryScenario();
+  }
+
   throw new Error(
-    `Unknown benchmark scenario "${scenario}". Use ?scenario=<mount|typing|submit>-<N> | paged | tabbed | array | persistent.`,
+    `Unknown benchmark scenario "${scenario}". Use ?scenario=<mount|typing|submit>-<N> | paged | tabbed | array | persistent | memory | stream.`,
   );
 }
 
@@ -238,11 +265,17 @@ interface MountedTree {
   dispose(): void;
 }
 
-/** Renders a fresh scenario form and resolves when its commit has settled. */
-function mountTree(
-  options: UseFormedibleOptions<FormedibleFormValues>,
-  containerId?: string,
-): Promise<MountedTree> {
+/** Settles a freshly rendered tree on its first commit (mount scenarios). */
+function CommitProbe({ onCommit }: { readonly onCommit: () => void }) {
+  useEffect(() => {
+    onCommit();
+  }, []);
+
+  return null;
+}
+
+/** Renders a fresh tree and resolves when its commit has settled. */
+function mountElement(element: ReactElement, containerId?: string): Promise<MountedTree> {
   return new Promise<MountedTree>((resolve, reject) => {
     const container = document.createElement('div');
 
@@ -281,14 +314,6 @@ function mountTree(
       });
     }
 
-    function CommitProbe() {
-      useEffect(() => {
-        settle();
-      }, []);
-
-      return null;
-    }
-
     const start = performance.now();
     const timeout = window.setTimeout(
       () => {
@@ -297,8 +322,18 @@ function mountTree(
       OPERATION_TIMEOUT_MS,
     );
 
-    root.render(createElement(Fragment, null, createElement(BenchForm, { options }), createElement(CommitProbe)));
+    root.render(
+      createElement(Fragment, null, element, createElement(CommitProbe, { onCommit: () => settle() })),
+    );
   });
+}
+
+/** Renders a fresh scenario form (mount scenarios and the startup tree). */
+function mountTree(
+  options: UseFormedibleOptions<FormedibleFormValues>,
+  containerId?: string,
+): Promise<MountedTree> {
+  return mountElement(createElement(BenchForm, { options }), containerId);
 }
 
 /** Macrotask gap so React finishes cleanup between measured operations. */
@@ -347,22 +382,212 @@ function dispatchInput(control: HTMLInputElement | HTMLTextAreaElement): void {
   control.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
+/**
+ * Streaming benchmark section (`stream-100chunks`, current-only).
+ *
+ * The REAL `AiStreamScheduler` (default frame ticking, the exact configuration
+ * `ChatInterface` uses in production) drives a MINIMAL transcript component:
+ * each flush appends its text delta and commits, mirroring the essential
+ * `scheduler flush → state update → transcript commit` path of the chat
+ * interface without its UI-kit chrome (scroll area, textarea, buttons) — those
+ * would measure the wrong tree and bloat the fixture bundle.
+ *
+ * The loop feeds one chunk per scheduler frame tick: every chunk's commit is
+ * awaited before the next is enqueued, so flushes can never coalesce, exactly
+ * one commit is attributable to each flush, and the pacing is the scheduler's
+ * own ~16ms tick. Commits are counted by an in-page commit-counting hook (a
+ * `useEffect` with no dependency array inside the transcript tree fires once
+ * per React commit) — chosen over react-devtools render counting because it
+ * counts exactly the transcript subtree's commits with zero instrumentation
+ * overhead, keeping `flush-ms-total` uncontaminated (risk #7).
+ */
+
+interface StreamRunState {
+  text: string;
+  commits: number;
+  flushCount: number;
+  flushLatenciesMs: number[];
+  pendingFlushStart: number | undefined;
+  waiter: { readonly timeoutId: number; readonly settle: () => void } | undefined;
+}
+
+function createStreamController() {
+  const state: StreamRunState = {
+    text: '',
+    commits: 0,
+    flushCount: 0,
+    flushLatenciesMs: [],
+    pendingFlushStart: undefined,
+    waiter: undefined,
+  };
+  let setText: ((next: string) => void) | undefined;
+
+  const scheduler = createAiStreamScheduler((flush) => {
+    state.flushCount += 1;
+    state.text += flush.textDelta;
+    state.pendingFlushStart = performance.now();
+    setText?.(state.text);
+  });
+
+  return {
+    bind(nextSetText: ((next: string) => void) | undefined): void {
+      setText = nextSetText;
+    },
+    /** Commit-counting hook callback: fires once per React commit of the transcript. */
+    noteCommit(): void {
+      state.commits += 1;
+
+      if (state.pendingFlushStart === undefined) {
+        return;
+      }
+
+      state.flushLatenciesMs.push(performance.now() - state.pendingFlushStart);
+      state.pendingFlushStart = undefined;
+
+      const waiter = state.waiter;
+
+      if (waiter !== undefined) {
+        state.waiter = undefined;
+        window.clearTimeout(waiter.timeoutId);
+        waiter.settle();
+      }
+    },
+    /** Clears the transcript and waits for the reset commit before counters zero. */
+    async reset(): Promise<void> {
+      state.text = '';
+      setText?.('');
+      await nextFrame();
+      await nextFrame();
+      state.commits = 0;
+      state.flushCount = 0;
+      state.flushLatenciesMs = [];
+      state.pendingFlushStart = undefined;
+    },
+    /** Enqueues one chunk and resolves once its flush has COMMITTED in React. */
+    feedChunk(chunk: BenchStreamChunkEvent): Promise<void> {
+      const event: AiStreamEvent = { type: 'text-delta', delta: chunk.delta, receivedAt: chunk.receivedAt };
+
+      return new Promise<void>((resolve, reject) => {
+        const timeoutId = window.setTimeout(() => {
+          state.waiter = undefined;
+          reject(new Error(`A streamed chunk did not flush and commit within ${OPERATION_TIMEOUT_MS}ms.`));
+        }, OPERATION_TIMEOUT_MS);
+
+        state.waiter = {
+          timeoutId,
+          settle: () => {
+            resolve();
+          },
+        };
+
+        scheduler.enqueue(event);
+      });
+    },
+    snapshot(chunkCount: number): HarnessStreamRunResult {
+      return {
+        flushMsTotal: state.flushLatenciesMs.reduce((total, latency) => total + latency, 0),
+        commitCount: state.commits,
+        flushCount: state.flushCount,
+        chunkCount,
+        finalText: state.text,
+      };
+    },
+  };
+}
+
+type StreamController = ReturnType<typeof createStreamController>;
+
+const streamController = createStreamController();
+
+/** Minimal transcript: re-renders per flush; the effect counts every commit. */
+function StreamTranscript({ text, onCommit }: { readonly text: string; readonly onCommit: () => void }) {
+  useEffect(() => {
+    onCommit();
+  });
+
+  return createElement('p', { 'data-bench-stream-text': true }, text);
+}
+
+function StreamBenchHost({ controller }: { readonly controller: StreamController }) {
+  const [text, setText] = useState('');
+
+  useEffect(() => {
+    controller.bind(setText);
+
+    return () => {
+      controller.bind(undefined);
+    };
+  }, [controller]);
+
+  return createElement(
+    'div',
+    { 'data-bench-stream-root': true },
+    createElement(StreamTranscript, { text, onCommit: controller.noteCommit }),
+  );
+}
+
+async function streamLoop(options: HarnessLoopOptions): Promise<HarnessStreamRunResult> {
+  const chunks = createStreamChunkEvents();
+  let last = streamController.snapshot(0);
+
+  const runOnce = async (): Promise<HarnessStreamRunResult> => {
+    await streamController.reset();
+
+    for (const chunk of chunks) {
+      await streamController.feedChunk(chunk);
+    }
+
+    const result = streamController.snapshot(chunks.length);
+
+    if (result.flushCount !== chunks.length) {
+      throw new Error(`The stream loop flushed ${result.flushCount} times for ${chunks.length} chunks (chunks coalesced).`);
+    }
+
+    if (result.commitCount !== result.flushCount) {
+      throw new Error(
+        `The stream loop committed ${result.commitCount} times for ${result.flushCount} flushes; every flush must commit the transcript exactly once.`,
+      );
+    }
+
+    if (result.finalText !== STREAM_EXPECTED_TEXT) {
+      throw new Error('The streamed transcript text drifted from the deterministic 100-chunk payload.');
+    }
+
+    return result;
+  };
+
+  for (let warmup = 0; warmup < options.warmupRuns; warmup += 1) {
+    last = await runOnce();
+  }
+
+  for (let run = 0; run < options.measuredRuns; run += 1) {
+    last = await runOnce();
+  }
+
+  return last;
+}
+
 const scenario = new URLSearchParams(window.location.search).get('scenario') ?? '';
+const streamMode = scenario === STREAM_SCENARIO_ID;
 
 let specOptions: UseFormedibleOptions<FormedibleFormValues> = {};
 let scenarioError: string | undefined;
 
-try {
-  specOptions = resolveScenario(scenario).options;
-} catch (error: unknown) {
-  scenarioError = error instanceof Error ? error.message : String(error);
+if (!streamMode) {
+  try {
+    specOptions = resolveScenario(scenario).options;
+  } catch (error: unknown) {
+    scenarioError = error instanceof Error ? error.message : String(error);
+  }
 }
 
 let startupTree: MountedTree | undefined;
 let startupError: string | undefined;
 
 async function mountStartupTree(): Promise<void> {
-  startupTree = await mountTree(specOptions, BENCH_MOUNT_ID);
+  startupTree = streamMode
+    ? await mountElement(createElement(StreamBenchHost, { controller: streamController }), BENCH_MOUNT_ID)
+    : await mountTree(specOptions, BENCH_MOUNT_ID);
 }
 
 async function mountLoop(options: HarnessLoopOptions): Promise<HarnessMountResult> {
@@ -480,33 +705,68 @@ async function submitLoop(options: HarnessLoopOptions): Promise<HarnessSubmitRes
   return { samples, submitCount: submitCount - submitsBefore, expectedSubmitCount };
 }
 
-async function switchPageLoop(pageNumber: number, options: HarnessLoopOptions): Promise<HarnessSwitchResult> {
+/**
+ * Executes a deterministic op sequence `warmupRuns + measuredRuns` times and
+ * returns one `performance.now()` sample per executed operation of every
+ * MEASURED run (warmup passes are untimed).
+ */
+async function sequenceLoop(
+  opCount: number,
+  options: HarnessLoopOptions,
+  runStep: (stepIndex: number) => Promise<number>,
+): Promise<readonly number[]> {
+  for (let warmupRun = 0; warmupRun < options.warmupRuns; warmupRun += 1) {
+    for (let step = 0; step < opCount; step += 1) {
+      await runStep(step);
+    }
+  }
+
+  const samples: number[] = [];
+
+  for (let run = 0; run < options.measuredRuns; run += 1) {
+    for (let step = 0; step < opCount; step += 1) {
+      samples.push(await runStep(step));
+    }
+  }
+
+  return samples;
+}
+
+async function switchPageSequenceLoop(
+  pageNumbers: readonly number[],
+  options: HarnessLoopOptions,
+): Promise<HarnessSwitchResult> {
   const setCurrentPage = requireCapturedHook().setCurrentPage;
 
-  const runOnce = async (): Promise<number> => {
+  const samples = await sequenceLoop(pageNumbers.length, options, async (step) => {
+    const pageNumber = pageNumbers[step];
+
+    if (pageNumber === undefined) {
+      throw new Error(`No page number for switch step ${step}.`);
+    }
+
     const start = performance.now();
 
     setCurrentPage(pageNumber);
     await nextFrame();
 
     return performance.now() - start;
-  };
-
-  for (let run = 0; run < options.warmupRuns; run += 1) {
-    await runOnce();
-  }
-
-  const samples: number[] = [];
-
-  for (let run = 0; run < options.measuredRuns; run += 1) {
-    samples.push(await runOnce());
-  }
+  });
 
   return { samples, activeIndex: requireCapturedHook().currentPage };
 }
 
-async function switchTabLoop(tabIndex: number, options: HarnessLoopOptions): Promise<HarnessSwitchResult> {
-  const runOnce = async (): Promise<number> => {
+async function switchTabSequenceLoop(
+  tabIndices: readonly number[],
+  options: HarnessLoopOptions,
+): Promise<HarnessSwitchResult> {
+  const samples = await sequenceLoop(tabIndices.length, options, async (step) => {
+    const tabIndex = tabIndices[step];
+
+    if (tabIndex === undefined) {
+      throw new Error(`No tab index for switch step ${step}.`);
+    }
+
     const triggers = document.querySelectorAll<HTMLButtonElement>('[data-tabs-trigger="true"]');
     const trigger = triggers[tabIndex];
 
@@ -520,19 +780,14 @@ async function switchTabLoop(tabIndex: number, options: HarnessLoopOptions): Pro
     await nextFrame();
 
     return performance.now() - start;
+  });
+
+  const activeTrigger = document.querySelector<HTMLButtonElement>('[data-tabs-trigger="true"][aria-selected="true"]');
+
+  return {
+    samples,
+    activeIndex: activeTrigger === null ? -1 : [...document.querySelectorAll('[data-tabs-trigger="true"]')].indexOf(activeTrigger),
   };
-
-  for (let run = 0; run < options.warmupRuns; run += 1) {
-    await runOnce();
-  }
-
-  const samples: number[] = [];
-
-  for (let run = 0; run < options.measuredRuns; run += 1) {
-    samples.push(await runOnce());
-  }
-
-  return { samples, activeIndex: tabIndex };
 }
 
 function findArrayFieldRoot(fieldName: string): HTMLElement {
@@ -545,70 +800,140 @@ function findArrayFieldRoot(fieldName: string): HTMLElement {
   return fieldRoot;
 }
 
-async function arrayOpLoop(
-  operation: 'add' | 'remove',
+function findArrayOpButton(fieldRoot: HTMLElement, op: BenchArrayOp): HTMLButtonElement {
+  const buttons = [...fieldRoot.querySelectorAll<HTMLButtonElement>('button')];
+  const button =
+    op.op === 'add'
+      ? buttons.find((candidate) => candidate.textContent?.startsWith('Add'))
+      : buttons.filter((candidate) => candidate.getAttribute('aria-label')?.startsWith('Remove'))[op.itemIndex];
+
+  if (!button) {
+    throw new Error(
+      op.op === 'add'
+        ? 'The array field renders no add-item button.'
+        : `The array field renders no remove button for item index ${op.itemIndex}.`,
+    );
+  }
+
+  return button;
+}
+
+async function arraySequenceLoop(
   fieldName: string,
-  itemIndex: number,
+  ops: readonly BenchArrayOp[],
   options: HarnessLoopOptions,
 ): Promise<HarnessArrayOpResult> {
   const fieldRoot = findArrayFieldRoot(fieldName);
 
-  const runOnce = async (): Promise<number> => {
-    const buttons = [...fieldRoot.querySelectorAll<HTMLButtonElement>('button')];
-    const button =
-      operation === 'add'
-        ? buttons.find((candidate) => candidate.textContent?.startsWith('Add'))
-        : buttons.filter((candidate) => candidate.getAttribute('aria-label')?.startsWith('Remove'))[itemIndex];
+  const samples = await sequenceLoop(ops.length, options, async (step) => {
+    const op = ops[step];
 
-    if (!button) {
-      throw new Error(
-        operation === 'add'
-          ? `The array field "${fieldName}" renders no add-item button.`
-          : `The array field "${fieldName}" renders no remove button for item index ${itemIndex}.`,
-      );
+    if (!op) {
+      throw new Error(`No array operation for step ${step}.`);
     }
 
+    const button = findArrayOpButton(fieldRoot, op);
     const start = performance.now();
 
     button.click();
     await nextFrame();
 
     return performance.now() - start;
-  };
-
-  for (let run = 0; run < options.warmupRuns; run += 1) {
-    await runOnce();
-  }
-
-  const samples: number[] = [];
-
-  for (let run = 0; run < options.measuredRuns; run += 1) {
-    samples.push(await runOnce());
-  }
+  });
 
   return { samples, itemCount: fieldRoot.querySelectorAll('[data-formedible-array-item]').length };
 }
 
-async function persistenceSaveLoop(options: HarnessLoopOptions): Promise<HarnessPersistenceResult> {
-  const saveToStorage = requireCapturedHook().saveToStorage;
+/**
+ * Heap reader over the Chromium APIs the page can access. The isolated
+ * `measureUserAgentSpecificMemory` path needs cross-origin isolation (COOP/COEP,
+ * which `vite preview` does not set), so in practice the legacy
+ * `performance.memory` counter serves; whichever API answers is reported to the
+ * runner as an artifact note. No forced GC is assumed anywhere.
+ */
+function resolveHeapReader(): { readonly apiName: string; read(): Promise<number> } {
+  const extendedPerformance = performance as Performance & {
+    memory?: { readonly usedJSHeapSize?: number };
+    measureUserAgentSpecificMemory?: () => Promise<{ readonly bytes: number }>;
+  };
 
-  for (let run = 0; run < options.warmupRuns; run += 1) {
-    saveToStorage();
+  if (crossOriginIsolated) {
+    const measure = extendedPerformance.measureUserAgentSpecificMemory;
+
+    if (typeof measure === 'function') {
+      const boundMeasure = measure.bind(extendedPerformance);
+
+      return {
+        apiName: 'performance.measureUserAgentSpecificMemory',
+        read: async () => (await boundMeasure()).bytes / 1_048_576,
+      };
+    }
   }
 
-  const samples: number[] = [];
+  const memory = extendedPerformance.memory;
 
-  for (let run = 0; run < options.measuredRuns; run += 1) {
-    const start = performance.now();
-
-    saveToStorage();
-    samples.push(performance.now() - start);
+  if (memory !== undefined && typeof memory.usedJSHeapSize === 'number') {
+    return {
+      apiName: 'performance.memory.usedJSHeapSize',
+      read: async () => (memory.usedJSHeapSize ?? 0) / 1_048_576,
+    };
   }
 
-  return { samples, storageKey: PERSISTENCE_KEY, stored: window.localStorage.getItem(PERSISTENCE_KEY) !== null };
+  throw new Error(
+    'No Chromium heap API is available on this page (performance.memory missing and the page is not crossOriginIsolated for performance.measureUserAgentSpecificMemory).',
+  );
 }
 
-const harness: BenchHarnessGlobal = {
+/** Two frames of settle before every heap checkpoint (no forced GC assumption). */
+async function heapSettle(): Promise<void> {
+  await nextFrame();
+  await nextFrame();
+}
+
+async function heapSnapshot(): Promise<HarnessHeapSnapshot> {
+  const heap = resolveHeapReader();
+
+  await heapSettle();
+
+  return { apiName: heap.apiName, heapMb: await heap.read() };
+}
+
+async function memoryLoop(ops: readonly BenchMemoryOp[]): Promise<HarnessMemoryRunResult> {
+  const setCurrentPage = requireCapturedHook().setCurrentPage;
+
+  for (let index = 0; index < ops.length; index += 1) {
+    const op = ops[index];
+
+    if (!op) {
+      throw new Error(`No memory operation at index ${index}.`);
+    }
+
+    if (op.op === 'type') {
+      const control = requireControl(op.fieldName);
+
+      for (let charCount = 1; charCount <= op.text.length; charCount += 1) {
+        setNativeValue(control, op.text.slice(0, charCount));
+        dispatchInput(control);
+      }
+    } else if (op.op === 'switchPage') {
+      setCurrentPage(op.pageNumber);
+    } else {
+      const fieldRoot = findArrayFieldRoot(op.fieldName);
+      const button =
+        op.op === 'arrayAdd'
+          ? findArrayOpButton(fieldRoot, { op: 'add' })
+          : findArrayOpButton(fieldRoot, { op: 'remove', itemIndex: op.itemIndex });
+
+      button.click();
+    }
+
+    await nextFrame();
+  }
+
+  return { opCount: ops.length };
+}
+
+const harness: BenchHarnessGlobal & HarnessStreamLoop = {
   status: (): HarnessStatus => ({
     ready: scenarioError === undefined && startupError === undefined && startupTree !== undefined,
     scenario,
@@ -617,15 +942,15 @@ const harness: BenchHarnessGlobal = {
   mountLoop,
   keystrokeLoop,
   submitLoop,
-  switchPageLoop,
-  switchTabLoop,
-  arrayAddLoop: (fieldName: string, options: HarnessLoopOptions) => arrayOpLoop('add', fieldName, 0, options),
-  arrayRemoveLoop: (fieldName: string, itemIndex: number, options: HarnessLoopOptions) =>
-    arrayOpLoop('remove', fieldName, itemIndex, options),
-  persistenceSaveLoop,
+  switchPageSequenceLoop,
+  switchTabSequenceLoop,
+  arraySequenceLoop,
+  memoryLoop,
+  heapSnapshot,
+  streamLoop,
 };
 
-const benchWindow = window as typeof window & { __benchHarness?: BenchHarnessGlobal };
+const benchWindow = window as typeof window & { __benchHarness?: BenchHarnessGlobal & HarnessStreamLoop };
 
 benchWindow.__benchHarness = harness;
 

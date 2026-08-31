@@ -69,8 +69,19 @@ export function printReport(
 
   const notedRecords = records.filter((record) => record.notes.length > 0);
 
+  // Scenarios with several metric records each repeat the same scenario-level
+  // notes; print every distinct note once per scenario.
+  const printedNotes = new Set<string>();
+
   for (const record of notedRecords) {
     for (const note of record.notes) {
+      const key = `${record.scenario}::${note}`;
+
+      if (printedNotes.has(key)) {
+        continue;
+      }
+
+      printedNotes.add(key);
       console.log(`note [${record.scenario}]: ${note}`);
     }
   }

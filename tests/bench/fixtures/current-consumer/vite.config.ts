@@ -37,6 +37,16 @@ const config = {
   },
   preview: {
     host: '127.0.0.1',
+    // Cross-origin isolation lets the page use
+    // performance.measureUserAgentSpecificMemory() — the accurate Chromium heap
+    // API the memory-500 scenario prefers (the legacy performance.memory
+    // counter is bucketed and only refreshes at the browser's own GC points).
+    // Same-origin preview assets satisfy COEP; both fixtures set the same
+    // headers so the measured environment stays symmetric.
+    headers: {
+      'Cross-Origin-Opener-Policy': 'same-origin',
+      'Cross-Origin-Embedder-Policy': 'require-corp',
+    },
   },
 };
 
