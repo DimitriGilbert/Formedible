@@ -46,6 +46,8 @@
     "bench:full": "tsc -p tests/bench/tsconfig.json && tsx --tsconfig tests/bench/tsconfig.json tests/bench/lib/run.ts --full",
     "bench:baseline:setup": "tsx tests/bench/lib/baseline-worktree.ts --setup",
     "bench:baseline": "tsc -p tests/bench/tsconfig.json && tsc -p tests/bench/fixtures/main-consumer/tsconfig.check.json && tsx --tsconfig tests/bench/tsconfig.main.json tests/bench/lib/run-main.ts",
+    "bench:compare": "tsc -p tests/bench/tsconfig.json && tsx --tsconfig tests/bench/tsconfig.json tests/bench/lib/report.ts --mode current-vs-main",
+    "bench:regress": "tsc -p tests/bench/tsconfig.json && tsx --tsconfig tests/bench/tsconfig.json tests/bench/lib/report.ts --mode current-vs-reference",
     "dev:web": "turbo -F web dev"
   },
   "dependencies": {
