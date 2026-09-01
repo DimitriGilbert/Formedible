@@ -36,15 +36,44 @@ export interface AIBuilderProviderAccess {
   readonly secrets: ProviderSecrets;
 }
 
-function readProviderSecretPersistencePreference(): ProviderSecretPersistencePreference {
-  return readStoredProviderSecrets('session')?.preference ?? readStoredProviderSecrets('local')?.preference ?? { mode: 'memory', rememberKey: false };
-}
-
 function toAiParserConfig(config: ParserConfig): AiParserConfig {
   return {
     strictValidation: config.strictValidation,
     inferDefaultValues: config.enableSchemaInference,
     ...(config.selectFields ? { allowedFieldTypes: config.systemPromptFields } : {}),
+  };
+}
+
+/**
+ * Everything the lazy state initializers need from storage, read ONCE per
+ * mount: one `readPersistedAIBuilderState` pass (provider settings +
+ * conversations + ui state) and one secrets read per area, instead of the
+ * previous three full state reads plus a doubled secrets read.
+ */
+interface InitialAIBuilderSnapshot {
+  readonly providerAccess: AIBuilderProviderAccess;
+  readonly secretPersistence: ProviderSecretPersistencePreference;
+  readonly conversations: readonly AiConversation[];
+  readonly currentConversationId: string | undefined;
+}
+
+function readInitialAIBuilderSnapshot(controlledProviderSettings?: ProviderSettings, controlledProviderSecrets?: ProviderSecrets): InitialAIBuilderSnapshot {
+  const persistedState = readPersistedAIBuilderState(createDefaultProviderSettings(), controlledProviderSettings);
+  const settings = persistedState.providerSettings;
+  const sessionSecrets = readStoredProviderSecrets('session');
+  const localSecrets = sessionSecrets?.secrets === undefined ? readStoredProviderSecrets('local') : undefined;
+  const storedSecrets = sessionSecrets?.secrets ?? localSecrets?.secrets;
+  const secrets = controlledProviderSecrets && controlledProviderSecrets.provider === settings.provider
+    ? controlledProviderSecrets
+    : storedSecrets && storedSecrets.provider === settings.provider
+      ? storedSecrets
+      : createDefaultProviderSecrets(settings.provider);
+
+  return {
+    providerAccess: { settings, secrets },
+    secretPersistence: sessionSecrets?.preference ?? localSecrets?.preference ?? { mode: 'memory', rememberKey: false },
+    conversations: persistedState.conversations,
+    currentConversationId: persistedState.currentConversationId,
   };
 }
 
@@ -133,16 +162,7 @@ export function resolveInitialProviderAccess(
   controlledProviderSettings?: ProviderSettings,
   controlledProviderSecrets?: ProviderSecrets,
 ): AIBuilderProviderAccess {
-  const persistedState = readPersistedAIBuilderState(createDefaultProviderSettings(), controlledProviderSettings);
-  const settings = persistedState.providerSettings;
-  const storedSecrets = readStoredProviderSecrets('session')?.secrets ?? readStoredProviderSecrets('local')?.secrets;
-  const secrets = controlledProviderSecrets && controlledProviderSecrets.provider === settings.provider
-    ? controlledProviderSecrets
-    : storedSecrets && storedSecrets.provider === settings.provider
-      ? storedSecrets
-    : createDefaultProviderSecrets(settings.provider);
-
-  return { settings, secrets };
+  return readInitialAIBuilderSnapshot(controlledProviderSettings, controlledProviderSecrets).providerAccess;
 }
 
 export function AIBuilder({
@@ -155,13 +175,14 @@ export function AIBuilder({
   onFormGenerated,
   onFormSubmit,
 }: AIBuilderProps) {
-  const [internalProviderAccess, setInternalProviderAccess] = useState<AIBuilderProviderAccess>(() => resolveInitialProviderAccess(controlledProviderSettings, controlledProviderSecrets));
-  const [providerSecretPersistence, setProviderSecretPersistence] = useState<ProviderSecretPersistencePreference>(() => readProviderSecretPersistencePreference());
+  const [initialSnapshot] = useState(() => readInitialAIBuilderSnapshot(controlledProviderSettings, controlledProviderSecrets));
+  const [internalProviderAccess, setInternalProviderAccess] = useState<AIBuilderProviderAccess>(() => initialSnapshot.providerAccess);
+  const [providerSecretPersistence, setProviderSecretPersistence] = useState<ProviderSecretPersistencePreference>(() => initialSnapshot.secretPersistence);
   const [parserConfig, setParserConfig] = useState<ParserConfig>(() => mergeParserConfig(defaultParserConfig));
   const [modelCatalogs, setModelCatalogs] = useState<ProviderModelCatalogs>(() => readProviderModelCatalogs());
   const [refreshingProvider, setRefreshingProvider] = useState<AIProvider | undefined>(undefined);
-  const [conversations, setConversations] = useState<readonly AiConversation[]>(() => readPersistedAIBuilderState(createDefaultProviderSettings()).conversations);
-  const [currentConversationId, setCurrentConversationId] = useState<string | undefined>(() => readPersistedAIBuilderState(createDefaultProviderSettings()).currentConversationId);
+  const [conversations, setConversations] = useState<readonly AiConversation[]>(() => initialSnapshot.conversations);
+  const [currentConversationId, setCurrentConversationId] = useState<string | undefined>(() => initialSnapshot.currentConversationId);
   const [draftConversationId, setDraftConversationId] = useState<string>(() => createConversationId());
   const [activeSidebarView, setActiveSidebarView] = useState<SidebarView | null>('history');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);

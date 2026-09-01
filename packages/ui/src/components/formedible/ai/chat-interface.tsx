@@ -144,7 +144,10 @@ export function ChatInterface({
     let displayedMessages: readonly AiMessage[] = [...nextMessages, assistantMessage];
     let streamedContent = '';
     let streamedThinking = '';
-    let streamedEvents: AiStreamEvent[] = [];
+    // Mutated in place per flush: nothing reads it mid-stream (the streaming
+    // message updates above never carry events), and after the loop ends no
+    // events are enqueued anymore, so the completion snapshots below are final.
+    const streamedEvents: AiStreamEvent[] = [];
     let finishReason: AiFinishReason | undefined;
 
     function updateAssistantMessage(message: AiMessage): void {
@@ -161,7 +164,11 @@ export function ChatInterface({
     const streamScheduler = createAiStreamScheduler((flush) => {
       streamedContent += flush.textDelta;
       streamedThinking += flush.thinkingDelta;
-      streamedEvents = [...streamedEvents, ...flush.events];
+
+      for (const streamEvent of flush.events) {
+        streamedEvents.push(streamEvent);
+      }
+
       updateAssistantMessage({
         ...assistantMessage,
         content: streamedContent,

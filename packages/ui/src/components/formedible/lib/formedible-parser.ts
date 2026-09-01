@@ -417,7 +417,11 @@ function assertNestingDepth(depth: number, maxNestingDepth: number): void {
 
 function parserErrorToEnhanced(error: unknown, code?: string): EnhancedParserError {
   const message = error instanceof Error ? error.message : String(error);
-  const type: EnhancedParserError['type'] = message.includes('field type') || message.includes('not allowed') ? 'field_type' : message.includes('schema') ? 'schema' : 'validation';
+  // Same arms validateWithSuggestions uses for field-type errors: the
+  // UNSUPPORTED_FIELD_TYPE message reads "has invalid type" and the
+  // DISALLOWED_FIELD_TYPE message reads "is not allowed" (the old lowercase
+  // 'field type' disjunct matched no createParserError literal).
+  const type: EnhancedParserError['type'] = message.includes('invalid type') || message.includes('not allowed') ? 'field_type' : message.includes('schema') ? 'schema' : 'validation';
 
   return {
     type,

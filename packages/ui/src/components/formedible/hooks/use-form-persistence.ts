@@ -224,12 +224,21 @@ export function useFormPersistence<TFormValues extends FormedibleFormValues>(
       return;
     }
 
-    const liveSignature = buildPersistedValuesSignature(form.state.values, currentConfig.exclude);
-
+    // Per-change hot path: reuse the signature this render already computed
+    // (`persistedValuesSignature` from `liveValues`) instead of re-walking and
+    // re-stringifying the values tree. The one exception is the first
+    // acknowledge: `restoreOnMount` runs its restore effect BEFORE this effect
+    // in the same flush and mutates the store synchronously, so only the live
+    // store reflects the restored values here — adopting the render-closure
+    // (pre-restore) signature would immediately schedule a phantom save that
+    // clobbers the restored draft. The debounced timeout below still re-derives
+    // the signature from the live store right before saving.
     if (acknowledgedSignatureRef.current === undefined) {
-      acknowledgedSignatureRef.current = liveSignature;
+      acknowledgedSignatureRef.current = buildPersistedValuesSignature(form.state.values, currentConfig.exclude);
       return;
     }
+
+    const liveSignature = persistedValuesSignature;
 
     if (liveSignature === acknowledgedSignatureRef.current) {
       return;

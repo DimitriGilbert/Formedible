@@ -95,6 +95,43 @@ function tabVisibilityEntries<TFormValues extends FormedibleFormValues>(
 }
 
 /**
+ * Single-slot per-values memo for the visible-tab resolution. The invalid-field
+ * and schema-issue passes call `isFieldLocationVisible` once per field with the
+ * same `fields`/`visibility`/`values` triple, so the entry-list build plus the
+ * per-tab `isTabVisible` scan (O(T×F)) runs once per pass instead of once per
+ * field. Keyed on the `values` object identity (a fresh object per store
+ * update) and validated against the `fields`/`visibility` identities, so any
+ * input churn simply recomputes — a pure-function memo with identical results.
+ */
+interface VisibleTabIdsCacheEntry {
+  readonly fields: readonly unknown[];
+  readonly visibility: object | undefined;
+  readonly visibleTabIds: readonly string[];
+}
+
+const visibleTabIdsCache = new WeakMap<object, VisibleTabIdsCacheEntry>();
+
+function visibleTabIdsFor<TFormValues extends FormedibleFormValues>(
+  visibility: FormediblePageTabVisibility<TFormValues>,
+  fields: readonly FormedibleFieldConfig<TFormValues>[],
+  values: TFormValues,
+): readonly string[] {
+  const cached = visibleTabIdsCache.get(values);
+
+  if (cached && cached.fields === fields && cached.visibility === visibility) {
+    return cached.visibleTabIds;
+  }
+
+  const visibleTabIds = tabVisibilityEntries(visibility.tabs, fields)
+    .filter((tab) => isTabVisible(tab, fields, values))
+    .map((tab) => tab.id);
+
+  visibleTabIdsCache.set(values, { fields, visibility, visibleTabIds });
+
+  return visibleTabIds;
+}
+
+/**
  * Resolves whether a field's location (the page/tab its config assigns it to)
  * is currently reachable, mirroring `useFormedible`'s `renderFields`
  * precedence: while any tab is visible, tab membership decides rendering and
@@ -113,14 +150,10 @@ export function isFieldLocationVisible<TFormValues extends FormedibleFormValues>
     return true;
   }
 
-  const tabEntries = tabVisibilityEntries(visibility.tabs, fields);
+  const visibleTabIds = visibleTabIdsFor(visibility, fields, values);
 
-  if (tabEntries.length > 0) {
-    const visibleTabIds = tabEntries.filter((tab) => isTabVisible(tab, fields, values)).map((tab) => tab.id);
-
-    if (visibleTabIds.length > 0) {
-      return field.tab !== undefined && visibleTabIds.includes(field.tab);
-    }
+  if (visibleTabIds.length > 0) {
+    return field.tab !== undefined && visibleTabIds.includes(field.tab);
   }
 
   if (fields.some((fieldConfig) => fieldConfig.page !== undefined) || (visibility.pages?.length ?? 0) > 0) {

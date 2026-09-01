@@ -811,3 +811,51 @@ Purpose: record every problem encountered during execution (lib bugs/friction, w
 - Follow-up: the [BA-val] medium row can be re-validated as fixed; no other Batch A row touched.
 
 ## [BA-val2] none — no problems encountered
+
+## [BB] medium — R1-7 as-specified broke the restoreOnMount no-clobber guarantee; the mount-time acknowledge must keep reading the live store
+- Problem: The batch instruction said to make the autosave effect body (use-form-persistence.ts:227) read the render-computed `persistedValuesSignature` (:129) instead of recomputing. Implemented verbatim, `tests/formedible/reactivity.test.tsx` "mount autosave does not clobber pre-seeded restored storage" FAILED: the first effect run adopted the pre-restore render signature as the acknowledged baseline, then the restore-driven re-render saw a differing signature and scheduled a phantom debounced save that overwrote the restored draft's timestamp. Root cause: the `restoreOnMount` effect is declared BEFORE the autosave effect and runs in the same passive-effect flush, and TanStack's store updates synchronously — so at mount-acknowledge time only `form.state.values` reflects the restored values; the render closure cannot.
+- Context: reactivity test failure (timestamp 1788264771806 vs expected 12345); re-derived the effect ordering and store-update synchrony from use-form-persistence.ts and @tanstack/react-form store semantics.
+- Solution: Keep the render-closure read for the per-change hot path (the actual per-keystroke win), but the FIRST acknowledge (`acknowledgedSignatureRef.current === undefined`) still recomputes `buildPersistedValuesSignature(form.state.values, ...)` exactly as before. Timeout-internal recompute kept untouched as the staleness guard. All 17 reactivity tests pass; every other suite unchanged.
+- Follow-up: none (behavior parity restored; hot-path win retained — the effect-time recompute now happens once per mount instead of once per values change).
+
+## [BB] low — bench:smoke first-run-of-day baseline contamination on parser-medium (and mount-50 run-to-run spread)
+- Problem: The "before" smoke run (Batch A tree) reported parser-medium 0.233 ms/parse (4291 parses/sec); two "after" runs reported 0.0412/0.0424 ms. A clean A/B (git stash of the batch, `--only parser-medium`) shows Batch A at 0.0402 ms and the batch tree at 0.0412 ms — i.e. parser-medium is UNCHANGED by this batch (its parser edit is error-path only), and the 0.233 baseline reading was environment noise (first node/browser run of the session), not a 5.6x win or loss. mount-50 medians also swing 8.4-13.2 ms across identical-tree runs (single-run min 6.7 / max 15.6 at baseline).
+- Context: `git stash push` + `tsx tests/bench/lib/run.ts --smoke --only parser-medium` + `git stash pop` (tree restored, 30 modified files before/after); three full after-runs 12:19-12:21.
+- Solution: Recorded honest numbers; smoke treated as sanity signal only (formal gate is Phase BV per plan). Trustworthy deltas: typing-50 1.9233 -> 1.6563-1.7544 ms/keystroke (better), submit-50 34.075 -> 8.93-11.985 ms (better, R1-3/R1-9 invalid-pass churn removed); mount-50 and parser-medium within noise/unchanged.
+- Follow-up: none.
+
+## [BB] low — R1-9 implemented as a per-values WeakMap memo inside isFieldLocationVisible instead of parameter-threading
+- Problem: The instruction offered "compute once before the field loop at :443/:465, pass it in or restructure the API". Threading a precomputed context through `collectUnmountedFieldErrors`/`getInvalidFieldEntries` would duplicate the pass-level computation (the two passes run independently) and leave the OTHER hot caller — `isFieldPathVisible` in validation.ts, hit per schema issue per validation pass — still O(F×T×F).
+- Context: field-visibility.ts:116-124 rebuilt `tabVisibilityEntries` + filtered per tab on every call; all callers pass a stable (fields, visibility, values) triple within one pass.
+- Solution: `visibleTabIdsFor` — a single-slot WeakMap keyed on the `values` object identity, validated against the `fields`/`visibility` identities (both churn per render, so the memo is effectively per-pass). Pure-function memo: identical results for pure conditionals (standard memo assumption, same one React.makeMap/React.memo make). `isFieldLocationVisible` keeps its exported signature; all three caller families benefit with zero API churn.
+- Follow-up: none.
+
+## [BB] low — R1-3 scoping decision: both halves landed (closure dedup + direct submit-validator path)
+- Problem: The instruction allowed deferring the second half if extraction would change WHEN validators run.
+- Context: The submit body is a pure chain (`validateBuiltInConstraints ?? runFieldValidation ?? schemaFieldMessage ?? crossFieldMessage`) reading only (field, schema, crossFieldValidation, formApi, value, rootFields, visibility) — extracted verbatim into exported `runFieldSyncValidation` (validation.ts), used by `buildFieldValidators`' shared sync closure AND by `getFieldErrorFromConfiguredValidation` (which previously materialized the full validators object incl. async slots + onChangeListenTo Set + schema-async probes per field per invalid pass).
+- Solution: Landed both. Parity analysis: consumer validators run at identical moments/args/order; exceptions propagate identically (build phase was exception-free); the only skipped work is redundant `isFormedibleSchemaAsync` cache probing and closure/Set allocation whose verdicts are re-derived at render time wherever they register async slots, so no observable delta exists. `RuntimeFieldValidator` local type + cast deleted from use-formedible.tsx.
+- Follow-up: none.
+
+## [BB] low — R3-10 sibling waste left in scope: ai-messages.ts:97/:125 still run createStreamEventSummary(parseSafeStreamEvents(...))
+- Problem: The identical full-redacted-copy-for-counts pattern this batch removed from ai-storage.ts:599 also exists at ai-messages.ts:97 (toPersistedAiMessage) and :125 (normalizePersistedAiMessage). Not in this batch's item list, and R3-5 (Batch C) marks both entry points dead/directly-dead exports — converting their internals now would be motion on code slated for a keep-vs-cut decision.
+- Context: grep `createStreamEventSummary(parseSafeStreamEvents` — ai-messages.ts:97/:125 remain.
+- Solution: Left untouched; the shared `summarizeRawStreamEvents` helper (ai-safe-persistence.ts) is available if Batch C keeps either function.
+- Follow-up: Batch C (R3-5) should apply the same one-line swap for any survivor.
+
+## [BB] low — R2-3 pre-existing quirk noted: validateWithSuggestions classifies DISALLOWED_FIELD_TYPE as 'syntax'
+- Problem: Aligning parserErrorToEnhanced with validateWithSuggestions (:1552) exposed that :1552 itself only matches 'invalid type' (not 'not allowed'), so `validateWithSuggestions` on a DISALLOWED_FIELD_TYPE error reports type 'syntax' with the syntax suggestion, while parseAiOutput (post-fix) correctly reports 'field_type' for the same error.
+- Context: formedible-parser.ts:1548 vs :420-427; DISALLOWED message is "Field type 'x' is not allowed."
+- Solution: Out of scope (changing validateWithSuggestions' classification is a second behavior change); the new pinning test covers parseAiOutput's classification of both field-type errors. Recorded for the owner.
+- Follow-up: optional one-arm alignment in a future batch.
+
+## [BB-val] low — claim-arithmetic nit: the batch summary says "12 ui copies" but the change set has 13
+- Problem: The implementer's enumeration "31 files (14 owner sources, 12 ui copies, 3 payloads, findings)" undercounts the ui copies by one: git shows 13 files under packages/ui/src/components/formedible/ (ai/ai-builder.tsx, ai/chat-interface.tsx, fields/array-field.tsx, fields/object-field.tsx, fields/phone-field.tsx, hooks/use-form-persistence.ts, hooks/use-formedible.tsx, lib/ai-safe-persistence.ts, lib/ai-storage.ts, lib/field-visibility.ts, lib/formedible-parser.ts, lib/normalize-field-config.ts, lib/validation.ts), so 14 + 13 + 3 + 1 = 31. Every file is inside the allowed scope (owner sources + ui synced copies + regenerated payloads + findings log); all 13 copies verified import-rewrite-only against their owners (zero non-import diff lines).
+- Context: `git diff --name-only 37b0ee6` recount; per-file `git diff --no-index` owner-vs-copy with import lines filtered.
+- Solution: none needed; recorded so future batch summaries count from `git status`, not memory (same class as the [BA-val] low nit).
+- Follow-up: none.
+
+## [BB-val] low — R1-3 theoretical-only residue: invalid passes no longer probe unmounted fields' validation schemas
+- Problem: The old `getFieldErrorFromConfiguredValidation` materialized the full validators object per unmounted field per invalid pass, which called `isFormedibleSchemaAsync` on the field's own validation schema (and the form schema) — invoking the schema's `~standard.validate` up to 7 times (neutral probe ladder, no sample values) before the verdict cached. The new direct `runFieldSyncValidation` path skips those probes for fields that never mount, so a standard-schema implementation with side effects inside `validate` (logging/counters — zod and friends are pure) would observe fewer invocations on garbage inputs ('' / 0 / false / null / {} / [] / epoch Date). No verdict is consumed by the discarded object (it only fed `onChangeAsync` registration), the probe is deterministic (same inputs → same cached verdict whenever the field later mounts and `buildFieldValidators` probes it), and for the form schema the render-time builds already populated the cache before any invalid pass ran — so no observable delta exists for pure schemas.
+- Context: validation.ts:191-233 (probe), :585-586 (probe call sites in buildFieldValidators), use-formedible.tsx:405-415 (new direct call); re-derived during BB validation.
+- Solution: none required; recorded for completeness under maximum-stringency review.
+- Follow-up: none.

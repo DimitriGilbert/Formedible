@@ -3,7 +3,7 @@ import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react';
 import { FieldWrapper } from '@formedible/ui/components/formedible/fields/field-wrapper';
 import { Button } from '@formedible/ui/components/button';
 import { arrayItemFieldPath, joinFieldPath, objectScopeValues } from '@formedible/ui/components/formedible/lib/field-path';
-import { normalizeFieldConfig } from '@formedible/ui/components/formedible/lib/normalize-field-config';
+import { normalizeFieldConfig, normalizeNestedFieldConfig } from '@formedible/ui/components/formedible/lib/normalize-field-config';
 import { cn } from '@formedible/ui/lib/utils';
 import type { FormedibleFieldConfig, FormedibleFieldRenderProps, FormedibleFormValues } from '@formedible/ui/components/formedible/lib/types';
 
@@ -64,6 +64,15 @@ export function ArrayField<TFormValues extends FormedibleFormValues>({ fieldConf
   const addButtonLabel = typeof fieldConfig.arrayConfig?.addButtonLabel === 'string' ? fieldConfig.arrayConfig.addButtonLabel : `Add ${itemLabel}`;
   const removeButtonLabel = typeof fieldConfig.arrayConfig?.removeButtonLabel === 'string' ? fieldConfig.arrayConfig.removeButtonLabel : 'Remove';
   const canAdd = maxItems === undefined || items.length < maxItems;
+  // Loop invariants hoisted out of the item map: the item-shape config is fixed
+  // per field, so both the normalized nested configs (memoized per config
+  // identity) and the primitive item template are computed once per render,
+  // not once per item per render.
+  const isObjectItem = fieldConfig.arrayConfig?.itemType === 'object';
+  const normalizedObjectFields = (fieldConfig.arrayConfig?.objectConfig?.fields ?? []).map((nestedField) => normalizeNestedFieldConfig<TFormValues>(nestedField));
+  const objectLayout = fieldConfig.arrayConfig?.objectConfig?.layout ?? 'stack';
+  const objectColumns = fieldConfig.arrayConfig?.objectConfig?.columns ?? 1;
+  const primitiveItemConfig = normalizeFieldConfig<TFormValues>(primitiveItemField(fieldConfig));
 
   if (!renderField) {
     return <FieldWrapper fieldConfig={fieldConfig} field={field}>{undefined}</FieldWrapper>;
@@ -100,10 +109,6 @@ export function ArrayField<TFormValues extends FormedibleFormValues>({ fieldConf
       <div data-formedible-array-field={field.name} className="space-y-3">
         {items.map((item, index) => {
           const itemPath = arrayItemFieldPath(field.name, index);
-          const isObjectItem = fieldConfig.arrayConfig?.itemType === 'object';
-          const objectFields = fieldConfig.arrayConfig?.objectConfig?.fields ?? [];
-          const objectLayout = fieldConfig.arrayConfig?.objectConfig?.layout ?? 'stack';
-          const objectColumns = fieldConfig.arrayConfig?.objectConfig?.columns ?? 1;
 
           return (
             <div key={itemPath} data-formedible-array-item={itemPath} className="space-y-3 rounded-md border border-border p-3">
@@ -130,8 +135,7 @@ export function ArrayField<TFormValues extends FormedibleFormValues>({ fieldConf
                   className={cn('space-y-4', objectLayout === 'grid' && objectColumns > 1 ? 'grid gap-4 space-y-0' : undefined)}
                   style={objectLayout === 'grid' && objectColumns > 1 ? { gridTemplateColumns: `repeat(${objectColumns}, minmax(0, 1fr))` } : undefined}
                 >
-                  {objectFields.map((nestedField) => {
-                    const nestedConfig = normalizeFieldConfig<TFormValues>(nestedField);
+                  {normalizedObjectFields.map((nestedConfig) => {
                     const nestedName = joinFieldPath(itemPath, nestedConfig.name);
 
                     return renderField(nestedConfig, {
@@ -142,7 +146,7 @@ export function ArrayField<TFormValues extends FormedibleFormValues>({ fieldConf
                   })}
                 </div>
               ) : (
-                renderField(normalizeFieldConfig<TFormValues>(primitiveItemField(fieldConfig)), {
+                renderField(primitiveItemConfig, {
                   key: itemPath,
                   name: itemPath,
                   localValues: { value: item },

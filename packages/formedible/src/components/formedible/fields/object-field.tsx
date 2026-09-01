@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { FieldWrapper } from '@/components/formedible/fields/field-wrapper';
 import { Button } from '@/components/ui/button';
 import { joinFieldPath, objectScopeValues } from '@/lib/formedible/field-path';
-import { normalizeFieldConfig } from '@/lib/formedible/normalize-field-config';
+import { normalizeNestedFieldConfig } from '@/lib/formedible/normalize-field-config';
 import { cn } from '@/lib/utils';
 import type { FormedibleFieldRenderProps, FormedibleFormValues } from '@/lib/formedible/types';
 
@@ -28,7 +28,7 @@ export function ObjectField<TFormValues extends FormedibleFormValues>({ fieldCon
       style={layout === 'grid' && columns > 1 ? { gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` } : undefined}
     >
       {fields.map((nestedField) => {
-        const nestedConfig = normalizeFieldConfig<TFormValues>(nestedField);
+        const nestedConfig = normalizeNestedFieldConfig<TFormValues>(nestedField);
         const nestedName = joinFieldPath(field.name, nestedConfig.name);
 
         return renderField(nestedConfig, {

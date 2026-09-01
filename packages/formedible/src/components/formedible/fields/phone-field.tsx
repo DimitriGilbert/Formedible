@@ -36,7 +36,7 @@ export function PhoneField<TFormValues extends FormedibleFormValues>({ fieldConf
   const value = typeof field.value === 'string' ? field.value : '';
   const country = countries[selectedCountry];
   const phoneNumber = stripCountryCode(value, country.code);
-  const availableCountries = countryCodes.filter((code) => config?.allowedCountries === undefined || config.allowedCountries.includes(code));
+  const availableCountries = resolveAvailableCountries(config?.allowedCountries);
 
   useEffect(() => {
     const nextFallback = getAllowedDefaultCountry(defaultCountry, config?.allowedCountries);
@@ -145,10 +145,36 @@ export function PhoneField<TFormValues extends FormedibleFormValues>({ fieldConf
   );
 }
 
-const countryCodes = Object.keys(countries).filter(isCountryCode);
+const countryCodes = Object.freeze(Object.keys(countries).filter(isCountryCode));
 
 function isCountryCode(value: unknown): value is CountryCode {
   return typeof value === 'string' && value in countries;
+}
+
+const allowedCountriesCache = new WeakMap<readonly string[], readonly CountryCode[]>();
+
+/**
+ * Static catalog constant for the unrestricted case and a per-`allowedCountries`
+ * identity memo for restricted lists: the derived list is consumed by the
+ * sync-effect dependency array below, so a stable identity stops the effect
+ * from re-running on every render. Contents are identical to the previous
+ * per-render filter.
+ */
+function resolveAvailableCountries(allowedCountries: readonly string[] | undefined): readonly CountryCode[] {
+  if (allowedCountries === undefined) {
+    return countryCodes;
+  }
+
+  const cached = allowedCountriesCache.get(allowedCountries);
+
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const available = Object.freeze(countryCodes.filter((code) => allowedCountries.includes(code)));
+  allowedCountriesCache.set(allowedCountries, available);
+
+  return available;
 }
 
 function formatPhone(value: string, format: string): string {
@@ -175,10 +201,24 @@ function getAllowedDefaultCountry(fallback: CountryCode, allowedCountries: reado
   return allowedCountries === undefined || allowedCountries.includes(fallback) ? fallback : countryCodes.find((code) => allowedCountries.includes(code)) ?? fallback;
 }
 
-function countryCodeFromValue(value: string, fallback: CountryCode, allowedCountries: readonly string[] | undefined): CountryCode | undefined {
-  const preferredCodes = [fallback, ...countryCodes.filter((code) => code !== fallback)].filter((code) => allowedCountries === undefined || allowedCountries.includes(code));
+function isAllowedCountryCode(code: CountryCode, allowedCountries: readonly string[] | undefined): boolean {
+  return allowedCountries === undefined || allowedCountries.includes(code);
+}
 
-  for (const code of preferredCodes) {
+// Preference order without the per-call array build: the fallback country is
+// probed first, then the static catalog order skips it — the same sequence the
+// previous `[fallback, ...countryCodes.filter(c => c !== fallback)]` produced,
+// still restricted to allowed countries.
+function countryCodeFromValue(value: string, fallback: CountryCode, allowedCountries: readonly string[] | undefined): CountryCode | undefined {
+  if (isAllowedCountryCode(fallback, allowedCountries) && value.startsWith(countries[fallback].code)) {
+    return fallback;
+  }
+
+  for (const code of countryCodes) {
+    if (code === fallback || !isAllowedCountryCode(code, allowedCountries)) {
+      continue;
+    }
+
     if (value.startsWith(countries[code].code)) {
       return code;
     }

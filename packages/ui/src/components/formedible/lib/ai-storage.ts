@@ -17,7 +17,6 @@ import type {
   ProviderSettings,
 } from '@formedible/ui/components/formedible/lib/ai-types';
 import {
-  createStreamEventSummary,
   isAIProvider,
   isRecord,
   parseNumber,
@@ -28,11 +27,11 @@ import {
   parseSafeJsonRecordAllowEmpty,
   parseSafeJsonValue,
   parseSafeMessageParts,
-  parseSafeStreamEvents,
   parseStrictJsonValue,
   parseStreamEventSummary,
   redactSecretString,
   redactUnknown,
+  summarizeRawStreamEvents,
 } from '@formedible/ui/components/formedible/lib/ai-safe-persistence';
 import type { ParsedFieldConfig, ParsedFormConfig } from '@formedible/ui/components/formedible/lib/parser-types';
 import type { FormedibleFieldOption, FormedibleFieldType } from '@formedible/ui/components/formedible/lib/types';
@@ -596,7 +595,7 @@ function parseMessage(value: unknown, mode: ConversationSanitizeMode): AiMessage
   }
 
   const parts = parseSafeMessageParts(value.parts);
-  const eventSummary = parseStreamEventSummary(value.eventSummary) ?? createStreamEventSummary(parseSafeStreamEvents(value.events));
+  const eventSummary = parseStreamEventSummary(value.eventSummary) ?? summarizeRawStreamEvents(value.events);
   const parseErrors = parseParseErrors(value.parseErrors);
   const formConfig = parseParsedFormConfig(value.formConfig, mode);
   const generation = parseSafeGenerationMetadata(value.generation);

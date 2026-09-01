@@ -25,8 +25,8 @@ import { normalizeFieldConfig, normalizeFieldType } from '@formedible/ui/compone
 import { normalizeOptions } from '@formedible/ui/components/formedible/lib/normalize-options';
 import type { FormedibleFieldComponent, FormedibleFieldSection, FormedibleFormApiContext, FormedibleFormValues, FormedibleValidationSummaryConfig, UseFormedibleOptions } from '@formedible/ui/components/formedible/lib/types';
 import type { NormalizedFieldConfig } from '@formedible/ui/components/formedible/lib/types';
-import { buildFieldValidators, buildFormValidators, isFormedibleSchemaAsync, mergeFormedibleFieldErrors } from '@formedible/ui/components/formedible/lib/validation';
-import type { FormedibleFormValidators, FormedibleValidatorContext } from '@formedible/ui/components/formedible/lib/validation';
+import { buildFieldValidators, buildFormValidators, isFormedibleSchemaAsync, mergeFormedibleFieldErrors, runFieldSyncValidation } from '@formedible/ui/components/formedible/lib/validation';
+import type { FormedibleFormValidators } from '@formedible/ui/components/formedible/lib/validation';
 import { formatValidationError } from '@formedible/ui/components/formedible/lib/zod-errors';
 import { cn } from '@formedible/ui/lib/utils';
 
@@ -45,10 +45,6 @@ interface FormedibleValidationFormState<TFormValues extends FormedibleFormValues
   readonly values: TFormValues;
   readonly fieldMeta?: Record<string, FormedibleFieldMetaErrorState | undefined>;
 }
-
-type RuntimeFieldValidator<TFormValues extends FormedibleFormValues> = {
-  readonly onSubmit?: (context: FormedibleValidatorContext<TFormValues>) => string | undefined;
-};
 
 const formedibleValidationLogic: ValidationLogicFn = (props) => {
   if (props.event.type !== 'change') {
@@ -407,19 +403,15 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
   }
 
   function getFieldErrorFromConfiguredValidation(fieldConfig: NormalizedFieldConfig<TFormValues>, values: TFormValues) {
-    const validators = buildFieldValidators<TFormValues, DeepKeys<TFormValues>>(
+    return runFieldSyncValidation<TFormValues>(
       fieldConfig,
       config.schema,
       config.crossFieldValidation,
-      config.asyncValidation,
+      form,
+      getValueAtFieldPath(values, fieldConfig.name),
       fields,
       pageTabVisibility,
-    ) as unknown as RuntimeFieldValidator<TFormValues>;
-
-    return validators.onSubmit?.({
-      value: getValueAtFieldPath(values, fieldConfig.name),
-      fieldApi: { form },
-    });
+    );
   }
 
   /**
@@ -691,8 +683,15 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
 
                   field.handleChange(nextValue as FieldValueUpdate);
                   analytics.trackFieldChange(fieldName, nextValue);
-                  const nextValues = getValuesWithFieldUpdate(fieldName, nextValue);
-                  config.formOptions?.onChange?.({ value: nextValues, formApi: getFormApiContext(nextValues) });
+                  const onFormChange = config.formOptions?.onChange;
+
+                  // The path-copy values rebuild exists solely to feed the
+                  // consumer callback; skip it when no onChange is configured.
+                  if (onFormChange) {
+                    const nextValues = getValuesWithFieldUpdate(fieldName, nextValue);
+                    onFormChange({ value: nextValues, formApi: getFormApiContext(nextValues) });
+                  }
+
                   scheduleAutoSubmit();
                 },
               }}

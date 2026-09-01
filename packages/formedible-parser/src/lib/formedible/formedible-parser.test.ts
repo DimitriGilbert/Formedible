@@ -234,6 +234,24 @@ describe('FormedibleParser', () => {
     assert.match(result.errors[0]?.message ?? '', /name|type|field/i);
   });
 
+  it('classifies unsupported field types as field_type with the supported-types suggestion', () => {
+    const result = FormedibleParser.parseAiOutput('{ "fields": [{ "name": "magic", "type": "bogus" }] }');
+
+    assert.equal(result.success, false);
+    assert.equal(result.errors[0]?.type, 'field_type');
+    assert.match(result.errors[0]?.message ?? '', /invalid type 'bogus'/);
+    assert.equal(result.errors[0]?.suggestion, `Use one of the supported field types: ${supportedFieldTypes.join(', ')}`);
+  });
+
+  it('keeps classifying disallowed field types as field_type', () => {
+    const result = FormedibleParser.parseAiOutput('{ "fields": [{ "name": "pick", "type": "select" }] }', { allowedFieldTypes: ['text'] });
+
+    assert.equal(result.success, false);
+    assert.equal(result.errors[0]?.type, 'field_type');
+    assert.match(result.errors[0]?.message ?? '', /not allowed/);
+    assert.match(result.errors[0]?.suggestion ?? '', /supported field types/);
+  });
+
   it('normalizes common UI field type aliases before validation', () => {
     const result = FormedibleParser.parseAiOutput(`{
       fields: [

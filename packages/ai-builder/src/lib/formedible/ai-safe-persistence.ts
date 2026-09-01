@@ -83,6 +83,80 @@ export function createStreamEventSummary(events: readonly AiStreamEvent[]): AiSt
   };
 }
 
+/**
+ * The `.type` a raw entry would be parsed as by `parseSafeStreamEvent`, or
+ * `undefined` when the entry would be dropped. Only the acceptance guards run
+ * — no redacted copies are built.
+ */
+function countedStreamEventType(entry: unknown): string | undefined {
+  if (!isRecord(entry) || typeof entry.type !== 'string') {
+    return undefined;
+  }
+
+  switch (entry.type) {
+    case 'text-delta':
+    case 'thinking-delta':
+      return typeof entry.delta === 'string' ? entry.type : undefined;
+    case 'tool-call':
+    case 'tool-result':
+      return isRecord(entry.tool) ? entry.type : undefined;
+    case 'error':
+      return isRecord(entry.error) && typeof entry.error.message === 'string' ? entry.type : undefined;
+    case 'finish':
+      return isAiFinishReason(entry.finishReason) ? entry.type : undefined;
+    case 'raw':
+      return isSerializableUnknown(entry.event) ? entry.type : undefined;
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * Counting twin of `createStreamEventSummary(parseSafeStreamEvents(value))`
+ * over the RAW persisted array: acceptance mirrors `parseSafeStreamEvent`
+ * entry-for-entry, finish usage is parsed with the same
+ * `parseSafeUsageMetadata`, and no redacted per-event copies are materialized —
+ * the summary is the only survivor of the walk.
+ */
+export function summarizeRawStreamEvents(value: unknown): AiStreamEventSummary | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+
+  const countsByType: Record<string, number> = {};
+  let totalEvents = 0;
+  let usage: AiUsageMetadata | undefined;
+
+  for (const entry of value) {
+    const eventType = countedStreamEventType(entry);
+
+    if (eventType === undefined) {
+      continue;
+    }
+
+    countsByType[eventType] = (countsByType[eventType] ?? 0) + 1;
+    totalEvents += 1;
+
+    if (eventType === 'finish' && isRecord(entry)) {
+      const parsedUsage = parseSafeUsageMetadata(entry.usage);
+
+      if (parsedUsage) {
+        usage = parsedUsage;
+      }
+    }
+  }
+
+  if (totalEvents === 0) {
+    return undefined;
+  }
+
+  return {
+    totalEvents,
+    countsByType,
+    ...(usage ? { usage } : {}),
+  };
+}
+
 export function parseStreamEventSummary(value: unknown): AiStreamEventSummary | undefined {
   if (!isRecord(value)) {
     return undefined;

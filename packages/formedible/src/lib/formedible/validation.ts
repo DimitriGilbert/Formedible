@@ -504,6 +504,32 @@ function crossFieldMessage<TFormValues extends FormedibleFormValues>(
   return undefined;
 }
 
+/**
+ * The full sync validation chain for one field (built-in constraints, then
+ * configured validation, then form-schema issues, then cross-field rules).
+ * `buildFieldValidators` installs this exact body in its onChange/onBlur/
+ * onSubmit slots, and the invalid-field passes (`collectUnmountedFieldErrors`,
+ * `getInvalidFieldEntries`) run it directly for unmounted fields — same
+ * arguments, same order, same exceptions — without materializing the whole
+ * validators object (including the async slots) per field per pass.
+ */
+export function runFieldSyncValidation<TFormValues extends FormedibleFormValues>(
+  field: NormalizedFieldConfig<TFormValues>,
+  schema: unknown,
+  crossFieldValidation: readonly FormedibleCrossFieldValidation<TFormValues>[] | undefined,
+  formApi: FormedibleFormValidationApi<TFormValues>,
+  value: unknown,
+  rootFields?: readonly NormalizedFieldConfig<TFormValues>[],
+  visibility?: FormediblePageTabVisibility<TFormValues>,
+): string | undefined {
+  const fieldName = field.name;
+
+  return validateBuiltInConstraints(field, value)
+    ?? runFieldValidation(field.validation, fieldName, value, formApi.state.values)
+    ?? schemaFieldMessage(fieldName, toStandardSchema<TFormValues>(schema), formApi, rootFields, visibility)
+    ?? crossFieldMessage(fieldName, crossFieldValidation, formApi.state.values);
+}
+
 function asyncValidationForField<TFormValues extends FormedibleFormValues>(
   fieldName: string,
   asyncValidation: Partial<Record<string, FormedibleAsyncValidation<TFormValues>>> | undefined,
@@ -559,22 +585,15 @@ export function buildFieldValidators<TFormValues extends FormedibleFormValues, T
   const fieldSchemaIsAsync = fieldValidationSchema !== undefined && isFormedibleSchemaAsync(fieldValidationSchema);
   const formSchemaIsAsync = standardSchema !== undefined && isFormedibleSchemaAsync(standardSchema);
 
+  // One shared closure per build serves all three sync slots: the previous
+  // onChange/onBlur/onSubmit bodies were character-identical.
+  const runSyncValidation = ({ value, fieldApi }: FormedibleValidatorContext<TFormValues>): string | undefined =>
+    runFieldSyncValidation(field, schema, crossFieldValidation, fieldApi.form, value, rootFields, visibility);
+
   const validators: FormedibleFieldValidators<TFormValues> = {
-    onChange: ({ value, fieldApi }) =>
-      validateBuiltInConstraints(field, value) ??
-      runFieldValidation(field.validation, fieldName, value, fieldApi.form.state.values) ??
-      schemaFieldMessage(fieldName, standardSchema, fieldApi.form, rootFields, visibility) ??
-      crossFieldMessage(fieldName, crossFieldValidation, fieldApi.form.state.values),
-    onBlur: ({ value, fieldApi }) =>
-      validateBuiltInConstraints(field, value) ??
-      runFieldValidation(field.validation, fieldName, value, fieldApi.form.state.values) ??
-      schemaFieldMessage(fieldName, standardSchema, fieldApi.form, rootFields, visibility) ??
-      crossFieldMessage(fieldName, crossFieldValidation, fieldApi.form.state.values),
-    onSubmit: ({ value, fieldApi }) =>
-      validateBuiltInConstraints(field, value) ??
-      runFieldValidation(field.validation, fieldName, value, fieldApi.form.state.values) ??
-      schemaFieldMessage(fieldName, standardSchema, fieldApi.form, rootFields, visibility) ??
-      crossFieldMessage(fieldName, crossFieldValidation, fieldApi.form.state.values),
+    onChange: runSyncValidation,
+    onBlur: runSyncValidation,
+    onSubmit: runSyncValidation,
     onChangeAsync:
       fieldAsyncValidation || inlineValidation || fieldSchemaIsAsync || formSchemaIsAsync
         ? async ({ value, fieldApi, signal }) => {
