@@ -210,6 +210,7 @@ The "what an automation agent needs" content (event mix for synthetic typing, re
 - **Files**: `tests/bench/lib/run.ts`, `tests/bench/lib/run-main.ts`, `tests/bench/lib/run-common.ts` (shared spawn/merge glue), `tests/bench/lib/report.ts` (drop the coverage downgrade if isolated runs land).
 - **Acceptance test**: `--only parser-medium` medians match full-run parser-medium medians within the existing variance policy (<10%); report classification update validated by `assertClassificationKeysRegistered`.
 - **Risk**: low; keep artifacts schema identical (`artifacts.ts` single writer) so `bench:compare`/reference snapshots remain valid.
+- *2026-09-01 (parser-perf run): still open — the parser fix reduced absolute medians ~8x (A1 result) but did not address scenario-position sensitivity. Now coupled with the object-literal parser scenario in the Parser-Perf Run section below (PP2): both touch the scenario registry/artifacts/reference surface, so execute them in the same registry-change window.*
 
 ### C4. Memory scenario: multi-run heap medians — **P3, M**
 
@@ -300,3 +301,51 @@ Every findings entry not covered by A–D above, explicitly closed:
 ---
 
 *Provenance: plan produced by Phase 5 of the perf-benchmark orchestration; every claim about current source re-verified against `e1d5b46` on 2026-08-31; benchmark numbers read directly from the committed artifacts named in the executive summary.*
+
+---
+
+## Parser-Perf Run (2026-09-01, branch `parser-perf`)
+
+Phase PC deliverable (2026-09-01), appended after the Phase 5 plan above without modifying it. Disposition of every `BENCH-FINDINGS.md` entry from the parser-perf orchestration — prefixes `[PD]`/`[PD-val]`, `[PF]`/`[PF-val]`/`[PF-fix]`/`[PF-val2]`, `[PV]`/`[PV-val]`, `[PR]`/`[PR-val]`/`[PR-fix]`, 26 entries — plus the run summary and the fix-backlog pointer. Sources: `PARSER-PERF-PLAN.md` (profile-first diagnosis, commit `6a8c646`), the fix (commit `6bcae22`), `DEAD-WEIGHT-REVIEW.md` (parallel dead-weight sweep, Phase PR), and A1's result block above.
+
+### Run summary
+
+The A1 parser regression is fixed: `parser-small/medium/large` medians went **0.069/0.281/1.082 → 0.0092/0.0357/0.1337 ms** per parse (`bench:full`, N=25; 7.5-8.1x faster), landing at **+2.8%/+13.5%/+11.6% vs main (1.03-1.14x)** — inside A1's ≤2x acceptance and the plan's ≤1.3x stretch target. What shipped, all inside `packages/formedible-parser/src/lib/formedible/formedible-parser.ts` plus its test file: a pure-JSON fast path in `parse`/`parseStructured` (raw `JSON.parse` first, assert→sanitize→object-literal pipeline only on failure), a scan-once fallback (one `scanCodeRegions` walk feeding both the executable-syntax assert and the sanitize transform), deletion of 5 provably-dead `neutralizeExecutableConstructs` patterns with the other 4 restored verbatim after [PF-val] high caught an inexact subsumption proof at `\b` boundaries, and stage-D allocation hoists plus profile-guided behavior-identical micro-reductions. Exact behavior parity was proven by a 45-case old-vs-new differential (42/45 SAME pre-restoration — the 3 divergences being exactly the [PF-val] key-position counterexamples; 29/29 SAME after the restoration) and locked by 15 new tests (29 → 44, all green). The bench reference was re-snapshotted at `6bcae22` (`tests/bench/results/reference.json`, 31 records / 21 scenarios; `bench:regress` PASS against both the old pre-fix reference — parser rows −86.7/−87.3/−87.6% — and the new one, every gated delta 0.0%). The executive-summary parser row above records the pre-fix Phase 5 state and stands as the historical baseline.
+
+### Disposition — actionable (5 items owning 8 findings)
+
+| Item | Finding(s) | Action | Owner / batch | Pri, effort |
+|---|---|---|---|---|
+| PP1 | [PR] high (+ final state [PR-fix] medium) | Execute the `DEAD-WEIGHT-REVIEW.md` fix backlog as separate validated orchestrations: **Batch A (safe-mechanical, 18 rows) first**, then Batch B (behavior-preserving perf, 15 rows, with R2-3 as the explicitly-exceptioned behavior fix, gated on typing-50/submit-100), then the 18 Batch C decisions. Follow the formedible sync workflow (fix in `packages/formedible/src` → `build:pkg` → quick-sync → `check-types`) and add the pinning tests the report names (R1-1 token-shaped rendering, R2-3 error classification). | DEAD-WEIGHT-REVIEW.md §4, batches A/B/C | P1, L (program) |
+| PP2 | [PD] medium (bench covers only the JSON fast path) | Register a `parser-object-literal-*` scenario the next time the scenario registry changes — deliberately deferred in PD because registry changes touch artifacts/schema/reference snapshots. Coordinate with C3 (per-parser isolated runs) so one registry-change window carries both. Fallback-path *perf* itself shipped (scan-once + restored patterns); the residual gap is bench coverage only. | Bench harness (Section C family) | P3, M |
+| PP3 | [PD] low (sync routes) + [PF] low (lint scripts) | Correct AGENTS.md, whose sync-route list and command list both describe a repo that no longer exists: actual `quick-sync.js` routes are `ai-picker → ai-builder/src` plus all five owners → `packages/ui/src/components` (registry-driven) — no `apps/web` destination at all (consistent with R2-14) — and `pnpm run lint`/`lint:web`/`lint:pkg` are documented but not defined. The lint half must be decided together with R2-10 (orphaned turbo `lint` task): add real scripts/config (AGENTS.md becomes true) or drop both the task and the doc lines. | Agent-docs; lint decision = Batch C item 9 (R2-10) | P2, S |
+| PP4 | [PV] low (snapshot hint not runnable) | Add a `bench:reference` npm script (one line in root `package.json`) wrapping `tsx tests/bench/lib/report.ts --update-reference` — every other bench mode has a wrapper; today the reference-refresh guidance lives only in a tool error message and exits 127 when copy-pasted verbatim. | Bench harness (Section C family) | P3, S |
+| PP5 | [PD-val] low (A+B share) + [PD-val] low (SYNTAX_ERROR code) + [PF] low (parseAiOutput gate) | One C1-style annotated correction pass over `PARSER-PERF-PLAN.md`: (a) §1/§2.2 headline "951 µs = 91.9%" → "A+B = 898 µs = 86.8%" (91.9% was A+B+C); (b) item 1's parenthetical `INVALID_DEFINITION` → surfaced code is `SYNTAX_ERROR`; (c) item 1's corpus wording → `SYNTAX_ERROR` holds for `parse`/`parseStructured` only (`parseAiOutput` gates non-`{` input upstream). The corpus additions themselves already shipped in the fix's tests. | Plan record (C1 class) | P3, S |
+
+### Disposition — closed, no action (18 findings)
+
+| Finding | Close reason |
+|---|---|
+| [PD] medium (hypothesis inverted: cost is the pre-JSON text pipeline, not the field walk) | Consumed by the fix — PARSER-PERF-PLAN items 1-4 executed per its §5 protocol; the diagnosis is fully superseded by the A1 result block. |
+| [PD] medium (9/10 neutralize patterns dead by ordering) | Executed as plan item 3, then corrected by [PF-fix]: 5 exactly-subsumed patterns deleted (proofs recorded in-code), the 4 no-`\b` patterns restored verbatim, 4 golden tests pin the legacy outcomes. |
+| [PD] low (profiling friction: tsx `--cpu-prof` collapses lines to :1; scratch TS needs ESM package.json) | Scratch-only friction; workaround guidance recorded in the entry (build before profiling, or `node --prof` on plain JS). |
+| [PD-val] low (prototype ratio 1.26-1.31x — item 4 likely needed, thin headroom) | Consumed by the fix: [PF] medium extended item 4 exactly as this warning anticipated, and all three targets were met. |
+| [PF] medium (item 4's literal scope insufficient — stage-D micro-reductions required) | Authorized scope extension; every micro-reduction is behavior-identical, individually measured, and locked by the 44-test suite plus the differential corpus. |
+| [PF] low (skip-copy rewrite of `normalizeAiGeneratedField` regressed ~40 µs) | Experiment fully reverted with zero residue; the lesson (profile attribution does not predict speedup) is recorded in the entry. |
+| [PF] low (item 4's site list missed three sibling per-call arrays) | All sibling sites hoisted alongside the named ones in the fix (frozen module-level collections, member-identical). |
+| [PF] low (bench:regress flaked on UI rows under load; parser rows stable in every run) | Load-sensitivity guidance recorded in the entry and gate green on the quiet re-run; extends Section D change #5's retry budget to load-sensitive UI rows — no code change owed. |
+| [PF-val] high (subsumption proof inexact at `\b` boundaries — VERDICT: FAIL) | Resolved by [PF-fix] option (a): verbatim restoration of the 4 patterns on the cold fallback path; re-validated clean by [PF-val2]; the follow-up's residue probes shipped as the 4 golden tests. |
+| [PF-fix] medium (restoration record) | Remediation record — behavior parity deliberately chosen over cold-path micro-perf; nothing further owed. |
+| [PF-val2] none / [PV-val] none | Validation-pass entries — nothing to act on. |
+| [PR-val] medium ×3 + [PR-val] low ×2 (R3-12 dependency facts; severity tally; needs-decision undercount; R2-3 mis-batched; [PR] batch ranges) | All five corrections applied verbatim by [PR-fix] and re-verified mechanically (49 V / 4 A / 0 R; 7/26/20 severity; 18-item needs-decision list; R2-3 in Batch B; ranges fixed); the entries remain as the audit record. |
+| [PR-fix] medium | Corrections applied; its optional follow-up (`pnpm store prune`-class cleanup so orphaned store dirs like `@tanstack/ai@0.16.0/` cannot be mistaken for installs) is local-machine hygiene recorded in the entry — no repo change owed. |
+
+### Fix-backlog pointer
+
+`DEAD-WEIGHT-REVIEW.md` (repo root) is the authoritative fix backlog: 53 verified findings in three batches — **A** safe-mechanical dead code/hoists/dedup (18 rows, no behavior change), **B** behavior-preserving perf on hot paths (15 rows, plus R2-3 as an explicitly-exceptioned, pinning-tested behavior fix), **C** needs-decision (18 items — behavior or public/docs-surface changes that need an owner call). **Recommendation: execute Batch A first as its own separate validated orchestration** (fixer + independent validator, formedible sync workflow), then Batch B with bench gating, then work the C decisions. Two grounding notes for the executor: the report's parser line references were re-checked against the post-`6bcae22` tree and still resolve (R2-3's classifier at :420, R2-7's chain loop at :548-553), and no DEAD-WEIGHT row was consumed by the parser-perf fix — the hot-path deletions it made (the neutralize patterns) are not among the 53 findings.
+
+### Coverage cross-check
+
+26/26 entries from this run dispositioned: [PD]×5, [PD-val]×3, [PF]×6, [PF-val]/[PF-fix]/[PF-val2], [PV]/[PV-val], [PR], [PR-val]×5, [PR-fix] — 8 findings routed to actionable items PP1-PP5, 18 closed no-action (one-line reasons above). Existing-item annotations from this run: A1 carries its DONE result block (added during the fix phase); C3 annotated below-coupling with PP2; no other Phase 5 item was superseded or completed by this run (A2's freshness guard is still owed — the run's registry rebuilds were byte-stable, not gated).
+
+*Provenance: Phase PC of the parser-perf orchestration (branch `parser-perf`); run facts read from A1's result block and the [PD]-[PR-fix] entries in `BENCH-FINDINGS.md`; AGENTS.md/quick-sync/package.json/turbo claims re-verified against the working tree on 2026-09-01.*
