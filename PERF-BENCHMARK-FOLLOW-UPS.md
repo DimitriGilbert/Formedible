@@ -322,6 +322,8 @@ The A1 parser regression is fixed: `parser-small/medium/large` medians went **0.
 | PP4 | [PV] low (snapshot hint not runnable) | Add a `bench:reference` npm script (one line in root `package.json`) wrapping `tsx tests/bench/lib/report.ts --update-reference` — every other bench mode has a wrapper; today the reference-refresh guidance lives only in a tool error message and exits 127 when copy-pasted verbatim. | Bench harness (Section C family) | P3, S |
 | PP5 | [PD-val] low (A+B share) + [PD-val] low (SYNTAX_ERROR code) + [PF] low (parseAiOutput gate) | One C1-style annotated correction pass over `PARSER-PERF-PLAN.md`: (a) §1/§2.2 headline "951 µs = 91.9%" → "A+B = 898 µs = 86.8%" (91.9% was A+B+C); (b) item 1's parenthetical `INVALID_DEFINITION` → surfaced code is `SYNTAX_ERROR`; (c) item 1's corpus wording → `SYNTAX_ERROR` holds for `parse`/`parseStructured` only (`parseAiOutput` gates non-`{` input upstream). The corpus additions themselves already shipped in the fix's tests. | Plan record (C1 class) | P3, S |
 
+- **2026-09-01 (partial execution, Phase BV status)**: PP1 is partway through — Batch A done 18/18 at commit `37b0ee6` (one validation fix loop: the R1-17 textarea truthy-semantics restoration), Batch B 10/15 at commit `2805dc1` (R2-3's classification change landed test-pinned). Remaining: Batch B rows R1-1, R1-6, R3-2, R3-9 plus R3-16's parse-once half (5 of 15, deferred to owner decision with one-line risk labels) and R3-3 (assigned to Batch A by the [PC-val] routing fix, unexecuted), plus the 18 Batch C decisions (unchanged). Live status block at the top of `DEAD-WEIGHT-REVIEW.md`.
+
 ### Disposition — closed, no action (18 findings)
 
 | Finding | Close reason |

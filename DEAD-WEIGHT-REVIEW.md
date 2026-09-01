@@ -4,6 +4,13 @@ Branch `parser-perf`, verified 2026-08-31. Three reviewers produced 53 candidate
 
 All formedible line references below are to the canonical sources in `packages/formedible/src/` (synced copies exist in `apps/web`, `packages/builder`, `packages/ai-builder`, `packages/formedible-parser`, `packages/ui`; any fix must follow the AGENTS.md workflow: fix in `packages/formedible/src` → `pnpm run build:pkg` → `node scripts/quick-sync.js` → `pnpm run check-types`).
 
+## Execution status (2026-09-01)
+
+- **Batch A — 18 of 19 rows DONE**: the 18 rows as originally enumerated landed at commit `37b0ee6` (zero-observable-behavior invariant held; 1 validation fix loop — the R1-17 textarea truthy-semantics restoration, `BENCH-FINDINGS.md` [BA-val]/[BA-fix]). The 19th row, R3-3, was assigned to Batch A by the [PC-val] routing fix in §4 below and remains **open** (unexecuted).
+- **Batch B — 10 of 15 rows DONE** (commit `2805dc1`; R2-3's classification change landed test-pinned). Landed: R1-2, R1-3, R1-7, R1-8, R1-9, R1-14, R2-3, R3-1, R3-8, R3-10.
+- **Batch B remainder — DEFERRED to owner decision**, one-line risks: R1-1 (semantic interpolation change), R1-6 (memoization effect-timing), R3-2 (stale-UI risk), R3-9 (persist race risk), R3-16 parse-once half (effect-timing risk: the useState-initializer-vs-mount-effect parse dedup; its dead-props half already sits in Batch C item 18).
+- **Batch C — 18 needs-decision items UNCHANGED.**
+
 ## 1. Executive summary
 
 | Verdict | Count |
@@ -112,8 +119,8 @@ Areas each reviewer swept with zero findings, restated after my own passes:
 
 Order matters for the formedible rows: fix in `packages/formedible/src` → `pnpm run build:pkg` → `node scripts/quick-sync.js` → `pnpm run check-types` (all packages).
 
-### Batch A — safe-mechanical (dead code, hoists, dedup; no behavior change)
-R1-5, R1-11, R1-12, R1-13, R1-15, R1-16, R1-17; R2-7, R2-9, R2-11, R2-12, R2-13, R2-16; R3-12 (alias/arm prune), R3-13 (optional), R3-17, R3-18, R3-19.
+### Batch A — safe-mechanical (dead code, hoists, dedup; no behavior change) — 19 rows (18 original + R3-3, assigned per the [PC-val] low routing fix)
+R1-5, R1-11, R1-12, R1-13, R1-15, R1-16, R1-17; R2-7, R2-9, R2-11, R2-12, R2-13, R2-16; R3-3 (duplication fix, mechanical — single-source the model-autocomplete/filtering/provider helpers and the ai-picker-types redeclaration per its row disposition; added to this batch per [PC-val] low, unexecuted), R3-12 (alias/arm prune), R3-13 (optional), R3-17, R3-18, R3-19.
 
 ### Batch B — behavior-preserving perf (alloc/dup on hot paths)
 R1-1 (single-pass interpolation + pinning test for token-shaped values — the only observable change is the leaked/second-pass output disappearing), R1-2, R1-3, R1-6, R1-7, R1-8, R1-9, R1-14; R2-3 (explicitly-exceptioned behavior fix, not perf: classifier alignment + dead-disjunct delete — changes the reported `type`/`suggestion` for the primary field-type error from 'validation' to 'field_type', a bug fix aligning with validateWithSuggestions, covered by a pinning test); R3-1, R3-2, R3-8, R3-9, R3-10, R3-16 (parse-once part).
