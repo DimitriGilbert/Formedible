@@ -1,8 +1,8 @@
 [
   {
     "implementation": "current",
-    "gitSha": "987d9327c5e836bd2c84e53fe2c9e982a1799e6f",
-    "gitBranch": "re-codex",
+    "gitSha": "6bcae22acc4b03f09509a1800287512071c90f9a",
+    "gitBranch": "parser-perf",
     "versions": {
       "@tanstack/react-form": "1.33.5",
       "@tanstack/ai": "0.52.0",
@@ -15,21 +15,21 @@
     "scenario": "mount-10",
     "metric": "mount-ms",
     "unit": "ms",
-    "median": 1.67,
-    "p75": 2.295,
-    "min": 1.3,
-    "max": 4.03,
+    "median": 1.585,
+    "p75": 2.02,
+    "min": 1.34,
+    "max": 3.595,
     "runs": 25,
     "comparable": "cross",
     "notes": [
       "medium: chromium (agent-browser, in-page performance.now() loops)"
     ],
-    "timestamp": "2026-08-31T23:59:49.969Z"
+    "timestamp": "2026-09-01T08:15:54.358Z"
   },
   {
     "implementation": "current",
-    "gitSha": "987d9327c5e836bd2c84e53fe2c9e982a1799e6f",
-    "gitBranch": "re-codex",
+    "gitSha": "6bcae22acc4b03f09509a1800287512071c90f9a",
+    "gitBranch": "parser-perf",
     "versions": {
       "@tanstack/react-form": "1.33.5",
       "@tanstack/ai": "0.52.0",
@@ -42,21 +42,21 @@
     "scenario": "mount-50",
     "metric": "mount-ms",
     "unit": "ms",
-    "median": 9.805,
-    "p75": 11.05,
-    "min": 5.075,
-    "max": 12.945,
+    "median": 9.435,
+    "p75": 10.59,
+    "min": 4.795,
+    "max": 12.94,
     "runs": 25,
     "comparable": "cross",
     "notes": [
       "medium: chromium (agent-browser, in-page performance.now() loops)"
     ],
-    "timestamp": "2026-08-31T23:59:51.851Z"
+    "timestamp": "2026-09-01T08:15:56.237Z"
   },
   {
     "implementation": "current",
-    "gitSha": "987d9327c5e836bd2c84e53fe2c9e982a1799e6f",
-    "gitBranch": "re-codex",
+    "gitSha": "6bcae22acc4b03f09509a1800287512071c90f9a",
+    "gitBranch": "parser-perf",
     "versions": {
       "@tanstack/react-form": "1.33.5",
       "@tanstack/ai": "0.52.0",
@@ -69,21 +69,21 @@
     "scenario": "mount-100",
     "metric": "mount-ms",
     "unit": "ms",
-    "median": 21.075,
-    "p75": 22.83,
-    "min": 11.06,
-    "max": 26.125,
+    "median": 20.635,
+    "p75": 24.21,
+    "min": 18.34,
+    "max": 28.055,
     "runs": 25,
     "comparable": "cross",
     "notes": [
       "medium: chromium (agent-browser, in-page performance.now() loops)"
     ],
-    "timestamp": "2026-08-31T23:59:54.433Z"
+    "timestamp": "2026-09-01T08:15:58.818Z"
   },
   {
     "implementation": "current",
-    "gitSha": "987d9327c5e836bd2c84e53fe2c9e982a1799e6f",
-    "gitBranch": "re-codex",
+    "gitSha": "6bcae22acc4b03f09509a1800287512071c90f9a",
+    "gitBranch": "parser-perf",
     "versions": {
       "@tanstack/react-form": "1.33.5",
       "@tanstack/ai": "0.52.0",
@@ -96,21 +96,21 @@
     "scenario": "typing-10",
     "metric": "ms-per-keystroke",
     "unit": "ms",
-    "median": 0.43125,
-    "p75": 0.4392,
-    "min": 0.4092,
-    "max": 0.5132,
+    "median": 0.40045,
+    "p75": 0.4091,
+    "min": 0.38055,
+    "max": 0.4841,
     "runs": 25,
     "comparable": "cross",
     "notes": [
       "medium: chromium (agent-browser, in-page performance.now() loops)"
     ],
-    "timestamp": "2026-08-31T23:59:57.148Z"
+    "timestamp": "2026-09-01T08:16:01.444Z"
   },
   {
     "implementation": "current",
-    "gitSha": "987d9327c5e836bd2c84e53fe2c9e982a1799e6f",
-    "gitBranch": "re-codex",
+    "gitSha": "6bcae22acc4b03f09509a1800287512071c90f9a",
+    "gitBranch": "parser-perf",
     "versions": {
       "@tanstack/react-form": "1.33.5",
       "@tanstack/ai": "0.52.0",
@@ -123,21 +123,21 @@
     "scenario": "typing-50",
     "metric": "ms-per-keystroke",
     "unit": "ms",
-    "median": 1.58715,
-    "p75": 1.66005,
-    "min": 1.49965,
-    "max": 1.7348,
+    "median": 1.6525,
+    "p75": 1.6694,
+    "min": 1.5448,
+    "max": 1.8211,
     "runs": 25,
     "comparable": "cross",
     "notes": [
       "medium: chromium (agent-browser, in-page performance.now() loops)"
     ],
-    "timestamp": "2026-09-01T00:00:03.177Z"
+    "timestamp": "2026-09-01T08:16:07.565Z"
   },
   {
     "implementation": "current",
-    "gitSha": "987d9327c5e836bd2c84e53fe2c9e982a1799e6f",
-    "gitBranch": "re-codex",
+    "gitSha": "6bcae22acc4b03f09509a1800287512071c90f9a",
+    "gitBranch": "parser-perf",
     "versions": {
       "@tanstack/react-form": "1.33.5",
       "@tanstack/ai": "0.52.0",
@@ -150,21 +150,21 @@
     "scenario": "typing-100",
     "metric": "ms-per-keystroke",
     "unit": "ms",
-    "median": 3.22685,
-    "p75": 3.38865,
-    "min": 2.9641,
-    "max": 3.57765,
+    "median": 3.06075,
+    "p75": 3.11805,
+    "min": 2.94895,
+    "max": 3.2979,
     "runs": 25,
     "comparable": "cross",
     "notes": [
       "medium: chromium (agent-browser, in-page performance.now() loops)"
     ],
-    "timestamp": "2026-09-01T00:00:13.912Z"
+    "timestamp": "2026-09-01T08:16:17.817Z"
   },
   {
     "implementation": "current",
-    "gitSha": "987d9327c5e836bd2c84e53fe2c9e982a1799e6f",
-    "gitBranch": "re-codex",
+    "gitSha": "6bcae22acc4b03f09509a1800287512071c90f9a",
+    "gitBranch": "parser-perf",
     "versions": {
       "@tanstack/react-form": "1.33.5",
       "@tanstack/ai": "0.52.0",
@@ -177,21 +177,21 @@
     "scenario": "submit-10",
     "metric": "submit-round-trip-ms",
     "unit": "ms",
-    "median": 2.01,
-    "p75": 2.395,
-    "min": 1.735,
-    "max": 3.755,
+    "median": 1.96,
+    "p75": 2.265,
+    "min": 1.625,
+    "max": 4.685,
     "runs": 25,
     "comparable": "cross",
     "notes": [
       "medium: chromium (agent-browser, in-page performance.now() loops)"
     ],
-    "timestamp": "2026-09-01T00:00:15.419Z"
+    "timestamp": "2026-09-01T08:16:19.310Z"
   },
   {
     "implementation": "current",
-    "gitSha": "987d9327c5e836bd2c84e53fe2c9e982a1799e6f",
-    "gitBranch": "re-codex",
+    "gitSha": "6bcae22acc4b03f09509a1800287512071c90f9a",
+    "gitBranch": "parser-perf",
     "versions": {
       "@tanstack/react-form": "1.33.5",
       "@tanstack/ai": "0.52.0",
@@ -204,21 +204,21 @@
     "scenario": "submit-50",
     "metric": "submit-round-trip-ms",
     "unit": "ms",
-    "median": 8.9,
-    "p75": 9.78,
-    "min": 7.445,
-    "max": 14.07,
+    "median": 7.96,
+    "p75": 8.57,
+    "min": 7.005,
+    "max": 10.825,
     "runs": 25,
     "comparable": "cross",
     "notes": [
       "medium: chromium (agent-browser, in-page performance.now() loops)"
     ],
-    "timestamp": "2026-09-01T00:00:17.121Z"
+    "timestamp": "2026-09-01T08:16:20.983Z"
   },
   {
     "implementation": "current",
-    "gitSha": "987d9327c5e836bd2c84e53fe2c9e982a1799e6f",
-    "gitBranch": "re-codex",
+    "gitSha": "6bcae22acc4b03f09509a1800287512071c90f9a",
+    "gitBranch": "parser-perf",
     "versions": {
       "@tanstack/react-form": "1.33.5",
       "@tanstack/ai": "0.52.0",
@@ -231,21 +231,21 @@
     "scenario": "submit-100",
     "metric": "submit-round-trip-ms",
     "unit": "ms",
-    "median": 17.34,
-    "p75": 19.195,
-    "min": 14.93,
-    "max": 22.89,
+    "median": 16.4,
+    "p75": 17.675,
+    "min": 13.93,
+    "max": 22.4,
     "runs": 25,
     "comparable": "cross",
     "notes": [
       "medium: chromium (agent-browser, in-page performance.now() loops)"
     ],
-    "timestamp": "2026-09-01T00:00:19.124Z"
+    "timestamp": "2026-09-01T08:16:22.933Z"
   },
   {
     "implementation": "current",
-    "gitSha": "987d9327c5e836bd2c84e53fe2c9e982a1799e6f",
-    "gitBranch": "re-codex",
+    "gitSha": "6bcae22acc4b03f09509a1800287512071c90f9a",
+    "gitBranch": "parser-perf",
     "versions": {
       "@tanstack/react-form": "1.33.5",
       "@tanstack/ai": "0.52.0",
@@ -258,10 +258,10 @@
     "scenario": "pageswitch-50",
     "metric": "ms-per-switch",
     "unit": "ms",
-    "median": 16.66,
-    "p75": 16.705,
-    "min": 1.935,
-    "max": 17.945,
+    "median": 16.655,
+    "p75": 16.745,
+    "min": 1.805,
+    "max": 19.74,
     "runs": 1250,
     "comparable": "cross",
     "notes": [
@@ -269,12 +269,12 @@
       "50 switches = the [2, 3, 4, 5, 1] page walk repeated 10 times from page 1; every switch targets a page the form is not on (main's validation-gated setCurrentPage early-returns on same-page targets)",
       "each switch is timed through one animation-frame settle (requestAnimationFrame), so the sample includes the ~16.7ms frame budget; both implementations settle identically"
     ],
-    "timestamp": "2026-09-01T00:00:54.656Z"
+    "timestamp": "2026-09-01T08:16:58.364Z"
   },
   {
     "implementation": "current",
-    "gitSha": "987d9327c5e836bd2c84e53fe2c9e982a1799e6f",
-    "gitBranch": "re-codex",
+    "gitSha": "6bcae22acc4b03f09509a1800287512071c90f9a",
+    "gitBranch": "parser-perf",
     "versions": {
       "@tanstack/react-form": "1.33.5",
       "@tanstack/ai": "0.52.0",
@@ -287,10 +287,10 @@
     "scenario": "tabswitch-50",
     "metric": "ms-per-switch",
     "unit": "ms",
-    "median": 16.645,
-    "p75": 16.695,
-    "min": 2.28,
-    "max": 17.07,
+    "median": 16.64,
+    "p75": 16.72,
+    "min": 3.23,
+    "max": 17.32,
     "runs": 1000,
     "comparable": "cross",
     "notes": [
@@ -298,12 +298,12 @@
       "40 switches = the [1, 2, 3, 0] tab walk repeated 10 times from tab 0 on the 4-tab, 50-field form",
       "each switch is timed through one animation-frame settle (requestAnimationFrame), so the sample includes the ~16.7ms frame budget; both implementations settle identically"
     ],
-    "timestamp": "2026-09-01T00:01:25.522Z"
+    "timestamp": "2026-09-01T08:17:29.180Z"
   },
   {
     "implementation": "current",
-    "gitSha": "987d9327c5e836bd2c84e53fe2c9e982a1799e6f",
-    "gitBranch": "re-codex",
+    "gitSha": "6bcae22acc4b03f09509a1800287512071c90f9a",
+    "gitBranch": "parser-perf",
     "versions": {
       "@tanstack/react-form": "1.33.5",
       "@tanstack/ai": "0.52.0",
@@ -316,10 +316,10 @@
     "scenario": "array-50",
     "metric": "ms-per-op",
     "unit": "ms",
-    "median": 16.585,
-    "p75": 16.84,
-    "min": 7.88,
-    "max": 27.8,
+    "median": 16.59,
+    "p75": 16.835,
+    "min": 6.76,
+    "max": 25.395,
     "runs": 1000,
     "comparable": "cross",
     "notes": [
@@ -327,12 +327,12 @@
       "40 ops = 20 adds (20 -> 40 items) then 20 removes of fixed item index 19 (40 -> 20 items) on the \"members\" object array field",
       "each op is timed through one animation-frame settle (requestAnimationFrame), so the sample includes the ~16.7ms frame budget; both implementations settle identically"
     ],
-    "timestamp": "2026-09-01T00:01:57.153Z"
+    "timestamp": "2026-09-01T08:18:00.659Z"
   },
   {
     "implementation": "current",
-    "gitSha": "987d9327c5e836bd2c84e53fe2c9e982a1799e6f",
-    "gitBranch": "re-codex",
+    "gitSha": "6bcae22acc4b03f09509a1800287512071c90f9a",
+    "gitBranch": "parser-perf",
     "versions": {
       "@tanstack/react-form": "1.33.5",
       "@tanstack/ai": "0.52.0",
@@ -345,10 +345,10 @@
     "scenario": "autosave-50",
     "metric": "ms-per-keystroke-with-autosave",
     "unit": "ms",
-    "median": 1.5739,
-    "p75": 1.59255,
-    "min": 1.5385,
-    "max": 1.6916,
+    "median": 1.89795,
+    "p75": 2.00785,
+    "min": 1.78155,
+    "max": 2.1044,
     "runs": 25,
     "comparable": "cross",
     "notes": [
@@ -357,12 +357,12 @@
       "autosave-overhead-ms is the raw per-keystroke delta median(with) - median(without); negative values (autosave cheaper) are reported as-is, never abs()",
       "both sides measured 25 runs with 3 untimed warmup runs"
     ],
-    "timestamp": "2026-09-01T00:02:09.501Z"
+    "timestamp": "2026-09-01T08:18:13.535Z"
   },
   {
     "implementation": "current",
-    "gitSha": "987d9327c5e836bd2c84e53fe2c9e982a1799e6f",
-    "gitBranch": "re-codex",
+    "gitSha": "6bcae22acc4b03f09509a1800287512071c90f9a",
+    "gitBranch": "parser-perf",
     "versions": {
       "@tanstack/react-form": "1.33.5",
       "@tanstack/ai": "0.52.0",
@@ -375,10 +375,10 @@
     "scenario": "autosave-50",
     "metric": "ms-per-keystroke-without-autosave",
     "unit": "ms",
-    "median": 1.6616,
-    "p75": 1.68155,
-    "min": 1.58075,
-    "max": 1.9774,
+    "median": 1.51445,
+    "p75": 1.54965,
+    "min": 1.48635,
+    "max": 1.86175,
     "runs": 25,
     "comparable": "cross",
     "notes": [
@@ -387,12 +387,12 @@
       "autosave-overhead-ms is the raw per-keystroke delta median(with) - median(without); negative values (autosave cheaper) are reported as-is, never abs()",
       "both sides measured 25 runs with 3 untimed warmup runs"
     ],
-    "timestamp": "2026-09-01T00:02:09.501Z"
+    "timestamp": "2026-09-01T08:18:13.535Z"
   },
   {
     "implementation": "current",
-    "gitSha": "987d9327c5e836bd2c84e53fe2c9e982a1799e6f",
-    "gitBranch": "re-codex",
+    "gitSha": "6bcae22acc4b03f09509a1800287512071c90f9a",
+    "gitBranch": "parser-perf",
     "versions": {
       "@tanstack/react-form": "1.33.5",
       "@tanstack/ai": "0.52.0",
@@ -405,10 +405,10 @@
     "scenario": "autosave-50",
     "metric": "autosave-overhead-ms",
     "unit": "ms",
-    "median": -0.0877,
-    "p75": -0.089,
-    "min": -0.04225,
-    "max": -0.2858,
+    "median": 0.3835,
+    "p75": 0.4582,
+    "min": 0.2952,
+    "max": 0.24265,
     "runs": 25,
     "comparable": "cross",
     "notes": [
@@ -417,12 +417,12 @@
       "autosave-overhead-ms is the raw per-keystroke delta median(with) - median(without); negative values (autosave cheaper) are reported as-is, never abs()",
       "both sides measured 25 runs with 3 untimed warmup runs"
     ],
-    "timestamp": "2026-09-01T00:02:09.501Z"
+    "timestamp": "2026-09-01T08:18:13.535Z"
   },
   {
     "implementation": "current",
-    "gitSha": "987d9327c5e836bd2c84e53fe2c9e982a1799e6f",
-    "gitBranch": "re-codex",
+    "gitSha": "6bcae22acc4b03f09509a1800287512071c90f9a",
+    "gitBranch": "parser-perf",
     "versions": {
       "@tanstack/react-form": "1.33.5",
       "@tanstack/ai": "0.52.0",
@@ -435,10 +435,10 @@
     "scenario": "memory-500",
     "metric": "heap-growth-mb",
     "unit": "MB",
-    "median": -1.088132,
-    "p75": -1.088132,
-    "min": -1.088132,
-    "max": -1.088132,
+    "median": -1.509698,
+    "p75": -1.509698,
+    "min": -1.509698,
+    "max": -1.509698,
     "runs": 1,
     "comparable": "cross",
     "notes": [
@@ -446,14 +446,14 @@
       "heap api: performance.measureUserAgentSpecificMemory (in-page; the browser may collect garbage before each measurement (implementation-defined); the harness itself never forces GC)",
       "single continuous 500-interaction session per run; repeated sessions in one page would understate retained growth, so N-run medians do not apply here (runs = 1)",
       "workload: 200 types + 100 page switches + 100 array adds + 100 removes; every add is paired with a remove so the live form state returns to its baseline each cycle (growth measures retained memory, not growing user data)",
-      "heap checkpoints (interactions:mb): 0:6.29MB, 100:7.68MB, 200:7.55MB, 300:6.25MB, 400:7.56MB, 500:5.21MB"
+      "heap checkpoints (interactions:mb): 0:6.22MB, 100:4.58MB, 200:4.52MB, 300:4.83MB, 400:5.94MB, 500:4.71MB"
     ],
-    "timestamp": "2026-09-01T00:03:10.727Z"
+    "timestamp": "2026-09-01T08:19:25.770Z"
   },
   {
     "implementation": "current",
-    "gitSha": "987d9327c5e836bd2c84e53fe2c9e982a1799e6f",
-    "gitBranch": "re-codex",
+    "gitSha": "6bcae22acc4b03f09509a1800287512071c90f9a",
+    "gitBranch": "parser-perf",
     "versions": {
       "@tanstack/react-form": "1.33.5",
       "@tanstack/ai": "0.52.0",
@@ -466,10 +466,10 @@
     "scenario": "memory-500",
     "metric": "mb-per-100-interactions",
     "unit": "MB",
-    "median": -0.202967,
-    "p75": -0.202967,
-    "min": -0.202967,
-    "max": -0.202967,
+    "median": -0.089837,
+    "p75": -0.089837,
+    "min": -0.089837,
+    "max": -0.089837,
     "runs": 1,
     "comparable": "cross",
     "notes": [
@@ -477,14 +477,14 @@
       "heap api: performance.measureUserAgentSpecificMemory (in-page; the browser may collect garbage before each measurement (implementation-defined); the harness itself never forces GC)",
       "single continuous 500-interaction session per run; repeated sessions in one page would understate retained growth, so N-run medians do not apply here (runs = 1)",
       "workload: 200 types + 100 page switches + 100 array adds + 100 removes; every add is paired with a remove so the live form state returns to its baseline each cycle (growth measures retained memory, not growing user data)",
-      "heap checkpoints (interactions:mb): 0:6.29MB, 100:7.68MB, 200:7.55MB, 300:6.25MB, 400:7.56MB, 500:5.21MB"
+      "heap checkpoints (interactions:mb): 0:6.22MB, 100:4.58MB, 200:4.52MB, 300:4.83MB, 400:5.94MB, 500:4.71MB"
     ],
-    "timestamp": "2026-09-01T00:03:10.727Z"
+    "timestamp": "2026-09-01T08:19:25.770Z"
   },
   {
     "implementation": "current",
-    "gitSha": "987d9327c5e836bd2c84e53fe2c9e982a1799e6f",
-    "gitBranch": "re-codex",
+    "gitSha": "6bcae22acc4b03f09509a1800287512071c90f9a",
+    "gitBranch": "parser-perf",
     "versions": {
       "@tanstack/react-form": "1.33.5",
       "@tanstack/ai": "0.52.0",
@@ -510,12 +510,12 @@
       "flush-ms-total is the summed per-chunk scheduler-flush -> React-commit latency of one 100-chunk run (performance.now at the flush callback and at the commit effect); chunk pacing (the ~16ms frame ticks) is excluded from the sum, so the metric prices scheduler buffering + transcript render work only",
       "the fixture asserts every run: one flush per chunk (no coalescing), one commit per flush, and the exact deterministic transcript text; 25 measured runs after 3 warmup runs, one measured run per agent-browser eval"
     ],
-    "timestamp": "2026-09-01T00:04:09.916Z"
+    "timestamp": "2026-09-01T08:20:24.980Z"
   },
   {
     "implementation": "current",
-    "gitSha": "987d9327c5e836bd2c84e53fe2c9e982a1799e6f",
-    "gitBranch": "re-codex",
+    "gitSha": "6bcae22acc4b03f09509a1800287512071c90f9a",
+    "gitBranch": "parser-perf",
     "versions": {
       "@tanstack/react-form": "1.33.5",
       "@tanstack/ai": "0.52.0",
@@ -528,10 +528,10 @@
     "scenario": "stream-100chunks",
     "metric": "flush-ms-total",
     "unit": "ms",
-    "median": 21.42,
-    "p75": 27.05,
-    "min": 19.12,
-    "max": 34.64,
+    "median": 20.455,
+    "p75": 21.77,
+    "min": 18.285,
+    "max": 26.895,
     "runs": 25,
     "comparable": "current-only",
     "notes": [
@@ -541,12 +541,12 @@
       "flush-ms-total is the summed per-chunk scheduler-flush -> React-commit latency of one 100-chunk run (performance.now at the flush callback and at the commit effect); chunk pacing (the ~16ms frame ticks) is excluded from the sum, so the metric prices scheduler buffering + transcript render work only",
       "the fixture asserts every run: one flush per chunk (no coalescing), one commit per flush, and the exact deterministic transcript text; 25 measured runs after 3 warmup runs, one measured run per agent-browser eval"
     ],
-    "timestamp": "2026-09-01T00:04:09.916Z"
+    "timestamp": "2026-09-01T08:20:24.980Z"
   },
   {
     "implementation": "current",
-    "gitSha": "987d9327c5e836bd2c84e53fe2c9e982a1799e6f",
-    "gitBranch": "re-codex",
+    "gitSha": "6bcae22acc4b03f09509a1800287512071c90f9a",
+    "gitBranch": "parser-perf",
     "versions": {
       "@tanstack/react-form": "1.33.5",
       "@tanstack/ai": "0.52.0",
@@ -559,25 +559,25 @@
     "scenario": "browser-mount-100",
     "metric": "lcp-ms",
     "unit": "ms",
-    "median": 92.75,
-    "p75": 92.75,
-    "min": 92.75,
-    "max": 92.75,
+    "median": 93.14,
+    "p75": 93.14,
+    "min": 93.14,
+    "max": 93.14,
     "runs": 1,
     "comparable": "current-only",
     "notes": [
       "medium: chromium (agent-browser, in-page performance.now() loops)",
       "lcp-ms: agent-browser vitals --json on a fresh load of the mount-100 page (the command navigates, waits for load, and reports TTFB/LCP/CLS/FCP); single fresh load, runs = 1",
       "inp-ms: collected in-page with the PerformanceObserver event-timing API (entries grouped by interactionId, maximum interaction latency) because agent-browser 0.27's vitals command advertises INP but never reports it; the workload is one real click into field001 plus 50 real keystrokes (agent-browser keyboard type)",
-      "inp-ms is the maximum observed interaction latency over 85 recorded interactions",
+      "inp-ms is the maximum observed interaction latency over 62 recorded interactions",
       "collected in an un-instrumented browser session (no react-devtools hook) after every timing scenario had finished, so neither LCP nor INP absorbs instrumentation overhead (plan risk #7); single pass per metric (runs = 1)"
     ],
-    "timestamp": "2026-09-01T00:04:16.346Z"
+    "timestamp": "2026-09-01T08:20:31.343Z"
   },
   {
     "implementation": "current",
-    "gitSha": "987d9327c5e836bd2c84e53fe2c9e982a1799e6f",
-    "gitBranch": "re-codex",
+    "gitSha": "6bcae22acc4b03f09509a1800287512071c90f9a",
+    "gitBranch": "parser-perf",
     "versions": {
       "@tanstack/react-form": "1.33.5",
       "@tanstack/ai": "0.52.0",
@@ -600,15 +600,15 @@
       "medium: chromium (agent-browser, in-page performance.now() loops)",
       "lcp-ms: agent-browser vitals --json on a fresh load of the mount-100 page (the command navigates, waits for load, and reports TTFB/LCP/CLS/FCP); single fresh load, runs = 1",
       "inp-ms: collected in-page with the PerformanceObserver event-timing API (entries grouped by interactionId, maximum interaction latency) because agent-browser 0.27's vitals command advertises INP but never reports it; the workload is one real click into field001 plus 50 real keystrokes (agent-browser keyboard type)",
-      "inp-ms is the maximum observed interaction latency over 85 recorded interactions",
+      "inp-ms is the maximum observed interaction latency over 62 recorded interactions",
       "collected in an un-instrumented browser session (no react-devtools hook) after every timing scenario had finished, so neither LCP nor INP absorbs instrumentation overhead (plan risk #7); single pass per metric (runs = 1)"
     ],
-    "timestamp": "2026-09-01T00:04:16.346Z"
+    "timestamp": "2026-09-01T08:20:31.343Z"
   },
   {
     "implementation": "current",
-    "gitSha": "987d9327c5e836bd2c84e53fe2c9e982a1799e6f",
-    "gitBranch": "re-codex",
+    "gitSha": "6bcae22acc4b03f09509a1800287512071c90f9a",
+    "gitBranch": "parser-perf",
     "versions": {
       "@tanstack/react-form": "1.33.5",
       "@tanstack/ai": "0.52.0",
@@ -635,12 +635,12 @@
       "single instrumented pass per metric (runs = 1): render counts and trace spans are deterministic in shape, not sample distributions; instrumentation perturbs what it measures, so these records are kept separate from the un-instrumented typing-50 timing medians (plan risk #7)",
       "verified: the typed input value equals the deterministic payload, 19050 renders (0 mounts + 19050 re-renders) across 24 components in a 1250ms recording"
     ],
-    "timestamp": "2026-09-01T00:04:27.911Z"
+    "timestamp": "2026-09-01T08:20:42.601Z"
   },
   {
     "implementation": "current",
-    "gitSha": "987d9327c5e836bd2c84e53fe2c9e982a1799e6f",
-    "gitBranch": "re-codex",
+    "gitSha": "6bcae22acc4b03f09509a1800287512071c90f9a",
+    "gitBranch": "parser-perf",
     "versions": {
       "@tanstack/react-form": "1.33.5",
       "@tanstack/ai": "0.52.0",
@@ -653,10 +653,10 @@
     "scenario": "browser-typing-50",
     "metric": "interaction-trace-ms",
     "unit": "ms",
-    "median": 453.98,
-    "p75": 453.98,
-    "min": 453.98,
-    "max": 453.98,
+    "median": 353.958,
+    "p75": 353.958,
+    "min": 353.958,
+    "max": 353.958,
     "runs": 1,
     "comparable": "current-only",
     "notes": [
@@ -667,12 +667,12 @@
       "single instrumented pass per metric (runs = 1): render counts and trace spans are deterministic in shape, not sample distributions; instrumentation perturbs what it measures, so these records are kept separate from the un-instrumented typing-50 timing medians (plan risk #7)",
       "verified: the typed input value equals the deterministic payload, 19050 renders (0 mounts + 19050 re-renders) across 24 components in a 1250ms recording"
     ],
-    "timestamp": "2026-09-01T00:04:27.911Z"
+    "timestamp": "2026-09-01T08:20:42.601Z"
   },
   {
     "implementation": "current",
-    "gitSha": "987d9327c5e836bd2c84e53fe2c9e982a1799e6f",
-    "gitBranch": "re-codex",
+    "gitSha": "6bcae22acc4b03f09509a1800287512071c90f9a",
+    "gitBranch": "parser-perf",
     "versions": {
       "@tanstack/react-form": "1.33.5",
       "@tanstack/ai": "0.52.0",
@@ -697,12 +697,12 @@
       "two consecutive builds of the same commit: raw 541538 -> 541538 bytes (0.000% delta), gzip 166291 -> 166291 bytes (0.000% delta) — within the ±1% determinism expectation; vite content-hashes asset names, so byte-stable input yields identical names and sizes",
       "recorded from the second build; assets: index-DA0iO3dJ.js (541538 bytes); single deterministic build measurement per run (runs = 1)"
     ],
-    "timestamp": "2026-09-01T00:04:29.942Z"
+    "timestamp": "2026-09-01T08:20:44.492Z"
   },
   {
     "implementation": "current",
-    "gitSha": "987d9327c5e836bd2c84e53fe2c9e982a1799e6f",
-    "gitBranch": "re-codex",
+    "gitSha": "6bcae22acc4b03f09509a1800287512071c90f9a",
+    "gitBranch": "parser-perf",
     "versions": {
       "@tanstack/react-form": "1.33.5",
       "@tanstack/ai": "0.52.0",
@@ -727,12 +727,12 @@
       "two consecutive builds of the same commit: raw 541538 -> 541538 bytes (0.000% delta), gzip 166291 -> 166291 bytes (0.000% delta) — within the ±1% determinism expectation; vite content-hashes asset names, so byte-stable input yields identical names and sizes",
       "recorded from the second build; assets: index-DA0iO3dJ.js (541538 bytes); single deterministic build measurement per run (runs = 1)"
     ],
-    "timestamp": "2026-09-01T00:04:29.942Z"
+    "timestamp": "2026-09-01T08:20:44.492Z"
   },
   {
     "implementation": "current",
-    "gitSha": "987d9327c5e836bd2c84e53fe2c9e982a1799e6f",
-    "gitBranch": "re-codex",
+    "gitSha": "6bcae22acc4b03f09509a1800287512071c90f9a",
+    "gitBranch": "parser-perf",
     "versions": {
       "@tanstack/react-form": "1.33.5",
       "@tanstack/ai": "0.52.0",
@@ -745,21 +745,21 @@
     "scenario": "parser-small",
     "metric": "ms-per-parse",
     "unit": "ms",
-    "median": 0.068938,
-    "p75": 0.070058,
-    "min": 0.064372,
-    "max": 0.071981,
+    "median": 0.009182,
+    "p75": 0.011084,
+    "min": 0.008335,
+    "max": 0.017894,
     "runs": 25,
     "comparable": "cross",
     "notes": [
       "medium: node (no DOM)"
     ],
-    "timestamp": "2026-09-01T00:04:30.043Z"
+    "timestamp": "2026-09-01T08:20:44.509Z"
   },
   {
     "implementation": "current",
-    "gitSha": "987d9327c5e836bd2c84e53fe2c9e982a1799e6f",
-    "gitBranch": "re-codex",
+    "gitSha": "6bcae22acc4b03f09509a1800287512071c90f9a",
+    "gitBranch": "parser-perf",
     "versions": {
       "@tanstack/react-form": "1.33.5",
       "@tanstack/ai": "0.52.0",
@@ -772,21 +772,21 @@
     "scenario": "parser-small",
     "metric": "parses-per-sec",
     "unit": "parses/sec",
-    "median": 14505.821476,
-    "p75": 14938.916265,
-    "min": 13892.516379,
-    "max": 15534.709356,
+    "median": 108913.004658,
+    "p75": 115044.349588,
+    "min": 55885.278697,
+    "max": 119972.838149,
     "runs": 25,
     "comparable": "cross",
     "notes": [
       "medium: node (no DOM)"
     ],
-    "timestamp": "2026-09-01T00:04:30.043Z"
+    "timestamp": "2026-09-01T08:20:44.509Z"
   },
   {
     "implementation": "current",
-    "gitSha": "987d9327c5e836bd2c84e53fe2c9e982a1799e6f",
-    "gitBranch": "re-codex",
+    "gitSha": "6bcae22acc4b03f09509a1800287512071c90f9a",
+    "gitBranch": "parser-perf",
     "versions": {
       "@tanstack/react-form": "1.33.5",
       "@tanstack/ai": "0.52.0",
@@ -799,21 +799,21 @@
     "scenario": "parser-medium",
     "metric": "ms-per-parse",
     "unit": "ms",
-    "median": 0.280919,
-    "p75": 0.287721,
-    "min": 0.273584,
-    "max": 0.346319,
+    "median": 0.035742,
+    "p75": 0.040026,
+    "min": 0.033907,
+    "max": 0.07909,
     "runs": 25,
     "comparable": "cross",
     "notes": [
       "medium: node (no DOM)"
     ],
-    "timestamp": "2026-09-01T00:04:30.450Z"
+    "timestamp": "2026-09-01T08:20:44.571Z"
   },
   {
     "implementation": "current",
-    "gitSha": "987d9327c5e836bd2c84e53fe2c9e982a1799e6f",
-    "gitBranch": "re-codex",
+    "gitSha": "6bcae22acc4b03f09509a1800287512071c90f9a",
+    "gitBranch": "parser-perf",
     "versions": {
       "@tanstack/react-form": "1.33.5",
       "@tanstack/ai": "0.52.0",
@@ -826,21 +826,21 @@
     "scenario": "parser-medium",
     "metric": "parses-per-sec",
     "unit": "parses/sec",
-    "median": 3559.745233,
-    "p75": 3593.870754,
-    "min": 2887.510391,
-    "max": 3655.188789,
+    "median": 27978.382782,
+    "p75": 28684.017438,
+    "min": 12643.852268,
+    "max": 29492.800513,
     "runs": 25,
     "comparable": "cross",
     "notes": [
       "medium: node (no DOM)"
     ],
-    "timestamp": "2026-09-01T00:04:30.450Z"
+    "timestamp": "2026-09-01T08:20:44.571Z"
   },
   {
     "implementation": "current",
-    "gitSha": "987d9327c5e836bd2c84e53fe2c9e982a1799e6f",
-    "gitBranch": "re-codex",
+    "gitSha": "6bcae22acc4b03f09509a1800287512071c90f9a",
+    "gitBranch": "parser-perf",
     "versions": {
       "@tanstack/react-form": "1.33.5",
       "@tanstack/ai": "0.52.0",
@@ -853,21 +853,21 @@
     "scenario": "parser-large",
     "metric": "ms-per-parse",
     "unit": "ms",
-    "median": 1.081723,
-    "p75": 1.087242,
-    "min": 1.064878,
-    "max": 1.307146,
+    "median": 0.133724,
+    "p75": 0.134763,
+    "min": 0.128426,
+    "max": 0.156957,
     "runs": 25,
     "comparable": "cross",
     "notes": [
       "medium: node (no DOM)"
     ],
-    "timestamp": "2026-09-01T00:04:31.990Z"
+    "timestamp": "2026-09-01T08:20:44.761Z"
   },
   {
     "implementation": "current",
-    "gitSha": "987d9327c5e836bd2c84e53fe2c9e982a1799e6f",
-    "gitBranch": "re-codex",
+    "gitSha": "6bcae22acc4b03f09509a1800287512071c90f9a",
+    "gitBranch": "parser-perf",
     "versions": {
       "@tanstack/react-form": "1.33.5",
       "@tanstack/ai": "0.52.0",
@@ -880,15 +880,15 @@
     "scenario": "parser-large",
     "metric": "parses-per-sec",
     "unit": "parses/sec",
-    "median": 924.451323,
-    "p75": 928.190005,
-    "min": 765.025389,
-    "max": 939.075117,
+    "median": 7478.112686,
+    "p75": 7561.552169,
+    "min": 6371.151426,
+    "max": 7786.614374,
     "runs": 25,
     "comparable": "cross",
     "notes": [
       "medium: node (no DOM)"
     ],
-    "timestamp": "2026-09-01T00:04:31.990Z"
+    "timestamp": "2026-09-01T08:20:44.761Z"
   }
 ]

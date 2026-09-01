@@ -687,3 +687,12 @@ Purpose: record every problem encountered during execution (lib bugs/friction, w
 - Follow-up: none — remediation (a) of the [PF-val] high finding (restore exact legacy behavior) was chosen over (b) because the fallback path is cold and behavior parity beats micro-perf there.
 
 ## [PF-val2] none — no problems encountered
+
+## [PV] low — report.ts's own snapshot hint (`tsx tests/bench/lib/report.ts --update-reference`) is not directly executable: bare `tsx` is not on PATH and no package.json script wraps the flag
+
+- Problem: The reference-refresh flow has no committed one-command entry point. `report.ts`'s missing-reference error text and its `USAGE` string both instruct `tsx tests/bench/lib/report.ts --update-reference`, but running that verbatim from the repo root in a plain shell fails with exit 127 (`tsx: command not found` — `node_modules/.bin` is not on PATH). The working invocation is `pnpm exec tsx --tsconfig tests/bench/tsconfig.json tests/bench/lib/report.ts --update-reference`. Root `package.json` wraps every other bench mode (`bench`, `bench:smoke`, `bench:full`, `bench:baseline`, `bench:compare`, `bench:regress`) but nothing wraps `--update-reference`, so the only guidance for the snapshot step lives inside a tool error message and is not copy-paste runnable — the same usability class as [P3.2-val] low (the bare-`--` rejection).
+- Context: PV matrix step 2: first attempt exited 127; the `pnpm exec` form wrote the snapshot cleanly (31 records / 21 scenarios, gitSha `6bcae22`, source artifact `2026-09-01T08-20-44.762Z-current.json`).
+- Solution: Executed via `pnpm exec tsx ...`; snapshot coherence proven by the immediate `bench:regress` re-run against the new reference (PASS — 28 pass / 3 warn / 0 fail, every gated delta exactly 0.0%).
+- Follow-up: add a `bench:reference`-style npm script (one line in root `package.json`) so the snapshot flow has a committed entry point; non-blocking documentation/UX residue.
+
+## [PV-val] none — no problems encountered
