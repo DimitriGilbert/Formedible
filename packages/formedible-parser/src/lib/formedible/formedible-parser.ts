@@ -186,6 +186,52 @@ const allowedFieldKeys = new Set([
   'fileConfig',
 ]);
 
+// Hoisted so the per-key and per-field walks below allocate no membership or
+// copy-target arrays. Membership sets mirror the allowedTopLevelKeys /
+// allowedFieldKeys style; the frozen arrays are iterated with for..of. The
+// exact key sets are identical to the array literals they replace.
+const executableConfigKeys = new Set(['component', 'render', 'children', 'onChange', 'onBlur', 'onFocus', 'onSubmit', 'conditional']);
+const fieldStringKeys = Object.freeze(['label', 'placeholder', 'description', 'tab', 'section', 'className', 'inputClassName']);
+const fieldNumberKeys = Object.freeze(['page', 'min', 'max', 'step', 'rows', 'maxLength']);
+const fieldBooleanKeys = Object.freeze(['required', 'disabled', 'dynamicPlaceholder']);
+const nestedConfigKeys = Object.freeze([
+  'textareaConfig',
+  'passwordConfig',
+  'numberConfig',
+  'dateConfig',
+  'sliderConfig',
+  'ratingConfig',
+  'multiSelectConfig',
+  'comboboxConfig',
+  'autocompleteConfig',
+  'maskedInputConfig',
+  'multiComboboxConfig',
+  'colorConfig',
+  'phoneConfig',
+  'durationConfig',
+  'locationConfig',
+  'fileConfig',
+]);
+const nestedConfigKeySet = new Set<string>(nestedConfigKeys);
+const objectConfigStringKeys = Object.freeze(['layout', 'title', 'description', 'collapseLabel', 'expandLabel']);
+const objectConfigBooleanKeys = Object.freeze(['collapsible', 'defaultCollapsed', 'defaultExpanded', 'showCard']);
+const topLevelStringKeys = new Set([
+  'title',
+  'description',
+  'submitLabel',
+  'nextLabel',
+  'previousLabel',
+  'collapseLabel',
+  'expandLabel',
+  'formClassName',
+  'fieldClassName',
+  'labelClassName',
+  'buttonClassName',
+  'submitButtonClassName',
+]);
+const topLevelBooleanKeys = new Set(['autoScroll', 'autoSubmitOnChange', 'disabled', 'loading', 'resetOnSubmitSuccess', 'showSubmitButton']);
+const topLevelFilteredArrayKeys = new Set(['tabs', 'crossFieldValidation', 'conditionalSections']);
+
 const executableSyntaxPattern = /(?:=>|\bfunction\s*\(|\bclass\s+[A-Za-z_$]|\bnew\s+[A-Za-z_$][\w$]*\s*\(|\beval\s*\(|\bFunction\s*\(|\bsetTimeout\s*\(|\bsetInterval\s*\(|\brequire\s*\(|\bimport\s*\(|<\s*[A-Z][A-Za-z0-9]*(?:\s|>|\/))/;
 
 type CodeRegionKind = 'code' | 'comment' | 'single' | 'double' | 'template';
@@ -381,30 +427,48 @@ function parserErrorToEnhanced(error: unknown, code?: string): EnhancedParserErr
   };
 }
 
-function assertNoExecutableSyntax(code: string): void {
-  const violates = scanCodeRegions(code).some((region) => region.kind !== 'single' && region.kind !== 'double' && region.kind !== 'template' && executableSyntaxPattern.test(region.text));
+function assertNoExecutableSyntaxInRegions(regions: readonly CodeRegion[]): void {
+  const violates = regions.some((region) => region.kind !== 'single' && region.kind !== 'double' && region.kind !== 'template' && executableSyntaxPattern.test(region.text));
 
   if (violates) {
     throw createParserError('Executable callbacks, constructors, imports, and component markup are not supported in AI-generated Formedible configs.', 'EXECUTABLE_INPUT');
   }
 }
 
+// Subsumption invariant: every caller runs assertNoExecutableSyntaxInRegions
+// over the same regions BEFORE this mapping runs. Five of the ten legacy
+// neutralize patterns are exactly subsumed and stay deleted: the four
+// arrow-function forms (each requires `=>`, an alternative the assert matches
+// unconditionally in any non-string region) and the
+// eval/Function/setTimeout/setInterval/require/import call form (its
+// `\b<ident>\s*\(` trigger is character-for-character an assert alternative,
+// so it can never match surviving input). The four restored patterns below are
+// NOT subsumed: the assert's `\bnew` and `\bfunction` alternatives require a
+// word boundary, so word-char-prefixed residue (`xnew Foo()`,
+// `afunction(x){y}`) passes the assert yet matched the legacy boundary-less
+// sources — neutralizing it to `null` or the frozen date literals is what
+// yields legacy outcomes like UNSUPPORTED_TOP_LEVEL_KEY 'xnull' instead of
+// SYNTAX_ERROR. The bare global-identifier replacement is likewise not covered
+// by any assert alternative (no assert alternative matches bare identifiers).
+// Replacement order matches the legacy chain's relative order of the surviving
+// patterns. If the assert is ever removed or reordered to run after sanitize,
+// the five deleted patterns must come back too.
 function neutralizeExecutableConstructs(code: string): string {
   return code
-    .replace(/\b(eval|Function|setTimeout|setInterval|require|import)\s*\([^)]*\)/g, 'null')
     .replace(/\b(document|window|globalThis|global|process|__proto__|constructor|prototype)\b/g, 'null')
     .replace(/new\s+Date\(\)\.toISOString\(\)\.split\([^)]*\)\[0\]/g, '"2024-01-01"')
     .replace(/new\s+Date\(\)/g, '"2024-01-01T00:00:00.000Z"')
-    .replace(/\([^)]*\)\s*=>\s*\{[^}]*\}/g, 'null')
-    .replace(/[A-Za-z_$][\w$]*\s*=>\s*\{[^}]*\}/g, 'null')
-    .replace(/\([^)]*\)\s*=>\s*[^,}\]]+/g, 'null')
-    .replace(/[A-Za-z_$][\w$]*\s*=>\s*[^,}\]]+/g, 'null')
     .replace(/function\s*\([^)]*\)\s*\{[^}]*\}/g, 'null')
     .replace(/new\s+[A-Za-z_$][\w$]*\([^)]*\)/g, 'null');
 }
 
-function sanitizeCode(code: string): string {
-  return scanCodeRegions(code)
+// Rebuilds config text from pre-computed scanner regions: comments drop,
+// code regions are neutralized, and all three string kinds stay verbatim. The
+// fallback path computes the region list once and feeds the same list to this
+// mapping and to assertNoExecutableSyntaxInRegions, so the per-character
+// scanCodeRegions walk runs exactly once per non-JSON parse instead of twice.
+function sanitizeRegions(regions: readonly CodeRegion[]): string {
+  return regions
     .map((region) => {
       if (region.kind === 'comment') {
         return '';
@@ -548,6 +612,59 @@ function parseObjectLiteral(code: string, maxNestingDepth: number): Record<strin
   }
 }
 
+// Fast path for pure-JSON input. Outside string literals the JSON grammar
+// admits only structural tokens, numbers, and true/false/null — none of which
+// can match executableSyntaxPattern or the neutralize replacement — so for any
+// input where JSON.parse succeeds, the assert + sanitize stages the fallback
+// pipeline runs are provably pass/identity and are skipped entirely.
+// Ordering invariant: the executable-syntax assert runs on every input that
+// fails raw JSON.parse (see parseCodeText); the JSON grammar forecloses
+// executable syntax outside strings, so no input that today throws
+// EXECUTABLE_INPUT can take this path.
+function tryParseJsonFastPath(code: string, maxNestingDepth: number): Record<string, unknown> | undefined {
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(code);
+  } catch (error) {
+    // JSON.parse recurses internally, so pathologically nested input can
+    // overflow the stack before any sanitizer runs. Map that to the coded
+    // nesting error exactly as parseObjectLiteral does. Every other failure
+    // (SyntaxError) declines the fast path so the fallback pipeline surfaces
+    // the same error it always has.
+    if (error instanceof RangeError) {
+      throw createMaxNestingDepthError(maxNestingDepth);
+    }
+
+    return undefined;
+  }
+
+  // Non-record JSON (arrays, numbers, strings, booleans, null) also declines:
+  // parseObjectLiteral's object-literal fallback surfaces the same
+  // SYNTAX_ERROR for it as before.
+  return isRecord(parsed) ? parsed : undefined;
+}
+
+const whitespaceOnlyPattern = /^\s*$/;
+
+// Full string-input pipeline shared by parse and parseStructured's string
+// branch: JSON fast path first, then — only for input raw JSON.parse rejected
+// — one scanCodeRegions walk feeding both the executable-syntax assert and the
+// neutralizing sanitize pass, then the object-literal parse of the sanitized
+// text.
+function parseCodeText(code: string, maxNestingDepth: number): Record<string, unknown> {
+  const fastPath = tryParseJsonFastPath(code, maxNestingDepth);
+
+  if (fastPath !== undefined) {
+    return fastPath;
+  }
+
+  const regions = scanCodeRegions(code);
+  assertNoExecutableSyntaxInRegions(regions);
+
+  return parseObjectLiteral(sanitizeRegions(regions), maxNestingDepth);
+}
+
 function cloneJsonValue(value: unknown, depth: number, maxNestingDepth: number): unknown {
   assertNestingDepth(depth, maxNestingDepth);
 
@@ -663,10 +780,17 @@ function sanitizeOptions(value: unknown): readonly FormedibleFieldOption[] | und
     return undefined;
   }
 
-  return value.flatMap((option) => {
+  const output: FormedibleFieldOption[] = [];
+
+  for (const option of value) {
     const normalized = normalizeOption(option);
-    return normalized === undefined ? [] : [normalized];
-  });
+
+    if (normalized !== undefined) {
+      output.push(normalized);
+    }
+  }
+
+  return output;
 }
 
 function sanitizeOptionSets(value: unknown): Readonly<Record<string, readonly FormedibleFieldOption[]>> | undefined {
@@ -695,21 +819,29 @@ function sanitizeHelpConfig(value: unknown, depth: number, maxNestingDepth: numb
   return sanitizePlainConfig(value, depth, maxNestingDepth);
 }
 
+// Single property read per key: the typeof check and the assignment share one
+// lookup (these run for every key of every field on every parse).
 function copyString(source: Readonly<Record<string, unknown>>, target: Record<string, unknown>, key: string): void {
-  if (typeof source[key] === 'string') {
-    target[key] = source[key];
+  const value = source[key];
+
+  if (typeof value === 'string') {
+    target[key] = value;
   }
 }
 
 function copyNumber(source: Readonly<Record<string, unknown>>, target: Record<string, unknown>, key: string): void {
-  if (typeof source[key] === 'number') {
-    target[key] = source[key];
+  const value = source[key];
+
+  if (typeof value === 'number') {
+    target[key] = value;
   }
 }
 
 function copyBoolean(source: Readonly<Record<string, unknown>>, target: Record<string, unknown>, key: string): void {
-  if (typeof source[key] === 'boolean') {
-    target[key] = source[key];
+  const value = source[key];
+
+  if (typeof value === 'boolean') {
+    target[key] = value;
   }
 }
 
@@ -722,10 +854,12 @@ function sanitizePlainConfig(value: unknown, depth: number, maxNestingDepth: num
 
   const output: Record<string, unknown> = {};
 
-  for (const [key, nestedValue] of Object.entries(value)) {
-    if (['component', 'render', 'children', 'onChange', 'onBlur', 'onFocus', 'onSubmit', 'conditional'].includes(key)) {
+  for (const key of Object.keys(value)) {
+    if (executableConfigKeys.has(key)) {
       throw createParserError(`Unsupported executable config key '${key}'`, 'UNSUPPORTED_CONFIG_KEY');
     }
+
+    const nestedValue = value[key];
 
     if (typeof nestedValue === 'function' || nestedValue === zodSentinel) {
       throw createParserError(`Unsupported executable value for key '${key}'`, 'UNSUPPORTED_CONFIG_VALUE');
@@ -736,8 +870,16 @@ function sanitizePlainConfig(value: unknown, depth: number, maxNestingDepth: num
       continue;
     }
 
-    const nestedConfig = sanitizePlainConfig(nestedValue, depth + 1, maxNestingDepth);
-    output[key] = nestedConfig ?? nestedValue;
+    // Scalars short-circuit: sanitizePlainConfig on a non-record returns
+    // undefined before its depth assertion, so assigning directly is
+    // identical to the recursive call it replaces and skips one call per
+    // leaf key (large configs carry ~100 defaultValues leaves).
+    if (nestedValue === null || typeof nestedValue !== 'object') {
+      output[key] = nestedValue;
+      continue;
+    }
+
+    output[key] = sanitizePlainConfig(nestedValue, depth + 1, maxNestingDepth) ?? nestedValue;
   }
 
   return output;
@@ -751,11 +893,11 @@ function sanitizeObjectConfig(value: unknown, depth: number, maxNestingDepth: nu
   const config: Record<string, unknown> = {};
   copyNumber(value, config, 'columns');
 
-  for (const key of ['layout', 'title', 'description', 'collapseLabel', 'expandLabel']) {
+  for (const key of objectConfigStringKeys) {
     copyString(value, config, key);
   }
 
-  for (const key of ['collapsible', 'defaultCollapsed', 'defaultExpanded', 'showCard']) {
+  for (const key of objectConfigBooleanKeys) {
     copyBoolean(value, config, key);
   }
 
@@ -799,9 +941,23 @@ function sanitizeField(field: unknown, index: number, depth: number, maxNestingD
     throw createParserError(`Field at index ${index} cannot use the reserved name '__proto__'`, 'INVALID_FIELD_NAME');
   }
 
-  for (const key of Object.keys(field)) {
+  // One Object.keys pass drives both the allowed-key rejection and the
+  // nested-config dispatch below. Fields reaching this point are always fresh
+  // own-property objects (normalizeAiGeneratedField shallow-copies every
+  // field), so a nested-config key absent from this list is absent from the
+  // field and the 16-slot probe loop can be skipped entirely — the large
+  // configs carry zero nested configs, and the old unconditional probe walked
+  // 16 absent slots per field.
+  const fieldKeys = Object.keys(field);
+  let hasNestedConfigKey = false;
+
+  for (const key of fieldKeys) {
     if (!allowedFieldKeys.has(key)) {
       throw createParserError(`Field at index ${index} has unsupported key '${key}'`, 'UNSUPPORTED_FIELD_KEY');
+    }
+
+    if (nestedConfigKeySet.has(key)) {
+      hasNestedConfigKey = true;
     }
   }
 
@@ -814,15 +970,15 @@ function sanitizeField(field: unknown, index: number, depth: number, maxNestingD
     type: field.type,
   };
 
-  for (const key of ['label', 'placeholder', 'description', 'tab', 'section', 'className', 'inputClassName']) {
+  for (const key of fieldStringKeys) {
     copyString(field, output, key);
   }
 
-  for (const key of ['page', 'min', 'max', 'step', 'rows', 'maxLength']) {
+  for (const key of fieldNumberKeys) {
     copyNumber(field, output, key);
   }
 
-  for (const key of ['required', 'disabled', 'dynamicPlaceholder']) {
+  for (const key of fieldBooleanKeys) {
     copyBoolean(field, output, key);
   }
 
@@ -866,28 +1022,13 @@ function sanitizeField(field: unknown, index: number, depth: number, maxNestingD
     output.arrayConfig = arrayConfig;
   }
 
-  for (const key of [
-    'textareaConfig',
-    'passwordConfig',
-    'numberConfig',
-    'dateConfig',
-    'sliderConfig',
-    'ratingConfig',
-    'multiSelectConfig',
-    'comboboxConfig',
-    'autocompleteConfig',
-    'maskedInputConfig',
-    'multiComboboxConfig',
-    'colorConfig',
-    'phoneConfig',
-    'durationConfig',
-    'locationConfig',
-    'fileConfig',
-  ]) {
-    const config = sanitizePlainConfig(field[key], depth + 1, maxNestingDepth);
+  if (hasNestedConfigKey) {
+    for (const key of nestedConfigKeys) {
+      const config = sanitizePlainConfig(field[key], depth + 1, maxNestingDepth);
 
-    if (config !== undefined) {
-      output[key] = config;
+      if (config !== undefined) {
+        output[key] = config;
+      }
     }
   }
 
@@ -1023,15 +1164,23 @@ function validateAndSanitize(parsed: Record<string, unknown>, options: ParserOpt
     throw createParserError('Fields must be an array', 'INVALID_FIELDS');
   }
 
-  const output: Record<string, unknown> = {
-    fields: sanitizeFields(normalizedParsed.fields, 0, maxNestingDepth).map((field) => {
-      const fieldType = field.type;
-      if (configuredFieldTypes !== undefined && typeof fieldType === 'string' && !configuredFieldTypes.has(fieldType)) {
-        throw createParserError(`Field type '${field.type}' is not allowed.`, 'DISALLOWED_FIELD_TYPE');
-      }
+  const sanitizedFields = sanitizeFields(normalizedParsed.fields, 0, maxNestingDepth);
+  // The per-field map only does work when the caller restricted field types
+  // or field keys; without restrictions every element maps to itself, so the
+  // sanitized array is reused instead of copied once more per parse.
+  const needsFieldPostPass = configuredFieldTypes !== undefined || options?.allowedFieldKeys !== undefined;
 
-      return filterFieldByAllowedKeys(field, options?.allowedFieldKeys);
-    }),
+  const output: Record<string, unknown> = {
+    fields: needsFieldPostPass
+      ? sanitizedFields.map((field) => {
+          const fieldType = field.type;
+          if (configuredFieldTypes !== undefined && typeof fieldType === 'string' && !configuredFieldTypes.has(fieldType)) {
+            throw createParserError(`Field type '${field.type}' is not allowed.`, 'DISALLOWED_FIELD_TYPE');
+          }
+
+          return filterFieldByAllowedKeys(field, options?.allowedFieldKeys);
+        })
+      : sanitizedFields,
     formOptions: isRecord(normalizedParsed.formOptions) ? sanitizePlainConfig(normalizedParsed.formOptions, 0, maxNestingDepth) : { defaultValues: {} },
   };
 
@@ -1067,18 +1216,14 @@ function validateAndSanitize(parsed: Record<string, unknown>, options: ParserOpt
       continue;
     }
 
-    if (
-      ['title', 'description', 'submitLabel', 'nextLabel', 'previousLabel', 'collapseLabel', 'expandLabel', 'formClassName', 'fieldClassName', 'labelClassName', 'buttonClassName', 'submitButtonClassName'].includes(
-        key,
-      )
-    ) {
+    if (topLevelStringKeys.has(key)) {
       if (typeof value === 'string') {
         output[key] = value;
       }
       continue;
     }
 
-    if (['autoScroll', 'autoSubmitOnChange', 'disabled', 'loading', 'resetOnSubmitSuccess', 'showSubmitButton'].includes(key)) {
+    if (topLevelBooleanKeys.has(key)) {
       if (typeof value === 'boolean') {
         output[key] = value;
       }
@@ -1104,7 +1249,7 @@ function validateAndSanitize(parsed: Record<string, unknown>, options: ParserOpt
       continue;
     }
 
-    if (['tabs', 'crossFieldValidation', 'conditionalSections'].includes(key) && Array.isArray(value)) {
+    if (topLevelFilteredArrayKeys.has(key) && Array.isArray(value)) {
       output[key] = value.filter((entry) => typeof entry !== 'function');
       continue;
     }
@@ -1272,7 +1417,7 @@ function extractErrorLocation(code: string, error: unknown): EnhancedParserError
 
 export class FormedibleParser {
   static parse(code: string, options?: ParserOptions | EnhancedParserOptions): ParsedFormConfig {
-    if (typeof code !== 'string' || code.trim().length === 0) {
+    if (typeof code !== 'string' || whitespaceOnlyPattern.test(code)) {
       throw createParserError('Input code must be a non-empty string', 'INVALID_INPUT');
     }
 
@@ -1283,11 +1428,7 @@ export class FormedibleParser {
     const maxNestingDepth = options?.maxNestingDepth ?? defaultParserConfig.maxNestingDepth;
 
     try {
-      assertNoExecutableSyntax(code);
-      const sanitizedCode = sanitizeCode(code);
-      const parsed = parseObjectLiteral(sanitizedCode, maxNestingDepth);
-
-      return validateAndSanitize(parsed, options, maxNestingDepth);
+      return validateAndSanitize(parseCodeText(code, maxNestingDepth), options, maxNestingDepth);
     } catch (error) {
       // Residual RangeErrors (for example from JSON.parse on pathologically
       // nested input) surface as the coded nesting error, never a raw
@@ -1305,11 +1446,7 @@ export class FormedibleParser {
 
     try {
       const candidate = pickStructuredCandidate(output);
-      if (typeof candidate === 'string') {
-        assertNoExecutableSyntax(candidate);
-      }
-
-      const parsed = typeof candidate === 'string' ? parseObjectLiteral(sanitizeCode(candidate), maxNestingDepth) : parseStructuredObject(candidate, maxNestingDepth);
+      const parsed = typeof candidate === 'string' ? parseCodeText(candidate, maxNestingDepth) : parseStructuredObject(candidate, maxNestingDepth);
 
       return validateAndSanitize(parsed, options, maxNestingDepth);
     } catch (error) {
