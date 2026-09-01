@@ -54,19 +54,8 @@ function assertMatchingSecrets(settings: ProviderSettings, secrets: ProviderSecr
   }
 }
 
-function assertNoUnsupportedRuntimeOptions(settings: ProviderSettings): void {
-  if ('endpoint' in settings || 'baseURL' in settings) {
-    throw new Error('Custom provider endpoints are not supported by the AI builder. Select OpenAI, Anthropic, or OpenRouter without endpoint/baseURL overrides.');
-  }
-
-  if (settings.provider !== 'anthropic' && 'thinkingBudgetTokens' in settings) {
-    throw new Error('Thinking budget tokens are only supported for Anthropic provider settings.');
-  }
-}
-
 export function createTanStackTextAdapter(settings: ProviderSettings, secrets: ProviderSecrets): AnyTextAdapter {
   assertMatchingSecrets(settings, secrets);
-  assertNoUnsupportedRuntimeOptions(settings);
 
   if (settings.provider === 'openai') {
     return createOpenaiChat(settings.model as unknown as OpenAIAdapterModel, secrets.apiKey, { dangerouslyAllowBrowser: true });
@@ -84,8 +73,6 @@ export function isAnthropicThinkingEnabled(settings: ProviderSettings): settings
 }
 
 export function createTanStackModelOptions(settings: ProviderSettings): OpenAITextProviderOptions | AnthropicTextProviderOptions | OpenRouterTextModelOptions {
-  assertNoUnsupportedRuntimeOptions(settings);
-
   if (settings.provider === 'openai') {
     return {
       ...(settings.temperature === undefined ? {} : { temperature: settings.temperature }),

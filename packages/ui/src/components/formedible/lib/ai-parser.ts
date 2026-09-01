@@ -88,11 +88,5 @@ export function parseAiToFormedible(code: string, parserConfig?: AiParserConfig)
 }
 
 export function extractFormCode(content: string): string | undefined {
-  const extraction = extractFormedibleCode(content);
-
-  if (extraction.code !== undefined) {
-    return extraction.code;
-  }
-
-  return undefined;
+  return extractFormedibleCode(content).code;
 }

@@ -135,18 +135,32 @@ const schemaAsyncCache = new WeakMap<object, boolean>();
  */
 const schemaAsyncProbeInputs: readonly unknown[] = ['', 0, false, null, {}, [], new Date(0)];
 
-function toProbeableStandardSchema(schema: unknown): ProbeableStandardSchema | undefined {
+/**
+ * Shared shape guard behind every standard-schema view below: `~standard` must
+ * be an object exposing a callable `validate`; `version` must be 1 unless the
+ * caller explicitly tolerates version-less shapes (the async probe does, so it
+ * can also observe schemas that only carry `validate`).
+ */
+function hasStandardSchemaShape(schema: unknown, requireVersion1: boolean): boolean {
   if (typeof schema !== 'object' || schema === null || !('~standard' in schema)) {
-    return undefined;
+    return false;
   }
 
-  const standard = (schema as { readonly '~standard'?: unknown })['~standard'];
+  const standard = schema['~standard'];
 
-  if (typeof standard !== 'object' || standard === null || !('validate' in standard) || typeof (standard as { readonly validate?: unknown }).validate !== 'function') {
-    return undefined;
+  if (typeof standard !== 'object' || standard === null) {
+    return false;
   }
 
-  return schema as ProbeableStandardSchema;
+  if (requireVersion1 && (!('version' in standard) || standard.version !== 1)) {
+    return false;
+  }
+
+  return 'validate' in standard && typeof standard.validate === 'function';
+}
+
+function toProbeableStandardSchema(schema: unknown): ProbeableStandardSchema | undefined {
+  return hasStandardSchemaShape(schema, false) ? (schema as ProbeableStandardSchema) : undefined;
 }
 
 /**
@@ -287,39 +301,11 @@ function parseFormSchemaAsync<TFormValues extends FormedibleFormValues>(
 }
 
 function toStandardSchema<TFormValues extends FormedibleFormValues>(schema: unknown): StandardSchemaV1<TFormValues, unknown> | undefined {
-  if (typeof schema !== 'object' || schema === null || !('~standard' in schema)) {
-    return undefined;
-  }
-
-  const standard = schema['~standard'];
-
-  if (typeof standard !== 'object' || standard === null || !('version' in standard) || standard.version !== 1 || !('validate' in standard)) {
-    return undefined;
-  }
-
-  if (typeof standard.validate !== 'function') {
-    return undefined;
-  }
-
-  return schema as StandardSchemaV1<TFormValues, unknown>;
+  return hasStandardSchemaShape(schema, true) ? (schema as StandardSchemaV1<TFormValues, unknown>) : undefined;
 }
 
 function toStandardFieldSchema(schema: unknown): FormedibleStandardFieldSchema | undefined {
-  if (typeof schema !== 'object' || schema === null || !('~standard' in schema)) {
-    return undefined;
-  }
-
-  const standard = schema['~standard'];
-
-  if (typeof standard !== 'object' || standard === null || !('version' in standard) || standard.version !== 1 || !('validate' in standard)) {
-    return undefined;
-  }
-
-  if (typeof standard.validate !== 'function') {
-    return undefined;
-  }
-
-  return schema as FormedibleStandardFieldSchema;
+  return hasStandardSchemaShape(schema, true) ? (schema as FormedibleStandardFieldSchema) : undefined;
 }
 
 function isPromiseLike(value: unknown): value is PromiseLike<unknown> {

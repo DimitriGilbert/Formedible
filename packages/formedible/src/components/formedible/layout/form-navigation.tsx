@@ -42,7 +42,7 @@ export function FormNavigation({
       {isLastPage ? (
         showSubmitButton ? <Button type="submit" disabled={disabled || !canSubmit} className={submitButtonClassName}>{submitLabel}</Button> : undefined
       ) : (
-        <Button type="button" onClick={onNext} disabled={disabled || isLastPage} className={buttonClassName}>
+        <Button type="button" onClick={onNext} disabled={disabled} className={buttonClassName}>
           {nextLabel}
         </Button>
       )}

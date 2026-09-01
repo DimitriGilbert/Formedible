@@ -68,12 +68,16 @@ export async function generateAiFormCode(
   throw new Error('AI Builder requires client mode to generate a form.');
 }
 
-export function resolveMessageStatus(finishReason: AiFinishReason | undefined, errors: readonly AiStreamEvent[]): AiMessage['status'] {
+// The events arm is subsumed: streamAiResponse returns right after yielding an
+// error event (and its catch path yields an error without a finish), so the
+// consumption loop has already set finishReason = 'error' by the time this
+// runs — the errors parameter is kept for the published signature.
+export function resolveMessageStatus(finishReason: AiFinishReason | undefined, _errors: readonly AiStreamEvent[]): AiMessage['status'] {
   if (finishReason === 'abort') {
     return 'aborted';
   }
 
-  if (finishReason === 'error' || errors.some((event) => event.type === 'error')) {
+  if (finishReason === 'error') {
     return 'error';
   }
 

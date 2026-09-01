@@ -8,7 +8,8 @@ export function TextareaField<TFormValues extends FormedibleFormValues>({ fieldC
   const maxLength = fieldConfig.maxLength ?? fieldConfig.textareaConfig?.maxLength;
   const cols = fieldConfig.textareaConfig?.cols;
   const resize = fieldConfig.textareaConfig?.resize;
-  const wordCount = value.trim() === '' ? 0 : value.trim().split(/\s+/u).length;
+  const showWordCount = Boolean(fieldConfig.textareaConfig?.showWordCount);
+  const wordCount = showWordCount ? (value.trim() === '' ? 0 : value.trim().split(/\s+/u).length) : 0;
 
   return (
     <FieldWrapper fieldConfig={fieldConfig} field={field}>
@@ -28,7 +29,7 @@ export function TextareaField<TFormValues extends FormedibleFormValues>({ fieldC
         onBlur={field.onBlur}
         onChange={(event) => field.onChange(event.target.value)}
       />
-      {fieldConfig.textareaConfig?.showWordCount ? (
+      {showWordCount ? (
         <p className="text-muted-foreground text-xs">
           {wordCount} {wordCount === 1 ? 'word' : 'words'}
           {maxLength === undefined ? null : ` / ${maxLength} characters max`}

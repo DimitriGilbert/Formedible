@@ -1,32 +1,7 @@
+import { hasDatalistOptions, renderDatalistOptions } from '@/components/formedible/fields/advanced-field-utils';
 import { FieldWrapper } from '@/components/formedible/fields/field-wrapper';
 import { Input } from '@/components/ui/input';
-import type { FormedibleFieldOption, FormedibleFieldRenderProps, FormedibleFormValues } from '@/lib/formedible/types';
-
-function hasDatalistOptions(options: readonly FormedibleFieldOption[] | undefined): options is readonly FormedibleFieldOption[] {
-  return Array.isArray(options) && options.length > 0;
-}
-
-function renderDatalistOptions(id: string, options: readonly FormedibleFieldOption[] | undefined) {
-  if (!hasDatalistOptions(options)) {
-    return undefined;
-  }
-
-  return (
-    <datalist id={id}>
-      {options.map((option) => {
-        if (typeof option === 'string') {
-          return <option key={option} value={option} />;
-        }
-
-        return (
-          <option key={option.value} value={option.value} disabled={option.disabled}>
-            {option.label}
-          </option>
-        );
-      })}
-    </datalist>
-  );
-}
+import type { FormedibleFieldRenderProps, FormedibleFormValues } from '@/lib/formedible/types';
 
 export function NumberField<TFormValues extends FormedibleFormValues>({ fieldConfig, field }: FormedibleFieldRenderProps<TFormValues>) {
   const value = typeof field.value === 'number' || typeof field.value === 'string' ? field.value : '';

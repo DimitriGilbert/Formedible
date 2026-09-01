@@ -2,17 +2,13 @@ import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react';
 
 import { FieldWrapper } from '@/components/formedible/fields/field-wrapper';
 import { Button } from '@/components/ui/button';
-import { arrayItemFieldPath, joinFieldPath } from '@/lib/formedible/field-path';
+import { arrayItemFieldPath, joinFieldPath, objectScopeValues } from '@/lib/formedible/field-path';
 import { normalizeFieldConfig } from '@/lib/formedible/normalize-field-config';
 import { cn } from '@/lib/utils';
 import type { FormedibleFieldConfig, FormedibleFieldRenderProps, FormedibleFormValues } from '@/lib/formedible/types';
 
 function arrayValue(value: unknown): readonly unknown[] {
   return Array.isArray(value) ? value : [];
-}
-
-function objectValue(value: unknown): FormedibleFormValues {
-  return typeof value === 'object' && value !== null && !Array.isArray(value) ? (value as FormedibleFormValues) : {};
 }
 
 function defaultItemValue<TFormValues extends FormedibleFormValues>(fieldConfig: FormedibleFieldRenderProps<TFormValues>['fieldConfig']) {
@@ -141,7 +137,7 @@ export function ArrayField<TFormValues extends FormedibleFormValues>({ fieldConf
                     return renderField(nestedConfig, {
                       key: nestedName,
                       name: nestedName,
-                      localValues: objectValue(item),
+                      localValues: objectScopeValues(item),
                     });
                   })}
                 </div>

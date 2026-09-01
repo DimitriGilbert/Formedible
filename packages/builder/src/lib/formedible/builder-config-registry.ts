@@ -130,8 +130,13 @@ function textLikeDefinition(type: FormedibleFieldType, label: string): FieldConf
   return definition(type, label, stringValidationFields);
 }
 
+// The 'text' definition doubles as the fallback for unknown field types; it is
+// the first entry of fieldConfigFormDefinitions, so the lookup below always
+// resolves it and no unreachable "nothing registered" throw is needed.
+const textDefinition: FieldConfigFormDefinition = textLikeDefinition('text', 'Text');
+
 export const fieldConfigFormDefinitions: readonly FieldConfigFormDefinition[] = [
-  textLikeDefinition('text', 'Text'),
+  textDefinition,
   textLikeDefinition('email', 'Email'),
   textLikeDefinition('url', 'URL'),
   textLikeDefinition('tel', 'Telephone'),
@@ -494,13 +499,7 @@ export const fieldConfigFormDefinitions: readonly FieldConfigFormDefinition[] = 
 const definitionsByType = new Map(fieldConfigFormDefinitions.map((item) => [item.type, item]));
 
 export function getFieldConfigFormDefinition(type: FormedibleFieldType): FieldConfigFormDefinition {
-  const definition = definitionsByType.get(type) ?? definitionsByType.get('text');
-
-  if (definition !== undefined) {
-    return definition;
-  }
-
-  throw new Error('No field config form definitions are registered.');
+  return definitionsByType.get(type) ?? textDefinition;
 }
 
 function stringConfigValue(value: unknown): string {

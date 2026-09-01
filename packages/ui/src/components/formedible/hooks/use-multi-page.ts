@@ -41,8 +41,9 @@ export function getVisiblePageNumbers<TFormValues extends FormedibleFormValues>(
 }
 
 export function useMultiPage<TFormValues extends FormedibleFormValues>({ fields, pages, values, onPageChange }: UseMultiPageOptions<TFormValues>): UseMultiPageResult {
-  const initialPage = useMemo(() => getVisiblePageNumbers(fields, pages, values).at(0) ?? 1, [fields, pages, values]);
-  const [currentPage, setCurrentPage] = useState(initialPage);
+  // Lazy initializer: the mount-time first visible page is the only read; the
+  // clamp effect below keeps currentPage inside safeVisiblePages afterwards.
+  const [currentPage, setCurrentPage] = useState(() => getVisiblePageNumbers(fields, pages, values).at(0) ?? 1);
   const [pageStartedAt, setPageStartedAt] = useState(() => Date.now());
   const visiblePages = useMemo(() => getVisiblePageNumbers(fields, pages, values), [fields, pages, values]);
   const safeVisiblePages = visiblePages.length > 0 ? visiblePages : [1];

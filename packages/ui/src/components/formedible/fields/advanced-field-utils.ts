@@ -1,3 +1,4 @@
+import { createElement } from 'react';
 import type { ReactNode } from 'react';
 
 import type { FormedibleFieldOption, FormedibleFormValues, FormedibleOptionConfig, NormalizedFieldConfig } from '@formedible/ui/components/formedible/lib/types';
@@ -8,6 +9,31 @@ export function normalizeOption(option: FormedibleFieldOption): FormedibleOption
 
 export function labelToText(label: ReactNode): string {
   return typeof label === 'string' || typeof label === 'number' ? String(label) : '';
+}
+
+export function hasDatalistOptions(options: readonly FormedibleFieldOption[] | undefined): options is readonly FormedibleFieldOption[] {
+  return Array.isArray(options) && options.length > 0;
+}
+
+// Element-builder twin of the JSX used elsewhere; createElement is required
+// here because this shared module stays extension-agnostic (.ts) for its other
+// pure helpers. The produced elements are identical to the JSX form.
+export function renderDatalistOptions(id: string, options: readonly FormedibleFieldOption[] | undefined) {
+  if (!hasDatalistOptions(options)) {
+    return undefined;
+  }
+
+  return createElement(
+    'datalist',
+    { id },
+    options.map((option) => {
+      if (typeof option === 'string') {
+        return createElement('option', { key: option, value: option });
+      }
+
+      return createElement('option', { key: option.value, value: option.value, disabled: option.disabled }, option.label);
+    }),
+  );
 }
 
 export function resolveFieldOptions<TFormValues extends FormedibleFormValues>(

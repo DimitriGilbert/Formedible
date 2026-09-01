@@ -544,14 +544,10 @@ function replaceZodExpressions(code: string): string {
 
     const expressionStart = index + match.index;
     const openParenIndex = expressionStart + match[0].lastIndexOf('(');
-    let expressionEnd = findExpressionEnd(code, openParenIndex);
-    let chainMatch = code.slice(expressionEnd).match(/^\.[A-Za-z_$][\w$]*\s*\(/);
-
-    while (chainMatch) {
-      const chainOpenParenIndex = expressionEnd + chainMatch[0].lastIndexOf('(');
-      expressionEnd = findExpressionEnd(code, chainOpenParenIndex);
-      chainMatch = code.slice(expressionEnd).match(/^\.[A-Za-z_$][\w$]*\s*\(/);
-    }
+    // findExpressionEnd consumes `.chain(` continuations internally before it
+    // returns, so no external chain loop is needed here: the character at
+    // expressionEnd can never start another `.name(` continuation.
+    const expressionEnd = findExpressionEnd(code, openParenIndex);
 
     output += `${code.slice(index, expressionStart)}"${zodSentinel}"`;
     index = expressionEnd;

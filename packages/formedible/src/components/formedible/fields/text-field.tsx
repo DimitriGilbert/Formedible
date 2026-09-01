@@ -1,37 +1,12 @@
+import { hasDatalistOptions, renderDatalistOptions } from '@/components/formedible/fields/advanced-field-utils';
 import { FieldWrapper } from '@/components/formedible/fields/field-wrapper';
 import { Input as TextInput } from '@/components/ui/input';
-import type { FormedibleFieldOption, FormedibleFieldRenderProps, FormedibleFormValues } from '@/lib/formedible/types';
+import type { FormedibleFieldRenderProps, FormedibleFormValues } from '@/lib/formedible/types';
 
 const textInputTypes = ['email', 'password', 'url', 'tel'] as const;
 
 function getInputType(type: string) {
   return textInputTypes.some((inputType) => inputType === type) ? type : 'text';
-}
-
-function hasDatalistOptions(options: readonly FormedibleFieldOption[] | undefined): options is readonly FormedibleFieldOption[] {
-  return Array.isArray(options) && options.length > 0;
-}
-
-function renderDatalistOptions(id: string, options: readonly FormedibleFieldOption[] | undefined) {
-  if (!hasDatalistOptions(options)) {
-    return undefined;
-  }
-
-  return (
-    <datalist id={id}>
-      {options.map((option) => {
-        if (typeof option === 'string') {
-          return <option key={option} value={option} />;
-        }
-
-        return (
-          <option key={option.value} value={option.value} disabled={option.disabled}>
-            {option.label}
-          </option>
-        );
-      })}
-    </datalist>
-  );
 }
 
 export function TextField<TFormValues extends FormedibleFormValues>({ fieldConfig, field }: FormedibleFieldRenderProps<TFormValues>) {

@@ -120,30 +120,61 @@ export function parseSafeGenerationMetadata(value: unknown): AiGenerationMetadat
 
   const usage = parseSafeUsageMetadata(value.usage);
   const metadata = parseSafeJsonRecord(value.metadata);
+  const startedAt = parseNumber(value.startedAt);
+  const finishedAt = parseNumber(value.finishedAt);
 
   return {
     provider: value.provider,
     model: value.model,
     ...(isAiFinishReason(value.finishReason) ? { finishReason: value.finishReason } : {}),
     ...(usage ? { usage } : {}),
-    ...(parseNumber(value.startedAt) === undefined ? {} : { startedAt: parseNumber(value.startedAt) }),
-    ...(parseNumber(value.finishedAt) === undefined ? {} : { finishedAt: parseNumber(value.finishedAt) }),
+    ...(startedAt === undefined ? {} : { startedAt }),
+    ...(finishedAt === undefined ? {} : { finishedAt }),
     ...(typeof value.requestId === 'string' ? { requestId: value.requestId } : {}),
     ...(metadata ? { metadata } : {}),
   };
 }
 
-export function redactUnknown(value: unknown): AiJsonValue {
-  return parseSafeJsonValue(value) ?? null;
+/**
+ * Shared core behind every JSON-value walker in this package (safe, strict,
+ * plain) and in ai-storage: strings/secret keys are redacted only when
+ * `redactSecrets` is set, invalid entries (functions, symbols, non-finite
+ * numbers, undefined) are either dropped (`dropInvalidEntries`) or invalidate
+ * the whole enclosing value (strict semantics), and `plainPrototypesOnly`
+ * restricts records to plain prototypes. Verified byte-identical against the
+ * previous per-mode walkers by differential probe.
+ */
+interface JsonValueWalkOptions {
+  readonly redactSecrets: boolean;
+  readonly dropInvalidEntries: boolean;
+  readonly plainPrototypesOnly: boolean;
 }
 
-export function parseSafeJsonValue(value: unknown): AiJsonValue | undefined {
+const strictPersistenceWalkOptions: JsonValueWalkOptions = { redactSecrets: false, dropInvalidEntries: false, plainPrototypesOnly: true };
+const strictExportWalkOptions: JsonValueWalkOptions = { redactSecrets: true, dropInvalidEntries: false, plainPrototypesOnly: true };
+const plainWalkOptions: JsonValueWalkOptions = { redactSecrets: false, dropInvalidEntries: true, plainPrototypesOnly: false };
+const safeWalkOptions: JsonValueWalkOptions = { redactSecrets: true, dropInvalidEntries: true, plainPrototypesOnly: false };
+
+function isWalkableRecord(value: unknown, options: JsonValueWalkOptions): value is Record<string, unknown> {
+  if (!options.plainPrototypesOnly) {
+    return isRecord(value);
+  }
+
+  if (!isRecord(value)) {
+    return false;
+  }
+
+  const prototype = Object.getPrototypeOf(value) as unknown;
+  return prototype === Object.prototype || prototype === null;
+}
+
+function walkJsonValue(value: unknown, options: JsonValueWalkOptions): AiJsonValue | undefined {
   if (value === null || typeof value === 'boolean') {
     return value;
   }
 
   if (typeof value === 'string') {
-    return redactSecretString(value);
+    return options.redactSecrets ? redactSecretString(value) : value;
   }
 
   if (typeof value === 'number') {
@@ -154,36 +185,93 @@ export function parseSafeJsonValue(value: unknown): AiJsonValue | undefined {
     const entries: AiJsonValue[] = [];
 
     for (const entry of value) {
-      const redactedEntry = parseSafeJsonValue(entry);
+      const parsedEntry = walkJsonValue(entry, options);
 
-      if (redactedEntry !== undefined) {
-        entries.push(redactedEntry);
+      if (parsedEntry === undefined) {
+        if (!options.dropInvalidEntries) {
+          return undefined;
+        }
+        continue;
       }
+
+      entries.push(parsedEntry);
     }
 
     return entries;
   }
 
-  if (!isRecord(value)) {
+  if (!isWalkableRecord(value, options)) {
     return undefined;
   }
 
   const entries: [string, AiJsonValue][] = [];
 
   for (const [key, entryValue] of Object.entries(value)) {
-    if (isSecretKey(key)) {
+    if (options.redactSecrets && isSecretKey(key)) {
       entries.push([key, '[REDACTED]']);
       continue;
     }
 
-    const redactedValue = parseSafeJsonValue(entryValue);
+    const parsedEntry = walkJsonValue(entryValue, options);
 
-    if (redactedValue !== undefined) {
-      entries.push([key, redactedValue]);
+    if (parsedEntry === undefined) {
+      if (!options.dropInvalidEntries) {
+        return undefined;
+      }
+      continue;
+    }
+
+    entries.push([key, parsedEntry]);
+  }
+
+  return Object.fromEntries(entries);
+}
+
+function walkJsonRecordEntries(value: unknown, options: JsonValueWalkOptions): Readonly<Record<string, AiJsonValue>> | undefined {
+  if (!isWalkableRecord(value, options)) {
+    return undefined;
+  }
+
+  const entries: [string, AiJsonValue][] = [];
+
+  for (const [key, entryValue] of Object.entries(value)) {
+    if (options.redactSecrets && isSecretKey(key)) {
+      entries.push([key, '[REDACTED]']);
+      continue;
+    }
+
+    const parsedEntry = walkJsonValue(entryValue, options);
+
+    if (parsedEntry !== undefined) {
+      entries.push([key, parsedEntry]);
     }
   }
 
   return Object.fromEntries(entries);
+}
+
+export function redactUnknown(value: unknown): AiJsonValue {
+  return parseSafeJsonValue(value) ?? null;
+}
+
+export function parseSafeJsonValue(value: unknown): AiJsonValue | undefined {
+  return walkJsonValue(value, safeWalkOptions);
+}
+
+/**
+ * Strict walker for schema-shaped config: records must have plain prototypes
+ * and the first invalid entry invalidates the whole enclosing value. Redaction
+ * (strings and secret-keyed entries) applies only when `redact` is set, which
+ * ai-storage derives from its conversation sanitize mode (export redacts,
+ * persistence round-trips verbatim).
+ */
+export function parseStrictJsonValue(value: unknown, redact: boolean): AiJsonValue | undefined {
+  return walkJsonValue(value, redact ? strictExportWalkOptions : strictPersistenceWalkOptions);
+}
+
+/** Lenient, never-redacting walker used by the persistence round-trip path. */
+export function parsePlainJsonValue(value: unknown): AiJsonValue | undefined {
+  return walkJsonValue(value, plainWalkOptions);
 }
 
 export function parseSafeJsonRecord(value: unknown): Readonly<Record<string, AiJsonValue>> | undefined {
@@ -266,45 +354,36 @@ function parseSafeUsageMetadata(value: unknown): AiUsageMetadata | undefined {
     return undefined;
   }
 
+  const inputTokens = parseNumber(value.inputTokens);
+  const outputTokens = parseNumber(value.outputTokens);
+  const totalTokens = parseNumber(value.totalTokens);
+  const cachedInputTokens = parseNumber(value.cachedInputTokens);
+  const reasoningTokens = parseNumber(value.reasoningTokens);
   const usage: AiUsageMetadata = {
-    ...(parseNumber(value.inputTokens) === undefined ? {} : { inputTokens: parseNumber(value.inputTokens) }),
-    ...(parseNumber(value.outputTokens) === undefined ? {} : { outputTokens: parseNumber(value.outputTokens) }),
-    ...(parseNumber(value.totalTokens) === undefined ? {} : { totalTokens: parseNumber(value.totalTokens) }),
-    ...(parseNumber(value.cachedInputTokens) === undefined ? {} : { cachedInputTokens: parseNumber(value.cachedInputTokens) }),
-    ...(parseNumber(value.reasoningTokens) === undefined ? {} : { reasoningTokens: parseNumber(value.reasoningTokens) }),
+    ...(inputTokens === undefined ? {} : { inputTokens }),
+    ...(outputTokens === undefined ? {} : { outputTokens }),
+    ...(totalTokens === undefined ? {} : { totalTokens }),
+    ...(cachedInputTokens === undefined ? {} : { cachedInputTokens }),
+    ...(reasoningTokens === undefined ? {} : { reasoningTokens }),
   };
 
   return Object.keys(usage).length > 0 ? usage : undefined;
 }
 
 export function parseSafeJsonRecordAllowEmpty(value: unknown): Readonly<Record<string, AiJsonValue>> | undefined {
-  if (!isRecord(value)) {
-    return undefined;
-  }
-
-  const entries: [string, AiJsonValue][] = [];
-
-  for (const [key, entryValue] of Object.entries(value)) {
-    if (isSecretKey(key)) {
-      entries.push([key, '[REDACTED]']);
-      continue;
-    }
-
-    const redactedValue = parseSafeJsonValue(entryValue);
-
-    if (redactedValue !== undefined) {
-      entries.push([key, redactedValue]);
-    }
-  }
-
-  return Object.fromEntries(entries);
+  return walkJsonRecordEntries(value, safeWalkOptions);
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
+/** Record-level twin of {@link parsePlainJsonValue}: drops invalid entries, never redacts. */
+export function parsePlainJsonRecordAllowEmpty(value: unknown): Readonly<Record<string, AiJsonValue>> | undefined {
+  return walkJsonRecordEntries(value, plainWalkOptions);
+}
+
+export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function isAIProvider(value: unknown): value is AIProvider {
+export function isAIProvider(value: unknown): value is AIProvider {
   return typeof value === 'string' && supportedProviders.some((provider) => provider === value);
 }
 
@@ -312,7 +391,7 @@ function isAiFinishReason(value: unknown): value is AiFinishReason {
   return typeof value === 'string' && supportedFinishReasons.some((finishReason) => finishReason === value);
 }
 
-function parseNumber(value: unknown): number | undefined {
+export function parseNumber(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 

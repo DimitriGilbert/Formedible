@@ -2,14 +2,10 @@ import { useState } from 'react';
 
 import { FieldWrapper } from '@/components/formedible/fields/field-wrapper';
 import { Button } from '@/components/ui/button';
-import { joinFieldPath } from '@/lib/formedible/field-path';
+import { joinFieldPath, objectScopeValues } from '@/lib/formedible/field-path';
 import { normalizeFieldConfig } from '@/lib/formedible/normalize-field-config';
 import { cn } from '@/lib/utils';
 import type { FormedibleFieldRenderProps, FormedibleFormValues } from '@/lib/formedible/types';
-
-function objectValue(value: unknown): FormedibleFormValues {
-  return typeof value === 'object' && value !== null && !Array.isArray(value) ? (value as FormedibleFormValues) : {};
-}
 
 export function ObjectField<TFormValues extends FormedibleFormValues>({ fieldConfig, field, renderField }: FormedibleFieldRenderProps<TFormValues>) {
   const config = fieldConfig.objectConfig;
@@ -18,7 +14,7 @@ export function ObjectField<TFormValues extends FormedibleFormValues>({ fieldCon
   const layout = config?.layout ?? 'stack';
   const collapsible = config?.collapsible ?? false;
   const [isExpanded, setIsExpanded] = useState(config?.defaultExpanded !== false);
-  const localValues = objectValue(field.value);
+  const localValues = objectScopeValues(field.value);
 
   if (!renderField) {
     return <FieldWrapper fieldConfig={fieldConfig} field={field}>{undefined}</FieldWrapper>;

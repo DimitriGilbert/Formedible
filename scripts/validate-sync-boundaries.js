@@ -112,10 +112,6 @@ async function collectSourceFiles(directoryPath) {
   return files;
 }
 
-function isExactOrSubpath(specifier, expectedSpecifier) {
-  return specifier === expectedSpecifier || specifier.startsWith(`${expectedSpecifier}/`) || sourceFileExtensionPattern.test(specifier.slice(expectedSpecifier.length));
-}
-
 function validateWebSyncImport(occurrence) {
   if (occurrence.specifier.startsWith(uiPackageFormedibleLibMirror)) {
     return `apps/web synced shadcn files must not import invalid package lib mirror ${occurrence.specifier}`;

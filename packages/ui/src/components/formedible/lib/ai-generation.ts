@@ -3,6 +3,7 @@ import type { StreamChunk } from '@tanstack/ai';
 
 import { createTanStackModelOptions, createTanStackTextAdapter } from '@formedible/ui/components/formedible/lib/ai-adapters';
 import { normalizeAiError } from '@formedible/ui/components/formedible/lib/ai-errors';
+import { isRecord } from '@formedible/ui/components/formedible/lib/ai-safe-persistence';
 import { toTanStackMessageInputs, toTanStackSystemPrompts } from '@formedible/ui/components/formedible/lib/ai-messages';
 import { extractFormCode } from '@formedible/ui/components/formedible/lib/ai-parser';
 import type { AiErrorInfo, AiFinishReason, AiGenerationMetadata, AiGenerationRequest, AiGenerationResult, AiStreamEvent, AiUsageMetadata, ProviderSettings } from '@formedible/ui/components/formedible/lib/ai-types';
@@ -25,10 +26,6 @@ interface StreamAccumulator {
   errors: AiErrorInfo[];
   finishReason?: AiFinishReason;
   usage?: AiUsageMetadata;
-}
-
-function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function isAiProviderErrorMessage(message: string | undefined): message is string {
@@ -87,6 +84,11 @@ function readUsage(value: unknown): AiUsageMetadata | undefined {
   };
 }
 
+// RunFinishedEvent.finishReason is limited to 'stop' | 'length' |
+// 'content_filter' | 'tool_calls' | null in @tanstack/ai 0.52 (@ag-ui/core
+// canary), so only those live literals are mapped; app-synthesized abort/error
+// finish events are constructed directly and never flow through this
+// normalizer.
 function normalizeFinishReason(reason: string | undefined): AiFinishReason {
   if (reason === 'stop') {
     return 'stop';
@@ -96,37 +98,26 @@ function normalizeFinishReason(reason: string | undefined): AiFinishReason {
     return 'length';
   }
 
-  if (reason === 'tool_calls' || reason === 'tool-calls') {
+  if (reason === 'tool_calls') {
     return 'tool-calls';
   }
 
-  if (reason === 'content_filter' || reason === 'content-filter') {
+  if (reason === 'content_filter') {
     return 'content-filter';
-  }
-
-  if (reason === 'abort' || reason === 'aborted') {
-    return 'abort';
-  }
-
-  if (reason === 'error') {
-    return 'error';
   }
 
   return 'unknown';
 }
 
+// Every chunk type below is the installed @tanstack/ai 0.52 / @ag-ui/core
+// canary EventType spelling (ALL-CAPS only); lowercase aliases cannot occur.
+
 function toTextEvent(raw: unknown, receivedAt: number): AiStreamEvent | undefined {
   const type = readString(raw, 'type');
   const delta = readString(raw, 'delta');
 
-  if ((type === 'TEXT_MESSAGE_CONTENT' || type === 'text-delta' || type === 'text') && delta !== undefined) {
+  if (type === 'TEXT_MESSAGE_CONTENT' && delta !== undefined) {
     return { type: 'text-delta', delta, raw, receivedAt };
-  }
-
-  const content = readString(raw, 'content');
-
-  if (type === 'text' && content !== undefined) {
-    return { type: 'text-delta', delta: content, raw, receivedAt };
   }
 
   return undefined;
@@ -136,7 +127,7 @@ function toThinkingEvent(raw: unknown, receivedAt: number): AiStreamEvent | unde
   const type = readString(raw, 'type');
   const delta = readString(raw, 'delta');
 
-  if ((type === 'REASONING_MESSAGE_CONTENT' || type === 'THINKING_TEXT_MESSAGE_CONTENT' || type === 'thinking-delta' || type === 'reasoning-delta') && delta !== undefined) {
+  if ((type === 'REASONING_MESSAGE_CONTENT' || type === 'THINKING_TEXT_MESSAGE_CONTENT') && delta !== undefined) {
     return { type: 'thinking-delta', delta, raw, receivedAt };
   }
 
@@ -182,7 +173,7 @@ function toToolEvent(raw: unknown, receivedAt: number): AiStreamEvent | undefine
 function toErrorEvent(raw: unknown, receivedAt: number): AiStreamEvent | undefined {
   const type = readString(raw, 'type');
 
-  if (type !== 'RUN_ERROR' && type !== 'error') {
+  if (type !== 'RUN_ERROR') {
     return undefined;
   }
 
@@ -204,7 +195,7 @@ function toErrorEvent(raw: unknown, receivedAt: number): AiStreamEvent | undefin
 function toFinishEvent(raw: unknown, receivedAt: number): AiStreamEvent | undefined {
   const type = readString(raw, 'type');
 
-  if (type !== 'RUN_FINISHED' && type !== 'finish') {
+  if (type !== 'RUN_FINISHED') {
     return undefined;
   }
 

@@ -17,7 +17,6 @@ export function FormPreview({ config, onFormSubmit, className }: FormPreviewProp
     ...config,
     formOptions: {
       ...config.formOptions,
-      defaultValues: config.formOptions?.defaultValues,
       onSubmit: async ({ value }) => {
         onFormSubmit?.(value);
       },

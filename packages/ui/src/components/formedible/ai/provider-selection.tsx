@@ -74,10 +74,6 @@ export function validateProviderAccess(settings: ProviderSettings | null, secret
     return 'Provider settings and secrets must target the same provider.';
   }
 
-  if ('endpoint' in settings || 'baseURL' in settings) {
-    return 'Custom provider endpoints are not supported. Select OpenAI, Anthropic, or OpenRouter without endpoint/baseURL overrides.';
-  }
-
   if (settings.provider !== 'anthropic' && 'thinkingBudgetTokens' in settings) {
     return 'Thinking budget tokens are only supported for Anthropic.';
   }

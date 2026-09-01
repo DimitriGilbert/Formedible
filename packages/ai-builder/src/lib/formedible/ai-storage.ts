@@ -5,7 +5,6 @@ import type {
   AiConversation,
   AiConversationExport,
   AiConversationMetadata,
-  AiJsonValue,
   AiMessage,
   AiMessageRole,
   AiMessageStatus,
@@ -17,7 +16,24 @@ import type {
   ProviderSecrets,
   ProviderSettings,
 } from '@/lib/formedible/ai-types';
-import { createStreamEventSummary, parseSafeGenerationMetadata, parseSafeJsonRecord, parseSafeJsonRecordAllowEmpty, parseSafeJsonValue, parseSafeMessageParts, parseSafeStreamEvents, parseStreamEventSummary, redactSecretString, redactUnknown } from '@/lib/formedible/ai-safe-persistence';
+import {
+  createStreamEventSummary,
+  isAIProvider,
+  isRecord,
+  parseNumber,
+  parsePlainJsonRecordAllowEmpty,
+  parsePlainJsonValue,
+  parseSafeGenerationMetadata,
+  parseSafeJsonRecord,
+  parseSafeJsonRecordAllowEmpty,
+  parseSafeJsonValue,
+  parseSafeMessageParts,
+  parseSafeStreamEvents,
+  parseStrictJsonValue,
+  parseStreamEventSummary,
+  redactSecretString,
+  redactUnknown,
+} from '@/lib/formedible/ai-safe-persistence';
 import type { ParsedFieldConfig, ParsedFormConfig } from '@/components/formedible/lib/parser-types';
 import type { FormedibleFieldOption, FormedibleFieldType } from '@/components/formedible/lib/types';
 
@@ -227,7 +243,7 @@ export function persistProviderSecrets(secrets: ProviderSecrets, preference: Pro
   writeJson(STORAGE_KEYS.providerSecrets, storedSecrets, preference.mode);
 }
 
-export function readStoredProviderSecrets(area: Exclude<StorageArea, never> = 'session'): StoredProviderSecrets | undefined {
+export function readStoredProviderSecrets(area: StorageArea = 'session'): StoredProviderSecrets | undefined {
   return readJson(STORAGE_KEYS.providerSecrets, undefined, parseStoredProviderSecrets, area);
 }
 
@@ -299,8 +315,15 @@ export function upsertConversation(
 }
 
 export function getLastFormCode(messages: readonly AiMessage[]): string {
-  const messageWithForm = [...messages].reverse().find((message) => message.formCode);
-  return messageWithForm?.formCode ?? '';
+  for (let index = messages.length - 1; index >= 0; index -= 1) {
+    const formCode = messages[index]?.formCode;
+
+    if (formCode) {
+      return formCode;
+    }
+  }
+
+  return '';
 }
 
 function createGeneratedFormSnapshots(conversationId: string, messages: readonly AiMessage[]): readonly GeneratedFormSnapshot[] {
@@ -577,6 +600,9 @@ function parseMessage(value: unknown, mode: ConversationSanitizeMode): AiMessage
   const parseErrors = parseParseErrors(value.parseErrors);
   const formConfig = parseParsedFormConfig(value.formConfig, mode);
   const generation = parseSafeGenerationMetadata(value.generation);
+  const timestamp = parseNumber(value.timestamp);
+  const createdAt = parseNumber(value.createdAt);
+  const updatedAt = parseNumber(value.updatedAt);
 
   return {
     id: value.id,
@@ -589,9 +615,9 @@ function parseMessage(value: unknown, mode: ConversationSanitizeMode): AiMessage
     ...(typeof value.formCode === 'string' ? { formCode: value.formCode } : {}),
     ...(formConfig ? { formConfig } : {}),
     ...(parseErrors.length === 0 ? {} : { parseErrors }),
-    ...(parseNumber(value.timestamp) === undefined ? {} : { timestamp: parseNumber(value.timestamp) }),
-    ...(parseNumber(value.createdAt) === undefined ? {} : { createdAt: parseNumber(value.createdAt) }),
-    ...(parseNumber(value.updatedAt) === undefined ? {} : { updatedAt: parseNumber(value.updatedAt) }),
+    ...(timestamp === undefined ? {} : { timestamp }),
+    ...(createdAt === undefined ? {} : { createdAt }),
+    ...(updatedAt === undefined ? {} : { updatedAt }),
     ...(isAIProvider(value.provider) ? { provider: value.provider } : {}),
     ...(typeof value.model === 'string' ? { model: value.model } : {}),
     ...(generation ? { generation } : {}),
@@ -656,7 +682,8 @@ function parseParsedFormConfig(value: unknown, mode: ConversationSanitizeMode): 
   const tabs = parseTabs(value.tabs);
   const progress = parseProgress(value.progress);
   const persistence = parsePersistence(value.persistence, mode);
-  const schema = parseStrictJsonValue(value.schema, mode);
+  const schema = parseStrictJsonValue(value.schema, mode === 'export');
+  const autoSubmitDebounceMs = parseNumber(value.autoSubmitDebounceMs);
   const config = {
     fields,
     formOptions,
@@ -674,7 +701,7 @@ function parseParsedFormConfig(value: unknown, mode: ConversationSanitizeMode): 
     ...(typeof value.expandLabel === 'string' ? { expandLabel: value.expandLabel } : {}),
     ...(typeof value.formClassName === 'string' ? { formClassName: value.formClassName } : {}),
     ...(typeof value.autoSubmitOnChange === 'boolean' ? { autoSubmitOnChange: value.autoSubmitOnChange } : {}),
-    ...(parseNumber(value.autoSubmitDebounceMs) === undefined ? {} : { autoSubmitDebounceMs: parseNumber(value.autoSubmitDebounceMs) }),
+    ...(autoSubmitDebounceMs === undefined ? {} : { autoSubmitDebounceMs }),
     ...(typeof value.disabled === 'boolean' ? { disabled: value.disabled } : {}),
     ...(typeof value.loading === 'boolean' ? { loading: value.loading } : {}),
     ...(typeof value.showSubmitButton === 'boolean' ? { showSubmitButton: value.showSubmitButton } : {}),
@@ -723,6 +750,12 @@ function parseFieldConfig(value: unknown, mode: ConversationSanitizeMode): Parse
   const durationConfig = parseDurationConfig(value.durationConfig);
   const locationConfig = parseLocationConfig(value.locationConfig);
   const fileConfig = parseFileConfig(value.fileConfig);
+  const page = parseNumber(value.page);
+  const min = parseNumber(value.min);
+  const max = parseNumber(value.max);
+  const step = parseNumber(value.step);
+  const rows = parseNumber(value.rows);
+  const maxLength = parseNumber(value.maxLength);
   const field = {
     name: value.name,
     ...(isFormedibleFieldType(value.type) ? { type: value.type } : {}),
@@ -734,7 +767,7 @@ function parseFieldConfig(value: unknown, mode: ConversationSanitizeMode): Parse
     ...(typeof value.required === 'boolean' ? { required: value.required } : {}),
     ...(typeof value.className === 'string' ? { className: value.className } : {}),
     ...(typeof value.inputClassName === 'string' ? { inputClassName: value.inputClassName } : {}),
-    ...(parseNumber(value.page) === undefined ? {} : { page: parseNumber(value.page) }),
+    ...(page === undefined ? {} : { page }),
     ...(typeof value.tab === 'string' ? { tab: value.tab } : {}),
     ...(section ? { section } : {}),
     ...(typeof value.conditional === 'string' ? { conditional: value.conditional } : {}),
@@ -743,11 +776,11 @@ function parseFieldConfig(value: unknown, mode: ConversationSanitizeMode): Parse
     ...(nestedFields.length === 0 ? {} : { nestedFields }),
     ...(arrayConfig ? { arrayConfig } : {}),
     ...(objectConfig ? { objectConfig } : {}),
-    ...(parseNumber(value.min) === undefined ? {} : { min: parseNumber(value.min) }),
-    ...(parseNumber(value.max) === undefined ? {} : { max: parseNumber(value.max) }),
-    ...(parseNumber(value.step) === undefined ? {} : { step: parseNumber(value.step) }),
-    ...(parseNumber(value.rows) === undefined ? {} : { rows: parseNumber(value.rows) }),
-    ...(parseNumber(value.maxLength) === undefined ? {} : { maxLength: parseNumber(value.maxLength) }),
+    ...(min === undefined ? {} : { min }),
+    ...(max === undefined ? {} : { max }),
+    ...(step === undefined ? {} : { step }),
+    ...(rows === undefined ? {} : { rows }),
+    ...(maxLength === undefined ? {} : { maxLength }),
     ...(typeof value.mask === 'string' ? { mask: value.mask } : {}),
     ...(textareaConfig ? { textareaConfig } : {}),
     ...(passwordConfig ? { passwordConfig } : {}),
@@ -777,10 +810,13 @@ function parseTextareaConfig(value: unknown): ParsedFieldConfig['textareaConfig'
     return undefined;
   }
 
+  const rows = parseNumber(value.rows);
+  const cols = parseNumber(value.cols);
+  const maxLength = parseNumber(value.maxLength);
   const config = {
-    ...(parseNumber(value.rows) === undefined ? {} : { rows: parseNumber(value.rows) }),
-    ...(parseNumber(value.cols) === undefined ? {} : { cols: parseNumber(value.cols) }),
-    ...(parseNumber(value.maxLength) === undefined ? {} : { maxLength: parseNumber(value.maxLength) }),
+    ...(rows === undefined ? {} : { rows }),
+    ...(cols === undefined ? {} : { cols }),
+    ...(maxLength === undefined ? {} : { maxLength }),
     ...(isTextareaResize(value.resize) ? { resize: value.resize } : {}),
     ...(typeof value.showWordCount === 'boolean' ? { showWordCount: value.showWordCount } : {}),
   } satisfies NonNullable<ParsedFieldConfig['textareaConfig']>;
@@ -793,10 +829,11 @@ function parsePasswordConfig(value: unknown): ParsedFieldConfig['passwordConfig'
     return undefined;
   }
 
+  const minStrength = parseNumber(value.minStrength);
   const config = {
     ...(typeof value.showToggle === 'boolean' ? { showToggle: value.showToggle } : {}),
     ...(typeof value.strengthMeter === 'boolean' ? { strengthMeter: value.strengthMeter } : {}),
-    ...(parseNumber(value.minStrength) === undefined ? {} : { minStrength: parseNumber(value.minStrength) }),
+    ...(minStrength === undefined ? {} : { minStrength }),
   } satisfies NonNullable<ParsedFieldConfig['passwordConfig']>;
 
   return Object.keys(config).length === 0 ? undefined : config;
@@ -807,10 +844,13 @@ function parseNumberConfig(value: unknown): ParsedFieldConfig['numberConfig'] | 
     return undefined;
   }
 
+  const min = parseNumber(value.min);
+  const max = parseNumber(value.max);
+  const step = parseNumber(value.step);
   const config = {
-    ...(parseNumber(value.min) === undefined ? {} : { min: parseNumber(value.min) }),
-    ...(parseNumber(value.max) === undefined ? {} : { max: parseNumber(value.max) }),
-    ...(parseNumber(value.step) === undefined ? {} : { step: parseNumber(value.step) }),
+    ...(min === undefined ? {} : { min }),
+    ...(max === undefined ? {} : { max }),
+    ...(step === undefined ? {} : { step }),
   } satisfies NonNullable<ParsedFieldConfig['numberConfig']>;
 
   return Object.keys(config).length === 0 ? undefined : config;
@@ -839,11 +879,14 @@ function parseAutocompleteConfig(value: unknown): ParsedFieldConfig['autocomplet
   }
 
   const options = parseFieldOptions(value.options);
+  const debounceMs = parseNumber(value.debounceMs);
+  const minChars = parseNumber(value.minChars);
+  const maxResults = parseNumber(value.maxResults);
   const config = {
     ...(options.length === 0 ? {} : { options }),
-    ...(parseNumber(value.debounceMs) === undefined ? {} : { debounceMs: parseNumber(value.debounceMs) }),
-    ...(parseNumber(value.minChars) === undefined ? {} : { minChars: parseNumber(value.minChars) }),
-    ...(parseNumber(value.maxResults) === undefined ? {} : { maxResults: parseNumber(value.maxResults) }),
+    ...(debounceMs === undefined ? {} : { debounceMs }),
+    ...(minChars === undefined ? {} : { minChars }),
+    ...(maxResults === undefined ? {} : { maxResults }),
     ...(typeof value.allowCustom === 'boolean' ? { allowCustom: value.allowCustom } : {}),
     ...(typeof value.placeholder === 'string' ? { placeholder: value.placeholder } : {}),
     ...(typeof value.noOptionsText === 'string' ? { noOptionsText: value.noOptionsText } : {}),
@@ -918,14 +961,18 @@ function parseSliderConfig(value: unknown): ParsedFieldConfig['sliderConfig'] | 
 
   const valueMapping = parseSliderValueMapping(value.valueMapping);
   const marks = parseSliderMarks(value.marks);
+  const min = parseNumber(value.min);
+  const max = parseNumber(value.max);
+  const step = parseNumber(value.step);
+  const valueDisplayPrecision = parseNumber(value.valueDisplayPrecision);
   const config = {
-    ...(parseNumber(value.min) === undefined ? {} : { min: parseNumber(value.min) }),
-    ...(parseNumber(value.max) === undefined ? {} : { max: parseNumber(value.max) }),
-    ...(parseNumber(value.step) === undefined ? {} : { step: parseNumber(value.step) }),
+    ...(min === undefined ? {} : { min }),
+    ...(max === undefined ? {} : { max }),
+    ...(step === undefined ? {} : { step }),
     ...(valueMapping.length === 0 ? {} : { valueMapping }),
     ...(typeof value.valueLabelPrefix === 'string' ? { valueLabelPrefix: value.valueLabelPrefix } : {}),
     ...(typeof value.valueLabelSuffix === 'string' ? { valueLabelSuffix: value.valueLabelSuffix } : {}),
-    ...(parseNumber(value.valueDisplayPrecision) === undefined ? {} : { valueDisplayPrecision: parseNumber(value.valueDisplayPrecision) }),
+    ...(valueDisplayPrecision === undefined ? {} : { valueDisplayPrecision }),
     ...(typeof value.showRawValue === 'boolean' ? { showRawValue: value.showRawValue } : {}),
     ...(typeof value.showValue === 'boolean' ? { showValue: value.showValue } : {}),
     ...(marks.length === 0 ? {} : { marks }),
@@ -985,8 +1032,9 @@ function parseRatingConfig(value: unknown): ParsedFieldConfig['ratingConfig'] | 
     return undefined;
   }
 
+  const max = parseNumber(value.max);
   const config = {
-    ...(parseNumber(value.max) === undefined ? {} : { max: parseNumber(value.max) }),
+    ...(max === undefined ? {} : { max }),
     ...(typeof value.allowHalf === 'boolean' ? { allowHalf: value.allowHalf } : {}),
     ...(isRatingIcon(value.icon) ? { icon: value.icon } : {}),
     ...(isRatingSize(value.size) ? { size: value.size } : {}),
@@ -1001,8 +1049,9 @@ function parseMultiSelectConfig(value: unknown): ParsedFieldConfig['multiSelectC
     return undefined;
   }
 
+  const maxSelections = parseNumber(value.maxSelections);
   const config = {
-    ...(parseNumber(value.maxSelections) === undefined ? {} : { maxSelections: parseNumber(value.maxSelections) }),
+    ...(maxSelections === undefined ? {} : { maxSelections }),
     ...(typeof value.searchable === 'boolean' ? { searchable: value.searchable } : {}),
     ...(typeof value.creatable === 'boolean' ? { creatable: value.creatable } : {}),
     ...(typeof value.placeholder === 'string' ? { placeholder: value.placeholder } : {}),
@@ -1063,11 +1112,14 @@ function parseDurationConfig(value: unknown): ParsedFieldConfig['durationConfig'
     return undefined;
   }
 
+  const maxHours = parseNumber(value.maxHours);
+  const maxMinutes = parseNumber(value.maxMinutes);
+  const maxSeconds = parseNumber(value.maxSeconds);
   const config = {
     ...(isDurationFormat(value.format) ? { format: value.format } : {}),
-    ...(parseNumber(value.maxHours) === undefined ? {} : { maxHours: parseNumber(value.maxHours) }),
-    ...(parseNumber(value.maxMinutes) === undefined ? {} : { maxMinutes: parseNumber(value.maxMinutes) }),
-    ...(parseNumber(value.maxSeconds) === undefined ? {} : { maxSeconds: parseNumber(value.maxSeconds) }),
+    ...(maxHours === undefined ? {} : { maxHours }),
+    ...(maxMinutes === undefined ? {} : { maxMinutes }),
+    ...(maxSeconds === undefined ? {} : { maxSeconds }),
     ...(typeof value.showLabels === 'boolean' ? { showLabels: value.showLabels } : {}),
   } satisfies NonNullable<ParsedFieldConfig['durationConfig']>;
 
@@ -1121,10 +1173,13 @@ function parseLocationSearchOptions(value: unknown): NonNullable<NonNullable<Par
     return undefined;
   }
 
+  const debounceMs = parseNumber(value.debounceMs);
+  const minQueryLength = parseNumber(value.minQueryLength);
+  const maxResults = parseNumber(value.maxResults);
   const config = {
-    ...(parseNumber(value.debounceMs) === undefined ? {} : { debounceMs: parseNumber(value.debounceMs) }),
-    ...(parseNumber(value.minQueryLength) === undefined ? {} : { minQueryLength: parseNumber(value.minQueryLength) }),
-    ...(parseNumber(value.maxResults) === undefined ? {} : { maxResults: parseNumber(value.maxResults) }),
+    ...(debounceMs === undefined ? {} : { debounceMs }),
+    ...(minQueryLength === undefined ? {} : { minQueryLength }),
+    ...(maxResults === undefined ? {} : { maxResults }),
   } satisfies NonNullable<NonNullable<ParsedFieldConfig['locationConfig']>['searchOptions']>;
 
   return Object.keys(config).length === 0 ? undefined : config;
@@ -1135,11 +1190,13 @@ function parseFileConfig(value: unknown): ParsedFieldConfig['fileConfig'] | unde
     return undefined;
   }
 
+  const maxSize = parseNumber(value.maxSize);
+  const maxFiles = parseNumber(value.maxFiles);
   const config = {
     ...(typeof value.accept === 'string' ? { accept: value.accept } : {}),
     ...(typeof value.multiple === 'boolean' ? { multiple: value.multiple } : {}),
-    ...(parseNumber(value.maxSize) === undefined ? {} : { maxSize: parseNumber(value.maxSize) }),
-    ...(parseNumber(value.maxFiles) === undefined ? {} : { maxFiles: parseNumber(value.maxFiles) }),
+    ...(maxSize === undefined ? {} : { maxSize }),
+    ...(maxFiles === undefined ? {} : { maxFiles }),
   } satisfies NonNullable<ParsedFieldConfig['fileConfig']>;
 
   return Object.keys(config).length === 0 ? undefined : config;
@@ -1212,10 +1269,11 @@ function parseObjectConfig(value: unknown, mode: ConversationSanitizeMode): Pars
   }
 
   const fields = parseFieldConfigs(value.fields, mode);
+  const columns = parseNumber(value.columns);
   const config = {
     ...(fields.length === 0 ? {} : { fields }),
     ...(value.layout === 'stack' || value.layout === 'grid' ? { layout: value.layout } : {}),
-    ...(parseNumber(value.columns) === undefined ? {} : { columns: parseNumber(value.columns) }),
+    ...(columns === undefined ? {} : { columns }),
   } satisfies NonNullable<ParsedFieldConfig['objectConfig']>;
 
   return Object.keys(config).length === 0 ? undefined : config;
@@ -1228,10 +1286,12 @@ function parseArrayConfig(value: unknown, mode: ConversationSanitizeMode): Parse
 
   const objectConfig = parseObjectConfig(value.objectConfig, mode);
   const defaultValue = mode === 'persistence' ? parsePlainJsonValue(value.defaultValue) : parseSafeJsonValue(value.defaultValue);
+  const minItems = parseNumber(value.minItems);
+  const maxItems = parseNumber(value.maxItems);
   const config = {
     ...(isArrayItemType(value.itemType) ? { itemType: value.itemType } : {}),
-    ...(parseNumber(value.minItems) === undefined ? {} : { minItems: parseNumber(value.minItems) }),
-    ...(parseNumber(value.maxItems) === undefined ? {} : { maxItems: parseNumber(value.maxItems) }),
+    ...(minItems === undefined ? {} : { minItems }),
+    ...(maxItems === undefined ? {} : { maxItems }),
     ...(typeof value.sortable === 'boolean' ? { sortable: value.sortable } : {}),
     ...(defaultValue === undefined ? {} : { defaultValue }),
     ...(objectConfig ? { objectConfig } : {}),
@@ -1331,10 +1391,11 @@ function parsePersistence(value: unknown, mode: ConversationSanitizeMode): Parse
   }
 
   const exclude = parseStringArray(value.exclude);
+  const debounceMs = parseNumber(value.debounceMs);
   const persistence = {
     ...(mode === 'persistence' ? { key: value.key } : { key: '[REDACTED]' }),
     ...(value.storage === 'localStorage' || value.storage === 'sessionStorage' ? { storage: value.storage } : {}),
-    ...(parseNumber(value.debounceMs) === undefined ? {} : { debounceMs: parseNumber(value.debounceMs) }),
+    ...(debounceMs === undefined ? {} : { debounceMs }),
     ...(exclude.length === 0 ? {} : { exclude }),
     ...(typeof value.restoreOnMount === 'boolean' ? { restoreOnMount: value.restoreOnMount } : {}),
   } satisfies NonNullable<ParsedFormConfig['persistence']>;
@@ -1352,12 +1413,15 @@ function parseParseErrors(value: unknown): readonly AiParseError[] {
       return [];
     }
 
+    const line = parseNumber(entry.line);
+    const column = parseNumber(entry.column);
+
     return [{
       message: redactSecretString(entry.message),
       ...(typeof entry.code === 'string' ? { code: redactSecretString(entry.code) } : {}),
       ...(typeof entry.field === 'string' ? { field: redactSecretString(entry.field) } : {}),
-      ...(parseNumber(entry.line) === undefined ? {} : { line: parseNumber(entry.line) }),
-      ...(parseNumber(entry.column) === undefined ? {} : { column: parseNumber(entry.column) }),
+      ...(line === undefined ? {} : { line }),
+      ...(column === undefined ? {} : { column }),
       ...(parseSafeJsonValue(entry.details) === undefined ? {} : { details: redactUnknown(entry.details) }),
     }];
   });
@@ -1426,151 +1490,6 @@ function getStorage(area: StorageArea): Storage {
   return area === 'local' ? window.localStorage : window.sessionStorage;
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function parseStrictJsonValue(value: unknown, mode: ConversationSanitizeMode): AiJsonValue | undefined {
-  if (value === null || typeof value === 'boolean') {
-    return value;
-  }
-
-  if (typeof value === 'string') {
-    return mode === 'persistence' ? value : redactSecretString(value);
-  }
-
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? value : undefined;
-  }
-
-  if (Array.isArray(value)) {
-    const entries: AiJsonValue[] = [];
-
-    for (const entry of value) {
-      const parsedEntry = parseStrictJsonValue(entry, mode);
-
-      if (parsedEntry === undefined) {
-        return undefined;
-      }
-
-      entries.push(parsedEntry);
-    }
-
-    return entries;
-  }
-
-  if (!isPlainJsonRecord(value)) {
-    return undefined;
-  }
-
-  const entries: [string, AiJsonValue][] = [];
-
-  for (const [key, entryValue] of Object.entries(value)) {
-    if (mode === 'export' && isSecretJsonKey(key)) {
-      entries.push([key, '[REDACTED]']);
-      continue;
-    }
-
-    const parsedEntry = parseStrictJsonValue(entryValue, mode);
-
-    if (parsedEntry === undefined) {
-      return undefined;
-    }
-
-    entries.push([key, parsedEntry]);
-  }
-
-  return Object.fromEntries(entries);
-}
-
-function parsePlainJsonValue(value: unknown): AiJsonValue | undefined {
-  if (value === null || typeof value === 'boolean') {
-    return value;
-  }
-
-  if (typeof value === 'string') {
-    return value;
-  }
-
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? value : undefined;
-  }
-
-  if (Array.isArray(value)) {
-    const entries: AiJsonValue[] = [];
-
-    for (const entry of value) {
-      const parsedEntry = parsePlainJsonValue(entry);
-
-      if (parsedEntry !== undefined) {
-        entries.push(parsedEntry);
-      }
-    }
-
-    return entries;
-  }
-
-  if (!isRecord(value)) {
-    return undefined;
-  }
-
-  const entries: [string, AiJsonValue][] = [];
-
-  for (const [key, entryValue] of Object.entries(value)) {
-    const parsedEntry = parsePlainJsonValue(entryValue);
-
-    if (parsedEntry !== undefined) {
-      entries.push([key, parsedEntry]);
-    }
-  }
-
-  return Object.fromEntries(entries);
-}
-
-function parsePlainJsonRecordAllowEmpty(value: unknown): Readonly<Record<string, AiJsonValue>> | undefined {
-  if (!isRecord(value)) {
-    return undefined;
-  }
-
-  const entries: [string, AiJsonValue][] = [];
-
-  for (const [key, entryValue] of Object.entries(value)) {
-    const parsedEntry = parsePlainJsonValue(entryValue);
-
-    if (parsedEntry !== undefined) {
-      entries.push([key, parsedEntry]);
-    }
-  }
-
-  return Object.fromEntries(entries);
-}
-
-function isPlainJsonRecord(value: unknown): value is Record<string, unknown> {
-  if (!isRecord(value)) {
-    return false;
-  }
-
-  const prototype = Object.getPrototypeOf(value) as unknown;
-  return prototype === Object.prototype || prototype === null;
-}
-
-function isSecretJsonKey(key: string): boolean {
-  const normalizedKey = key.toLowerCase();
-  return normalizedKey === 'key'
-    || normalizedKey.includes('apikey')
-    || normalizedKey.includes('api_key')
-    || normalizedKey.includes('secret')
-    || normalizedKey.includes('token')
-    || normalizedKey.includes('authorization')
-    || normalizedKey.includes('password')
-    || normalizedKey.includes('bearer')
-    || normalizedKey.includes('credential');
-}
-
-function isAIProvider(value: unknown): value is AIProvider {
-  return typeof value === 'string' && supportedProviders.some((provider) => provider === value);
-}
-
 function isAiMessageRole(value: unknown): value is AiMessageRole {
   return typeof value === 'string' && supportedRoles.some((role) => role === value);
 }
@@ -1613,10 +1532,6 @@ function isDurationFormat(value: unknown): value is NonNullable<NonNullable<Pars
 
 function isProviderSecretStorageMode(value: unknown): value is ProviderSecretStorageMode {
   return value === 'memory' || value === 'session' || value === 'local';
-}
-
-function parseNumber(value: unknown): number | undefined {
-  return typeof value === 'number' && Number.isFinite(value) ? value : undefined;
 }
 
 function parseOptionalNumber(value: unknown): number | undefined {

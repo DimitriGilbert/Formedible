@@ -114,7 +114,8 @@ export interface FieldWrapperProps<TFormValues extends FormedibleFormValues = Fo
 
 export function FieldWrapper<TFormValues extends FormedibleFormValues>({ fieldConfig, field, children }: FieldWrapperProps<TFormValues>) {
   const help = fieldConfig.help;
-  const plainHelpContent = !isFormedibleHelpConfig(help) ? help : undefined;
+  const isConfiguredHelp = isFormedibleHelpConfig(help);
+  const plainHelpContent = isConfiguredHelp ? undefined : help;
 
   return (
     <Field
@@ -132,7 +133,7 @@ export function FieldWrapper<TFormValues extends FormedibleFormValues>({ fieldCo
       {children}
       {fieldConfig.description ? <FieldDescription>{fieldConfig.description}</FieldDescription> : undefined}
       {plainHelpContent ? <FieldDescription>{plainHelpContent}</FieldDescription> : undefined}
-      {isFormedibleHelpConfig(help) ? <FieldHelp help={help} /> : undefined}
+      {isConfiguredHelp ? <FieldHelp help={help} /> : undefined}
       {field.error ? <FieldError>{field.error}</FieldError> : undefined}
     </Field>
   );

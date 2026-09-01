@@ -1,7 +1,7 @@
 import type { ModelMessage } from '@tanstack/ai';
 
 import type { AiGenerationMetadata, AiMessage, AiMessagePart, AiMessageRole, AiMessageStatus, AiStreamEventSummary } from '@formedible/ui/components/formedible/lib/ai-types';
-import { createStreamEventSummary, parseSafeGenerationMetadata, parseSafeMessageParts, parseSafeStreamEvents, parseStreamEventSummary } from '@formedible/ui/components/formedible/lib/ai-safe-persistence';
+import { createStreamEventSummary, isRecord, parseSafeGenerationMetadata, parseSafeMessageParts, parseSafeStreamEvents, parseStreamEventSummary } from '@formedible/ui/components/formedible/lib/ai-safe-persistence';
 
 export type TanStackAiMessageInput = ModelMessage<string>;
 
@@ -25,10 +25,6 @@ export interface PersistedAiMessage {
 
 const AI_MESSAGE_ROLES = ['user', 'assistant', 'system'] as const satisfies readonly AiMessageRole[];
 const AI_MESSAGE_STATUSES = ['idle', 'submitted', 'streaming', 'completed', 'error', 'aborted'] as const satisfies readonly AiMessageStatus[];
-
-function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 
 function isAiMessageRole(value: unknown): value is AiMessageRole {
   if (typeof value !== 'string') {

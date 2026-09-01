@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 
+import { reactNodeToBuilderText } from '@formedible/ui/components/formedible/lib/builder-config-transforms';
 import type {
   FormedibleFieldConfig,
   FormedibleFormValues,
@@ -35,18 +36,6 @@ interface SerializedTabConfig {
   readonly description?: string;
 }
 
-function reactNodeToCode(value: ReactNode): string {
-  if (typeof value === 'string') {
-    return value;
-  }
-
-  if (typeof value === 'number' || typeof value === 'boolean') {
-    return String(value);
-  }
-
-  return '';
-}
-
 function stringLiteral(value: string): string {
   return JSON.stringify(value);
 }
@@ -77,7 +66,7 @@ function arrayItemSchemaCode(itemType: NonNullable<FormedibleFieldConfig<Formedi
 }
 
 function fieldSchemaCode(field: FormedibleFieldConfig<FormedibleFormValues>): string {
-  const label = reactNodeToCode(field.label) || field.name;
+  const label = reactNodeToBuilderText(field.label) || field.name;
   const builderValidation = getBuilderValidation(field);
   let schema = 'z.string()';
 
@@ -153,56 +142,58 @@ function getBuilderValidation(field: FormedibleFieldConfig<FormedibleFormValues>
   return typeof validation === 'object' && validation !== null && !Array.isArray(validation) ? validation as BuilderFieldValidationConfig : undefined;
 }
 
+// Optional field keys probed during serialization; hoisted + frozen so the
+// 35-entry literal is not rebuilt for every serialized field.
+const optionalFieldKeys = Object.freeze([
+  'description',
+  'placeholder',
+  'defaultValue',
+  'required',
+  'disabled',
+  'page',
+  'tab',
+  'section',
+  'help',
+  'options',
+  'datalist',
+  'min',
+  'max',
+  'step',
+  'rows',
+  'maxLength',
+  'mask',
+  'textareaConfig',
+  'passwordConfig',
+  'numberConfig',
+  'dateConfig',
+  'sliderConfig',
+  'ratingConfig',
+  'multiSelectConfig',
+  'comboboxConfig',
+  'autocompleteConfig',
+  'maskedInputConfig',
+  'multiComboboxConfig',
+  'colorConfig',
+  'phoneConfig',
+  'durationConfig',
+  'locationConfig',
+  'fileConfig',
+  'arrayConfig',
+  'objectConfig',
+] as const);
+
 function serializeField(field: FormedibleFieldConfig<FormedibleFormValues>): Record<string, unknown> {
   const serialized: Record<string, unknown> = {
     name: field.name,
     type: field.type ?? 'text',
-    label: reactNodeToCode(field.label) || field.name,
+    label: reactNodeToBuilderText(field.label) || field.name,
   };
 
-  const optionalKeys = [
-    'description',
-    'placeholder',
-    'defaultValue',
-    'required',
-    'disabled',
-    'page',
-    'tab',
-    'section',
-    'help',
-    'options',
-    'datalist',
-    'min',
-    'max',
-    'step',
-    'rows',
-    'maxLength',
-    'mask',
-    'textareaConfig',
-    'passwordConfig',
-    'numberConfig',
-    'dateConfig',
-    'sliderConfig',
-    'ratingConfig',
-    'multiSelectConfig',
-    'comboboxConfig',
-    'autocompleteConfig',
-    'maskedInputConfig',
-    'multiComboboxConfig',
-    'colorConfig',
-    'phoneConfig',
-    'durationConfig',
-    'locationConfig',
-    'fileConfig',
-    'arrayConfig',
-    'objectConfig',
-  ] as const;
-
-  for (const key of optionalKeys) {
+  for (const key of optionalFieldKeys) {
     const value = field[key];
 
     if (value !== undefined && typeof value !== 'function') {
-      serialized[key] = key === 'description' ? reactNodeToCode(value as ReactNode) : value;
+      serialized[key] = key === 'description' ? reactNodeToBuilderText(value as ReactNode) : value;
     }
   }
 
@@ -325,8 +316,8 @@ export function generateCodeFromParsedConfig(config: UseFormedibleOptions<Formed
     fields: config.fields ?? [],
     pages: config.pages?.map((page) => ({
       page: page.page,
-      title: reactNodeToCode(page.title) || `Page ${page.page}`,
-      description: reactNodeToCode(page.description),
+      title: reactNodeToBuilderText(page.title) || `Page ${page.page}`,
+      description: reactNodeToBuilderText(page.description),
     })),
     tabs: config.tabs?.flatMap((tab) => {
       if (typeof tab === 'string') {
@@ -335,14 +326,14 @@ export function generateCodeFromParsedConfig(config: UseFormedibleOptions<Formed
 
       return [{
         id: tab.id,
-        label: reactNodeToCode(tab.label) || tab.id,
-        description: reactNodeToCode(tab.description),
+        label: reactNodeToBuilderText(tab.label) || tab.id,
+        description: reactNodeToBuilderText(tab.description),
       }];
     }),
     settings: {
-      submitLabel: reactNodeToCode(config.submitLabel),
-      nextLabel: reactNodeToCode(config.nextLabel),
-      previousLabel: reactNodeToCode(config.previousLabel),
+      submitLabel: reactNodeToBuilderText(config.submitLabel),
+      nextLabel: reactNodeToBuilderText(config.nextLabel),
+      previousLabel: reactNodeToBuilderText(config.previousLabel),
       showProgress: config.progress !== undefined,
     },
   });

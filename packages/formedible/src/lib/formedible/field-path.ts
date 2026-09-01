@@ -1,3 +1,5 @@
+import type { FormedibleFormValues } from '@/lib/formedible/types';
+
 export type FormediblePathSegment = string | number;
 
 export function joinFieldPath(parentPath: string, childPath: string): string {
@@ -106,4 +108,14 @@ export function pathSegmentsToFieldPath(segments: readonly FormediblePathSegment
   }
 
   return path || undefined;
+}
+
+/**
+ * Coerces an unknown value to the form-values record used as the values scope
+ * for nested field rendering (object fields, array object items) and for
+ * conditional resolution. Arrays and primitives collapse to an empty record;
+ * plain objects pass through by reference.
+ */
+export function objectScopeValues(value: unknown): FormedibleFormValues {
+  return typeof value === 'object' && value !== null && !Array.isArray(value) ? (value as FormedibleFormValues) : {};
 }

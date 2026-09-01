@@ -44,10 +44,12 @@ function getStrengthLabel(strength: number) {
 export function PasswordField<TFormValues extends FormedibleFormValues>({ fieldConfig, field }: FormedibleFieldRenderProps<TFormValues>) {
   const [isVisible, setIsVisible] = useState(false);
   const value = typeof field.value === 'string' ? field.value : '';
-  const strength = getPasswordStrength(value);
   const minStrength = clampStrength(fieldConfig.passwordConfig?.minStrength ?? 0);
   const showToggle = fieldConfig.passwordConfig?.showToggle === true;
   const showStrengthMeter = fieldConfig.passwordConfig?.strengthMeter === true;
+  // Strength is only rendered inside the meter; skip the regex scoring when the
+  // meter is disabled so the value never leaks into unused work.
+  const strength = showStrengthMeter ? getPasswordStrength(value) : 0;
   const inputType = showToggle && isVisible ? 'text' : 'password';
 
   return (

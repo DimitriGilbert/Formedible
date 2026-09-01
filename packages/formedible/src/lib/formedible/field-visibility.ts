@@ -1,4 +1,4 @@
-import { getValueAtFieldPath, parseFieldPath } from '@/lib/formedible/field-path';
+import { getValueAtFieldPath, objectScopeValues, parseFieldPath } from '@/lib/formedible/field-path';
 import type { FormediblePathSegment } from '@/lib/formedible/field-path';
 import type {
   FormedibleConditional,
@@ -167,10 +167,6 @@ export function isFieldPathVisible<TFormValues extends FormedibleFormValues>(
   }
 
   return isSegmentPathVisible(fields, segments, values);
-}
-
-function objectScopeValues(value: unknown): FormedibleFormValues {
-  return typeof value === 'object' && value !== null && !Array.isArray(value) ? (value as FormedibleFormValues) : {};
 }
 
 function isSegmentPathVisible<TFormValues extends FormedibleFormValues>(
