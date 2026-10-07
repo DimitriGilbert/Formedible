@@ -1,4 +1,4 @@
-import{ot as e}from"./index-BSon8pN0.js";import{t}from"./guide-page-BSAtWirX.js";var n=e(),r=`https://github.com/DimitriGilbert/Formedible/blob/main`,i=`pnpm dlx shadcn@latest add https://formedible.dev/r/formedible-core.json`,a=`import { useFormedible } from '@/components/ui/formedible/hooks/use-formedible';
+import{ot as e}from"./index-CHChLFAU.js";import{t}from"./guide-page-DAtc9sx4.js";var n=e(),r=`https://github.com/DimitriGilbert/Formedible/blob/main`,i=`pnpm dlx shadcn@latest add https://formedible.dev/r/formedible-core.json`,a=`import { useFormedible } from '@/components/ui/formedible/hooks/use-formedible';
 
 type ContactValues = {
   name: string;

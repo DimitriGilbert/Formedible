@@ -1,4 +1,4 @@
-import{r as e}from"./chunk-CilyBKbf.js";import{t}from"./arrow-right-s_DP88cz.js";import{n,t as r}from"./file-text-DjQSbhEZ.js";import{n as i,t as a}from"./scroll-area-DV-wO1RK.js";import{$ as o,K as s,Q as c,R as l,Y as u,Z as d,_ as f,a as p,at as m,c as h,d as ee,et as te,f as g,h as _,i as v,l as y,m as b,nt as x,o as S,ot as ne,p as C,q as re,r as w,s as T,st as E,tt as ie,u as D}from"./index-BSon8pN0.js";import{t as O}from"./site-footer-DaH_D2O6.js";import{t as k}from"./demo-card-DG8UkNOQ.js";var ae=x(`brain`,[[`path`,{d:`M12 18V5`,key:`adv99a`}],[`path`,{d:`M15 13a4.17 4.17 0 0 1-3-4 4.17 4.17 0 0 1-3 4`,key:`1e3is1`}],[`path`,{d:`M17.598 6.5A3 3 0 1 0 12 5a3 3 0 1 0-5.598 1.5`,key:`1gqd8o`}],[`path`,{d:`M17.997 5.125a4 4 0 0 1 2.526 5.77`,key:`iwvgf7`}],[`path`,{d:`M18 18a4 4 0 0 0 2-7.464`,key:`efp6ie`}],[`path`,{d:`M19.967 17.483A4 4 0 1 1 12 18a4 4 0 1 1-7.967-.517`,key:`1gq6am`}],[`path`,{d:`M6 18a4 4 0 0 1-2-7.464`,key:`k1g0md`}],[`path`,{d:`M6.003 5.125a4 4 0 0 0-2.526 5.77`,key:`q97ue3`}]]),A=x(`terminal`,[[`path`,{d:`M12 19h8`,key:`baeox8`}],[`path`,{d:`m4 17 6-6-6-6`,key:`1yngyt`}]]),j=e(E(),1),M=ne(),N=C({framework:h([`nextjs`,`react_vite`,`react_cra`,`remix`,`astro`]),packageManager:h([`npm`,`yarn`,`pnpm`,`bun`]),useTypeScript:D(),hasSpecialRequirements:D(),specialRequirements:b().optional()});function P(){let[e,t]=(0,j.useState)(!1),[n,a]=(0,j.useState)(``),[c,u]=(0,j.useState)(!1),d=e=>{let{framework:t,packageManager:n,useTypeScript:r,hasSpecialRequirements:i,specialRequirements:a}=e,o={nextjs:`Next.js`,react_vite:`React with Vite`,react_cra:`Create React App`,remix:`Remix`,astro:`Astro`},s=`# 🚀 Formedible Installation Guide
+import{r as e}from"./chunk-CilyBKbf.js";import{t}from"./arrow-right-D1SVXCsA.js";import{n,t as r}from"./file-text-Cb6H7eBw.js";import{n as i,t as a}from"./scroll-area-Dm1o4B5x.js";import{$ as o,K as s,Q as c,R as l,Y as u,Z as d,_ as f,a as p,at as m,c as h,d as ee,et as te,f as g,h as _,i as v,l as y,m as b,nt as x,o as S,ot as ne,p as C,q as re,r as w,s as T,st as E,tt as ie,u as D}from"./index-CHChLFAU.js";import{t as O}from"./site-footer-DhlzZb4E.js";import{t as k}from"./demo-card-COeO605t.js";var ae=x(`brain`,[[`path`,{d:`M12 18V5`,key:`adv99a`}],[`path`,{d:`M15 13a4.17 4.17 0 0 1-3-4 4.17 4.17 0 0 1-3 4`,key:`1e3is1`}],[`path`,{d:`M17.598 6.5A3 3 0 1 0 12 5a3 3 0 1 0-5.598 1.5`,key:`1gqd8o`}],[`path`,{d:`M17.997 5.125a4 4 0 0 1 2.526 5.77`,key:`iwvgf7`}],[`path`,{d:`M18 18a4 4 0 0 0 2-7.464`,key:`efp6ie`}],[`path`,{d:`M19.967 17.483A4 4 0 1 1 12 18a4 4 0 1 1-7.967-.517`,key:`1gq6am`}],[`path`,{d:`M6 18a4 4 0 0 1-2-7.464`,key:`k1g0md`}],[`path`,{d:`M6.003 5.125a4 4 0 0 0-2.526 5.77`,key:`q97ue3`}]]),A=x(`terminal`,[[`path`,{d:`M12 19h8`,key:`baeox8`}],[`path`,{d:`m4 17 6-6-6-6`,key:`1yngyt`}]]),j=e(E(),1),M=ne(),N=C({framework:h([`nextjs`,`react_vite`,`react_cra`,`remix`,`astro`]),packageManager:h([`npm`,`yarn`,`pnpm`,`bun`]),useTypeScript:D(),hasSpecialRequirements:D(),specialRequirements:b().optional()});function P(){let[e,t]=(0,j.useState)(!1),[n,a]=(0,j.useState)(``),[c,u]=(0,j.useState)(!1),d=e=>{let{framework:t,packageManager:n,useTypeScript:r,hasSpecialRequirements:i,specialRequirements:a}=e,o={nextjs:`Next.js`,react_vite:`React with Vite`,react_cra:`Create React App`,remix:`Remix`,astro:`Astro`},s=`# 🚀 Formedible Installation Guide
 
 `;return s+=`## Framework: ${o[t]}${r?` with TypeScript`:``}\n\n`,s+=`## 📋 Prerequisites
 
@@ -67,7 +67,7 @@ import{r as e}from"./chunk-CilyBKbf.js";import{t}from"./arrow-right-s_DP88cz.js"
 `,s+=`## 📚 Resources
 
 `,s+=`- [Documentation](https://formedible.dev/docs)
-`,s+=`- [Examples](https://formedible.dev/examples)
+`,s+=`- [Examples](https://formedible.dev/docs/examples)
 `,s+=`- [GitHub Repository](https://github.com/DimitriGilbert/Formedible)
 
 `,s+=`---
@@ -203,7 +203,7 @@ export function InstallationPromptGenerator() {
 
   return <Form />;
 }
-`,I=C({includeInstallation:D(),includeBasicUsage:D(),includeFieldTypes:D(),includeValidation:D(),includeMultiPage:D(),includeConditionalLogic:D(),includeTabs:D(),includeAdvancedFeatures:D(),selectFieldTypes:D(),selectedFieldTypes:y(b()),includeBasicExamples:D(),includeAdvancedExamples:D(),includeRealWorldExamples:D(),includeTypeScript:D(),includePerformance:D(),includeBestPractices:D(),includeCommonMistakes:D(),includeMigrationGuide:D(),customInstructions:b().optional(),targetAudience:h([`beginner`,`intermediate`,`advanced`,`all`]),focusArea:h([`general`,`enterprise`,`rapid-prototyping`,`complex-forms`,`mobile-first`])}),L=[`text`,`email`,`url`,`textarea`,`number`,`date`,`select`,`multiSelect`,`checkbox`,`switch`,`radio`,`slider`,`rating`,`phone`,`colorPicker`,`file`,`array`,`autocomplete`,`location`,`duration`,`masked`,`object`,`password`];function R(){let[e,t]=(0,j.useState)(!1),[r,a]=(0,j.useState)(``),[c,u]=(0,j.useState)(!1),d=e=>{let t=[`# Formedible AI Assistant Guide
+`,I=C({includeInstallation:D(),includeBasicUsage:D(),includeFieldTypes:D(),includeValidation:D(),includeMultiPage:D(),includeConditionalLogic:D(),includeTabs:D(),includeAdvancedFeatures:D(),selectFieldTypes:D(),selectedFieldTypes:y(b()),includeBasicExamples:D(),includeAdvancedExamples:D(),includeRealWorldExamples:D(),includeTypeScript:D(),includePerformance:D(),includeBestPractices:D(),includeCommonMistakes:D(),includeMigrationGuide:D(),customInstructions:b().optional(),targetAudience:h([`beginner`,`intermediate`,`advanced`,`all`]),focusArea:h([`general`,`enterprise`,`rapid-prototyping`,`complex-forms`,`mobile-first`])}),L=`text.email.url.tel.textarea.number.date.select.multiSelect.checkbox.switch.radio.slider.rating.phone.color.file.array.combobox.autocomplete.multiCombobox.location.duration.masked.object.password`.split(`.`);function R(){let[e,t]=(0,j.useState)(!1),[r,a]=(0,j.useState)(``),[c,u]=(0,j.useState)(!1),d=e=>{let t=[`# Formedible AI Assistant Guide
 
 `,`You are an AI assistant specialized in helping developers use the Formedible React form library.
 
@@ -259,6 +259,7 @@ export function InstallationPromptGenerator() {
 `,`Formedible supports ${n.length>20?`over 20`:n.length} field types:\n\n`);let r={text:`- **text**: Standard text input with placeholder and validation support
 `,email:`- **email**: Email input with built-in email validation
 `,url:`- **url**: URL input with URL validation
+`,tel:`- **tel**: Telephone text input using the native tel input type
 `,textarea:`- **textarea**: Multi-line text with textareaConfig (rows, maxLength, showWordCount)
 `,number:`- **number**: Number input with numberConfig (min, max, step)
 `,date:`- **date**: Date picker with calendar and dateConfig options
@@ -270,10 +271,12 @@ export function InstallationPromptGenerator() {
 `,slider:`- **slider**: Interactive range slider with custom visualizations and click-to-select
 `,rating:`- **rating**: Star rating component with half stars and custom icons
 `,phone:`- **phone**: International phone input with country selection and phoneConfig
-`,colorPicker:`- **colorPicker**: Color picker with HEX/RGB/HSL formats and preset colors
+`,color:`- **color**: Color picker (colorPicker alias supported) with HEX/RGB/HSL formats and preset colors
 `,file:`- **file**: File upload with drag & drop, multiple files, and size limits
 `,array:`- **array**: Dynamic array of fields with add/remove and drag & drop sorting
+`,combobox:`- **combobox**: Searchable dropdown combining a text input with a filtered option list
 `,autocomplete:`- **autocomplete**: Text input with suggestions and autocompleteConfig
+`,multiCombobox:`- **multiCombobox**: Multi-select variant of the combobox with token-style selection
 `,location:`- **location**: Map-based location picker with geolocation support
 `,duration:`- **duration**: Time duration input with multiple formats
 `,masked:`- **masked**: Formatted text input with custom masks (phone, date, credit card)

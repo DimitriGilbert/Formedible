@@ -1,1 +1,0 @@
-import{ot as e}from"./index-BSon8pN0.js";var t=e();function n(){return(0,t.jsx)(`div`,{children:`Not Found`})}export{n as component};

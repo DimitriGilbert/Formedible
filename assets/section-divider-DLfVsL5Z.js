@@ -1,1 +1,0 @@
-import{W as e,ot as t}from"./index-BSon8pN0.js";var n=t();function r({children:t,className:r}){return(0,n.jsx)(`div`,{className:e(`mx-auto w-full max-w-[1400px]`,r),children:t})}function i(){return(0,n.jsx)(`div`,{className:`border-t border-border`})}export{r as n,i as t};
