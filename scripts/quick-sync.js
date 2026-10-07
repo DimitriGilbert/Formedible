@@ -386,6 +386,11 @@ async function copyRegistryFiles(route, rootDirectory) {
   let missing = 0;
 
   for (const file of files) {
+    // `~/` targets are consumer-project install paths (agent skill files); they have no workspace mirror.
+    if (file.targetPath.startsWith('~/')) {
+      continue;
+    }
+
     if (file.sourcePath === 'src/index.ts' && route.useRegistryTargets !== true) {
       continue;
     }

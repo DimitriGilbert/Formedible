@@ -31,6 +31,13 @@ test('Vite base shadcn preset installs local Formedible registry and builds old 
     assert.equal(installCommand.args[3], boundary.registryFilePath);
     await runCommand(installCommand, { environment: { ...process.env, CI: '1' } });
 
+    const claudeSkillPath = join(workspace.appDirectory, '.claude', 'skills', 'formedible', 'SKILL.md');
+    const agentsSkillPath = join(workspace.appDirectory, '.agents', 'skills', 'formedible', 'SKILL.md');
+    assert.equal(await pathExists(claudeSkillPath), true, 'Expected the Formedible agent skill at .claude/skills/formedible/SKILL.md after install.');
+    assert.equal(await pathExists(agentsSkillPath), true, 'Expected the Formedible agent skill at .agents/skills/formedible/SKILL.md after install.');
+    const installedSkill = await readFile(claudeSkillPath, 'utf8');
+    assert.match(installedSkill, /^---\nname: formedible\n/m);
+
     await copyFile(oldArrayFieldsFixturePath, join(workspace.appDirectory, 'src', 'App.tsx'));
 
     const appSource = await readFile(join(workspace.appDirectory, 'src', 'App.tsx'), 'utf8');

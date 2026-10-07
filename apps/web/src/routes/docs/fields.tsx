@@ -13,7 +13,7 @@ const fieldTypes = [
   'aliases: multiselect, multicombobox, colorPicker, maskedInput',
 ] as const;
 
-const sourceBase = 'https://github.com/DimitriGilbert/Formedible/blob/re-codex';
+const sourceBase = 'https://github.com/DimitriGilbert/Formedible/blob/main';
 
 function sourceReference(title: string, path: string, description: string): DocsGuideLink {
   return {

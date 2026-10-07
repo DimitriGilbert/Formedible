@@ -259,6 +259,16 @@
           "path": "src/lib/utils.ts",
           "type": "registry:lib",
           "target": "@ui/formedible/lib/utils.ts"
+        },
+        {
+          "path": "../../skills/formedible/SKILL.md",
+          "type": "registry:file",
+          "target": "~/.claude/skills/formedible/SKILL.md"
+        },
+        {
+          "path": "../../skills/formedible/SKILL.md",
+          "type": "registry:file",
+          "target": "~/.agents/skills/formedible/SKILL.md"
         }
       ]
     }

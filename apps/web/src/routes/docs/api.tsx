@@ -6,7 +6,7 @@ import { createRouteSeoHead } from '@/features/docs/seo';
 
 const routeHead = createRouteSeoHead('/docs/api');
 
-const sourceBase = 'https://github.com/DimitriGilbert/Formedible/blob/re-codex';
+const sourceBase = 'https://github.com/DimitriGilbert/Formedible/blob/main';
 
 const propertyTableHeaders = ['Property', 'Type', 'Default', 'Description'] as const;
 

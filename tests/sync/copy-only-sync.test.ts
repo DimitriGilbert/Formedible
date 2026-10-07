@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { promisify } from 'node:util';
@@ -234,6 +234,53 @@ describe('quick sync', () => {
         assert.match(webCopy, /from '@\/lib\/utils'/);
         assert.match(webCopy, /from '@formedible\/ui\/components\/formedible\/lib\/types'/);
         assert.match(webCopy, /from "@\/hooks\/use-formedible";`/);
+    } finally {
+      await rm(fixtureRoot, { recursive: true, force: true });
+    }
+  });
+
+  it('does not sync consumer-project skill targets into workspaces', async () => {
+    const fixtureRoot = await mkdtemp(join(tmpdir(), 'formedible-skill-sync-'));
+
+    try {
+      const sourceContent = "import { helper } from './helper';\n\nexport const value = helper('source');\n";
+      const helperContent = "export function helper(value: string): string {\n  return value;\n}\n";
+      const skillContent = '---\nname: owner\ndescription: Skill fixture.\n---\n\nSkill body.\n';
+      const registryContent = JSON.stringify(
+        {
+          items: [
+            {
+              name: 'owner-core',
+              files: [
+                { path: 'src/components/owner/source.ts', target: 'components/owner/source.ts' },
+                { path: '../../skills/owner/SKILL.md', type: 'registry:file', target: '~/.claude/skills/owner/SKILL.md' },
+                { path: '../../skills/owner/SKILL.md', type: 'registry:file', target: '~/.agents/skills/owner/SKILL.md' },
+              ],
+            },
+          ],
+        },
+        null,
+        2,
+      );
+
+      await writeFixtureFile(join(fixtureRoot, 'packages/owner/registry.json'), registryContent);
+      await writeFixtureFile(join(fixtureRoot, 'packages/owner/src/components/owner/source.ts'), sourceContent);
+      await writeFixtureFile(join(fixtureRoot, 'packages/owner/src/components/owner/helper.ts'), helperContent);
+      await writeFixtureFile(join(fixtureRoot, 'skills/owner/SKILL.md'), skillContent);
+
+      const configPath = join(fixtureRoot, 'sync.config.json');
+      await writeFixtureFile(
+        configPath,
+        JSON.stringify({ routes: [{ ownerRoot: 'packages/owner', destinationRoots: ['packages/consumer/src'] }] }),
+      );
+
+      await runSync(fixtureRoot, configPath);
+
+      const consumerCopy = await readFile(join(fixtureRoot, 'packages/consumer/src/components/owner/source.ts'), 'utf8');
+      assert.equal(consumerCopy, sourceContent);
+
+      const consumerEntries = await readdir(join(fixtureRoot, 'packages/consumer/src'));
+      assert.deepEqual(consumerEntries.sort(), ['components']);
     } finally {
       await rm(fixtureRoot, { recursive: true, force: true });
     }

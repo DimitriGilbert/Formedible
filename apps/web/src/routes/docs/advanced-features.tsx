@@ -6,7 +6,7 @@ import { createRouteSeoHead } from '@/features/docs/seo';
 
 const routeHead = createRouteSeoHead('/docs/advanced-features');
 
-const sourceBase = 'https://github.com/DimitriGilbert/Formedible/blob/re-codex';
+const sourceBase = 'https://github.com/DimitriGilbert/Formedible/blob/main';
 
 function sourceReference(title: string, path: string, description: string): DocsGuideLink {
   return { title, description, href: `${sourceBase}/${path}` };

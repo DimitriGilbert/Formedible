@@ -7,7 +7,7 @@ description: Use when building or configuring React forms with Formedible — in
 
 Formedible renders fully typed React forms from a field-config array, on top of TanStack Form and shadcn-compatible UI. You own the source: the registry copies the hook, fields, and types into your app, and you edit them there.
 
-Written against the `formedible-core` registry item (package `@formedible/formedible` version `0.0.0`, branch `re-codex`) on 2026-08-31. Every example here is verified against the source on that branch.
+Written against the `formedible-core` registry item, released lineage v0.5.x (`https://formedible.dev/r/formedible-core.json`). Every example here is verified against the released source. Installing `formedible-core` also drops this skill into `.claude/skills/formedible/` and `.agents/skills/formedible/` in the consuming project.
 
 ## Mental model
 

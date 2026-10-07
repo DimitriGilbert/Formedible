@@ -7,6 +7,8 @@ const requiredParserDependency = 'https://formedible.dev/r/formedible-parser.jso
 const requiredBuilderDependency = 'https://formedible.dev/r/form-builder.json';
 const requiredScrollAreaDependency = 'scroll-area';
 const forbiddenPublicRegistryNames = ['formedible-react-form', 'formedible-classname-runtime'];
+// The Formedible agent skill installs into the consumer's project, not the @ui component surface.
+const allowedSkillTargets = new Set(['~/.claude/skills/formedible/SKILL.md', '~/.agents/skills/formedible/SKILL.md']);
 const skippedDirectoryNames = new Set(['.git', 'node_modules']);
 
 const publicRegistryPackages = [
@@ -132,6 +134,10 @@ function validatePublicTargets(registryJson, registryPath, errors) {
 
     if (target === undefined) {
       errors.push(`${registryPath} contains a file entry without a string target.`);
+      continue;
+    }
+
+    if (allowedSkillTargets.has(target)) {
       continue;
     }
 

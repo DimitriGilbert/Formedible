@@ -54,8 +54,9 @@ Notes from source:
 
 - `formedible-core` is declared in `packages/formedible/registry.json` and generated at `packages/formedible/public/r/formedible-core.json`.
 - The public item depends on `@tanstack/react-form`, `clsx`, `lucide-react`, `tailwind-merge`, and `zod`.
-- It also installs shadcn primitives used by the fields: `badge`, `button`, `checkbox`, `field`, `input`, `radio-group`, `select`, `slider`, `switch`, and `textarea`.
+- It also installs shadcn primitives used by the fields: `badge`, `button`, `checkbox`, `command`, `field`, `input`, `popover`, `radio-group`, `select`, `slider`, `switch`, and `textarea`.
 - The hook returns `Form`, the TanStack form instance, page navigation state, and persistence helpers from `packages/formedible/src/hooks/use-formedible.tsx`.
+- The install also writes the Formedible agent skill (`skills/formedible/SKILL.md`) to `.claude/skills/formedible/` and `.agents/skills/formedible/` in the consuming project so AI coding agents learn the API. For agents that need it separately: `pnpm dlx skills add DimitriGilbert/Formedible`.
 
 ## Docs and live examples
 

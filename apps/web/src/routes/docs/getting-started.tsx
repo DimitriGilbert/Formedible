@@ -4,7 +4,7 @@ import { DocsGuidePage } from '@/components/docs/guide-page';
 import { createRouteSeoHead } from '@/features/docs/seo';
 
 const routeHead = createRouteSeoHead('/docs/getting-started');
-const githubRoot = 'https://github.com/DimitriGilbert/Formedible/blob/re-codex';
+const githubRoot = 'https://github.com/DimitriGilbert/Formedible/blob/main';
 
 const installSnippet = `pnpm dlx shadcn@latest add https://formedible.dev/r/formedible-core.json`;
 
@@ -142,6 +142,7 @@ function GettingStartedRoute() {
             'Run the command in your web app package.',
             'Import the copied hook from your local UI path.',
             'Commit the copied files so your team can edit them.',
+            'The install also drops the Formedible agent skill into `.claude/skills/formedible/` and `.agents/skills/formedible/` so coding agents learn the API. Agents that need it manually: `pnpm dlx skills add DimitriGilbert/Formedible`.',
           ],
           snippet: {
             title: 'Install formedible-core',
@@ -151,6 +152,7 @@ function GettingStartedRoute() {
           references: [
             { title: 'Registry manifest', description: 'Lists formedible-core, dependencies, UI components, and copied files.', href: `${githubRoot}/packages/formedible/registry.json` },
             { title: 'Public registry item', description: 'The JSON used by the install command.', href: `${githubRoot}/packages/formedible/public/r/formedible-core.json` },
+            { title: 'Formedible agent skill', description: 'The SKILL.md shipped by the install for AI coding agents.', href: `${githubRoot}/skills/formedible/SKILL.md` },
           ],
         },
         {
