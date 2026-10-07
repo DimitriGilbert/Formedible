@@ -1,0 +1,1 @@
+import{it as e,ot as t}from"./index-C3ePetNM.js";var n=t();function r(){return(0,n.jsx)(e,{})}export{r as component};

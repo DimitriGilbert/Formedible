@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title description">
+  <title id="title">Formedible documentation preview</title>
+  <desc id="description">Dark Open Graph card for Formedible docs, builder, AI builder, and form examples.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#050505"/>
+      <stop offset="0.45" stop-color="#111827"/>
+      <stop offset="1" stop-color="#3b0764"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.72" cy="0.28" r="0.52">
+      <stop offset="0" stop-color="#a855f7" stop-opacity="0.75"/>
+      <stop offset="0.42" stop-color="#22d3ee" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#020617" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="28" stdDeviation="32" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+  <path d="M96 106C246 42 376 52 486 136C596 220 718 239 852 194C969 155 1059 178 1134 264" fill="none" stroke="#f8fafc" stroke-opacity="0.12" stroke-width="2"/>
+  <path d="M94 502C224 452 358 458 496 520C638 584 792 584 958 516C1030 486 1081 478 1138 490" fill="none" stroke="#22d3ee" stroke-opacity="0.18" stroke-width="2"/>
+  <g filter="url(#shadow)">
+    <rect x="82" y="78" width="1036" height="474" rx="48" fill="#09090b" fill-opacity="0.86" stroke="#ffffff" stroke-opacity="0.14"/>
+    <rect x="128" y="124" width="184" height="42" rx="21" fill="#a855f7" fill-opacity="0.18" stroke="#c084fc" stroke-opacity="0.48"/>
+    <text x="154" y="151" fill="#e9d5ff" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="18" font-weight="800" letter-spacing="3">FORMEDIBLE</text>
+    <text x="128" y="248" fill="#f8fafc" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="76" font-weight="900" letter-spacing="-5">Source-owned</text>
+    <text x="128" y="330" fill="#f8fafc" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="76" font-weight="900" letter-spacing="-5">forms for React.</text>
+    <text x="132" y="392" fill="#cbd5e1" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="28" font-weight="500">Docs, builder, AI builder, parser workflows, and real examples.</text>
+    <g transform="translate(130 448)">
+      <rect width="176" height="54" rx="27" fill="#f8fafc"/>
+      <text x="28" y="35" fill="#09090b" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="18" font-weight="900">22+ fields</text>
+      <rect x="196" width="186" height="54" rx="27" fill="#0f172a" stroke="#ffffff" stroke-opacity="0.18"/>
+      <text x="224" y="35" fill="#e2e8f0" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="18" font-weight="800">TanStack Form</text>
+      <rect x="402" width="160" height="54" rx="27" fill="#0f172a" stroke="#ffffff" stroke-opacity="0.18"/>
+      <text x="430" y="35" fill="#e2e8f0" font-family="Inter, ui-sans-serif, system-ui, sans-serif" font-size="18" font-weight="800">AI-ready</text>
+    </g>
+    <g transform="translate(790 150)">
+      <rect width="240" height="300" rx="30" fill="#111827" stroke="#ffffff" stroke-opacity="0.14"/>
+      <rect x="32" y="38" width="176" height="16" rx="8" fill="#c084fc"/>
+      <rect x="32" y="82" width="132" height="14" rx="7" fill="#475569"/>
+      <rect x="32" y="116" width="176" height="48" rx="14" fill="#020617" stroke="#ffffff" stroke-opacity="0.12"/>
+      <rect x="32" y="188" width="132" height="14" rx="7" fill="#475569"/>
+      <rect x="32" y="222" width="176" height="48" rx="14" fill="#020617" stroke="#ffffff" stroke-opacity="0.12"/>
+    </g>
+  </g>
+</svg>
