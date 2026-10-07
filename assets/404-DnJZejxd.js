@@ -1,1 +1,0 @@
-import{ot as e}from"./index-C3ePetNM.js";var t=e();function n(){return(0,t.jsx)(`div`,{children:`Not Found`})}export{n as component};
