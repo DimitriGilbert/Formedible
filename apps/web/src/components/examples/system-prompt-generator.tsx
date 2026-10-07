@@ -102,7 +102,7 @@ export function SystemPromptGenerator() {
         "## Installation\n\n",
         "**Via shadcn CLI (Recommended):**\n",
         "```bash\n",
-        "npx shadcn@latest add formedible.dev/r/use-formedible.json\n",
+        "npx shadcn@latest add https://formedible.dev/r/formedible-core.json\n",
         "```\n\n",
         "This automatically installs the useFormedible hook, all field components, and required dependencies.\n\n"
       );

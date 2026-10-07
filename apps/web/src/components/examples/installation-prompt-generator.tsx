@@ -73,7 +73,7 @@ export function InstallationPromptGenerator() {
     prompt += `### Using shadcn CLI (Recommended)\n\n`;
     prompt += `The fastest way to get started with Formedible:\n\n`;
     prompt += `\`\`\`bash\n`;
-    prompt += `npx shadcn@latest add formedible.dev/r/use-formedible.json\n`;
+    prompt += `npx shadcn@latest add https://formedible.dev/r/formedible-core.json\n`;
     prompt += `\`\`\`\n\n`;
     prompt += `This will automatically install:\n`;
     prompt += `- The \`useFormedible\` hook\n`;
@@ -84,7 +84,7 @@ export function InstallationPromptGenerator() {
     // Basic Usage
     prompt += `## 🎯 Quick Start Example\n\n`;
     prompt += `\`\`\`${useTypeScript ? "tsx" : "jsx"}\n`;
-    prompt += `import { useFormedible } from "@formedible/ui/components/formedible/hooks/use-formedible";\n`;
+    prompt += `import { useFormedible } from "@/components/ui/formedible/hooks/use-formedible";\n`;
     prompt += `import { z } from "zod";\n\n`;
 
     prompt += `const contactSchema = z.object({\n`;
