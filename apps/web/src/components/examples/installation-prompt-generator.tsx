@@ -142,7 +142,7 @@ export function InstallationPromptGenerator() {
 
     prompt += `## 📚 Resources\n\n`;
     prompt += `- [Documentation](https://formedible.dev/docs)\n`;
-    prompt += `- [Examples](https://formedible.dev/examples)\n`;
+    prompt += `- [Examples](https://formedible.dev/docs/examples)\n`;
     prompt += `- [GitHub Repository](https://github.com/DimitriGilbert/Formedible)\n\n`;
 
     prompt += `---\n`;
