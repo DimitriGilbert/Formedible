@@ -1,6 +1,7 @@
 {
   "name": "formedible",
   "version": "0.5.2",
+  "license": "MIT",
   "private": true,
   "workspaces": [
     "apps/*",
