@@ -637,6 +637,67 @@ test('bare invalid submit surfaces inline field errors and fires onSubmitInvalid
   rendered.unmount();
 });
 
+test('a successful submit clears the invalid-attempt state and it re-arms on the next invalid attempt', async () => {
+  const fieldStore: FieldStore = {};
+  let consumerSubmitCalls = 0;
+  const ExampleForm = createRecordedForm();
+  const rendered = renderClient(
+    <ExampleForm
+      config={{
+        fields: [{ name: 'email', type: 'text', label: 'Email', required: true, component: createCaptureComponent(fieldStore, 'email') }],
+        formOptions: {
+          defaultValues: { email: '' },
+          onSubmit: () => {
+            consumerSubmitCalls += 1;
+          },
+        },
+      }}
+    />,
+  );
+  await act(async () => {
+    await wait(0);
+  });
+
+  await act(async () => {
+    rendered.document.querySelector('form')?.requestSubmit();
+    await wait(0);
+  });
+
+  assert.equal(consumerSubmitCalls, 0, 'the invalid form must not reach the consumer onSubmit');
+  assert.match(rendered.document.body.textContent ?? '', /Please fix 1 invalid field/);
+
+  act(() => {
+    fieldStore.email?.onChange('ada@example.com');
+  });
+  await act(async () => {
+    await wait(0);
+  });
+
+  await act(async () => {
+    rendered.document.querySelector('form')?.requestSubmit();
+    await wait(0);
+  });
+
+  assert.equal(consumerSubmitCalls, 1, 'the fixed form must submit successfully');
+  assert.doesNotMatch(rendered.document.body.textContent ?? '', /Please fix/, 'the validation summary must not render over the post-submit form');
+
+  act(() => {
+    fieldStore.email?.onChange('');
+  });
+  await act(async () => {
+    await wait(0);
+  });
+
+  await act(async () => {
+    rendered.document.querySelector('form')?.requestSubmit();
+    await wait(0);
+  });
+
+  assert.equal(consumerSubmitCalls, 1, 'the emptied field must block the second submit');
+  assert.match(rendered.document.body.textContent ?? '', /Please fix 1 invalid field/, 'the invalid-attempt state must re-arm after a successful submit');
+  rendered.unmount();
+});
+
 test('nested field paths deliver clean values objects through formOptions.onChange', async () => {
   const fieldStore: FieldStore = {};
   const onChangePayloads: { readonly value: unknown; readonly formApiValues: unknown }[] = [];

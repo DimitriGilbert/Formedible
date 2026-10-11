@@ -214,6 +214,13 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
       // completion/performance analytics fire (the rejection is logged by the
       // submit call sites' catch handler).
       await config.formOptions?.onSubmit?.({ value, formApi: getFormApiContext(value as TFormValues) });
+      // A successful submit retires the invalid-attempt state: the flag only
+      // ever tracked "the most recent submit attempt was invalid", and
+      // leaving it set made the validation summary re-render over the
+      // post-reset empty form until the respondent typed again. A consumer
+      // `onSubmit` rejection never reaches this line, so failed submissions
+      // keep the flag as it was.
+      setHasInvalidSubmitAttempt(false);
       analytics.trackFormComplete(value as TFormValues);
       analytics.trackSubmissionPerformance(Date.now() - submissionStartedAt);
       // Reset before clearing: form.reset() updates the store synchronously, so
