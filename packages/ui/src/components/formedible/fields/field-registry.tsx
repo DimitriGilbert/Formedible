@@ -23,6 +23,7 @@ import { SliderField } from '@formedible/ui/components/formedible/fields/slider-
 import { SwitchField } from '@formedible/ui/components/formedible/fields/switch-field';
 import { TextareaField } from '@formedible/ui/components/formedible/fields/textarea-field';
 import { TextField } from '@formedible/ui/components/formedible/fields/text-field';
+import { getFieldExtension } from '@formedible/ui/components/formedible/lib/field-extensions';
 import type { FormedibleFieldRenderProps, FormedibleFormValues, NormalizedFieldType } from '@formedible/ui/components/formedible/lib/types';
 
 type FieldComponent = <TFormValues extends FormedibleFormValues>(props: FormedibleFieldRenderProps<TFormValues>) => ReactNode;
@@ -56,8 +57,13 @@ const fieldRegistry: Partial<Record<NormalizedFieldType, FieldComponent>> = {
   url: TextField,
 };
 
+/**
+ * Resolution order for a field type: the built-in registry, then a registered
+ * field extension (`registerFieldExtension`), then the text fallback. The
+ * render path itself is unchanged — extensions wrap the existing mechanism.
+ */
 export function getFieldComponent<TFormValues extends FormedibleFormValues>(
   type: NormalizedFieldType | (string & {}),
 ): (props: FormedibleFieldRenderProps<TFormValues>) => ReactNode {
-  return fieldRegistry[type as NormalizedFieldType] ?? TextField;
+  return fieldRegistry[type as NormalizedFieldType] ?? getFieldExtension(type)?.component ?? TextField;
 }

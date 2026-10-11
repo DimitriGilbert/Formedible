@@ -18,6 +18,7 @@ import { useFormPersistence } from '@formedible/ui/components/formedible/hooks/u
 import { useFormTabs } from '@formedible/ui/components/formedible/hooks/use-form-tabs';
 import { useMultiPage } from '@formedible/ui/components/formedible/hooks/use-multi-page';
 import { getValueAtFieldPath, setValueAtFieldPath } from '@formedible/ui/components/formedible/lib/field-path';
+import { listFieldExtensions, subscribeToFieldExtensionRegistrations } from '@formedible/ui/components/formedible/lib/field-extensions';
 import { evaluateFieldConditional, isFieldLocationVisible } from '@formedible/ui/components/formedible/lib/field-visibility';
 import type { FormediblePageTabVisibility } from '@formedible/ui/components/formedible/lib/field-visibility';
 import { resolveDynamicText } from '@formedible/ui/components/formedible/lib/dynamic-text';
@@ -330,19 +331,34 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
     setCurrentPage: multiPage.setCurrentPage,
     values: storeValues,
   });
-  const registeredDefaultComponents = useMemo(() => {
-    if (!config.defaultComponents) {
-      return undefined;
-    }
+  /**
+   * Field-extension registrations render through the same `defaultComponents`
+   * slot: registered extension components sit under the hook-level registry
+   * (hook-level `defaultComponents` win per type). Registration changes
+   * re-render through the subscription so registering after mount still
+   * renders — the render path itself is untouched.
+   */
+  const [fieldExtensionsVersion, setFieldExtensionsVersion] = useState(0);
 
+  useEffect(() => subscribeToFieldExtensionRegistrations(() => {
+    setFieldExtensionsVersion((previous) => previous + 1);
+  }), []);
+
+  const registeredDefaultComponents = useMemo(() => {
     const registered: Record<string, FormedibleFieldComponent<TFormValues>> = {};
 
-    for (const [typeKey, component] of Object.entries(config.defaultComponents)) {
-      registered[normalizeFieldType(typeKey)] = component;
+    for (const extension of listFieldExtensions()) {
+      registered[extension.type] = extension.component;
     }
 
-    return registered;
-  }, [config.defaultComponents]);
+    if (config.defaultComponents) {
+      for (const [typeKey, component] of Object.entries(config.defaultComponents)) {
+        registered[normalizeFieldType(typeKey)] = component;
+      }
+    }
+
+    return Object.keys(registered).length > 0 ? registered : undefined;
+  }, [config.defaultComponents, fieldExtensionsVersion]);
   const hasConfiguredPages = fields.some((fieldConfig) => fieldConfig.page !== undefined) || Boolean(config.pages?.length);
   const hasConfiguredTabs = tabs.visibleTabs.length > 0;
   const validationSummaryConfig = getValidationSummaryConfig();
