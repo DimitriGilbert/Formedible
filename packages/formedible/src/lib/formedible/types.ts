@@ -6,6 +6,40 @@ export type { AnyFieldApi } from '@tanstack/react-form';
 
 export type FormedibleFormValues = Record<string, unknown>;
 
+/**
+ * The injectable message surface for the engine's built-in validation
+ * strings. Defaults (and the override merge helpers) live in
+ * `@/lib/formedible/messages`.
+ */
+export interface FormedibleValidationMessages {
+  /** Required-field message; receives the field's label (or name when unlabeled). */
+  readonly requiredField: (context: { readonly fieldLabel: string }) => string;
+  readonly invalidEmail: () => string;
+  readonly invalidUrl: () => string;
+  /** String maxLength message. */
+  readonly maxLength: (context: { readonly maxLength: number }) => string;
+  /** Number minimum message. */
+  readonly numberMin: (context: { readonly min: number }) => string;
+  /** Number maximum message. */
+  readonly numberMax: (context: { readonly max: number }) => string;
+  /** Fallback for function/object validators that reject without a message. */
+  readonly invalidValue: () => string;
+  /** Fallback for cross-field rules that reject without a message. */
+  readonly invalidFieldCombination: () => string;
+}
+
+/** The full built-in message surface, including the form-level strings. */
+export interface FormedibleFormMessages extends FormedibleValidationMessages {
+  /** Validation summary headline; receives the invalid field count. */
+  readonly validationSummary: (context: { readonly count: number }) => string;
+  /** Page title fallback for pages configured without a title. */
+  readonly pageFallbackTitle: (context: { readonly pageNumber: number }) => string;
+  /** Collapsed-state label of the collapsible section toggle. */
+  readonly collapseSection: () => string;
+  /** Expanded-state label of the collapsible section toggle. */
+  readonly expandSection: () => string;
+}
+
 export type FormedibleFieldType =
   | 'text'
   | 'email'
@@ -545,6 +579,14 @@ export interface FormedibleAnalyticsConfig<TFormValues extends FormedibleFormVal
 export interface UseFormedibleOptions<TFormValues extends FormedibleFormValues = FormedibleFormValues> {
   /** Field configurations; defaults to an empty list when omitted. */
   readonly fields?: readonly FormedibleFieldConfig<TFormValues>[];
+  /**
+   * Overrides for the engine's built-in strings (required/format/min/max
+   * messages, validator fallbacks, the validation summary sentence, the
+   * "Step N" page title fallback, and the Collapse/Expand section toggle
+   * fallbacks). Any key left out keeps its built-in English string, so
+   * behavior is unchanged unless an override is supplied.
+   */
+  readonly messages?: Partial<FormedibleFormMessages>;
   /** Form options forwarded to the hook runtime; all members are optional. */
   readonly formOptions?: FormedibleFormOptions<TFormValues>;
   readonly schema?: unknown;

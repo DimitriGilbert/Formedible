@@ -2,6 +2,7 @@ import type { DeepKeys, DeepValue, FieldAsyncValidateOrFn, FieldValidateFn, Fiel
 
 import { isFieldPathVisible } from '@formedible/ui/components/formedible/lib/field-visibility';
 import type { FormediblePageTabVisibility } from '@formedible/ui/components/formedible/lib/field-visibility';
+import { resolveFormedibleValidationMessages } from '@formedible/ui/components/formedible/lib/messages';
 import { firstIssueMessage, formatValidationError } from '@formedible/ui/components/formedible/lib/zod-errors';
 import type {
   FormedibleAsyncValidation,
@@ -9,6 +10,7 @@ import type {
   FormedibleFieldValidation,
   FormedibleFormValues,
   FormedibleStandardFieldSchema,
+  FormedibleValidationMessages,
   FormedibleValidationResult,
   NormalizedFieldConfig,
 } from '@formedible/ui/components/formedible/lib/types';
@@ -343,13 +345,13 @@ function isFieldValidationObject<TFormValues extends FormedibleFormValues>(
   return typeof validation === 'object' && validation !== null && 'validator' in validation && typeof validation.validator === 'function';
 }
 
-function resultToMessage(result: FormedibleValidationResult, fallback?: string): string | undefined {
+function resultToMessage(result: FormedibleValidationResult, fallback: string): string | undefined {
   if (typeof result === 'string') {
     return result;
   }
 
   if (result === false) {
-    return fallback ?? 'Invalid value';
+    return fallback;
   }
 
   return undefined;
@@ -367,7 +369,11 @@ function requiredFieldLabel<TFormValues extends FormedibleFormValues>(field: Nor
   return String(field.name);
 }
 
-function validateRequired<TFormValues extends FormedibleFormValues>(field: NormalizedFieldConfig<TFormValues>, value: unknown): string | undefined {
+function validateRequired<TFormValues extends FormedibleFormValues>(
+  field: NormalizedFieldConfig<TFormValues>,
+  value: unknown,
+  messages: FormedibleValidationMessages,
+): string | undefined {
   if (!field.required) {
     return undefined;
   }
@@ -378,39 +384,43 @@ function validateRequired<TFormValues extends FormedibleFormValues>(field: Norma
     return undefined;
   }
 
-  return `${requiredFieldLabel(field)} is required`;
+  return messages.requiredField({ fieldLabel: requiredFieldLabel(field) });
 }
 
-function validateBuiltInConstraints<TFormValues extends FormedibleFormValues>(field: NormalizedFieldConfig<TFormValues>, value: unknown): string | undefined {
-  const requiredError = validateRequired(field, value);
+function validateBuiltInConstraints<TFormValues extends FormedibleFormValues>(
+  field: NormalizedFieldConfig<TFormValues>,
+  value: unknown,
+  messages: FormedibleValidationMessages,
+): string | undefined {
+  const requiredError = validateRequired(field, value, messages);
 
   if (requiredError || isEmptyValue(value)) {
     return requiredError;
   }
 
   if (field.type === 'email' && typeof value === 'string' && !/^\S+@\S+\.\S+$/.test(value)) {
-    return 'Please enter a valid email address';
+    return messages.invalidEmail();
   }
 
   if (field.type === 'url' && typeof value === 'string') {
     try {
       new URL(value);
     } catch {
-      return 'Please enter a valid URL';
+      return messages.invalidUrl();
     }
   }
 
   if (typeof value === 'string' && field.maxLength !== undefined && value.length > field.maxLength) {
-    return `Must be at most ${field.maxLength} characters`;
+    return messages.maxLength({ maxLength: field.maxLength });
   }
 
   if (typeof value === 'number') {
     if (field.min !== undefined && value < field.min) {
-      return `Must be at least ${field.min}`;
+      return messages.numberMin({ min: field.min });
     }
 
     if (field.max !== undefined && value > field.max) {
-      return `Must be at most ${field.max}`;
+      return messages.numberMax({ max: field.max });
     }
   }
 
@@ -422,13 +432,14 @@ function runFieldValidation<TFormValues extends FormedibleFormValues>(
   fieldName: string,
   value: unknown,
   values: TFormValues,
+  messages: FormedibleValidationMessages,
 ): string | undefined {
   if (!validation) {
     return undefined;
   }
 
   if (typeof validation === 'function') {
-    return resultToMessage(validation(value, values, { value, values, fieldName }), 'Invalid value');
+    return resultToMessage(validation(value, values, { value, values, fieldName }), messages.invalidValue());
   }
 
   const fieldSchema = toStandardFieldSchema(validation);
@@ -441,7 +452,7 @@ function runFieldValidation<TFormValues extends FormedibleFormValues>(
     return undefined;
   }
 
-  return resultToMessage(validation.validator(value, values), validation.message);
+  return resultToMessage(validation.validator(value, values), validation.message ?? messages.invalidValue());
 }
 
 function schemaFieldMessage<TFormValues extends FormedibleFormValues>(
@@ -488,13 +499,14 @@ function crossFieldMessage<TFormValues extends FormedibleFormValues>(
   fieldName: string,
   validations: readonly FormedibleCrossFieldValidation<TFormValues>[] | undefined,
   values: TFormValues,
+  messages: FormedibleValidationMessages,
 ): string | undefined {
   for (const validation of validations ?? []) {
     if (!validation.fields.includes(fieldName)) {
       continue;
     }
 
-    const message = resultToMessage(validation.validator(values), 'Invalid field combination');
+    const message = resultToMessage(validation.validator(values), messages.invalidFieldCombination());
 
     if (message) {
       return message;
@@ -521,13 +533,15 @@ export function runFieldSyncValidation<TFormValues extends FormedibleFormValues>
   value: unknown,
   rootFields?: readonly NormalizedFieldConfig<TFormValues>[],
   visibility?: FormediblePageTabVisibility<TFormValues>,
+  messages?: Partial<FormedibleValidationMessages>,
 ): string | undefined {
   const fieldName = field.name;
+  const resolvedMessages = resolveFormedibleValidationMessages(messages);
 
-  return validateBuiltInConstraints(field, value)
-    ?? runFieldValidation(field.validation, fieldName, value, formApi.state.values)
+  return validateBuiltInConstraints(field, value, resolvedMessages)
+    ?? runFieldValidation(field.validation, fieldName, value, formApi.state.values, resolvedMessages)
     ?? schemaFieldMessage(fieldName, toStandardSchema<TFormValues>(schema), formApi, rootFields, visibility)
-    ?? crossFieldMessage(fieldName, crossFieldValidation, formApi.state.values);
+    ?? crossFieldMessage(fieldName, crossFieldValidation, formApi.state.values, resolvedMessages);
 }
 
 function asyncValidationForField<TFormValues extends FormedibleFormValues>(
@@ -565,6 +579,7 @@ export function buildFieldValidators<TFormValues extends FormedibleFormValues, T
   asyncValidation: Partial<Record<string, FormedibleAsyncValidation<TFormValues>>> | undefined,
   rootFields?: readonly NormalizedFieldConfig<TFormValues>[],
   visibility?: FormediblePageTabVisibility<TFormValues>,
+  messages?: Partial<FormedibleValidationMessages>,
 ): BuiltFieldValidators<TFormValues, TName> {
   const fieldName = field.name;
   const standardSchema = toStandardSchema<TFormValues>(schema);
@@ -573,6 +588,7 @@ export function buildFieldValidators<TFormValues extends FormedibleFormValues, T
   const inlineValidation = field.inlineValidation?.enabled ? field.inlineValidation : undefined;
   const debounceMs = fieldAsyncValidation?.debounceMs ?? inlineValidation?.debounceMs;
   const onChangeListenTo = fieldDependencies(fieldName, crossFieldValidation);
+  const resolvedMessages = resolveFormedibleValidationMessages(messages);
   /**
    * Async slots are registered only for genuinely-async sources: configured
    * async/inline validators, an async field schema, or an async form schema.
@@ -588,7 +604,7 @@ export function buildFieldValidators<TFormValues extends FormedibleFormValues, T
   // One shared closure per build serves all three sync slots: the previous
   // onChange/onBlur/onSubmit bodies were character-identical.
   const runSyncValidation = ({ value, fieldApi }: FormedibleValidatorContext<TFormValues>): string | undefined =>
-    runFieldSyncValidation(field, schema, crossFieldValidation, fieldApi.form, value, rootFields, visibility);
+    runFieldSyncValidation(field, schema, crossFieldValidation, fieldApi.form, value, rootFields, visibility, resolvedMessages);
 
   const validators: FormedibleFieldValidators<TFormValues> = {
     onChange: runSyncValidation,
@@ -606,7 +622,7 @@ export function buildFieldValidators<TFormValues extends FormedibleFormValues, T
             }
 
             if (fieldAsyncValidation) {
-              const message = resultToMessage(await fieldAsyncValidation.validator(value, fieldApi.form.state.values, signal), 'Invalid value');
+              const message = resultToMessage(await fieldAsyncValidation.validator(value, fieldApi.form.state.values, signal), resolvedMessages.invalidValue());
 
               if (message) {
                 return message;
@@ -614,7 +630,7 @@ export function buildFieldValidators<TFormValues extends FormedibleFormValues, T
             }
 
             if (inlineValidation?.validator) {
-              const message = resultToMessage(await inlineValidation.validator(value, fieldApi.form.state.values, signal), 'Invalid value');
+              const message = resultToMessage(await inlineValidation.validator(value, fieldApi.form.state.values, signal), resolvedMessages.invalidValue());
 
               if (message) {
                 return message;
@@ -636,12 +652,15 @@ export function buildFormValidators<TFormValues extends FormedibleFormValues>(
   crossFieldValidation: readonly FormedibleCrossFieldValidation<TFormValues>[] | undefined,
   rootFields?: readonly NormalizedFieldConfig<TFormValues>[],
   visibility?: FormediblePageTabVisibility<TFormValues>,
+  messages?: Partial<FormedibleValidationMessages>,
 ): BuiltFormValidators<TFormValues> | undefined {
   const standardSchema = toStandardSchema<TFormValues>(schema);
 
   if (!standardSchema && (!crossFieldValidation || crossFieldValidation.length === 0)) {
     return undefined;
   }
+
+  const resolvedMessages = resolveFormedibleValidationMessages(messages);
 
   const schemaFieldErrors = (
     schemaFields: Readonly<Record<string, readonly { readonly message: string }[]>> | undefined,
@@ -668,7 +687,7 @@ export function buildFormValidators<TFormValues extends FormedibleFormValues>(
     const fields: Partial<Record<string, string>> = standardSchema ? schemaFieldErrors(parseFormSchemaSync(standardSchema, formApi)?.fields, value) : {};
 
     for (const validation of crossFieldValidation ?? []) {
-      const message = resultToMessage(validation.validator(value), 'Invalid field combination');
+      const message = resultToMessage(validation.validator(value), resolvedMessages.invalidFieldCombination());
 
       if (!message) {
         continue;

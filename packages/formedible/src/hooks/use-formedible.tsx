@@ -22,6 +22,7 @@ import { evaluateFieldConditional, isFieldLocationVisible } from '@/lib/formedib
 import type { FormediblePageTabVisibility } from '@/lib/formedible/field-visibility';
 import { resolveDynamicText } from '@/lib/formedible/dynamic-text';
 import { normalizeFieldConfig, normalizeFieldType } from '@/lib/formedible/normalize-field-config';
+import { resolveFormedibleFormMessages } from '@/lib/formedible/messages';
 import { normalizeOptions } from '@/lib/formedible/normalize-options';
 import type { FormedibleFieldComponent, FormedibleFieldSection, FormedibleFormApiContext, FormedibleFormValues, FormedibleValidationSummaryConfig, UseFormedibleOptions } from '@/lib/formedible/types';
 import type { NormalizedFieldConfig } from '@/lib/formedible/types';
@@ -109,6 +110,7 @@ function CollapsibleSection({ section, collapseLabel, expandLabel, children }: C
 
 export function useFormedible<TFormValues extends FormedibleFormValues = FormedibleFormValues>(config: UseFormedibleOptions<TFormValues>) {
   const formId = useId();
+  const messages = resolveFormedibleFormMessages(config.messages);
   const normalizedOptions = normalizeOptions(config);
   const fields = normalizedOptions.fields;
   /**
@@ -172,7 +174,7 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
   // The TanStack-typed build result only ever installs plain validator
   // functions; the cast narrows the union slot types to those callables so the
   // merged submit slot below can invoke them with the shared context shape.
-  const baseFormValidators = buildFormValidators(config.schema, config.crossFieldValidation, fields, pageTabVisibility) as FormedibleFormValidators<TFormValues> | undefined;
+  const baseFormValidators = buildFormValidators(config.schema, config.crossFieldValidation, fields, pageTabVisibility, config.messages) as FormedibleFormValidators<TFormValues> | undefined;
   /**
    * Form-level async slots are kept only when the form schema is genuinely
    * async (`isFormedibleSchemaAsync` probes it once per schema against the
@@ -411,6 +413,7 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
       getValueAtFieldPath(values, fieldConfig.name),
       fields,
       pageTabVisibility,
+      config.messages,
     );
   }
 
@@ -650,7 +653,7 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
       <form.Field
         key={options?.key ?? fieldName}
         name={fieldName as DeepKeys<TFormValues>}
-        validators={buildFieldValidators<TFormValues, DeepKeys<TFormValues>>(renderConfig, config.schema, config.crossFieldValidation, config.asyncValidation, fields, pageTabVisibility)}
+        validators={buildFieldValidators<TFormValues, DeepKeys<TFormValues>>(renderConfig, config.schema, config.crossFieldValidation, config.asyncValidation, fields, pageTabVisibility, config.messages)}
       >
         {(field) => {
           const error = field.state.meta.errors.map(formatValidationError).find((message) => message !== undefined);
@@ -812,8 +815,8 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
           <CollapsibleSection
             key={`${fieldConfig.name}-section`}
             section={section}
-            collapseLabel={resolveDynamicText(config.collapseLabel ?? 'Collapse', values)}
-            expandLabel={resolveDynamicText(config.expandLabel ?? 'Expand', values)}
+            collapseLabel={resolveDynamicText(config.collapseLabel ?? messages.collapseSection(), values)}
+            expandLabel={resolveDynamicText(config.expandLabel ?? messages.expandSection(), values)}
           >
             {sectionFields}
           </CollapsibleSection>,
@@ -846,7 +849,7 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
   }
 
   function getPageLabel(pageNumber: number, values: FormedibleFormValues): ReactNode {
-    return resolveDynamicText(config.pages?.find((page) => page.page === pageNumber)?.title, values) ?? `Step ${pageNumber}`;
+    return resolveDynamicText(config.pages?.find((page) => page.page === pageNumber)?.title, values) ?? messages.pageFallbackTitle({ pageNumber });
   }
 
   function getTabLabel(tabId: string, values: FormedibleFormValues): ReactNode {
@@ -874,7 +877,7 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
 
     return (
       <div className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm" role="alert" aria-live="polite" data-formedible-validation-summary="true">
-        <p className="font-medium text-destructive">Please fix {entries.length} invalid {entries.length === 1 ? 'field' : 'fields'}.</p>
+        <p className="font-medium text-destructive">{messages.validationSummary({ count: entries.length })}</p>
         <ul className="mt-2 space-y-1">
           {entries.map((entry) => {
             const location = getInvalidFieldLocation(entry, values);
