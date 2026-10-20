@@ -2,6 +2,7 @@ import type { DeepKeys, DeepValue, FieldAsyncValidateOrFn, FieldValidateFn, Fiel
 
 import { isFieldPathVisible } from '@formedible/ui/components/formedible/lib/field-visibility';
 import type { FormediblePageTabVisibility } from '@formedible/ui/components/formedible/lib/field-visibility';
+import { getFieldExtensionFieldValidation } from '@formedible/ui/components/formedible/lib/field-extensions';
 import { firstIssueMessage, formatValidationError } from '@formedible/ui/components/formedible/lib/zod-errors';
 import type {
   FormedibleAsyncValidation,
@@ -417,6 +418,15 @@ function validateBuiltInConstraints<TFormValues extends FormedibleFormValues>(fi
   return undefined;
 }
 
+/**
+ * The validation a field actually runs: its own configured validation, or the
+ * registered field extension's schema for its type when it declares none
+ * (field-level configuration always wins over the extension's contract).
+ */
+function resolveFieldValidation<TFormValues extends FormedibleFormValues>(field: NormalizedFieldConfig<TFormValues>): FormedibleFieldValidation<TFormValues> | undefined {
+  return field.validation ?? getFieldExtensionFieldValidation(field.type);
+}
+
 function runFieldValidation<TFormValues extends FormedibleFormValues>(
   validation: FormedibleFieldValidation<TFormValues> | undefined,
   fieldName: string,
@@ -525,7 +535,7 @@ export function runFieldSyncValidation<TFormValues extends FormedibleFormValues>
   const fieldName = field.name;
 
   return validateBuiltInConstraints(field, value)
-    ?? runFieldValidation(field.validation, fieldName, value, formApi.state.values)
+    ?? runFieldValidation(resolveFieldValidation(field), fieldName, value, formApi.state.values)
     ?? schemaFieldMessage(fieldName, toStandardSchema<TFormValues>(schema), formApi, rootFields, visibility)
     ?? crossFieldMessage(fieldName, crossFieldValidation, formApi.state.values);
 }
@@ -568,7 +578,7 @@ export function buildFieldValidators<TFormValues extends FormedibleFormValues, T
 ): BuiltFieldValidators<TFormValues, TName> {
   const fieldName = field.name;
   const standardSchema = toStandardSchema<TFormValues>(schema);
-  const fieldValidationSchema = toStandardFieldSchema(field.validation);
+  const fieldValidationSchema = toStandardFieldSchema(resolveFieldValidation(field));
   const fieldAsyncValidation = asyncValidationForField(fieldName, asyncValidation);
   const inlineValidation = field.inlineValidation?.enabled ? field.inlineValidation : undefined;
   const debounceMs = fieldAsyncValidation?.debounceMs ?? inlineValidation?.debounceMs;
