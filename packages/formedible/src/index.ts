@@ -35,10 +35,13 @@ export type {
   FieldExtensionWireValue,
   FieldExtensionZodValidation,
 } from '@/lib/formedible/field-extensions';
+export { defaultFormedibleFormMessages, resolveFormedibleFormMessages, resolveFormedibleValidationMessages } from '@/lib/formedible/messages';
 export type {
   FormedibleFieldConfig,
   FormedibleFieldType,
+  FormedibleFormMessages,
   FormedibleFormValues,
+  FormedibleValidationMessages,
   NormalizedFieldConfig,
   NormalizedFieldType,
   UseFormedibleOptions,
