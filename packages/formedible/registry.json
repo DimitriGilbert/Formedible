@@ -236,6 +236,16 @@
           "target": "@ui/formedible/lib/validation.ts"
         },
         {
+          "path": "src/lib/formedible/field-extensions.ts",
+          "type": "registry:lib",
+          "target": "@ui/formedible/lib/field-extensions.ts"
+        },
+        {
+          "path": "src/lib/formedible/messages.ts",
+          "type": "registry:lib",
+          "target": "@ui/formedible/lib/messages.ts"
+        },
+        {
           "path": "src/lib/formedible/zod-errors.ts",
           "type": "registry:lib",
           "target": "@ui/formedible/lib/zod-errors.ts"

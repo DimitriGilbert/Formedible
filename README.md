@@ -77,6 +77,10 @@ Public docs are hosted at `https://formedible.dev`.
 
 Example IDs are registered in `apps/web/src/components/docs/examples/index.tsx`: `contact`, `registration`, `survey`, `checkout`, `job`, `tabbed`, `flow`, `rental-flow`, `analytics`, `persistence`, `arrays`, `conditional-object-array`, `conditional-pages`, and `advanced-fields`.
 
+## Field extensions
+
+Custom field types already render through `defaultComponents` / `field.component`; the field-extension contract publishes the rest of what a third-party field needs as one object: value serialization (versioned wire JSON), zod validation (Standard Schema factory), builder metadata, accessibility obligations, AI-safe redaction rules, and semver. `registerFieldExtension(ext)` feeds the existing rendering path, validates the contract loudly, and refuses incompatible semver ranges. See [docs/field-extensions.md](docs/field-extensions.md) for the full contract and the complete color-swatch sample (`tests/formedible/field-extensions/`, `pnpm run test:formedible:field-extensions`).
+
 ## Packages
 
 | Package | Role | Useful source |

@@ -18,10 +18,12 @@ import { useFormPersistence } from '@formedible/ui/components/formedible/hooks/u
 import { useFormTabs } from '@formedible/ui/components/formedible/hooks/use-form-tabs';
 import { useMultiPage } from '@formedible/ui/components/formedible/hooks/use-multi-page';
 import { getValueAtFieldPath, setValueAtFieldPath } from '@formedible/ui/components/formedible/lib/field-path';
+import { listFieldExtensions, subscribeToFieldExtensionRegistrations } from '@formedible/ui/components/formedible/lib/field-extensions';
 import { evaluateFieldConditional, isFieldLocationVisible } from '@formedible/ui/components/formedible/lib/field-visibility';
 import type { FormediblePageTabVisibility } from '@formedible/ui/components/formedible/lib/field-visibility';
 import { resolveDynamicText } from '@formedible/ui/components/formedible/lib/dynamic-text';
 import { normalizeFieldConfig, normalizeFieldType } from '@formedible/ui/components/formedible/lib/normalize-field-config';
+import { resolveFormedibleFormMessages } from '@formedible/ui/components/formedible/lib/messages';
 import { normalizeOptions } from '@formedible/ui/components/formedible/lib/normalize-options';
 import type { FormedibleFieldComponent, FormedibleFieldSection, FormedibleFormApiContext, FormedibleFormValues, FormedibleValidationSummaryConfig, UseFormedibleOptions } from '@formedible/ui/components/formedible/lib/types';
 import type { NormalizedFieldConfig } from '@formedible/ui/components/formedible/lib/types';
@@ -109,6 +111,7 @@ function CollapsibleSection({ section, collapseLabel, expandLabel, children }: C
 
 export function useFormedible<TFormValues extends FormedibleFormValues = FormedibleFormValues>(config: UseFormedibleOptions<TFormValues>) {
   const formId = useId();
+  const messages = resolveFormedibleFormMessages(config.messages);
   const normalizedOptions = normalizeOptions(config);
   const fields = normalizedOptions.fields;
   /**
@@ -172,7 +175,7 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
   // The TanStack-typed build result only ever installs plain validator
   // functions; the cast narrows the union slot types to those callables so the
   // merged submit slot below can invoke them with the shared context shape.
-  const baseFormValidators = buildFormValidators(config.schema, config.crossFieldValidation, fields, pageTabVisibility) as FormedibleFormValidators<TFormValues> | undefined;
+  const baseFormValidators = buildFormValidators(config.schema, config.crossFieldValidation, fields, pageTabVisibility, config.messages) as FormedibleFormValidators<TFormValues> | undefined;
   /**
    * Form-level async slots are kept only when the form schema is genuinely
    * async (`isFormedibleSchemaAsync` probes it once per schema against the
@@ -214,6 +217,13 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
       // completion/performance analytics fire (the rejection is logged by the
       // submit call sites' catch handler).
       await config.formOptions?.onSubmit?.({ value, formApi: getFormApiContext(value as TFormValues) });
+      // A successful submit retires the invalid-attempt state: the flag only
+      // ever tracked "the most recent submit attempt was invalid", and
+      // leaving it set made the validation summary re-render over the
+      // post-reset empty form until the respondent typed again. A consumer
+      // `onSubmit` rejection never reaches this line, so failed submissions
+      // keep the flag as it was.
+      setHasInvalidSubmitAttempt(false);
       analytics.trackFormComplete(value as TFormValues);
       analytics.trackSubmissionPerformance(Date.now() - submissionStartedAt);
       // Reset before clearing: form.reset() updates the store synchronously, so
@@ -330,19 +340,34 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
     setCurrentPage: multiPage.setCurrentPage,
     values: storeValues,
   });
-  const registeredDefaultComponents = useMemo(() => {
-    if (!config.defaultComponents) {
-      return undefined;
-    }
+  /**
+   * Field-extension registrations render through the same `defaultComponents`
+   * slot: registered extension components sit under the hook-level registry
+   * (hook-level `defaultComponents` win per type). Registration changes
+   * re-render through the subscription so registering after mount still
+   * renders — the render path itself is untouched.
+   */
+  const [fieldExtensionsVersion, setFieldExtensionsVersion] = useState(0);
 
+  useEffect(() => subscribeToFieldExtensionRegistrations(() => {
+    setFieldExtensionsVersion((previous) => previous + 1);
+  }), []);
+
+  const registeredDefaultComponents = useMemo(() => {
     const registered: Record<string, FormedibleFieldComponent<TFormValues>> = {};
 
-    for (const [typeKey, component] of Object.entries(config.defaultComponents)) {
-      registered[normalizeFieldType(typeKey)] = component;
+    for (const extension of listFieldExtensions()) {
+      registered[extension.type] = extension.component;
     }
 
-    return registered;
-  }, [config.defaultComponents]);
+    if (config.defaultComponents) {
+      for (const [typeKey, component] of Object.entries(config.defaultComponents)) {
+        registered[normalizeFieldType(typeKey)] = component;
+      }
+    }
+
+    return Object.keys(registered).length > 0 ? registered : undefined;
+  }, [config.defaultComponents, fieldExtensionsVersion]);
   const hasConfiguredPages = fields.some((fieldConfig) => fieldConfig.page !== undefined) || Boolean(config.pages?.length);
   const hasConfiguredTabs = tabs.visibleTabs.length > 0;
   const validationSummaryConfig = getValidationSummaryConfig();
@@ -411,6 +436,7 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
       getValueAtFieldPath(values, fieldConfig.name),
       fields,
       pageTabVisibility,
+      config.messages,
     );
   }
 
@@ -650,7 +676,7 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
       <form.Field
         key={options?.key ?? fieldName}
         name={fieldName as DeepKeys<TFormValues>}
-        validators={buildFieldValidators<TFormValues, DeepKeys<TFormValues>>(renderConfig, config.schema, config.crossFieldValidation, config.asyncValidation, fields, pageTabVisibility)}
+        validators={buildFieldValidators<TFormValues, DeepKeys<TFormValues>>(renderConfig, config.schema, config.crossFieldValidation, config.asyncValidation, fields, pageTabVisibility, config.messages)}
       >
         {(field) => {
           const error = field.state.meta.errors.map(formatValidationError).find((message) => message !== undefined);
@@ -812,8 +838,8 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
           <CollapsibleSection
             key={`${fieldConfig.name}-section`}
             section={section}
-            collapseLabel={resolveDynamicText(config.collapseLabel ?? 'Collapse', values)}
-            expandLabel={resolveDynamicText(config.expandLabel ?? 'Expand', values)}
+            collapseLabel={resolveDynamicText(config.collapseLabel ?? messages.collapseSection(), values)}
+            expandLabel={resolveDynamicText(config.expandLabel ?? messages.expandSection(), values)}
           >
             {sectionFields}
           </CollapsibleSection>,
@@ -846,7 +872,7 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
   }
 
   function getPageLabel(pageNumber: number, values: FormedibleFormValues): ReactNode {
-    return resolveDynamicText(config.pages?.find((page) => page.page === pageNumber)?.title, values) ?? `Step ${pageNumber}`;
+    return resolveDynamicText(config.pages?.find((page) => page.page === pageNumber)?.title, values) ?? messages.pageFallbackTitle({ pageNumber });
   }
 
   function getTabLabel(tabId: string, values: FormedibleFormValues): ReactNode {
@@ -874,7 +900,7 @@ export function useFormedible<TFormValues extends FormedibleFormValues = Formedi
 
     return (
       <div className="rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm" role="alert" aria-live="polite" data-formedible-validation-summary="true">
-        <p className="font-medium text-destructive">Please fix {entries.length} invalid {entries.length === 1 ? 'field' : 'fields'}.</p>
+        <p className="font-medium text-destructive">{messages.validationSummary({ count: entries.length })}</p>
         <ul className="mt-2 space-y-1">
           {entries.map((entry) => {
             const location = getInvalidFieldLocation(entry, values);
